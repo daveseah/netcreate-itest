@@ -4,22 +4,22 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const DBG = true;
-
-///	LOAD LIBRARIES ////////////////////////////////////////////////////////////
-///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var WSS = require('ws').Server;
-var FSE = require('fs-extra');
-var NetMessage = require('./common-netmessage-class');
-const LOGGER = require('./server-logger');
-var DB = require('./server-database');
-var DEFS = require('./common-defs');
+import { Server as WSS } from 'ws';
+import FSE from 'fs-extra';
+import NetMessage, {
+  DefaultServerUADDR,
+  GlobalSetup
+} from './common-netmessage-class';
+import { Write } from './server-logger';
+import { RequestUnlock } from './server-database';
+import { SERVER_HEARTBEAT_INTERVAL } from './common-defs';
+import { Pad } from '../system/util/prompts';
 
 /// CONSTANTS /////////////////////////////////////////////////////////////////
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PROMPTS = require('../system/util/prompts');
-const PR = PROMPTS.Pad('SRV-NET');
-const ERR = PROMPTS.Pad('!!!');
+const DBG = true;
+const PR = Pad('SRV-NET');
+const ERR = Pad('!!!');
 const ERR_SS_EXISTS = 'socket server already created';
 const ERR_NULL_SOCKET = 'require valid socket';
 const DBG_SOCK_BADCLOSE = 'closing socket is not in mu_sockets';
@@ -45,8 +45,8 @@ var m_pong_timer = [];
 
 /// API MEHTHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var UNET = {};
-const SERVER_UADDR = NetMessage.DefaultServerUADDR(); // is 'SVR_01'
+const UNET = {};
+const SERVER_UADDR = DefaultServerUADDR(); // is 'SVR_01'
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Initialize() is called by brunch-server.js to define the default UNISYS
     network values, so it can embed them in the index.ejs file for webapps
@@ -56,7 +56,7 @@ UNET.InitializeNetwork = options => {
   options.port = options.port || DEFAULT_NET_PORT;
   options.uaddr = options.uaddr || SERVER_UADDR;
   if (mu_wss !== undefined) throw Error(ERR_SS_EXISTS);
-  NetMessage.GlobalSetup({ uaddr: options.uaddr });
+  GlobalSetup({ uaddr: options.uaddr });
   mu_options = options;
   return mu_options;
 }; // end InitializeNetwork()
@@ -223,7 +223,7 @@ function m_StartHeartbeat() {
         });
       }
     });
-  }, DEFS.SERVER_HEARTBEAT_INTERVAL);
+  }, SERVER_HEARTBEAT_INTERVAL);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -246,13 +246,13 @@ function m_ResetPongTimer(uaddr) {
         uaddr,
         'pong not received before time ran out -- CONNECTION DEAD!'
       );
-    LOGGER.Write(
+    Write(
       PR,
       uaddr,
       'pong not received before time ran out -- CLIENT CONNECTION DEAD!'
     );
-    DB.RequestUnlock(uaddr);
-  }, DEFS.SERVER_HEARTBEAT_INTERVAL * 2);
+    RequestUnlock(uaddr);
+  }, SERVER_HEARTBEAT_INTERVAL * 2);
 }
 
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -467,7 +467,7 @@ function m_SocketAdd(socket) {
   // save socket
   mu_sockets.set(sid, socket);
   if (DBG) console.log(PR, `socket ADD ${socket.UADDR} to network`);
-  LOGGER.Write(socket.UADDR, 'joined network');
+  Write(socket.UADDR, 'joined network');
   if (DBG) m_ListSockets(`add ${sid}`);
 }
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -485,7 +485,7 @@ function m_SocketDelete(socket) {
   let uaddr = socket.UADDR;
   if (!mu_sockets.has(uaddr)) throw Error(DBG_SOCK_BADCLOSE);
   if (DBG) console.log(PR, `socket DEL ${uaddr} from network`);
-  LOGGER.Write(socket.UADDR, 'left network');
+  Write(socket.UADDR, 'left network');
   mu_sockets.delete(uaddr);
   // delete socket reference from previously registered handlers
   let rmesgs = m_socket_msgs_list.get(uaddr);
@@ -513,4 +513,4 @@ function m_ListSockets(change) {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UNET;
+export default UNET;

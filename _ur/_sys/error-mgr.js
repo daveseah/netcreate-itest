@@ -6,9 +6,10 @@
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const { ERR_UR } = require('./declare-errors').EXIT_CODES;
-const PROMPTS = require('./prompts');
-const ERROUT = PROMPTS.makeTerminalOut('ERR', 'TagRed');
+import { EXIT_CODES } from './declare-errors';
+const { ERR_UR } = EXIT_CODES;
+import { makeTerminalOut } from './prompts';
+const ERROUT = makeTerminalOut('ERR', 'TagRed');
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -30,13 +31,13 @@ const DIE = (...args) => {
 const NewConsoleError = (label = '_ERR_', tagColor = 'TagRed') => {
   const fn = 'NewConsoleError';
   if (typeof label !== 'string') DIE(fn, `arg must be a string`);
-  const OUT = PROMPTS.makeTerminalOut(label, tagColor);
+  const OUT = makeTerminalOut(label, tagColor);
   return OUT;
 };
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   DIE,
   NewConsoleError
 };

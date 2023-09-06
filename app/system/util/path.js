@@ -44,4 +44,4 @@ PATH.StripExt = function (str) {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = PATH;
+export default PATH;

@@ -6,9 +6,9 @@
 
 import FILTER from './FilterEnums';
 import React from 'react';
-const ReactStrap = require('reactstrap');
+import ReactStrap from 'reactstrap';
 const { Form, FormGroup, Input, Label } = ReactStrap;
-const UNISYS = require('unisys/client');
+import UNISYS from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

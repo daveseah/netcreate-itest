@@ -5,10 +5,9 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-const UNISYS = require('unisys/client');
-const PROMPTS = require('system/util/prompts');
-const PR = PROMPTS.Pad('JSCLI');
+import SETTINGS from 'settings';
+import { NewModule, NewDataLink } from 'unisys/client';
+import { Pad } from 'system/util/prompts';
 
 /// CONSTANTS & DECLARATIONS ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17,8 +16,8 @@ const SHOW_DOM = true;
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let JSCLI = UNISYS.NewModule(module.id);
-let UDATA = UNISYS.NewDataLink(JSCLI);
+let JSCLI = NewModule(module.id);
+let UDATA = NewDataLink(JSCLI);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let CMD = [];
 
@@ -70,4 +69,4 @@ JSCLI.DOM_ShowInstructions = () => {
 
 /// EXPORT MODULE /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = JSCLI;
+export default JSCLI;

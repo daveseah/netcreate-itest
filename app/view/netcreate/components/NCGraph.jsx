@@ -27,13 +27,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactDOM = require('react-dom');
-const ReactStrap = require('reactstrap');
-const { Button } = ReactStrap;
-const NCGraphRenderer = require('./NCGraphRenderer');
-const UNISYS = require('unisys/client');
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import NCGraphRenderer from './NCGraphRenderer';
+import UNISYS from 'unisys/client';
 import RENDERMGR from '../render-mgr';
+const { Button } = ReactStrap;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -318,4 +317,4 @@ class NCGraph extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCGraph;
+export default NCGraph;

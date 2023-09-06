@@ -31,8 +31,8 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UNISYS = require('unisys/client');
+import React from 'react';
+import UNISYS from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -197,4 +197,4 @@ class NCAutoSuggest extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCAutoSuggest;
+export default NCAutoSuggest;

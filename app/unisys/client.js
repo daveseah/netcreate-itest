@@ -23,18 +23,21 @@ const DBG = {
 
 /// CLASSES ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const UniData = require('unisys/client-datalink-class');
-const UniModule = require('unisys/client-module-class');
-const UniComponent = require('unisys/client-react-component');
+import UniData, {
+  ValidateMessageNames,
+  MessageNames
+} from 'unisys/client-datalink-class';
+import UniModule from 'unisys/client-module-class';
+import UniComponent from 'unisys/client-react-component';
 
 /// LIBRARIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const SETTINGS = require('settings');
-const LIFECYCLE = require('unisys/client-lifecycle');
-const STATE = require('unisys/client-state');
-const NETWORK = require('unisys/client-network');
-const PROMPTS = require('system/util/prompts');
-const PR = PROMPTS.Pad('UNISYS');
+import { ForceReloadSingleApp, ForceReloadOnNavigation } from 'settings';
+import { Hook, SetScope, Scope, Execute } from 'unisys/client-lifecycle';
+import STATE from 'unisys/client-state';
+import { IsStandaloneMode, Connect, SocketUADDR } from 'unisys/client-network';
+import { Pad } from 'system/util/prompts';
+const PR = Pad('UNISYS');
 
 /// INITIALIZE MAIN MODULE ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -60,18 +63,18 @@ UNISYS.NewDataLink = (module, optName) => {
 /// UNISYS MESSAGE REGISTRATION ///////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 UNISYS.RegisterMessagesPromise = (messages = []) => {
-  if (NETWORK.IsStandaloneMode()) {
+  if (IsStandaloneMode()) {
     console.warn(PR, 'STANDALONE MODE: RegisterMessagesPromise() suppressed!');
     return Promise.resolve();
   }
   if (messages.length) {
     try {
-      messages = UniData.ValidateMessageNames(messages);
+      messages = ValidateMessageNames(messages);
     } catch (e) {
       console.error(e);
     }
   } else {
-    messages = UniData.MessageNames();
+    messages = MessageNames();
   }
   return new Promise((resolve, reject) => {
     UDATA.Call('SRV_REG_HANDLERS', { messages }).then(data => {
@@ -87,14 +90,14 @@ UNISYS.RegisterMessagesPromise = (messages = []) => {
 UNISYS.Hook = (phase, f) => {
   if (typeof phase !== 'string') throw Error('arg1 is phase as string');
   if (typeof f !== 'function') throw Error('arg2 is function callback');
-  LIFECYCLE.Hook(phase, f, UNISYS.ModuleID()); // pass phase and hook function
+  Hook(phase, f, UNISYS.ModuleID()); // pass phase and hook function
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: System Initialize
  */
 UNISYS.SystemInitialize = module_id => {
   UNISYS.SetScope(module_id);
-  SETTINGS.ForceReloadSingleApp();
+  ForceReloadSingleApp();
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API HELPER: LIFECYCLE Scope() functions
@@ -105,7 +108,7 @@ UNISYS.SystemInitialize = module_id => {
     the unisys and system directories are allowed to run their hooks
  */
 UNISYS.SetScope = root_module_id => {
-  LIFECYCLE.SetScope(root_module_id); // pass phase and hook function
+  SetScope(root_module_id); // pass phase and hook function
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API HELPER: SETTINGS ForceReloadSingleApp
@@ -115,14 +118,14 @@ UNISYS.SetScope = root_module_id => {
  */
 
 UNISYS.ForceReloadOnNavigation = () => {
-  SETTINGS.ForceReloadOnNavigation();
+  ForceReloadOnNavigation();
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API HELPER: return TRUE if passed module.id is within the current set
     scope
  */
 UNISYS.InScope = module_id => {
-  let currentScope = LIFECYCLE.Scope();
+  let currentScope = Scope();
   return module_id.includes(currentScope);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -130,10 +133,10 @@ UNISYS.InScope = module_id => {
  */
 UNISYS.EnterApp = async () => {
   try {
-    await LIFECYCLE.Execute('TEST_CONF'); // TESTCONFIG hook
-    await LIFECYCLE.Execute('INITIALIZE'); // INITIALIZE hook
-    await LIFECYCLE.Execute('LOADASSETS'); // LOADASSETS hook
-    await LIFECYCLE.Execute('CONFIGURE'); // CONFIGURE support modules
+    await Execute('TEST_CONF'); // TESTCONFIG hook
+    await Execute('INITIALIZE'); // INITIALIZE hook
+    await Execute('LOADASSETS'); // LOADASSETS hook
+    await Execute('CONFIGURE'); // CONFIGURE support modules
   } catch (e) {
     console.error(
       'EnterApp() Lifecycle Error. Check phase execution order effect on data validity.\n',
@@ -148,7 +151,7 @@ UNISYS.EnterApp = async () => {
  */
 UNISYS.SetupDOM = async () => {
   try {
-    await LIFECYCLE.Execute('DOM_READY'); // GUI layout has finished composing
+    await Execute('DOM_READY'); // GUI layout has finished composing
   } catch (e) {
     console.error(
       'SetupDOM() Lifecycle Error. Check phase execution order effect on data validity.\n',
@@ -163,7 +166,7 @@ UNISYS.SetupDOM = async () => {
 UNISYS.JoinNet = () => {
   return new Promise((resolve, reject) => {
     try {
-      NETWORK.Connect(UDATA, { success: resolve, failure: reject });
+      Connect(UDATA, { success: resolve, failure: reject });
     } catch (e) {
       console.error(
         'EnterNet() Lifecycle Error. Check phase execution order effect on data validity.\n',
@@ -178,10 +181,10 @@ UNISYS.JoinNet = () => {
  */
 UNISYS.SetupRun = async () => {
   try {
-    await LIFECYCLE.Execute('RESET'); // RESET runtime datastructures
-    await LIFECYCLE.Execute('START'); // START running
-    await LIFECYCLE.Execute('APP_READY'); // tell network APP_READY
-    await LIFECYCLE.Execute('RUN'); // tell network APP_READY
+    await Execute('RESET'); // RESET runtime datastructures
+    await Execute('START'); // START running
+    await Execute('APP_READY'); // tell network APP_READY
+    await Execute('RUN'); // tell network APP_READY
   } catch (e) {
     console.error(
       'SetupRun() Lifecycle Error. Check phase execution order effect on data validity.\n',
@@ -196,7 +199,7 @@ UNISYS.SetupRun = async () => {
 UNISYS.Run = async () => {
   r;
   try {
-    await LIFECYCLE.Execute('UPDATE');
+    await Execute('UPDATE');
   } catch (e) {
     console.error(e);
   }
@@ -206,14 +209,14 @@ UNISYS.Run = async () => {
     NOTE ASYNC ARROW FUNCTION (necessary?)
  */
 UNISYS.BeforePause = async () => {
-  await LIFECYCLE.Execute('PREPAUSE');
+  await Execute('PREPAUSE');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: do the Shutdown lifecycle
     NOTE ASYNC ARROW FUNCTION (necessary?)
  */
 UNISYS.Paused = async () => {
-  await LIFECYCLE.Execute('PAUSE');
+  await Execute('PAUSE');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: do the Shutdown lifecycle
@@ -221,7 +224,7 @@ UNISYS.Paused = async () => {
  */
 
 UNISYS.PostPause = async () => {
-  await LIFECYCLE.Execute('POSTPAUSE');
+  await Execute('POSTPAUSE');
   resolve();
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -229,22 +232,22 @@ UNISYS.PostPause = async () => {
     NOTE ASYNC ARROW FUNCTION (necessary?)
  */
 UNISYS.CleanupRun = async () => {
-  await LIFECYCLE.Execute('STOP');
+  await Execute('STOP');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: application offline
     NOTE ASYNC ARROW FUNCTION (necessary?)
  */
 UNISYS.ServerDisconnect = async () => {
-  await LIFECYCLE.Execute('DISCONNECT');
+  await Execute('DISCONNECT');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: application shutdown
     NOTE ASYNC ARROW FUNCTION (necessary?)
  */
 UNISYS.ExitApp = async () => {
-  await LIFECYCLE.Execute('UNLOADASSETS');
-  await LIFECYCLE.Execute('SHUTDOWN');
+  await Execute('UNLOADASSETS');
+  await Execute('SHUTDOWN');
 };
 
 /// NETWORK INFORMATION ///////////////////////////////////////////////////////
@@ -253,11 +256,11 @@ UNISYS.ExitApp = async () => {
  */
 
 UNISYS.SocketUADDR = () => {
-  return NETWORK.SocketUADDR();
+  return SocketUADDR();
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 UNISYS.IsStandaloneMode = () => {
-  return NETWORK.IsStandaloneMode();
+  return IsStandaloneMode();
 };
 
 /// DATA LOGGING //////////////////////////////////////////////////////////////
@@ -278,4 +281,4 @@ UNISYS.Component = UniComponent;
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UNISYS;
+export default UNISYS;

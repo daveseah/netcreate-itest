@@ -10,12 +10,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
+import { NewModule, NewDataLink } from 'unisys/client';
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,4 +59,4 @@ function m_TableHiliteNode(data) {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

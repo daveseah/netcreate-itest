@@ -93,7 +93,7 @@ const EMITTER = {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   APP_LIFECYCLE,
   UR_EVENTS
 };

@@ -5,7 +5,7 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const PATH = require('system/util/path');
+import { Dirname } from 'system/util/path';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -159,7 +159,7 @@ MOD.SetScope = module_path => {
   if (typeof module_path !== 'string') throw Error(BAD_PATH);
   if (DBG) console.log(`setting lifecycle scope to ${module_path}`);
   // strip out filename, if one exists
-  MOD.scope = PATH.Dirname(module_path);
+  MOD.scope = Dirname(module_path);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: The scope
@@ -174,4 +174,4 @@ MOD.Scope = () => {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

@@ -5,11 +5,12 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const React = require('react');
+import React from 'react';
+import { Component } from 'react';
 
 /// DEFAULT APPLICATION COMPONENT /////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class AppDefault extends React.Component {
+class AppDefault extends Component {
   constructor() {
     super();
   }
@@ -40,4 +41,4 @@ class AppDefault extends React.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = AppDefault;
+export default AppDefault;

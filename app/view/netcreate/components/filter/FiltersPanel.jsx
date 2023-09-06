@@ -18,9 +18,9 @@ import FILTER from './FilterEnums';
 import FilterGroup from './FilterGroup';
 import FocusFilter from './FocusFilter';
 import React from 'react';
-const ReactStrap = require('reactstrap');
+import ReactStrap from 'reactstrap';
+import UNISYS from 'unisys/client';
 const { Button, ButtonGroup, Input, Label, FormGroup } = ReactStrap;
-const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

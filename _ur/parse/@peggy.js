@@ -4,8 +4,8 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const peggy = require('peggy');
-const fs = require('node:fs');
+import { generate } from 'peggy';
+import { readFileSync } from 'node:fs';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -63,7 +63,7 @@ function normalizeForPEG(str) {
  */
 function ProcessGrammar(input) {
   try {
-    grammar = fs.readFileSync(F_GRAMMAR, 'utf8');
+    grammar = readFileSync(F_GRAMMAR, 'utf8');
   } catch (err) {
     console.error('file error', err);
   }
@@ -71,7 +71,7 @@ function ProcessGrammar(input) {
   let table = [];
   let lastLine = 0;
   try {
-    parser = peggy.generate(grammar, { trace: false });
+    parser = generate(grammar, { trace: false });
     out = parser.parse(input, {
       tracer: {
         trace: obj => {
@@ -118,9 +118,9 @@ function ProcessGrammar(input) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function TestDataExchange() {
   LOG('.. reading raw input');
-  data = fs.readFileSync(F_DATA, 'utf8');
+  data = readFileSync(F_DATA, 'utf8');
   LOG('.. normalizing input');
-  data = fs.readFileSync(F_TEST, 'utf8');
+  data = readFileSync(F_TEST, 'utf8');
   let text = normalizeForPEG(data);
   let result = ProcessGrammar(text);
   LOG('.. parsing input');

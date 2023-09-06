@@ -180,4 +180,4 @@ MOD.IsAdmin = () => {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

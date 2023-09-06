@@ -9,8 +9,8 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const LIFECYCLE = require('unisys/client-lifecycle');
-const PATH = require('system/util/path');
+import { Hook as _Hook } from 'unisys/client-lifecycle';
+import { Basename } from 'system/util/path';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -65,7 +65,7 @@ class UnisysModule {
   /** utility method to return a short name
    */
   ModuleName() {
-    return PATH.Basename(this.module_id);
+    return Basename(this.module_id);
   }
 
   /// UTILITIES ///////////////////////////////////////////////////////////////
@@ -86,10 +86,10 @@ class UnisysModule {
   /** wrap Hook function to include the ModuleID
    */
   Hook(phase, f) {
-    LIFECYCLE.Hook(phase, f, this.ModuleID());
+    _Hook(phase, f, this.ModuleID());
   }
 } // end UnisysModule
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UnisysModule;
+export default UnisysModule;

@@ -15,9 +15,9 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UNISYS = require('unisys/client');
-const NCAutoSuggest = require('./NCAutoSuggest');
+import React from 'react';
+import UNISYS from 'unisys/client';
+import NCAutoSuggest from './NCAutoSuggest';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -126,4 +126,4 @@ class NCSearch extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCSearch;
+export default NCSearch;

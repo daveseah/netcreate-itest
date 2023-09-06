@@ -126,7 +126,7 @@ async function ESBuildWebApp() {
   LOG('ur parent process started');
   // const proc_graph = await UR_Fork('graph');
   // const proc_parse = await UR_Fork('parse', { input: proc_graph });
-  // await ESBuildWebApp();
-  await ParcelBuildWebApp();
+  await ESBuildWebApp();
+  // await ParcelBuildWebApp();
   LOG('parent process ended');
 })();

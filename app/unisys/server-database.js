@@ -10,27 +10,38 @@ const DBG = false;
 
 /// LOAD LIBRARIES ////////////////////////////////////////////////////////////
 /// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-const Loki = require('lokijs');
-const PATH = require('path');
-const FS = require('fs-extra');
-const TOML = require('@iarna/toml');
+import Loki from 'lokijs';
+import { dirname } from 'path';
+import {
+  ensureDirSync,
+  existsSync,
+  copySync,
+  readJsonSync,
+  readFile,
+  writeFileSync,
+  outputFile
+} from 'fs-extra';
+import { parse, stringify } from '@iarna/toml';
 
 /// CONSTANTS /////////////////////////////////////////////////////////////////
 /// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-const SESSION = require('./common-session');
-const LOGGER = require('./server-logger');
-const PROMPTS = require('../system/util/prompts');
-const TEMPLATE_SCHEMA = require('../view/netcreate/template-schema');
-const FILTER = require('../view/netcreate/components/filter/FilterEnums');
-const { EDITORTYPE } = require('../system/util/enum');
+import SESSION from './common-session';
+import { Write } from './server-logger';
+import { Pad } from '../system/util/prompts';
+import {
+  TEMPLATE as _TEMPLATE,
+  ParseTemplateSchema
+} from '../view/netcreate/template-schema';
+import FILTER from '../view/netcreate/components/filter/FilterEnums';
+import { EDITORTYPE } from '../system/util/enum';
 
-const PR = PROMPTS.Pad('ServerDB');
+const PR = Pad('ServerDB');
 const RUNTIMEPATH = './runtime/';
 const TEMPLATEPATH = './app-templates/';
 const TEMPLATE_EXT = '.template.toml';
 const BACKUPPATH = 'backups/'; // combined with RUNTIMEPATH, so no leading './'
 const DB_CLONEMASTER = 'blank.loki';
-const NC_CONFIG = require('../../app-config/netcreate-config');
+import { dataset as _dataset } from '../../app-config/netcreate-config';
 
 /// MODULE-WIDE VARS //////////////////////////////////////////////////////////
 /// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -56,14 +67,14 @@ let DB = {};
     Saves the db in the runtime folder with a timestamp suffix.
  */
 function m_BackupDatabase() {
-  FS.ensureDirSync(PATH.dirname(db_file));
-  if (FS.existsSync(db_file)) {
+  ensureDirSync(dirname(db_file));
+  if (existsSync(db_file)) {
     const timestamp = new Date().toISOString().replace(/:/g, '.');
     const backupDBFilePath = m_GetValidDBFilePath(
-      BACKUPPATH + NC_CONFIG.dataset + '_' + timestamp
+      BACKUPPATH + _dataset + '_' + timestamp
     );
     console.log(PR, 'Saving database backup to', backupDBFilePath);
-    FS.copySync(db_file, backupDBFilePath);
+    copySync(db_file, backupDBFilePath);
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -76,10 +87,10 @@ function m_DefaultTemplatePath() {
 /** API: Initialize the database
  */
 DB.InitializeDatabase = function (options = {}) {
-  let dataset = NC_CONFIG.dataset;
+  let dataset = _dataset;
   db_file = m_GetValidDBFilePath(dataset);
-  FS.ensureDirSync(PATH.dirname(db_file));
-  if (!FS.existsSync(db_file)) {
+  ensureDirSync(dirname(db_file));
+  if (!existsSync(db_file)) {
     console.log(PR, `NO EXISTING DATABASE ${db_file}, so creating BLANK DATABASE...`);
   }
   console.log(PR, `LOADING DATABASE ${db_file}`);
@@ -136,7 +147,7 @@ DB.InitializeDatabase = function (options = {}) {
     // remap duplicate NODE IDs
     dupeNodes.forEach(obj => {
       m_max_nodeID += 1;
-      LOGGER.Write(PR, `# rewriting duplicate nodeID ${obj.id} to ${m_max_nodeID}`);
+      Write(PR, `# rewriting duplicate nodeID ${obj.id} to ${m_max_nodeID}`);
       obj.id = m_max_nodeID;
     });
 
@@ -181,7 +192,7 @@ DB.InitializeDatabase = function (options = {}) {
 function m_MigrateJSONtoTOML(JSONtemplate) {
   console.log(PR, 'Converting JSON to TOML...');
   const jt = JSONtemplate;
-  const SCHEMA = TEMPLATE_SCHEMA.TEMPLATE.properties;
+  const SCHEMA = _TEMPLATE.properties;
   const TOMLtemplate = {
     name: jt.name,
     description: jt.description,
@@ -337,7 +348,7 @@ function m_LoadJSONTemplate(templatePath) {
   return new Promise((resolve, reject) => {
     // 1. Load JSON
     console.log(PR, `LOADING JSON TEMPLATE ${templatePath}`);
-    const JSONTEMPLATE = FS.readJsonSync(templatePath);
+    const JSONTEMPLATE = readJsonSync(templatePath);
     // 2. Convert to TOML
     TEMPLATE = m_MigrateJSONtoTOML(JSONTEMPLATE);
     // 3. Save it (and load)
@@ -352,12 +363,12 @@ function m_LoadJSONTemplate(templatePath) {
  */
 function m_LoadTOMLTemplate(templateFilePath) {
   return new Promise((resolve, reject) => {
-    const templateFile = FS.readFile(templateFilePath, 'utf8', (err, data) => {
+    const templateFile = readFile(templateFilePath, 'utf8', (err, data) => {
       if (err) throw err;
       // Read TOML
-      const json = TOML.parse(data);
+      const json = parse(data);
       // Ensure key fields are present, else default to schema
-      const SCHEMA = TEMPLATE_SCHEMA.TEMPLATE.properties;
+      const SCHEMA = _TEMPLATE.properties;
       json.duplicateWarning =
         json.duplicateWarning || SCHEMA.duplicateWarning.default;
       json.nodeIsLockedMessage =
@@ -374,7 +385,7 @@ function m_LoadTOMLTemplate(templateFilePath) {
       // hides them by default if they were not previously added
       // HACK: There is related migration code in m_MigrateTemplate() that needs to be merged...if possible
 
-      const DEFAULT_TEMPLATE = TEMPLATE_SCHEMA.ParseTemplateSchema();
+      const DEFAULT_TEMPLATE = ParseTemplateSchema();
       const NODEDEFS = DEFAULT_TEMPLATE.nodeDefs;
       if (json.nodeDefs.provenance === undefined) {
         json.nodeDefs.provenance = NODEDEFS.provenance;
@@ -417,16 +428,16 @@ function m_LoadTOMLTemplate(templateFilePath) {
  */
 async function m_LoadTemplate() {
   const TOMLtemplateFilePath = m_GetTemplateTOMLFilePath();
-  FS.ensureDirSync(PATH.dirname(TOMLtemplateFilePath));
+  ensureDirSync(dirname(TOMLtemplateFilePath));
   // Does the TOML template exist?
-  if (FS.existsSync(TOMLtemplateFilePath)) {
+  if (existsSync(TOMLtemplateFilePath)) {
     // 1. If TOML exists, load it
     await m_LoadTOMLTemplate(TOMLtemplateFilePath);
   } else {
     // 2/ Try falling back to JSON template
-    const JSONTemplatePath = RUNTIMEPATH + NC_CONFIG.dataset + '.template';
+    const JSONTemplatePath = RUNTIMEPATH + _dataset + '.template';
     // Does the JSON template exist?
-    if (FS.existsSync(JSONTemplatePath)) {
+    if (existsSync(JSONTemplatePath)) {
       await m_LoadJSONTemplate(JSONTemplatePath);
     } else {
       // 3. Else, no existing template, clone _default.template.toml
@@ -434,7 +445,7 @@ async function m_LoadTemplate() {
         PR,
         `NO EXISTING TEMPLATE ${TOMLtemplateFilePath}, so cloning default template...`
       );
-      FS.copySync(m_DefaultTemplatePath(), TOMLtemplateFilePath);
+      copySync(m_DefaultTemplatePath(), TOMLtemplateFilePath);
       // then load it
       await m_LoadTOMLTemplate(TOMLtemplateFilePath);
     }
@@ -454,38 +465,33 @@ async function m_LoadTemplate() {
 function m_MigrateTemplate() {
   // 2023-0628 BASE Defaults -- these should have been previously defined
   if (TEMPLATE.searchColor === undefined)
-    TEMPLATE.searchColor = TEMPLATE_SCHEMA.TEMPLATE.properties.searchColor.default;
+    TEMPLATE.searchColor = _TEMPLATE.properties.searchColor.default;
   if (TEMPLATE.sourceColor === undefined)
-    TEMPLATE.sourceColor = TEMPLATE_SCHEMA.TEMPLATE.properties.sourceColor.default;
+    TEMPLATE.sourceColor = _TEMPLATE.properties.sourceColor.default;
   // 2023-0602 Filter Labels
   // See branch `dev-bl/template-filter-labels`, and fb28fa68ee42deffc778c1be013acea7dae85258
   if (TEMPLATE.filterFade === undefined)
-    TEMPLATE.filterFade = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFade.default;
+    TEMPLATE.filterFade = _TEMPLATE.properties.filterFade.default;
   if (TEMPLATE.filterReduce === undefined)
-    TEMPLATE.filterReduce = TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduce.default;
+    TEMPLATE.filterReduce = _TEMPLATE.properties.filterReduce.default;
   if (TEMPLATE.filterFocus === undefined)
-    TEMPLATE.filterFocus = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocus.default;
+    TEMPLATE.filterFocus = _TEMPLATE.properties.filterFocus.default;
   if (TEMPLATE.filterFadeHelp === undefined)
-    TEMPLATE.filterFadeHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFadeHelp.default;
+    TEMPLATE.filterFadeHelp = _TEMPLATE.properties.filterFadeHelp.default;
   if (TEMPLATE.filterReduceHelp === undefined)
-    TEMPLATE.filterReduceHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduceHelp.default;
+    TEMPLATE.filterReduceHelp = _TEMPLATE.properties.filterReduceHelp.default;
   if (TEMPLATE.filterFocusHelp === undefined)
-    TEMPLATE.filterFocusHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocusHelp.default;
+    TEMPLATE.filterFocusHelp = _TEMPLATE.properties.filterFocusHelp.default;
   // 2023-0605 Max Sizes
   // See branch `dev-bl/max-size
   if (TEMPLATE.nodeSizeDefault === undefined)
-    TEMPLATE.nodeSizeDefault =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeDefault.default;
+    TEMPLATE.nodeSizeDefault = _TEMPLATE.properties.nodeSizeDefault.default;
   if (TEMPLATE.nodeSizeMax === undefined)
-    TEMPLATE.nodeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeMax.default;
+    TEMPLATE.nodeSizeMax = _TEMPLATE.properties.nodeSizeMax.default;
   if (TEMPLATE.edgeSizeDefault === undefined)
-    TEMPLATE.edgeSizeDefault =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeDefault.default;
+    TEMPLATE.edgeSizeDefault = _TEMPLATE.properties.edgeSizeDefault.default;
   if (TEMPLATE.edgeSizeMax === undefined)
-    TEMPLATE.edgeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeMax.default;
+    TEMPLATE.edgeSizeMax = _TEMPLATE.properties.edgeSizeMax.default;
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -574,7 +580,7 @@ DB.PKT_GetDatabase = function (pkt) {
     );
   m_MigrateNodes(nodes);
   m_MigrateEdges(edges);
-  LOGGER.Write(pkt.Info(), `getdatabase`);
+  Write(pkt.Info(), `getdatabase`);
   return { d3data: { nodes, edges }, template: TEMPLATE };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -594,7 +600,7 @@ DB.PKT_SetDatabase = function (pkt) {
   console.log(PR, `PKT_SetDatabase complete. Data available on next get.`);
   m_db.close();
   DB.InitializeDatabase();
-  LOGGER.Write(pkt.Info(), `setdatabase`);
+  Write(pkt.Info(), `setdatabase`);
   return { OK: true };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -612,7 +618,7 @@ DB.PKT_InsertDatabase = function (pkt) {
   console.log(PR, `PKT_InsertDatabase complete. Data available on next get.`);
   m_db.close();
   DB.InitializeDatabase();
-  LOGGER.Write(pkt.Info(), `setdatabase`);
+  Write(pkt.Info(), `setdatabase`);
   return { OK: true };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -647,7 +653,7 @@ DB.PKT_MergeDatabase = function (pkt) {
     m_db.saveDatabase(err => {
       if (err) reject(new Error('rejected'));
       DB.InitializeDatabase();
-      LOGGER.Write(pkt.Info(), `mergedatabase`);
+      Write(pkt.Info(), `mergedatabase`);
       resolve({ OK: true });
     })
   );
@@ -667,7 +673,7 @@ DB.PKT_UpdateDatabase = function (pkt) {
   EDGES.update(edges);
   console.log(PR, `PKT_UpdateDatabase complete. Disk db file updated.`);
   m_db.saveDatabase();
-  LOGGER.Write(pkt.Info(), `updatedatabase`);
+  Write(pkt.Info(), `updatedatabase`);
   return { OK: true };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -904,7 +910,7 @@ DB.PKT_Update = function (pkt) {
         node.id = m_GetNewNodeID();
       }
 
-      LOGGER.Write(pkt.Info(), `insert node`, node.id, JSON.stringify(node));
+      Write(pkt.Info(), `insert node`, node.id, JSON.stringify(node));
       DB.AppendNodeLog(node, pkt); // log GroupId to node stored in database
       NODES.insert(node);
       // Return the updated record -- needed to update metadata
@@ -927,7 +933,7 @@ DB.PKT_Update = function (pkt) {
               node
             )}`
           );
-        LOGGER.Write(pkt.Info(), `update node`, node.id, JSON.stringify(node));
+        Write(pkt.Info(), `update node`, node.id, JSON.stringify(node));
         DB.AppendNodeLog(n, pkt); // log GroupId to node stored in database
         Object.assign(n, node);
       });
@@ -944,7 +950,7 @@ DB.PKT_Update = function (pkt) {
     } else {
       if (DBG)
         console.log(PR, `WARNING: multiple nodeID ${node.id} x${matches.length}`);
-      LOGGER.Write(pkt.Info(), `ERROR`, node.id, 'duplicate node id');
+      Write(pkt.Info(), `ERROR`, node.id, 'duplicate node id');
       retval = { op: 'error-multinodeid' };
     }
     // Always update m_max_nodeID
@@ -970,7 +976,7 @@ DB.PKT_Update = function (pkt) {
         edge.id = m_GetNewEdgeID();
       }
 
-      LOGGER.Write(pkt.Info(), `insert edge`, edge.id, JSON.stringify(edge));
+      Write(pkt.Info(), `insert edge`, edge.id, JSON.stringify(edge));
       DB.AppendEdgeLog(edge, pkt); // log GroupId to edge stored in database
       EDGES.insert(edge);
       // Return the updated record -- needed to update metadata
@@ -993,7 +999,7 @@ DB.PKT_Update = function (pkt) {
               edge.id
             } ${JSON.stringify(edge)}`
           );
-        LOGGER.Write(pkt.Info(), `update edge`, edge.id, JSON.stringify(edge));
+        Write(pkt.Info(), `update edge`, edge.id, JSON.stringify(edge));
         DB.AppendEdgeLog(e, pkt); // log GroupId to edge stored in database
         Object.assign(e, edge);
       });
@@ -1009,7 +1015,7 @@ DB.PKT_Update = function (pkt) {
       retval = { op: 'update', edge: updatedEdge };
     } else {
       console.log(PR, `WARNING: multiple edgeID ${edge.id} x${matches.length}`);
-      LOGGER.Write(pkt.Info(), `ERROR`, node.id, 'duplicate edge id');
+      Write(pkt.Info(), `ERROR`, node.id, 'duplicate edge id');
       retval = { op: 'error-multiedgeid' };
     }
     // Always update m_max_edgeID
@@ -1022,7 +1028,7 @@ DB.PKT_Update = function (pkt) {
     nodeID = m_CleanID(`${pkt.Info()} nodeID`, nodeID);
     if (DBG) console.log(PR, `PKT_Update ${pkt.Info()} DELETE nodeID ${nodeID}`);
     // Log first so it's apparent what is triggering the edge changes
-    LOGGER.Write(pkt.Info(), `delete node`, nodeID);
+    Write(pkt.Info(), `delete node`, nodeID);
 
     // handle edges
     let edgesToProcess = EDGES.where(e => {
@@ -1037,11 +1043,11 @@ DB.PKT_Update = function (pkt) {
     if (replacementNodeID !== -1) {
       // re-link edges to replacementNodeID...
       EDGES.findAndUpdate({ source: nodeID }, e => {
-        LOGGER.Write(pkt.Info(), `relinking edge`, e.id, `to`, replacementNodeID);
+        Write(pkt.Info(), `relinking edge`, e.id, `to`, replacementNodeID);
         e.source = replacementNodeID;
       });
       EDGES.findAndUpdate({ target: nodeID }, e => {
-        LOGGER.Write(pkt.Info(), `relinking edge`, e.id, `to`, replacementNodeID);
+        Write(pkt.Info(), `relinking edge`, e.id, `to`, replacementNodeID);
         e.target = replacementNodeID;
       });
     } else {
@@ -1049,14 +1055,14 @@ DB.PKT_Update = function (pkt) {
       let sourceEdges = EDGES.find({ source: nodeID });
       EDGES.findAndRemove({ source: nodeID });
       if (sourceEdges.length)
-        LOGGER.Write(
+        Write(
           pkt.Info(),
           `deleting ${sourceEdges.length} sources matching ${nodeID}`
         );
       let targetEdges = EDGES.find({ target: nodeID });
       EDGES.findAndRemove({ target: nodeID });
       if (targetEdges.length)
-        LOGGER.Write(
+        Write(
           pkt.Info(),
           `deleting ${targetEdges.length} targets matching ${nodeID}`
         );
@@ -1070,7 +1076,7 @@ DB.PKT_Update = function (pkt) {
   if (edgeID !== undefined) {
     edgeID = m_CleanID(`${pkt.Info()} edgeID`, edgeID);
     if (DBG) console.log(PR, `PKT_Update ${pkt.Info()} DELETE edgeID ${edgeID}`);
-    LOGGER.Write(pkt.Info(), `delete edge`, edgeID);
+    Write(pkt.Info(), `delete edge`, edgeID);
     EDGES.findAndRemove({ id: edgeID });
     return { op: 'delete', edgeID };
   }
@@ -1130,7 +1136,7 @@ DB.FilterEdgeLog = function (edge) {
     creates the path if it doesn't exist
  */
 DB.WriteDbJSON = function (filePath) {
-  let dataset = NC_CONFIG.dataset;
+  let dataset = _dataset;
 
   // Ideally we should use m_otions value, but in standlone mode,
   // m_options might not be defined.
@@ -1144,10 +1150,10 @@ DB.WriteDbJSON = function (filePath) {
         let edges = db.getCollection('edges').chain().data({ removeMeta: false });
         let data = { nodes, edges };
         let json = JSON.stringify(data);
-        if (DBG) console.log(PR, `ensuring DIR ${PATH.dirname(filePath)}`);
-        FS.ensureDirSync(PATH.dirname(filePath));
+        if (DBG) console.log(PR, `ensuring DIR ${dirname(filePath)}`);
+        ensureDirSync(dirname(filePath));
         if (DBG) console.log(PR, `writing file ${filePath}`);
-        FS.writeFileSync(filePath, json);
+        writeFileSync(filePath, json);
         console.log(PR, `*** WROTE JSON DATABASE ${filePath}`);
       } else {
         console.log(PR, `ERR path ${filePath} must be a pathname`);
@@ -1161,13 +1167,13 @@ DB.WriteDbJSON = function (filePath) {
     creates the path if it doesn't exist
  */
 DB.WriteTemplateJSON = function (filePath) {
-  let templatePath = RUNTIMEPATH + NC_CONFIG.dataset + '.template';
-  FS.ensureDirSync(PATH.dirname(templatePath));
+  let templatePath = RUNTIMEPATH + _dataset + '.template';
+  ensureDirSync(dirname(templatePath));
   // Does the template exist?
-  if (!FS.existsSync(templatePath)) {
+  if (!existsSync(templatePath)) {
     console.error(PR, `ERR could not find template ${templatePath}`);
   } else {
-    FS.copySync(templatePath, filePath);
+    copySync(templatePath, filePath);
     console.log(PR, `*** COPIED TEMPLATE ${templatePath} to ${filePath}`);
   }
 };
@@ -1176,7 +1182,7 @@ DB.WriteTemplateJSON = function (filePath) {
 /** called by Template Editor and DB.WriteTemplateTOML
  */
 function m_GetTemplateTOMLFileName() {
-  return NC_CONFIG.dataset + TEMPLATE_EXT;
+  return _dataset + TEMPLATE_EXT;
 }
 function m_GetTemplateTOMLFilePath() {
   return RUNTIMEPATH + m_GetTemplateTOMLFileName();
@@ -1196,17 +1202,16 @@ DB.WriteTemplateTOML = pkt => {
   if (pkt.data === undefined)
     throw 'DB.WriteTemplateTOML pkt received with no `data`';
   const templateFilePath = pkt.data.path || m_GetTemplateTOMLFilePath();
-  FS.ensureDirSync(PATH.dirname(templateFilePath));
+  ensureDirSync(dirname(templateFilePath));
   // Does the template exist?  If so, rename the old version with curren timestamp.
-  if (FS.existsSync(templateFilePath)) {
+  if (existsSync(templateFilePath)) {
     const timestamp = new Date().toISOString().replace(/:/g, '.');
-    const backupFilePath =
-      RUNTIMEPATH + NC_CONFIG.dataset + '_' + timestamp + TEMPLATE_EXT;
-    FS.copySync(templateFilePath, backupFilePath);
+    const backupFilePath = RUNTIMEPATH + _dataset + '_' + timestamp + TEMPLATE_EXT;
+    copySync(templateFilePath, backupFilePath);
     console.log(PR, 'Backed up template to', backupFilePath);
   }
-  const toml = TOML.stringify(pkt.data.template);
-  return FS.outputFile(templateFilePath, toml)
+  const toml = stringify(pkt.data.template);
+  return outputFile(templateFilePath, toml)
     .then(data => {
       console.log(PR, 'Saved template to', templateFilePath);
       // reload template
@@ -1226,12 +1231,12 @@ DB.WriteTemplateTOML = pkt => {
  */
 DB.CloneTemplateTOML = function (filePath) {
   const TOMLtemplateFilePath = m_GetTemplateTOMLFilePath();
-  FS.ensureDirSync(PATH.dirname(TOMLtemplateFilePath));
+  ensureDirSync(dirname(TOMLtemplateFilePath));
   // Does the template exist?
-  if (!FS.existsSync(TOMLtemplateFilePath)) {
+  if (!existsSync(TOMLtemplateFilePath)) {
     console.error(PR, `ERR could not find template ${TOMLtemplateFilePath}`);
   } else {
-    FS.copySync(TOMLtemplateFilePath, filePath);
+    copySync(TOMLtemplateFilePath, filePath);
     console.log(PR, `*** COPIED TEMPLATE ${TOMLtemplateFilePath} to ${filePath}`);
   }
 };
@@ -1244,11 +1249,11 @@ DB.CloneTemplateTOML = function (filePath) {
 DB.RegenerateDefaultTemplate = () => {
   const pkt = {
     data: {
-      template: TEMPLATE_SCHEMA.ParseTemplateSchema(),
+      template: ParseTemplateSchema(),
       path: m_DefaultTemplatePath()
     }
   };
-  const toml = TOML.stringify(pkt.data.template);
+  const toml = stringify(pkt.data.template);
   return DB.WriteTemplateTOML(pkt);
 };
 
@@ -1397,7 +1402,7 @@ function m_MigrateEdges(edges) {
 function m_CleanObjID(prompt, obj) {
   if (typeof obj.id === 'string') {
     let int = parseInt(obj.id, 10);
-    LOGGER.Write(PR, `! ${prompt} "${obj.id}" is string; converting to ${int}`);
+    Write(PR, `! ${prompt} "${obj.id}" is string; converting to ${int}`);
     obj.id = int;
   }
   return obj;
@@ -1405,7 +1410,7 @@ function m_CleanObjID(prompt, obj) {
 function m_CleanEdgeEndpoints(prompt, edge) {
   if (typeof edge.source === 'string') {
     let int = parseInt(edge.source, 10);
-    LOGGER.Write(
+    Write(
       PR,
       `  edge ${prompt} source "${edge.source}" is string; converting to ${int}`
     );
@@ -1413,7 +1418,7 @@ function m_CleanEdgeEndpoints(prompt, edge) {
   }
   if (typeof edge.target === 'string') {
     let int = parseInt(edge.target, 10);
-    LOGGER.Write(
+    Write(
       PR,
       `  edge ${prompt} target "${edge.target}" is string; converting to ${int}`
     );
@@ -1424,7 +1429,7 @@ function m_CleanEdgeEndpoints(prompt, edge) {
 function m_CleanID(prompt, id) {
   if (typeof id === 'string') {
     let int = parseInt(id, 10);
-    LOGGER.Write(PR, `! ${prompt} "${id}" is string; converting to number ${int}`);
+    Write(PR, `! ${prompt} "${id}" is string; converting to number ${int}`);
     id = int;
   }
   return id;
@@ -1446,4 +1451,4 @@ function m_GetValidDBFilePath(dataset) {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-module.exports = DB;
+export default DB;

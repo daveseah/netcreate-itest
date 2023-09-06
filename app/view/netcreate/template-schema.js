@@ -33,12 +33,13 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const clone = require('rfdc')();
+import rfdc from 'rfdc';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
 const PR = 'template-schema';
+const CLONE = rfdc();
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1260,7 +1261,7 @@ MOD.TEMPLATE = {
  *  Used by the "Edit Node Types" and "Edit Edge Types" buttons.
 /*/
 MOD.GetTypeEditorSchema = schemaTypeOptions => {
-  const typeOptions = clone(schemaTypeOptions);
+  const typeOptions = CLONE(schemaTypeOptions);
   try {
     typeOptions.options.disable_array_delete = true;
     typeOptions.items.properties.label.options = {
@@ -1362,4 +1363,4 @@ MOD.ParseTemplateSchema();
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

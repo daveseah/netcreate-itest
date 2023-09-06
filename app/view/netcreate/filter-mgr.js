@@ -75,16 +75,16 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 import FILTER from './components/filter/FilterEnums';
-const UNISYS = require('unisys/client');
+import { NewModule, NewDataLink } from 'unisys/client';
 const clone = require('rfdc')();
-const UTILS = require('./nc-utils');
-const PROMPTS = require('system/util/prompts');
-const NCLOGIC = require('./nc-logic');
+import { RecalculateAllEdgeSizes, RecalculateAllNodeDegrees } from './nc-utils';
+import PROMPTS from 'system/util/prompts';
+import { EscapeRegexChars } from './nc-logic';
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -334,8 +334,8 @@ function m_FiltersApply() {
   //
   // Recalculate sizes
   // ALWAYS recalculate, e.g. if switching from Collapse to Highlight or clearing data
-  UTILS.RecalculateAllEdgeSizes(FILTEREDNCDATA);
-  UTILS.RecalculateAllNodeDegrees(FILTEREDNCDATA);
+  RecalculateAllEdgeSizes(FILTEREDNCDATA);
+  RecalculateAllNodeDegrees(FILTEREDNCDATA);
 
   // Update FILTEREDNCDATA
   UDATA.SetAppState('FILTEREDNCDATA', FILTEREDNCDATA);
@@ -397,7 +397,7 @@ function m_OperatorToString(operator) {
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_MatchString(pin, haystack, contains = true) {
-  pin = NCLOGIC.EscapeRegexChars(pin.trim());
+  pin = EscapeRegexChars(pin.trim());
   const regex = new RegExp(/*'^'+*/ pin, 'i');
   let matches;
   if (pin === '') {
@@ -782,4 +782,4 @@ function m_SetFocus(data) {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

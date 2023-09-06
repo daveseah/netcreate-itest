@@ -10,7 +10,7 @@ import NumberFilter from './NumberFilter';
 import React from 'react';
 import SelectFilter from './SelectFilter';
 import StringFilter from './StringFilter';
-const ReactStrap = require('reactstrap');
+import ReactStrap from 'reactstrap';
 const { Input, Label } = ReactStrap;
 
 /// METHODS ///////////////////////////////////////////////////////////////////

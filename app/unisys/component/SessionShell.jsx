@@ -50,12 +50,11 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-const React = require('react');
-const PROMPTS = require('system/util/prompts');
-const SESSION = require('unisys/common-session');
-const PR = PROMPTS.Pad('SessionShell');
-const ReactStrap = require('reactstrap');
+import { GetRouteInfoFromURL } from 'settings';
+import React from 'react';
+import { Pad } from 'system/util/prompts';
+import { DecodeToken } from 'unisys/common-session';
+import ReactStrap from 'reactstrap';
 const {
   InputGroup,
   InputGroupAddon,
@@ -68,10 +67,11 @@ const {
   Input,
   Label
 } = ReactStrap;
-const UNISYS = require('unisys/client');
+import { Component, IsStandaloneMode } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const PR = Pad('SessionShell');
 const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// these styles are copied from AutoComplete.css
@@ -107,7 +107,7 @@ const NAV_LOGIN_FEEDBACK_STYLE = {
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class SessionShell extends UNISYS.Component {
+class SessionShell extends Component {
   constructor() {
     super();
     this.renderLogin = this.renderLogin.bind(this);
@@ -310,9 +310,9 @@ class SessionShell extends UNISYS.Component {
     // do not result in a second componentWillMount call.  These are handled
     // by the componentDidUpdate() call.
 
-    const { routeProps } = SETTINGS.GetRouteInfoFromURL();
+    const { routeProps } = GetRouteInfoFromURL();
     let { token } = routeProps;
-    let decoded = SESSION.DecodeToken(token, window.NC_CONFIG.dataset) || {};
+    let decoded = DecodeToken(token, window.NC_CONFIG.dataset) || {};
     this.SetAppState('SESSION', decoded);
     this.previousIsValid = decoded.isValid;
   }
@@ -321,11 +321,11 @@ class SessionShell extends UNISYS.Component {
     // SIDE EFFECT
     // Check for changes in logged in status and
     // trigger AppStateChange if necessary
-    const { routeProps } = SETTINGS.GetRouteInfoFromURL();
+    const { routeProps } = GetRouteInfoFromURL();
     let { token } = routeProps;
 
     if (!token) return; // don't bother to check if this was a result of changes from the form
-    let decoded = SESSION.DecodeToken(token, window.NC_CONFIG.dataset);
+    let decoded = DecodeToken(token, window.NC_CONFIG.dataset);
     if (decoded.isValid !== this.previousIsValid) {
       this.SetAppState('SESSION', decoded);
       this.previousIsValid = decoded.isValid;
@@ -336,7 +336,7 @@ class SessionShell extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   handleChange(event) {
     let token = event.target.value;
-    let decoded = SESSION.DecodeToken(token, window.NC_CONFIG.dataset);
+    let decoded = DecodeToken(token, window.NC_CONFIG.dataset);
     let { classId, projId, hashedId, subId, groupId } = decoded;
     this.setState(decoded);
   }
@@ -360,7 +360,7 @@ class SessionShell extends UNISYS.Component {
     // way back in init-appshell.jsx
 
     // if standalone mode, no login possible
-    if (UNISYS.IsStandaloneMode()) {
+    if (IsStandaloneMode()) {
       const { prompt, timestamp } = window.NC_UNISYS.standalone;
       return (
         <div style={NAV_LOGIN_STYLE}>
@@ -373,13 +373,13 @@ class SessionShell extends UNISYS.Component {
       );
     }
 
-    const { routeProps } = SETTINGS.GetRouteInfoFromURL();
+    const { routeProps } = GetRouteInfoFromURL();
     let { token } = routeProps;
     // no token so just render login
     if (!token) return this.renderLogin();
 
     // try to decode token
-    let decoded = SESSION.DecodeToken(token, window.NC_CONFIG.dataset);
+    let decoded = DecodeToken(token, window.NC_CONFIG.dataset);
     if (decoded.isValid) {
       return this.renderLoggedIn(decoded);
     } else {
@@ -390,4 +390,4 @@ class SessionShell extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = SessionShell;
+export default SessionShell;

@@ -9,19 +9,19 @@
 
 /// REACT LIBRARIES ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const React = require('react');
-const { Collapse } = require('reactstrap');
-const { Navbar, NavbarToggler } = require('reactstrap');
-const { NavbarBrand, Nav, NavItem, NavLink } = require('reactstrap');
-const { UncontrolledDropdown, DropdownToggle } = require('reactstrap');
-const { DropdownMenu, DropdownItem } = require('reactstrap');
+import React from 'react';
+import { Collapse } from 'reactstrap';
+import { Navbar, NavbarToggler } from 'reactstrap';
+import { NavbarBrand, Nav, NavItem, NavLink } from 'reactstrap';
+import { UncontrolledDropdown, DropdownToggle } from 'reactstrap';
+import { DropdownMenu, DropdownItem } from 'reactstrap';
 //
-const UNISYS = require('unisys/client');
+import { Component } from 'unisys/client';
 
 /// 1. MAIN VIEWS /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const SETTINGS = require('settings');
-const NetCreate = require('view/netcreate/NetCreate');
+import { GetRouteInfoFromURL, IsLocalHost } from 'settings';
+import NetCreate from 'view/netcreate/NetCreate';
 // const AppDefault = require('view/default/AppDefault');
 // const HTMLFrame = require('view/html-frame/HTMLFrame');
 
@@ -30,7 +30,7 @@ const NetCreate = require('view/netcreate/NetCreate');
 /** The application shell consists of a navbar implemented with Reactstrap
  *  components.
  */
-class AppShell extends UNISYS.Component {
+class AppShell extends Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   constructor(props) {
     super(props);
@@ -58,8 +58,8 @@ class AppShell extends UNISYS.Component {
   /** Draw top navbar w/ menus and the <NetCreate> view
    */
   render(props) {
-    const { route, routeProps } = SETTINGS.GetRouteInfoFromURL(window.location.href);
-    const isLocalHost = SETTINGS.IsLocalHost();
+    const { route, routeProps } = GetRouteInfoFromURL(window.location.href);
+    const isLocalHost = IsLocalHost();
     return (
       <div
         style={{
@@ -126,4 +126,4 @@ class AppShell extends UNISYS.Component {
 
 /// EXPORT REACT CLASS ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = AppShell;
+export default AppShell;

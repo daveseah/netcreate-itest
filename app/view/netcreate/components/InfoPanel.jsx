@@ -14,14 +14,14 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import UNISYS from 'unisys/client';
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import classnames from 'classnames';
+import NodeTable from './NodeTable';
+import EdgeTable from './EdgeTable';
+import More from './More';
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
-const classnames = require('classnames');
-const NodeTable = require('./NodeTable');
-const EdgeTable = require('./EdgeTable');
-const More = require('./More');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -316,4 +316,4 @@ class InfoPanel extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = InfoPanel;
+export default InfoPanel;

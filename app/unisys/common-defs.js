@@ -11,4 +11,4 @@ DEFS.SERVER_HEARTBEAT_INTERVAL = 5000; // ms
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = DEFS;
+export default DEFS;

@@ -22,12 +22,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UNISYS = require('unisys/client');
-const { EDITORTYPE, BUILTIN_FIELDS_EDGE } = require('system/util/enum');
-const NCUI = require('../nc-ui');
-const NCAutoSuggest = require('./NCAutoSuggest');
-const NCDialog = require('./NCDialog');
+import React from 'react';
+import UNISYS from 'unisys/client';
+import NCUI from '../nc-ui';
+import NCAutoSuggest from './NCAutoSuggest';
+import NCDialog from './NCDialog';
+import { EDITORTYPE, BUILTIN_FIELDS_EDGE } from 'system/util/enum';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1011,4 +1011,4 @@ class NCEdge extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCEdge;
+export default NCEdge;

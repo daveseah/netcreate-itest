@@ -115,22 +115,20 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-import { mdReact } from 'markdown-react-js';
-const mdplugins = {
-  emoji: require('markdown-it-emoji')
-};
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import mdReact from 'markdown-react-js';
+import emoji from 'markdown-it-emoji';
+import React from 'react';
+import ReactStrap from 'reactstrap';
 const { Button, Col, Form, FormGroup, FormFeedback, FormText, Label, Input } =
   ReactStrap;
-const AutoComplete = require('./AutoComplete');
-const NodeDetail = require('./NodeDetail');
-const EdgeEditor = require('./EdgeEditor');
+import AutoComplete from './AutoComplete';
+import NodeDetail from './NodeDetail';
+import EdgeEditor from './EdgeEditor';
 
-const UNISYS = require('unisys/client');
-const DATASTORE = require('system/datastore');
-const SETTINGS = require('settings');
-const { EDITORTYPE } = require('system/util/enum');
+import UNISYS from 'unisys/client';
+import { PromiseNewNodeID, PromiseNewEdgeID } from 'system/datastore';
+import { IsAdmin } from 'settings';
+import { EDITORTYPE } from 'system/util/enum';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -138,7 +136,7 @@ const DBG = false;
 const PR = 'NodeSelector';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const thisIdentifier = 'nodeSelector'; // SELECTION identifier
-const isAdmin = SETTINGS.IsAdmin();
+const isAdmin = IsAdmin();
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var UDATA = null;
 
@@ -807,7 +805,7 @@ class NodeSelector extends UNISYS.Component {
 
     // HACK: call server to retrieve an unused node ID
     // FIXME: this kind of data manipulation should not be in a GUI component
-    DATASTORE.PromiseNewNodeID().then(newNodeID => {
+    PromiseNewNodeID().then(newNodeID => {
       this.setState({
         formData: {
           label: label,
@@ -967,7 +965,7 @@ class NodeSelector extends UNISYS.Component {
 
     // HACK: call server to retrieve an unused edge ID
     // FIXME: this kind of data manipulation should not be in a GUI component
-    DATASTORE.PromiseNewEdgeID().then(newEdgeID => {
+    PromiseNewEdgeID().then(newEdgeID => {
       // Add it to local state for now
       let edge = {
         id: newEdgeID,
@@ -1455,7 +1453,7 @@ class NodeSelector extends UNISYS.Component {
       return mdReact({
         onIterate: this.markdownIterate,
         markdownOptions: { typographer: true, linkify: true },
-        plugins: [mdplugins.emoji]
+        plugins: [emoji]
       })(text);
   }
 
@@ -1533,4 +1531,4 @@ class NodeSelector extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NodeSelector;
+export default NodeSelector;

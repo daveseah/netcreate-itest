@@ -4,7 +4,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const REFLECT = require('./reflection');
+import { FunctionName } from './reflection';
 
 /// CONSTANTS /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,9 +46,9 @@ PROMPTS.Stars = function (count) {
 /** return string of calling object's name
  */
 PROMPTS.FunctionName = function () {
-  return REFLECT.FunctionName(2);
+  return FunctionName(2);
 };
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = PROMPTS;
+export default PROMPTS;

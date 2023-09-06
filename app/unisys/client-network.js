@@ -6,26 +6,31 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-const NetMessage = require('unisys/common-netmessage-class');
-const DEFS = require('./common-defs');
-const PROMPTS = require('system/util/prompts');
+import { EJSProp } from 'settings';
+import NetMessage, {
+  GlobalOfflineMode,
+  DefaultServerUADDR,
+  GlobalSetup,
+  SocketUADDR
+} from 'unisys/common-netmessage-class';
+import { SERVER_HEARTBEAT_INTERVAL } from './common-defs';
+import { Pad } from 'system/util/prompts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = { connect: true, handle: false };
-const PR = PROMPTS.Pad('NETWORK');
+const PR = Pad('NETWORK');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const WARN = PROMPTS.Pad('!!!');
+const WARN = Pad('!!!');
 const ERR_NM_REQ = 'arg1 must be NetMessage instance';
 const ERR_NO_SOCKET = 'Network socket has not been established yet';
 const ERR_BAD_UDATA = "An instance of 'client-datalink-class' is required";
 
 /// GLOBAL NETWORK INFO (INJECTED ON INDEX) ///////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var NETSOCK = SETTINGS.EJSProp('socket');
-var NETCLIENT = SETTINGS.EJSProp('client');
-var NETSERVER = SETTINGS.EJSProp('server');
+var NETSOCK = EJSProp('socket');
+var NETCLIENT = EJSProp('client');
+var NETSERVER = EJSProp('server');
 
 /// NETWORK ID VALUES /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,7 +64,7 @@ NETWORK.Connect = function (datalink, opt) {
   if (window.NC_UNISYS.server.ip === 'standalone') {
     m_status = M_STANDALONE;
     console.warn(PR, 'STANDALONE MODE: NETWORK.Connect() suppressed!');
-    NetMessage.GlobalOfflineMode();
+    GlobalOfflineMode();
     if (typeof opt.success === 'function') opt.success();
     return;
   }
@@ -95,7 +100,7 @@ NETWORK.Connect = function (datalink, opt) {
   });
   NETWORK.AddListener('close', function (event) {
     if (DBG.connect) console.log(PR, '..CLOSE', event.target.url);
-    NetMessage.GlobalOfflineMode();
+    GlobalOfflineMode();
     m_status = M_STANDALONE;
   });
   // handle socket errors
@@ -117,7 +122,7 @@ NETWORK.Connect = function (datalink, opt) {
         // this occurs
         console.info(WARN, 'STANDALONE MODE. USING CACHED DATA');
         m_status = M_STANDALONE;
-        NetMessage.GlobalOfflineMode(); // deregister socket
+        GlobalOfflineMode(); // deregister socket
         // force promise to succeed
         if (typeof m_options.success === 'function') m_options.success();
         break;
@@ -142,8 +147,8 @@ function m_HandleRegistrationMessage(msgEvent) {
   m_status = M3_REGISTERED;
   // (2) initialize global settings for netmessage
   if (DBG.connect) console.log(PR, `connected to ${UADDR}`, NETSOCK);
-  NETSOCK.ws.UADDR = NetMessage.DefaultServerUADDR();
-  NetMessage.GlobalSetup({ uaddr: UADDR, netsocket: NETSOCK.ws });
+  NETSOCK.ws.UADDR = DefaultServerUADDR();
+  GlobalSetup({ uaddr: UADDR, netsocket: NETSOCK.ws });
   // (3) connect regular message handler
   NETWORK.AddListener('message', m_HandleMessage);
   m_status = M4_READY;
@@ -182,8 +187,8 @@ function m_ResetHearbeatTimer() {
         PR,
         'ping heartbeat not received from server before time ran out -- YOURE DEAD!'
       );
-    NetMessage.GlobalOfflineMode({ message: 'Client Disconnected' });
-  }, DEFS.SERVER_HEARTBEAT_INTERVAL * 2);
+    GlobalOfflineMode({ message: 'Client Disconnected' });
+  }, SERVER_HEARTBEAT_INTERVAL * 2);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_HandleMessage(msgEvent) {
@@ -215,7 +220,7 @@ function m_HandleMessage(msgEvent) {
       if (dbgout) {
         console.warn(
           PR,
-          `ME_${NetMessage.SocketUADDR()} received msig '${msg}' from ${pkt.SourceAddress()}`,
+          `ME_${SocketUADDR()} received msig '${msg}' from ${pkt.SourceAddress()}`,
           data
         );
       }
@@ -226,7 +231,7 @@ function m_HandleMessage(msgEvent) {
       if (dbgout) {
         console.warn(
           PR,
-          `ME_${NetMessage.SocketUADDR()} received msend '${msg}' from ${pkt.SourceAddress()}`,
+          `ME_${SocketUADDR()} received msend '${msg}' from ${pkt.SourceAddress()}`,
           data
         );
       }
@@ -237,13 +242,13 @@ function m_HandleMessage(msgEvent) {
       if (dbgout) {
         console.warn(
           PR,
-          `ME_${NetMessage.SocketUADDR()} received mcall '${msg}' from ${pkt.SourceAddress()}`
+          `ME_${SocketUADDR()} received mcall '${msg}' from ${pkt.SourceAddress()}`
         );
       }
       UDATA.LocalCall(msg, data).then(result => {
         if (dbgout) {
           console.log(
-            `ME_${NetMessage.SocketUADDR()} forwarded '${msg}', returning ${JSON.stringify(
+            `ME_${SocketUADDR()} forwarded '${msg}', returning ${JSON.stringify(
               result
             )}`
           );
@@ -322,7 +327,7 @@ NETWORK.ServerSocketInfo = function () {
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 NETWORK.SocketUADDR = function () {
-  return NetMessage.SocketUADDR();
+  return SocketUADDR();
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 NETWORK.IsStandaloneMode = function () {
@@ -331,4 +336,4 @@ NETWORK.IsStandaloneMode = function () {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NETWORK;
+export default NETWORK;

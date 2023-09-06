@@ -7,22 +7,22 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const Loki = require('lokijs');
-const PATH = require('path');
-const FSE = require('fs-extra');
+import Loki from 'lokijs';
+import { resolve, join } from 'path';
+import { ensureDir, createWriteStream } from 'fs-extra';
 ///
-const NC_CONFIG = require('../../app-config/netcreate-config');
+import { dataset } from '../../app-config/netcreate-config';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const PROMPTS = require('../system/util/prompts');
-const PR = PROMPTS.Pad('SRV-LOG');
+import { Pad } from '../system/util/prompts';
+const PR = Pad('SRV-LOG');
 
 /// MODULE-WIDE VARS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG_DIR = '../../runtime/logs';
-const Tracer = require('tracer');
+import { colorConsole } from 'tracer';
 const LOG_DELIMITER = '\t';
 const LOG_CONFIG = {
   format: '{{line}}  {{message}}',
@@ -31,7 +31,7 @@ const LOG_CONFIG = {
     data.line = 'C ' + Number(data.line).zeroPad(4);
   }
 };
-const LOGGER = Tracer.colorConsole(LOG_CONFIG);
+const LOGGER = colorConsole(LOG_CONFIG);
 let fs_log = null;
 // enums for outputing dates
 const e_weekday = [
@@ -47,12 +47,12 @@ const e_weekday = [
 /// RUNTIME INITIALIZATION ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// initialize event logger
-var dir = PATH.resolve(PATH.join(__dirname, LOG_DIR));
-FSE.ensureDir(dir, function (err) {
+var dir = resolve(join(__dirname, LOG_DIR));
+ensureDir(dir, function (err) {
   if (err) throw new Error('could not make ' + dir + ' directory');
   var logname = str_TimeDatedFilename('log') + '.txt';
   var pathname = dir + '/' + logname;
-  fs_log = FSE.createWriteStream(pathname);
+  fs_log = createWriteStream(pathname);
   LogLine(
     `NETCREATE APPSERVER SESSION LOG for ${str_DateStamp()} ${str_TimeStamp()}`
   );
@@ -67,7 +67,7 @@ function LogLine(...args) {
   if (!fs_log) return;
 
   var out = str_TimeStamp() + LOG_DELIMITER;
-  out += NC_CONFIG.dataset + LOG_DELIMITER;
+  out += dataset + LOG_DELIMITER;
   var c = args.length;
   // arguments are delimited
   if (c) {
@@ -135,4 +135,4 @@ LOG.Write = LogLine;
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = LOG;
+export default LOG;

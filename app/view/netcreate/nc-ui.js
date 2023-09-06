@@ -10,8 +10,8 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UNISYS = require('unisys/client');
+import React from 'react';
+import { NewModule, NewDataLink } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -22,8 +22,8 @@ const VIEWMODE = {
 
 /// MODULE INITIALIZATION /////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const MOD = UNISYS.NewModule(module.id);
-const UDATA = UNISYS.NewDataLink(MOD);
+const MOD = NewModule(module.id);
+const UDATA = NewDataLink(MOD);
 
 /// INPUT FORM CHANGE HANDLERS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -279,7 +279,7 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   VIEWMODE,
   RenderTabSelectors,
   RenderAttributesTabView,

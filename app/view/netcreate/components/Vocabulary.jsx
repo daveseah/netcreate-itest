@@ -7,10 +7,10 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
 const { Button, Table } = ReactStrap;
-const UNISYS = require('unisys/client');
+import UNISYS from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -182,4 +182,4 @@ class Vocabulary extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = Vocabulary;
+export default Vocabulary;

@@ -6,25 +6,26 @@
 
 /// SYSTEM LIBRARIES //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const { stdin: input, stdout: output } = require('node:process');
-const readline = require('node:readline');
-const fs = require('node:fs');
+import { stdin as input, stdout as output } from 'node:process';
+import readline from 'node:readline';
+import { readFileSync } from 'node:fs';
 //
-const Graph = require('graphology');
-const Peggy = require('peggy');
-const { PreprocessDataText } = require('../_sys/text');
+import Graph from 'graphology';
+import { generate } from 'peggy';
+import { PreprocessDataText } from '../_sys/text';
+import { makeTerminalOut } from '../_sys/prompts';
 
 /// DECLARATIONS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = require('../_sys/prompts').makeTerminalOut(' GRAPH', 'TagPurple');
+const LOG = makeTerminalOut(' GRAPH', 'TagPurple');
 
 /// METHODS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const GRAMMAR = fs.readFileSync('parser.peg', 'utf8');
-const PARSER = Peggy.generate(GRAMMAR, { trace: false });
+const GRAMMAR = readFileSync('parser.peg', 'utf8');
+const PARSER = generate(GRAMMAR, { trace: false });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function ParseGraphData(filename) {
-  let data = fs.readFileSync(filename, 'utf8');
+  let data = readFileSync(filename, 'utf8');
   data = PreprocessDataText(data);
   let result = PARSER.parse(data);
   return result;
@@ -68,4 +69,3 @@ process.on('message', controlMsg => {
 
 /// EXPORT MODULE /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {};

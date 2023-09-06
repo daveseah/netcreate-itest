@@ -33,41 +33,41 @@
 
 /// UNISYS INITIALIZE REQUIRES for REACT ROOT /////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const UNISYS = require('unisys/client');
-const SessionShell = require('unisys/component/SessionShell');
+import { Component, ForceReloadOnNavigation, NewDataLink } from 'unisys/client';
+import SessionShell from 'unisys/component/SessionShell';
 
 /// DEBUG SWITCHES ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var DBG = false;
-const PROMPTS = require('system/util/prompts');
-const PR = PROMPTS.Pad('ACD');
+import { Pad } from 'system/util/prompts';
+const PR = Pad('ACD');
 
 /// LIBRARIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
 const { Button } = ReactStrap;
-const NetGraph = require('./components/NetGraph');
-const NCSearch = require('./components/NCSearch');
-const NCNode = require('./components/NCNode');
-const NCGraph = require('./components/NCGraph');
-const Search = require('./components/Search');
-const NodeSelector = require('./components/NodeSelector');
-const InfoPanel = require('./components/InfoPanel');
-const FiltersPanel = require('./components/filter/FiltersPanel');
-const NCLOGIC = require('./nc-logic'); // require to bootstrap data loading
-const FILTERMGR = require('./filter-mgr'); // handles filtering functions
-const EDGEMGR = require('./edge-mgr'); // handles edge synthesis
-const SELECTIONMGR = require('./selection-mgr'); // handles UI selection events
-const HILITEMGR = require('./hilite-mgr'); // handles UI hilite events
-const FILTER = require('./components/filter/FilterEnums');
+import NetGraph from './components/NetGraph';
+import NCSearch from './components/NCSearch';
+import NCNode from './components/NCNode';
+import NCGraph from './components/NCGraph';
+import Search from './components/Search';
+import NodeSelector from './components/NodeSelector';
+import InfoPanel from './components/InfoPanel';
+import FiltersPanel from './components/filter/FiltersPanel';
+import NCLOGIC from './nc-logic'; // require to bootstrap data loading
+import FILTERMGR from './filter-mgr'; // handles filtering functions
+import EDGEMGR from './edge-mgr'; // handles edge synthesis
+import SELECTIONMGR from './selection-mgr'; // handles UI selection events
+import HILITEMGR from './hilite-mgr'; // handles UI hilite events
+import { PANEL_LABEL } from './components/filter/FilterEnums';
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class NetCreate extends UNISYS.Component {
+class NetCreate extends Component {
   constructor() {
     super();
-    UNISYS.ForceReloadOnNavigation();
+    ForceReloadOnNavigation();
     this.state = {
       isConnected: true,
       isLoggedIn: false,
@@ -104,7 +104,7 @@ class NetCreate extends UNISYS.Component {
 
     this.OnAppStateChange('SESSION', this.onStateChange_SESSION);
 
-    const UDATA = UNISYS.NewDataLink(this);
+    const UDATA = NewDataLink(this);
     UDATA.HandleMessage('DISCONNECT', this.onDisconnect);
   }
 
@@ -258,7 +258,7 @@ class NetCreate extends UNISYS.Component {
                 }}
               >
                 <Button onClick={this.onFilterBtnClick} style={{ width: '90px' }}>
-                  {FILTER.PANEL_LABEL} &gt;
+                  {PANEL_LABEL} &gt;
                 </Button>
                 <FiltersPanel />
               </div>
@@ -279,7 +279,7 @@ class NetCreate extends UNISYS.Component {
                 onClick={this.onFilterBtnClick}
                 style={{ width: '90px', float: 'right' }}
               >
-                &lt; {FILTER.PANEL_LABEL}
+                &lt; {PANEL_LABEL}
               </Button>
             </div>
           )}
@@ -296,4 +296,4 @@ NetCreate.UMOD = module.id;
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NetCreate;
+export default NetCreate;

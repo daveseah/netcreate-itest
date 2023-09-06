@@ -10,11 +10,9 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import MDReactComponent from 'markdown-react-js';
-const mdplugins = {
-  emoji: require('markdown-it-emoji')
-};
-const React = require('react');
-const UNISYS = require('unisys/client');
+import emoji from 'markdown-it-emoji';
+import React from 'react';
+import UNISYS from 'unisys/client';
 
 /// COMPONENT DECLARATION /////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -45,7 +43,7 @@ class MarkdownNote extends UNISYS.Component {
         text={text}
         onIterate={this.markdownIterate}
         markdownOptions={{ typographer: true, linkify: true }}
-        plugins={[mdplugins.emoji]}
+        plugins={[emoji]}
       />
     );
   }
@@ -53,4 +51,4 @@ class MarkdownNote extends UNISYS.Component {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MarkdownNote;
+export default MarkdownNote;

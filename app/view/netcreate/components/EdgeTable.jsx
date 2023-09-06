@@ -27,26 +27,25 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-import FILTER from './filter/FilterEnums';
-const React = require('react');
-const ReactStrap = require('reactstrap');
-const { BUILTIN_FIELDS_EDGE } = require('system/util/enum');
+import { IsAdmin } from 'settings';
+import { ACTION, TYPES } from './filter/FilterEnums';
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import { BUILTIN_FIELDS_EDGE } from 'system/util/enum';
 const { Button } = ReactStrap;
-const MarkdownNote = require('./MarkdownNote');
-const UNISYS = require('unisys/client');
+import { Component, NewDataLink } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const isAdmin = SETTINGS.IsAdmin();
+const isAdmin = IsAdmin();
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var UDATA = null;
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// export a class object for consumption by brunch/require
-class EdgeTable extends UNISYS.Component {
+class EdgeTable extends Component {
   constructor(props) {
     super(props);
 
@@ -78,7 +77,7 @@ class EdgeTable extends UNISYS.Component {
     this.sortDirection = 1;
 
     /// Initialize UNISYS DATA LINK for REACT
-    UDATA = UNISYS.NewDataLink(this);
+    UDATA = NewDataLink(this);
 
     // SESSION is called by SessionSHell when the ID changes
     //  set system-wide. data: { classId, projId, hashedId, groupId, isValid }
@@ -159,8 +158,8 @@ class EdgeTable extends UNISYS.Component {
       // also need to remove edges that are not in filteredEdges
       const FILTERDEFS = UDATA.AppState('FILTERDEFS');
       if (
-        FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
-        FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
+        FILTERDEFS.filterAction === ACTION.REDUCE ||
+        FILTERDEFS.filterAction === ACTION.FOCUS
       ) {
         edges = edges.filter(edge => {
           const filteredEdge = filteredEdges.find(n => n.id === edge.id);
@@ -213,7 +212,7 @@ class EdgeTable extends UNISYS.Component {
       // also need to add back in edges that are not in filteredEdges
       // (because "COLLAPSE" and "FOCUS" removes edges that are not matched)
       const FILTERDEFS = UDATA.AppState('FILTERDEFS');
-      if (FILTERDEFS.filterAction === FILTER.ACTION.FADE) {
+      if (FILTERDEFS.filterAction === ACTION.FADE) {
         const NCDATA = UDATA.AppState('NCDATA');
         this.setState(
           {
@@ -317,12 +316,12 @@ class EdgeTable extends UNISYS.Component {
     if (edges) {
       return edges.sort((a, b) => {
         let akey, bkey;
-        if (type === FILTER.TYPES.STRING) {
+        if (type === TYPES.STRING) {
           akey = a[key] || ''; // fall back to blank if a[key] is not defined
           // a[key] might be undefined if the template/db
           // was changed but the full db wasn't updated
           bkey = b[key] || '';
-        } else if (type === FILTER.TYPES.NUMBER) {
+        } else if (type === TYPES.NUMBER) {
           akey = Number(a[key] || ''); // force number for sorting
           bkey = Number(b[key] || '');
         } /* if some other type */ else {
@@ -688,4 +687,4 @@ class EdgeTable extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = EdgeTable;
+export default EdgeTable;

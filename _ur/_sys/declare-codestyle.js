@@ -256,7 +256,7 @@ function FeedFish() {
 /// API function if you MUST share them, or possibly concentrate them in
 /// a utility module of some kind if they are reusable.
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   PublicA,
   PublicB: API_PublicB,
   MyClass

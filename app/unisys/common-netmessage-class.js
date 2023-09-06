@@ -469,4 +469,4 @@ function m_CheckRMode(mode) {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NetMessage;
+export default NetMessage;

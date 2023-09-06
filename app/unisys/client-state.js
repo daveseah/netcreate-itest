@@ -5,9 +5,9 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const REACT = require('react');
-const TYPEOF = require('type-detect');
-const Messager = require('unisys/client-messager-class');
+import REACT from 'react';
+import TYPEOF from 'type-detect';
+import Messager from 'unisys/client-messager-class';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -219,4 +219,4 @@ USTATE.OffStateChange = (namespace, listener) => {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = USTATE;
+export default USTATE;

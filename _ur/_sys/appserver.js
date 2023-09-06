@@ -4,9 +4,13 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const chockidar = require('chokidar');
-const express = require('express');
-const TERM = require('./prompts').makeTerminalOut('UR', 'TagBlue');
+import { watch } from 'chokidar';
+import express from 'express';
+import { makeTerminalOut } from './prompts';
+
+/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const TERM = makeTerminalOut('UR', 'TagBlue');
 
 /// WEBSERVER STUFF ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -48,7 +52,7 @@ function StopAppServer() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Watch() {
   /** watch for changes to path **/
-  const watcher = chockidar.watch('./_ur/**');
+  const watcher = watch('./_ur/**');
   watcher.on('change', path => {
     TERM('watcher: path changed', path);
     // proc_peggy.send('test');
@@ -58,7 +62,7 @@ function Watch() {
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-module.exports = {
+export default {
   StartAppServer,
   StopAppServer,
   Watch,

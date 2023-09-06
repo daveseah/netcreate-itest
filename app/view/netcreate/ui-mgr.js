@@ -22,7 +22,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
+import { NewModule, NewDataLink } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -31,8 +31,8 @@ const PR = 'ui-mgr: ';
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 // /// UNISYS HANDLERS ///////////////////////////////////////////////////////////
 // /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -55,4 +55,4 @@ var UDATA = UNISYS.NewDataLink(MOD);
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

@@ -13,19 +13,19 @@ const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// These are loaded in init to make sure they are available globally!
 /// You do not need to copy these extensions to your own module files
-require('babel-polyfill'); // enables regenerators for async/await
+import 'babel-polyfill'; // enables regenerators for async/await
 
 /// LIBRARIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const React = require('react');
-const ReactDOM = require('react-dom');
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 /// SYSTEM MODULES ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// demo: require system modules; this will likely be removed
-const SETTINGS = require('settings');
-const UNISYS = require('unisys/client');
-const AppShell = require('init-appshell');
+import SETTINGS from 'settings';
+import UNISYS from 'unisys/client';
+import AppShell from 'init-appshell';
 
 /// UNISYS LIFECYCLE LOADER ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

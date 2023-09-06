@@ -20,14 +20,14 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import UNISYS from 'unisys/client';
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import classnames from 'classnames';
+import Help from './Help';
+import NodeTable from './NodeTable';
+import EdgeTable from './EdgeTable';
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
-const classnames = require('classnames');
-const Help = require('./Help');
-const NodeTable = require('./NodeTable');
-const EdgeTable = require('./EdgeTable');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -96,4 +96,4 @@ class SaveChangesDialog extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = SaveChangesDialog;
+export default SaveChangesDialog;

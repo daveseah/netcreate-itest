@@ -10,7 +10,7 @@ const IS_MOBILE =
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
-const { TERM_COLORS, CSS_COLORS } = require('./declare-console');
+const { TERM_COLORS, CSS_COLORS } = require('./declare-console').default;
 
 const DEFAULT_PADDING = IS_NODE
   ? 10 // nodejs
@@ -81,10 +81,7 @@ function m_SetPromptColors(match, color = DEFAULT_COLOR) {
  */
 function m_GetEnvColor(prompt, tagColor) {
   const colorTable = m_SetPromptColors(prompt, tagColor);
-  const [dbg_mode, defcol] = PROMPT_DICT[prompt.trim()] || [
-    SHOW,
-    DEFAULT_COLOR
-  ];
+  const [dbg_mode, defcol] = PROMPT_DICT[prompt.trim()] || [SHOW, DEFAULT_COLOR];
   const ucolor = colorTable[tagColor];
   const dcolor = colorTable[defcol];
   const color = ucolor || dcolor;
@@ -329,9 +326,7 @@ function makeHTMLConsole(divId, row = 0, col = 0) {
  */
 function printTagColors() {
   const colortable = IS_NODE ? TERM_COLORS : CSS_COLORS;
-  const colors = Object.keys(colortable).filter(element =>
-    element.includes('Tag')
-  );
+  const colors = Object.keys(colortable).filter(element => element.includes('Tag'));
   const reset = colortable.Reset;
   const out = 'dbg_colors';
   if (!IS_NODE) console.groupCollapsed(out);

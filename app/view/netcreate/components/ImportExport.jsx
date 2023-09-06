@@ -15,17 +15,18 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import { IsAdmin } from 'settings';
+import { GlobalGroupID } from 'unisys/common-netmessage-class';
+import UNISYS from 'unisys/client';
+import {
+  PromiseCalculateMaxNodeId,
+  PromiseCalculateMaxEdgeId
+} from 'system/datastore';
+import { EDITORTYPE } from 'system/util/enum';
+import IMPORTEXPORT from '../importexport-mgr';
 const { Button, Table } = ReactStrap;
-const SETTINGS = require('settings');
-const NetMessage = require('unisys/common-netmessage-class');
-
-const UNISYS = require('unisys/client');
-const DATASTORE = require('system/datastore');
-const { EDITORTYPE } = require('system/util/enum');
-
-const IMPORTEXPORT = require('../importexport-mgr');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -123,10 +124,10 @@ class ImportExport extends UNISYS.Component {
   updateEditState() {
     // disable edit if someone else is editing a template, node, or edge
     UDATA.NetCall('SRV_GET_EDIT_STATUS').then(this.handleEditStateUpdate);
-    DATASTORE.PromiseCalculateMaxNodeId().then(data => {
+    PromiseCalculateMaxNodeId().then(data => {
       this.setState({ nextNodeId: data + 1 });
     });
-    DATASTORE.PromiseCalculateMaxEdgeId().then(data => {
+    PromiseCalculateMaxEdgeId().then(data => {
       this.setState({ nextEdgeId: data + 1 });
     });
   }
@@ -272,8 +273,8 @@ class ImportExport extends UNISYS.Component {
     // Set Import Permissions
     // -- Admins can always import
     // -- If allowLoggedInUserToImport, logged in users can also import
-    const ISADMIN = SETTINGS.IsAdmin();
-    const isLoggedIn = NetMessage.GlobalGroupID();
+    const ISADMIN = IsAdmin();
+    const isLoggedIn = GlobalGroupID();
     const importDisabled = !(ISADMIN || (allowLoggedInUserToImport && isLoggedIn));
 
     const importBtnDisabled = !okToImport;
@@ -443,4 +444,4 @@ class ImportExport extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = ImportExport;
+export default ImportExport;

@@ -6,8 +6,8 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const FS = require('node:fs');
-const PEGGY = require('peggy');
+import { readFileSync } from 'node:fs';
+import { generate } from 'peggy';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -92,8 +92,8 @@ function f_TraceOut(table, err) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function InitializeParser() {
   try {
-    GRAMMAR_SRC = FS.readFileSync('parser.peg', 'utf8');
-    PARSER = PEGGY.generate(GRAMMAR_SRC, { trace: false });
+    GRAMMAR_SRC = readFileSync('parser.peg', 'utf8');
+    PARSER = generate(GRAMMAR_SRC, { trace: false });
   } catch (err) {
     console.error('file error', err);
   }
@@ -120,7 +120,7 @@ function Parse(input) {
 function Test() {
   if (PARSER === undefined) InitializeParser();
   console.log('\nRaw Input:\n---');
-  let text = FS.readFileSync('parser-test.txt', 'utf8');
+  let text = readFileSync('parser-test.txt', 'utf8');
   console.log(text);
   console.log('\nNormalized Input:\n---');
   text = m_Normalize(text);
@@ -131,7 +131,7 @@ function Test() {
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   InitializeParser,
   Parse,
   Test

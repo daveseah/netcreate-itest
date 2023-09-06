@@ -7,16 +7,16 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const TOML = require('@iarna/toml');
-const SETTINGS = require('settings');
-const SESSION = require('unisys/common-session');
-const UNISYS = require('unisys/client');
-const PROMPTS = require('system/util/prompts');
-const PR = PROMPTS.Pad('Datastore');
-const NetMessage = require('unisys/common-netmessage-class');
+import { parse } from '@iarna/toml';
+import SETTINGS from 'settings';
+import SESSION from 'unisys/common-session';
+import { NewModule, NewDataLink, IsStandaloneMode } from 'unisys/client';
+import { Pad } from 'system/util/prompts';
+import { GlobalSetGroupID } from 'unisys/common-netmessage-class';
 
 /// CONSTANTS /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const PR = Pad('Datastore');
 const DBG = { load: true };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const HASH_ABET = 'ABCDEFGHIJKLMNPQRSTVWXYZ23456789';
@@ -24,8 +24,8 @@ const HASH_MINLEN = 3;
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let DSTOR = UNISYS.NewModule(module.id);
-let UDATA = UNISYS.NewDataLink(DSTOR);
+let DSTOR = NewModule(module.id);
+let UDATA = NewDataLink(DSTOR);
 let NCDATA = {};
 
 /// LIFECYCLE /////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ DSTOR.Hook('INITIALIZE', () => {
 DSTOR.SetSessionGroupID = function (decodedData) {
   let { token, isValid } = decodedData;
   if (isValid) {
-    NetMessage.GlobalSetGroupID(token);
+    GlobalSetGroupID(token);
     console.log('setting NetMessage group id', token);
   } else {
     console.warn('will not set bad group id:', token);
@@ -90,7 +90,7 @@ DSTOR.Data = function () {
  */
 DSTOR.UpdateServerDB = function (data) {
   // check that network is online
-  if (UNISYS.IsStandaloneMode()) {
+  if (IsStandaloneMode()) {
     console.warn(PR, `STANDALONE MODE: UpdateServerDB() suppressed!`);
     return;
   }
@@ -128,7 +128,7 @@ DSTOR.PromiseNewNodeID = function () {
         if (DBG) console.log(PR, 'server allocated node_id', data.nodeID);
         resolve(data.nodeID);
       } else {
-        if (UNISYS.IsStandaloneMode()) {
+        if (IsStandaloneMode()) {
           reject(
             new Error(
               'STANDALONE MODE: UI should prevent PromiseNewNodeID() from running!'
@@ -181,7 +181,7 @@ DSTOR.PromiseNewEdgeID = function () {
         if (DBG) console.log(PR, 'server allocated edge_id:', data.edgeID);
         resolve(data.edgeID);
       } else {
-        if (UNISYS.IsStandaloneMode()) {
+        if (IsStandaloneMode()) {
           reject(
             new Error(
               'STANDALONE MODE: UI should prevent PromiseNewEdgeID() from running!'
@@ -249,7 +249,7 @@ DSTOR.PromiseTOMLFile = function (tomlFile) {
         return;
       }
       const data = event.target.responseText;
-      const tomlData = Object.assign(NCDATA, TOML.parse(data));
+      const tomlData = Object.assign(NCDATA, parse(data));
       resolve(tomlData);
     });
     xobj.open('GET', `${tomlFile}`, true);
@@ -346,4 +346,4 @@ DSTOR.OverwriteDataPromise = function (d3data) {
 
 /// EXPORT MODULE /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = DSTOR;
+export default DSTOR;

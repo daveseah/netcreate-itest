@@ -127,11 +127,11 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
 const { Input } = ReactStrap;
-const Autosuggest = require('react-autosuggest');
-const UNISYS = require('unisys/client');
+import Autosuggest from 'react-autosuggest';
+import { Component, NewDataLink } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -147,7 +147,7 @@ var _IsMounted = false;
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// export a class object for consumption by brunch/require
-class AutoComplete extends UNISYS.Component {
+class AutoComplete extends Component {
   constructor() {
     super();
     this.state = {
@@ -517,7 +517,7 @@ class AutoComplete extends UNISYS.Component {
     // values when returned in event.target.value.  So we have to convert
     // it here.
     // Load Source
-    var UDATA = UNISYS.NewDataLink(this);
+    var UDATA = NewDataLink(this);
     UDATA.LocalCall('EDGE_CLOSE');
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
   }
@@ -528,4 +528,4 @@ class AutoComplete extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = AutoComplete;
+export default AutoComplete;

@@ -28,14 +28,14 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
 const { Button } = ReactStrap;
 import { JSONEditor } from '@json-editor/json-editor';
-const UNISYS = require('unisys/client');
-const { EDITORTYPE } = require('system/util/enum');
-const TEMPLATE_MGR = require('../templateEditor-mgr');
-const SCHEMA = require('../template-schema');
+import UNISYS from 'unisys/client';
+import { EDITORTYPE } from 'system/util/enum';
+import TEMPLATE_MGR from '../templateEditor-mgr';
+import SCHEMA from '../template-schema';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -423,4 +423,4 @@ class Template extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = Template;
+export default Template;

@@ -20,11 +20,11 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import AutoComplete from './AutoComplete';
+import UNISYS from 'unisys/client';
 const { Col, FormGroup, Label } = ReactStrap;
-const AutoComplete = require('./AutoComplete');
-const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -84,4 +84,4 @@ class Search extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = Search;
+export default Search;

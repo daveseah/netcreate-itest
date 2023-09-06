@@ -37,13 +37,13 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UNISYS = require('unisys/client');
-const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
-const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
-const NCUI = require('../nc-ui');
-const NCEdge = require('./NCEdge');
-const SETTINGS = require('settings');
+import * as React from 'react';
+import * as UNISYS from '../../../unisys/client';
+import * as EDGEMGR from '../edge-mgr'; // handles edge synthesis
+import { EDITORTYPE, BUILTIN_FIELDS_NODE } from '../../../system/util/enum';
+import * as NCUI from '../nc-ui';
+import * as NCEdge from './NCEdge';
+import * as SETTINGS from '../../../settings';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -822,4 +822,5 @@ class NCNode extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCNode;
+// module.exports = NCNode;
+export default NCNode;

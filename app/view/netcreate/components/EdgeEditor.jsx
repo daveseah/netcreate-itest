@@ -192,16 +192,15 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 import { mdReact } from 'markdown-react-js';
-const mdplugins = {
-  emoji: require('markdown-it-emoji')
-};
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import emoji from 'markdown-it-emoji';
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import UNISYS from 'unisys/client';
+import AutoComplete from './AutoComplete';
+import NodeDetail from './NodeDetail';
+import { EDITORTYPE } from 'system/util/enum';
+
 const { Button, Col, Form, FormGroup, FormText, Input, Label } = ReactStrap;
-const AutoComplete = require('./AutoComplete');
-const NodeDetail = require('./NodeDetail');
-const UNISYS = require('unisys/client');
-const { EDITORTYPE } = require('system/util/enum');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1595,7 +1594,7 @@ class EdgeEditor extends UNISYS.Component {
       return mdReact({
         onIterate: this.markdownIterate,
         markdownOptions: { typographer: true, linkify: true },
-        plugins: [mdplugins.emoji]
+        plugins: [emoji]
       })(text);
     }
   }

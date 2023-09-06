@@ -5,16 +5,13 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
+import HashIds from 'hashids';
+import { Pad } from '../system/util/prompts';
+
 /// DEBUGGING /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const PR = Pad('SESSUTIL');
 const DBG = false;
-//
-const PROMPTS = require('../system/util/prompts');
-const PR = PROMPTS.Pad('SESSUTIL');
-
-/// SYSTEM LIBRARIES //////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const HashIds = require('hashids');
 
 /// MODULE DEFS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -148,4 +145,4 @@ SESUTIL.GroupID = function () {
 
 /// EXPORT MODULE /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = SESUTIL;
+export default SESUTIL;

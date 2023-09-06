@@ -18,9 +18,16 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-const STATE = require('unisys/client-state');
-const Messager = require('unisys/client-messager-class');
+import SETTINGS from 'settings';
+import {
+  State,
+  SetState,
+  MergeState,
+  ConcatState,
+  OnStateChange,
+  OffStateChange
+} from 'unisys/client-state';
+import Messager from 'unisys/client-messager-class';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -104,27 +111,27 @@ class UnisysDataLink {
   /// global STATE module calls are wrapped by unisys node so the unique
   /// UnisysID address can be appended
   AppState(namespace) {
-    return STATE.State(namespace);
+    return State(namespace);
   }
   SetAppState(namespace, newState) {
     // uid is "source uid" designating who is making the change
-    STATE.SetState(namespace, newState, this.UID());
+    SetState(namespace, newState, this.UID());
   }
   MergeAppState(namespace, newState) {
     // uid is "source uid" designating who is making the change
-    STATE.MergeState(namespace, newState, this.UID());
+    MergeState(namespace, newState, this.UID());
   }
   ConcatAppState(namespace, newState) {
     // uid is "source uid" designating who is making the change
-    STATE.ConcatState(namespace, newState, this.UID());
+    ConcatState(namespace, newState, this.UID());
   }
   // uid is "source uid" of subscribing object, to avoid reflection
   // if the subscribing object is also the originating state changer
   OnAppStateChange(namespace, listener) {
-    STATE.OnStateChange(namespace, listener, this.UID());
+    OnStateChange(namespace, listener, this.UID());
   }
   AppStateChangeOff(namespace, listener) {
-    STATE.OffStateChange(namespace, listener);
+    OffStateChange(namespace, listener);
   }
 
   /// MESSAGES ////////////////////////////////////////////////////////////////
@@ -277,4 +284,4 @@ UnisysDataLink.ValidateMessageNames = function (msgs = []) {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UnisysDataLink;
+export default UnisysDataLink;

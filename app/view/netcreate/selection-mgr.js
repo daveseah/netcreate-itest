@@ -27,7 +27,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
+import { NewModule, NewDataLink } from 'unisys/client';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -45,8 +45,8 @@ let m_SelectionMode = SELECTION_MODE.NORMAL; // default
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 /// UNISYS HANDLERS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -179,4 +179,4 @@ function m_DeselectSecondary() {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

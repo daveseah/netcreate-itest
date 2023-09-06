@@ -72,7 +72,7 @@ function RecalculateAllEdgeSizes(data) {
 
 /// MODULE EXPORTS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   RecalculateAllNodeDegrees,
   RecalculateAllEdgeSizes
 };

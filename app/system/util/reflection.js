@@ -4,8 +4,8 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const STACKTRACE = require('stacktrace-js');
-const PATH = require('./path');
+import { getSync } from 'stacktrace-js';
+import { Basename } from './path';
 
 /// MODULE DECLARATION ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -23,11 +23,11 @@ REFLECT.ExtractClassName = function (obj) {
 /** Returns the name of the calling function
  */
 REFLECT.FunctionName = function (depth = 1) {
-  let stack = STACKTRACE.getSync();
+  let stack = getSync();
   let frame = stack[depth];
   let fn = frame.functionName;
   if (!fn) {
-    fn = PATH.Basename(frame.fileName);
+    fn = Basename(frame.fileName);
     fn += `:${frame.lineNumber}:${frame.columnNumber}`;
     return fn;
   } else {
@@ -124,4 +124,4 @@ if (typeof window === 'object') {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = REFLECT;
+export default REFLECT;

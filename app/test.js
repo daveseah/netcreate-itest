@@ -368,4 +368,4 @@ function m_InitShell() {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = TM;
+export default TM;

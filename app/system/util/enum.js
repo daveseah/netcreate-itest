@@ -37,4 +37,4 @@ ENUM.BUILTIN_FIELDS_EDGE = [
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = ENUM;
+export default ENUM;

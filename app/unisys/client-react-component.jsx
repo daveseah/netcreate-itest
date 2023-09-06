@@ -8,14 +8,14 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const UDATA = require('unisys/client-datalink-class');
-const UMODULE = require('unisys/client-module-class');
-const REFLECT = require('system/util/reflection');
+import { Component } from 'react';
+import UDATA from 'unisys/client-datalink-class';
+import UMODULE from 'unisys/client-module-class';
+import { FunctionName } from 'system/util/reflection';
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class UnisysComponent extends React.Component {
+class UnisysComponent extends Component {
   constructor() {
     super();
     this.UMODULE = new UMODULE(module.id);
@@ -143,20 +143,20 @@ class UnisysComponent extends React.Component {
 } // UnisysComponent
 
 function f_deprecated(repl) {
-  let out = `${REFLECT.FunctionName(2)} is deprecated.`;
+  let out = `${FunctionName(2)} is deprecated.`;
   if (typeof repl === 'string') out += ` Use ${repl}() instead.`;
   console.warn(out);
 }
 
 function f_unimplemented() {
-  let out = `${REFLECT.FunctionName(2)} is not yet implemented.`;
+  let out = `${FunctionName(2)} is not yet implemented.`;
   alert(`${out}\n\nCrashing now! Use javascript console to debug`);
   console.error(out);
   debugger;
 }
 
 function f_unsupported(reason) {
-  let out = `${REFLECT.FunctionName(2)} ${reason}`;
+  let out = `${FunctionName(2)} ${reason}`;
   alert(`${out}\n\nCrashing now! Use javascript console to debug`);
   console.error(out);
   debugger;
@@ -164,4 +164,4 @@ function f_unsupported(reason) {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UnisysComponent;
+export default UnisysComponent;

@@ -68,4 +68,4 @@ FILTER.OPERATORS.NOT_EQ = { key: 'NOT_EQ', label: `\u2260` };
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = FILTER;
+export default FILTER;

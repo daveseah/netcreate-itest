@@ -4,10 +4,10 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNET = require('./server-network');
-const UDB = require('./server-database');
-const LOGGER = require('./server-logger');
-const PROMPTS = require('../system/util/prompts');
+import UNET from './server-network';
+import UDB from './server-database';
+import LOGGER from './server-logger';
+import PROMPTS from '../system/util/prompts';
 
 /// CONSTANTS & DECLARATIONS ///////////////////////////////////////////////////
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -235,4 +235,4 @@ UNISYS.StartNetwork = () => {
 
 /// EXPORT MODULE DEFINITION //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UNISYS;
+export default UNISYS;

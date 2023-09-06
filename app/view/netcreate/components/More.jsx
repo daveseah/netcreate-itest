@@ -9,16 +9,16 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import ReactStrap from 'reactstrap';
+import classnames from 'classnames';
+import { IsAdmin } from 'settings';
+import Help from './Help';
+import Vocabulary from './Vocabulary';
+import ImportExport from './ImportExport';
+import Template from './Template';
+import UNISYS from 'unisys/client';
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
-const classnames = require('classnames');
-const SETTINGS = require('settings');
-const Help = require('./Help');
-const Vocabulary = require('./Vocabulary');
-const ImportExport = require('./ImportExport');
-const Template = require('./Template');
-const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,7 +59,7 @@ class More extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   render() {
     const { activeTab } = this.state;
-    const ISADMIN = SETTINGS.IsAdmin();
+    const ISADMIN = IsAdmin();
     return (
       <div
         className="help"
@@ -148,4 +148,4 @@ class More extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = More;
+export default More;

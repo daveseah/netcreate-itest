@@ -4,10 +4,11 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const { EventEmitter } = require('node:events');
-const stream = require('node:stream');
-const { URDEX } = require('./declare-async').UR_EVENTS;
-const { ChildProcess } = require('node:child_process');
+import { EventEmitter } from 'node:events';
+import { Readable, Writable, Duplex, Transform } from 'node:stream';
+import { UR_EVENTS } from './declare-async';
+const { URDEX } = UR_EVENTS;
+import { ChildProcess } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -87,8 +88,7 @@ class UrModule {
    *  the UrModule interface.
    */
   manageFork() {
-    if (this.modObj === undefined)
-      throw new Error('manageFork(): modObj undefined');
+    if (this.modObj === undefined) throw new Error('manageFork(): modObj undefined');
     // (1) set up message handler
     this.modObj.on('message', msg => {
       LOG(`[${u_modname(this)}] DATAEX:`, msg);
@@ -204,13 +204,13 @@ class UrModule {
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const u_is_stream = obj =>
-  obj instanceof stream.Readable ||
-  obj instanceof stream.Writable ||
-  obj instanceof stream.Duplex ||
-  obj instanceof stream.Transform;
+  obj instanceof Readable ||
+  obj instanceof Writable ||
+  obj instanceof Duplex ||
+  obj instanceof Transform;
 
 const u_modname = instance => instance.modName || instance.id;
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = UrModule;
+export default UrModule;

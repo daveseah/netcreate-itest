@@ -40,21 +40,33 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const SETTINGS = require('settings');
-const UNISYS = require('unisys/client');
-const JSCLI = require('system/util/jscli');
-const D3 = require('d3');
-const UTILS = require('./nc-utils');
+import { ServerAppURL } from 'settings';
+import {
+  NewModule,
+  NewDataLink,
+  IsStandaloneMode,
+  Log,
+  RegisterMessagesPromise,
+  SocketUADDR,
+  ForceReloadOnNavigation
+} from 'unisys/client';
+import { AddFunction } from 'system/util/jscli';
+import { RecalculateAllEdgeSizes, RecalculateAllNodeDegrees } from './nc-utils';
 
-const NETWORK = require('unisys/client-network');
-const DATASTORE = require('system/datastore');
-const SESSION = require('unisys/common-session');
-const PROMPTS = require('system/util/prompts');
+import {
+  PromiseD3Data,
+  PromiseJSONFile,
+  PromiseTOMLFile,
+  PromiseNewNodeID,
+  PromiseNewEdgeID
+} from 'system/datastore';
+import { MakeToken } from 'unisys/common-session';
+import { Pad } from 'system/util/prompts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const PR = PROMPTS.Pad('NCLOGIC');
+const PR = Pad('NCLOGIC');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DESELECTED_COLOR = '';
 // For backwards compatability, if the template is not setting these
@@ -69,8 +81,8 @@ const TEMPLATE_URL = `templates/${DATASET}.toml`;
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 /// APP STATE/DATA STRUCTURES /////////////////////////////////////////////////
 /*/ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - \*\
@@ -184,11 +196,11 @@ var TEMPLATE = null; // template definition for prompts
 /** Used by LOADASSETS and RELOAD_DB to reload NCDATA from the database.
  */
 function m_PromiseLoadDB() {
-  return DATASTORE.PromiseD3Data().then(data => {
+  return PromiseD3Data().then(data => {
     if (DBG) console.log(PR, 'DATASTORE returned data', data);
     m_MigrateData(data.d3data);
-    UTILS.RecalculateAllEdgeSizes(data.d3data);
-    UTILS.RecalculateAllNodeDegrees(data.d3data);
+    RecalculateAllEdgeSizes(data.d3data);
+    RecalculateAllNodeDegrees(data.d3data);
     UDATA.SetAppState('NCDATA', data.d3data);
     UDATA.SetAppState('TEMPLATE', data.template);
     // Save off local reference because we don't have NCDATA AppStateChange handler
@@ -203,7 +215,7 @@ function m_PromiseLoadDB() {
     see client-lifecycle.js for description
  */
 MOD.Hook('LOADASSETS', () => {
-  if (UNISYS.IsStandaloneMode()) {
+  if (IsStandaloneMode()) {
     // STANDALONE MODE
     // Load read-only database from exported db file.
 
@@ -235,23 +247,23 @@ MOD.Hook('LOADASSETS', () => {
     if (dataset === null) dataset = 'standalone';
     return new Promise(resolve => {
       (async () => {
-        let p1 = await DATASTORE.PromiseJSONFile('data/' + dataset + '-db.json').then(
+        let p1 = await PromiseJSONFile('data/' + dataset + '-db.json').then(
           d3data => {
             m_MigrateData(d3data);
-            UTILS.RecalculateAllEdgeSizes(d3data);
-            UTILS.RecalculateAllNodeDegrees(d3data);
+            RecalculateAllEdgeSizes(d3data);
+            RecalculateAllNodeDegrees(d3data);
             UDATA.SetAppState('NCDATA', d3data);
             // Save off local reference because we don't have NCDATA AppStateChange handler
             NCDATA = d3data;
           }
         );
         // load template
-        let p2 = await DATASTORE.PromiseTOMLFile(
-          'data/' + dataset + '.template.toml'
-        ).then(data => {
-          TEMPLATE = data;
-          UDATA.SetAppState('TEMPLATE', TEMPLATE);
-        });
+        let p2 = await PromiseTOMLFile('data/' + dataset + '.template.toml').then(
+          data => {
+            TEMPLATE = data;
+            UDATA.SetAppState('TEMPLATE', TEMPLATE);
+          }
+        );
         resolve();
       })();
     });
@@ -315,7 +327,7 @@ MOD.Hook('INITIALIZE', () => {
       if (nodes.length > 0) {
         let color = '#0000DD';
         nodes.forEach(node => {
-          UNISYS.Log('select node', node.id, node.label);
+          Log('select node', node.id, node.label);
           let googlea = NC_CONFIG.googlea;
 
           if (googlea != '0') {
@@ -501,7 +513,7 @@ MOD.Hook('INITIALIZE', () => {
     const timestamp = new Date().toLocaleDateString('en-US');
     const provenance_str = `Added by ${session.token} on ${timestamp}`;
 
-    return DATASTORE.PromiseNewNodeID().then(newNodeID => {
+    return PromiseNewNodeID().then(newNodeID => {
       const node = { id: newNodeID, label: data.label, provenance: provenance_str };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
@@ -614,7 +626,7 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('EDGE_CREATE', data => {
     // call server to retrieve an unused edge ID
-    return DATASTORE.PromiseNewEdgeID().then(newEdgeID => {
+    return PromiseNewEdgeID().then(newEdgeID => {
       // Add it to local state for now
       const edge = {
         id: newEdgeID,
@@ -696,8 +708,8 @@ MOD.Hook('INITIALIZE', () => {
       throw Error('EdgeUpdate found duplicate IDs');
     }
 
-    UTILS.RecalculateAllEdgeSizes(NCDATA);
-    UTILS.RecalculateAllNodeDegrees(NCDATA);
+    RecalculateAllEdgeSizes(NCDATA);
+    RecalculateAllNodeDegrees(NCDATA);
     UDATA.SetAppState('NCDATA', NCDATA);
   });
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
@@ -708,8 +720,8 @@ MOD.Hook('INITIALIZE', () => {
     let edges = [];
     // remove specified edge from edge list
     NCDATA.edges = m_DeleteMatchingEdgeByProp({ id: edgeID });
-    UTILS.RecalculateAllEdgeSizes(NCDATA);
-    UTILS.RecalculateAllNodeDegrees(NCDATA);
+    RecalculateAllEdgeSizes(NCDATA);
+    RecalculateAllNodeDegrees(NCDATA);
     UDATA.SetAppState('NCDATA', NCDATA);
     // Also update selection so edges in EdgeEditor will update
     let selection = UDATA.AppState('SELECTION');
@@ -792,7 +804,7 @@ MOD.Hook('APP_READY', function (info) {
     }, 5000);
 
     // register ONLY messages we want to make public
-    UNISYS.RegisterMessagesPromise([
+    RegisterMessagesPromise([
       'SOURCE_UPDATE',
       `NODE_DELETE`,
       'EDGE_UPDATE',
@@ -809,7 +821,7 @@ MOD.Hook('APP_READY', function (info) {
         );
       if (DBG)
         console.log(
-          `INFO: %cMy socket address is ${UNISYS.SocketUADDR()}`,
+          `INFO: %cMy socket address is ${SocketUADDR()}`,
           'color:blue;font-weight:bold'
         );
       resolve();
@@ -1153,15 +1165,15 @@ function m_MarkSelectedEdges(edges, node) {
  *  the current `template-schema.js` spec.  This is only necessary to do
  *  if you've edited the `template.schema.js`` file.
  */
-JSCLI.AddFunction(function ncRegenerateDefaultTemplate() {
+AddFunction(function ncRegenerateDefaultTemplate() {
   UDATA.Call('SRV_TEMPLATE_REGENERATE_DEFAULT');
   console.log('_default.template.toml regenerated from `template-schema.js`');
 });
 /** Command: RESET THE DATABASE from default data
  */
-JSCLI.AddFunction(function ncPushDatabase(jsonFile) {
+AddFunction(function ncPushDatabase(jsonFile) {
   jsonFile = jsonFile || 'data.reducedlinks.json';
-  DATASTORE.PromiseJSONFile(jsonFile)
+  PromiseJSONFile(jsonFile)
     .then(data => {
       // data is { nodes, edges }
       console.log(PR, `Sending data from ${jsonFile} to Server`, data);
@@ -1179,7 +1191,7 @@ JSCLI.AddFunction(function ncPushDatabase(jsonFile) {
           'color:blue'
         );
         console.log(`${PR} Reload apps to see new data`);
-        setTimeout(UNISYS.ForceReloadOnNavigation, 1000);
+        setTimeout(ForceReloadOnNavigation, 1000);
       } else {
         console.error(PR, 'Server Error', d);
         window.alert(`Error ${JSON.stringify(d)}`);
@@ -1191,7 +1203,7 @@ JSCLI.AddFunction(function ncPushDatabase(jsonFile) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Command: EMPTY THE DATABASE from default data
  */
-JSCLI.AddFunction(function ncEmptyDatabase() {
+AddFunction(function ncEmptyDatabase() {
   window.ncPushDatabase('nada.json');
   return 'FYI: pushing empty database from assets/data/nada.json...reloading';
 });
@@ -1199,30 +1211,30 @@ JSCLI.AddFunction(function ncEmptyDatabase() {
 /** Command: Unlock the database.  Used to recover from error conditions where
  *  a node or edge is inadvertently left locked.
  */
-JSCLI.AddFunction(function ncUnlockAll() {
+AddFunction(function ncUnlockAll() {
   UDATA.NetCall('SRV_DBUNLOCKALL', {});
   return 'Unlocking all nodes and edges in the database, and enabling template edits.';
 });
-JSCLI.AddFunction(function ncUnlockAllNodes() {
+AddFunction(function ncUnlockAllNodes() {
   UDATA.NetCall('SRV_DBUNLOCKALLNODES', {});
   return 'Unlocking all nodes in the database.';
 });
-JSCLI.AddFunction(function ncUnlockAllEdges() {
+AddFunction(function ncUnlockAllEdges() {
   UDATA.NetCall('SRV_DBUNLOCKALLEDGES', {});
   return 'Unlocking all edges in the database.';
 });
-JSCLI.AddFunction(function ncNodeColorMap() {
+AddFunction(function ncNodeColorMap() {
   console.log(UDATA.AppState('COLORMAP'));
   return 'ncNodeColorMap.';
 });
-JSCLI.AddFunction(function ncDumpData() {
+AddFunction(function ncDumpData() {
   console.log('NCDATA', NCDATA);
   return `ncDumpData: ${JSON.stringify(NCDATA)}`;
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Command: Token Generator
  */
-JSCLI.AddFunction(function ncMakeTokens(clsId, projId, dataset, numGroups) {
+AddFunction(function ncMakeTokens(clsId, projId, dataset, numGroups) {
   // type checking
   if (typeof clsId !== 'string')
     return 'args: str classId, str projId, str dataset, int numGroups';
@@ -1240,17 +1252,13 @@ JSCLI.AddFunction(function ncMakeTokens(clsId, projId, dataset, numGroups) {
   for (let i = 1; i <= numGroups; i++) {
     let id = String(i);
     id = id.padStart(pad, '0');
-    out += `group ${id}\t${SESSION.MakeToken(clsId, projId, i, dataset)}\n`;
+    out += `group ${id}\t${MakeToken(clsId, projId, i, dataset)}\n`;
   }
   if (window && window.location) {
     let ubits = new URL(window.location);
     let hash = ubits.hash.split('/')[0];
     let url = `${ubits.protocol}//${ubits.host}/${hash}`;
-    out += `\nexample url: ${SETTINGS.ServerAppURL()}/edit/${SESSION.MakeToken(
-      clsId,
-      projId,
-      1
-    )}\n`;
+    out += `\nexample url: ${ServerAppURL()}/edit/${MakeToken(clsId, projId, 1)}\n`;
   }
   console.log(out);
   return '';
@@ -1260,4 +1268,4 @@ JSCLI.AddFunction(function ncMakeTokens(clsId, projId, dataset, numGroups) {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;

@@ -34,12 +34,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const ReactDOM = require('react-dom');
-const ReactStrap = require('reactstrap');
+import React from 'react';
+import { findDOMNode } from 'react-dom';
+import ReactStrap from 'reactstrap';
+import D3NetGraph from './d3-simplenetgraph';
+import UNISYS from 'unisys/client';
 const { Button } = ReactStrap;
-const D3NetGraph = require('./d3-simplenetgraph');
-const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -102,7 +102,7 @@ class NetGraph extends UNISYS.Component {
     // D3NetGraph Constructor
 
     // eslint-disable-next-line react/no-find-dom-node
-    const el = ReactDOM.findDOMNode(this);
+    const el = findDOMNode(this);
     const TEMPLATE = this.AppState('TEMPLATE');
     if (this.state.d3NetGraph && this.state.d3NetGraph.Deregister) {
       // if d3NetGraph was previously created, deregister it so it stops receiving data updates
@@ -252,4 +252,4 @@ class NetGraph extends UNISYS.Component {
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NetGraph;
+export default NetGraph;

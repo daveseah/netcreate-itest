@@ -10,9 +10,9 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const assert = require('node:assert/strict');
-const sqlite3 = require('sqlite3').verbose();
-const files = require('../_sys/files');
+import { strictEqual, deepEqual } from 'node:assert/strict';
+import sqlite3 from 'sqlite3';
+import { ReadFile } from '../_sys/files';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -25,7 +25,7 @@ const DBG = true; // Runs Tests if true
 (async () => {
   // read SQL file
   const filename = `_ur/sqlite/db-create-tables.sql`;
-  const sql = await files.ReadFile(filename);
+  const sql = await ReadFile(filename);
   const stms = sql.trim().split(';');
   DB.serialize(async () => {
     // convert file to statements because db.run() only works one statement
@@ -147,9 +147,7 @@ function userAddSubgroup(user_id, subgroup_id) {
  * @param {integer} role_id
  */
 function userAddRole(user_id, role_id) {
-  const stmt = DB.prepare(
-    'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)'
-  );
+  const stmt = DB.prepare('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)');
   stmt.run(user_id, role_id);
   stmt.finalize();
 }
@@ -198,8 +196,7 @@ JOIN user_groups ON users.id = user_groups.user_id
 JOIN groups ON user_groups.group_id = groups.id
     `;
   DB.all(query, (error, rows) => {
-    if (error)
-      throw new Error(`Error retrieving usersAndGroupsGet data: ${error}`);
+    if (error) throw new Error(`Error retrieving usersAndGroupsGet data: ${error}`);
     cb(rows);
   });
 }
@@ -281,8 +278,7 @@ JOIN privs ON role_privs.priv_id = privs.id
 WHERE users.id = ${user_id}
     `;
   DB.all(query, (error, rows) => {
-    if (error)
-      throw new Error(`Error retrieving users permission data: ${error}`);
+    if (error) throw new Error(`Error retrieving users permission data: ${error}`);
     // Remove duplicates
     const results = [];
     rows.forEach(r => {
@@ -357,8 +353,7 @@ JOIN groups ON subgroup_groups.group_id = groups.id
 WHERE groups.id = ${group_id}
     `;
   DB.all(query, (error, rows) => {
-    if (error)
-      throw new Error(`Error retrieving group\`s subgroup data: ${error}`);
+    if (error) throw new Error(`Error retrieving group\`s subgroup data: ${error}`);
     cb(rows.map(r => r.subgroup_name));
   });
 }
@@ -403,9 +398,7 @@ function rolesAdd(names) {
  * @param {Array} privs [ priv_id ]
  */
 function roleAddPermissions(role_id, privs) {
-  const stmt = DB.prepare(
-    'INSERT INTO role_privs (role_id, priv_id) VALUES (?, ?)'
-  );
+  const stmt = DB.prepare('INSERT INTO role_privs (role_id, priv_id) VALUES (?, ?)');
   privs.forEach(permission => stmt.run(role_id, permission));
   stmt.finalize();
 }
@@ -426,8 +419,7 @@ JOIN roles ON role_privs.role_id = roles.id
 WHERE roles.id = ${role_id}
     `;
   DB.all(query, (error, rows) => {
-    if (error)
-      throw new Error(`Error retrieving role permission data: ${error}`);
+    if (error) throw new Error(`Error retrieving role permission data: ${error}`);
     cb(rows);
   });
 }
@@ -497,7 +489,7 @@ function testDB(db) {
     const users = ['Ben', 'Sri', 'Joshua', 'Kalani'];
     usersAdd(users);
     // ...test
-    userGet(2, results => assert.strictEqual(results[0].user_name, 'Sri'));
+    userGet(2, results => strictEqual(results[0].user_name, 'Sri'));
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // GROUPS
@@ -515,23 +507,21 @@ function testDB(db) {
     });
     // ...test
     groupsGet(results => {
-      assert.strictEqual(results[0].group_name, 'Inquirium');
-      assert.strictEqual(results[1].group_name, 'IU');
+      strictEqual(results[0].group_name, 'Inquirium');
+      strictEqual(results[1].group_name, 'IU');
     });
     groupGetUsers(2, results => {
-      assert.strictEqual(results[0].user_name, 'Joshua');
-      assert.strictEqual(results[1].user_name, 'Kalani');
+      strictEqual(results[0].user_name, 'Joshua');
+      strictEqual(results[1].user_name, 'Kalani');
     });
-    userGetGroups(2, results =>
-      assert.strictEqual(results[0].group_name, 'Inquirium')
-    );
+    userGetGroups(2, results => strictEqual(results[0].group_name, 'Inquirium'));
     usersAndGroupsGet(results => {
-      assert.deepEqual(results[0], {
+      deepEqual(results[0], {
         id: 1,
         user_name: 'Ben',
         group_name: 'Inquirium'
       });
-      assert.deepEqual(results[2], {
+      deepEqual(results[2], {
         id: 3,
         user_name: 'Joshua',
         group_name: 'IU'
@@ -561,16 +551,10 @@ function testDB(db) {
       userAddSubgroup(ug.user_id, ug.subgroup_id);
     });
     // ...test
-    groupGetSubgroups(1, results =>
-      assert.deepEqual(results, ['Blue', 'Green'])
-    );
-    groupGetSubgroups(2, results => assert.deepEqual(results, []));
-    userGetSubgroups(1, results =>
-      assert.strictEqual(results[0].subgroup_name, 'Green')
-    );
-    userGetSubgroups(3, results =>
-      assert.strictEqual(results[0].subgroup_name, 'Blue')
-    );
+    groupGetSubgroups(1, results => deepEqual(results, ['Blue', 'Green']));
+    groupGetSubgroups(2, results => deepEqual(results, []));
+    userGetSubgroups(1, results => strictEqual(results[0].subgroup_name, 'Green'));
+    userGetSubgroups(3, results => strictEqual(results[0].subgroup_name, 'Blue'));
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // ROLES
@@ -587,31 +571,24 @@ function testDB(db) {
     });
     // ...test
     userGetRoles(3, results => {
-      assert.strictEqual(results[0].role_name, 'Teacher');
-      assert.strictEqual(results[1].role_name, 'Researcher');
-      assert.strictEqual(results[2].role_name, 'Admin');
+      strictEqual(results[0].role_name, 'Teacher');
+      strictEqual(results[1].role_name, 'Researcher');
+      strictEqual(results[2].role_name, 'Admin');
     });
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // PERMISSIONS
     roleGetPermissions(6, results =>
-      assert.deepEqual(results, [
+      deepEqual(results, [
         { id: 10, priv_name: 'graphView' },
         { id: 11, priv_name: 'graphEdit' },
         { id: 20, priv_name: 'templateView' },
         { id: 21, priv_name: 'templateEdit' }
       ])
     );
-    userGetPermissions(1, results =>
-      assert.deepEqual(results, ['graphView', 'graphEdit'])
-    );
+    userGetPermissions(1, results => deepEqual(results, ['graphView', 'graphEdit']));
     userGetPermissions(3, results =>
-      assert.deepEqual(results, [
-        'graphView',
-        'graphEdit',
-        'templateView',
-        'templateEdit'
-      ])
+      deepEqual(results, ['graphView', 'graphEdit', 'templateView', 'templateEdit'])
     );
 
     TERM('...testing db completed!');

@@ -32,9 +32,9 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const UNISYS = require('unisys/client');
-const TOML = require('@iarna/toml');
-const DATASTORE = require('system/datastore');
+import { NewModule, NewDataLink } from 'unisys/client';
+import { parse, stringify } from '@iarna/toml';
+import { SaveTemplateFile, GetTemplateTOMLFileName } from 'system/datastore';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -42,8 +42,8 @@ const DBG = false;
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var MOD = UNISYS.NewModule(module.id);
-var UDATA = UNISYS.NewDataLink(MOD);
+var MOD = NewModule(module.id);
+var UDATA = NewDataLink(MOD);
 
 /// MODULE METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -54,7 +54,7 @@ MOD.ValidateTOMLFile = async data => {
   const { tomlfile } = data;
   try {
     let tomlText = await tomlfile.text();
-    const json = TOML.parse(tomlText);
+    const json = parse(tomlText);
     const isValid = true;
     return { isValid, templateJSON: json };
   } catch (err) {
@@ -173,17 +173,17 @@ MOD.UpdateTemplate = (templateSnippet, editScope) => {
     This calls: datastore > server > server-database
  */
 MOD.SaveTemplateToFile = template => {
-  return DATASTORE.SaveTemplateFile(template);
+  return SaveTemplateFile(template);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Download template to local file
  */
 MOD.DownloadTemplate = () => {
-  DATASTORE.GetTemplateTOMLFileName() // datastore > server > server-database
+  GetTemplateTOMLFileName() // datastore > server > server-database
     .then(data => {
       const filename = data.filename;
       const TEMPLATE = UDATA.AppState('TEMPLATE');
-      const toml = TOML.stringify(TEMPLATE);
+      const toml = stringify(TEMPLATE);
       const link = document.createElement('a');
       const blob = new Blob(['\ufeff', toml]);
       const url = URL.createObjectURL(blob);
@@ -197,4 +197,4 @@ MOD.DownloadTemplate = () => {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = MOD;
+export default MOD;
