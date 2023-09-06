@@ -26,14 +26,15 @@
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const TERM = require('./prompts').makeTerminalOut(' URPC', 'TagGreen');
-const UR_EVENTS = require('./declare-async');
+import { makeTerminalOut } from '../common/prompts.js';
+const TERM = makeTerminalOut(' URPC', 'TagGreen');
+import * as UR_EVENTS from '../common/declare-async.js';
 
 /// METHODS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export default {
   ...UR_EVENTS
 };

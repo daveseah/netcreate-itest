@@ -6,9 +6,10 @@
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import { EXIT_CODES } from './declare-errors';
+const { EXIT_CODES } = require('./declare-errors');
 const { ERR_UR } = EXIT_CODES;
-import { makeTerminalOut } from './prompts';
+const PROMPTS = require('./prompts');
+const { makeTerminalOut } = PROMPTS;
 const ERROUT = makeTerminalOut('ERR', 'TagRed');
 
 /// API METHODS ///////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ const NewConsoleError = (label = '_ERR_', tagColor = 'TagRed') => {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
+module.exports = {
   DIE,
   NewConsoleError
 };

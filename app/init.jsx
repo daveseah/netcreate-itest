@@ -9,12 +9,6 @@ if (window.NC_DBG) console.log(`inc ${module.id}`);
 
 const DBG = false;
 
-/// SYSTEM-WIDE LANGUAGE EXTENSIONS ///////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// These are loaded in init to make sure they are available globally!
-/// You do not need to copy these extensions to your own module files
-import 'babel-polyfill'; // enables regenerators for async/await
-
 /// LIBRARIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 import React from 'react';

@@ -141,7 +141,7 @@ const [SUPPORTED_TAG_NAMES, SUPPORTED_ANSI_NAMES] = m_ExtractNames(TERM_COLORS);
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
+module.exports = {
   TERM_COLORS,
   CSS_COLORS,
   //

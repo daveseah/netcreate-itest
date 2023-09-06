@@ -6,13 +6,14 @@
 
 import { EventEmitter } from 'node:events';
 import { Readable, Writable, Duplex, Transform } from 'node:stream';
-import { UR_EVENTS } from './declare-async';
-const { URDEX } = UR_EVENTS;
+import D_ASYNC from '../common/declare-async.js';
+const { URDEX } = D_ASYNC.UR_EVENTS;
 import { ChildProcess } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = require('./prompts').makeTerminalOut(' URMOD', 'TagYellow');
+import { makeTerminalOut } from '../common/prompts.js';
+const LOG = makeTerminalOut(' URMOD', 'TagYellow');
 const DBG = true;
 
 /// CLASS UR MODULE ///////////////////////////////////////////////////////////

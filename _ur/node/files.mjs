@@ -8,13 +8,14 @@
 
 /// SYSTEM LIBRARIES //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const NDIR = require('node-dir');
-const FSE = require('fs-extra');
-const PATH = require('path');
+import NDIR from 'node-dir';
+import FSE from 'fs-extra';
+import PATH from 'node:path';
+import { makeTerminalOut } from '../common/prompts.js';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const TERM = require('./prompts').makeTerminalOut(' FILES', 'TagGreen');
+const TERM = makeTerminalOut(' FILES', 'TagGreen');
 const ERR_UR = 444;
 const DBG = false;
 
@@ -157,7 +158,7 @@ async function Test() {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
+export {
   FileExists,
   DirExists,
   IsDir,

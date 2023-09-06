@@ -6,7 +6,7 @@
 
 import { watch } from 'chokidar';
 import express from 'express';
-import { makeTerminalOut } from './prompts';
+import { makeTerminalOut } from '../common/prompts.js';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

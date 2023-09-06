@@ -78,4 +78,4 @@ const get = (target, property, receiver) => {
   return value;
 };
 
-module.exports = proxymise;
+export default proxymise;

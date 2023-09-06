@@ -60,7 +60,7 @@ const APPDATA_TYPES = {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
+module.exports = {
   APPDATA_TYPES,
   MEDIA_TYPES,
   EVENT_TYPES

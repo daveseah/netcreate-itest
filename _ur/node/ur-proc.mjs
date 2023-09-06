@@ -10,20 +10,29 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const { fork } = require('child_process');
-const path = require('path');
-const FILES = require('./files');
-const { DIE } = require('./error-mgr');
-const UrModule = require('./class-urmodule');
+import { fork } from 'node:child_process';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { DirExists, Files } from './files.mjs';
+import UrModule from './class-urmodule.mjs';
+import ERROR from '../common/error-mgr.js';
+const { DIE } = ERROR;
+import { makeTerminalOut } from '../common/prompts.js';
+
+/// RESTORE CJS CONVENIENCE MACROS ////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// see blog.logrocket.com/alternatives-dirname-node-js-es-modules/
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = require('./prompts').makeTerminalOut(' UPROC', 'TagCyan');
+const LOG = makeTerminalOut(' UPROC', 'TagCyan');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LAUNCH_PREFIX = '@';
-const URDIR = path.join(__dirname, '..');
+const URDIR = join(__dirname, '..');
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -172,11 +181,11 @@ function m_ParseModulePathString(modname, fn = 'm_ParseModulePathString') {
  */
 async function m_ReadModuleEntryFiles(modname) {
   const fn = 'm_ReadModuleEntryFiles';
-  const modulePath = path.join(URDIR, modname);
-  if (!FILES.DirExists(modulePath)) {
+  const modulePath = join(URDIR, modname);
+  if (!DirExists(modulePath)) {
     DIE(fn, 'error:', modname, `not found in ${URDIR} directory`);
   }
-  const files = await FILES.Files(modulePath);
+  const files = await Files(modulePath);
   const entryFiles = files.filter(file => file.startsWith(LAUNCH_PREFIX));
   return entryFiles;
 }
@@ -203,6 +212,4 @@ const u_argType = arg => {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
-  UR_Fork
-};
+export { UR_Fork };

@@ -46,7 +46,7 @@ class NC_Project {}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
+module.exports = {
   NC_Object,
   NC_Node,
   NC_Edge,
