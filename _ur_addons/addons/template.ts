@@ -20,8 +20,8 @@
  *  its own set of templatizeable collections
  */
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type AppType = ['netcreate.1' | 'meme.1']; // set context for TemplateType
-type TemplateType = ['comments' | 'criteria']; // app-specific templates
+type AppType = 'netcreate.1' | 'meme.1'; // set context for TemplateType
+type TemplateType = 'comments' | 'criteria'; // app-specific templates
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Template collections generally manage a set of props. These would be
  *  managed by collection-specific managers
