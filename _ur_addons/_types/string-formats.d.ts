@@ -2,19 +2,22 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   string formats for common patterns
+  note: the number declarations 
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 /// DATE STRINGS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type Digit = `${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`;
-type Year = `${Digit}${Digit}${Digit}${Digit}`;
-// prettier-ignore
-type Month = `01` | `02` | `03` | `04` | `05` | `06` | `07` | `08` | `09` | `10` | `11` | `12`;
-type TwoDigitDay = `${1 | 2}${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`;
-// prettier-ignore
-type Day = `01` | `02` | `03` | `04` | `05` | `06` | `07` | `08` | `09` | TwoDigitDay | `30` | `31`;
+/// typescript does not provide regex or pattern-style type declarations
+type Year = `${number}`; // year 0000-9999
+type Month = `${number}`; // month 01-12
+type Day = `${number}`; // day 01-31
+type Hour = `${number}`; // hour 00-23
+type Minute = `${number}`; // minute 00-59
+type Second = `${number}`; // second 00-59
 
 /// INPUT TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type CC_DateString = `${number}${number}${number}${number}-${Month}-${Day}`;
+type CC_DateString = `${Year}-${Month}-${Day}`;
+type CC_TimeString = `${Hour}:${Minute}:${Second}`;
+type CC_DateTimeString = `${CC_DateString}:${CC_TimeString}`;

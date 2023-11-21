@@ -14,61 +14,126 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-/// TEMPLATE SYSTEM ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** AppType is a hardcoded list of apps in our app ecosphere. Each app type has
- *  its own set of templatizeable collections
- */
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type AppType = 'netcreate.1' | 'meme.1'; // set context for TemplateType
+/*/ Template collections generally manage a set of props. These would be
+    managed by collection-specific managers
+/*/
 type TemplateType = 'comments' | 'criteria'; // app-specific templates
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Template collections generally manage a set of props. These would be
- *  managed by collection-specific managers
- */
-type TemplateDef<T> = {
-  usage: string;
-  label: string;
-  props: Map<string, T>;
-};
-type TemplateDict<T> = Map<TemplateType, TemplateDef<T>>;
+interface TemplateData<T> extends Identity {
+  type: TemplateType; // which type of template this is
+  props: Map<string, T>; // map of properties
+}
 
-/// CRITERIA ///////////////////////////////////////////////////////////////////
+/// SPECIFIC TEMPLATES ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Criteria are the "prompts" used for a project */
-type Criterion = {
-  usage: string;
-  label: string;
+/*/ Criteria are the "prompts" used for a project /*/
+type CriteriaDict = TemplateData<Criterion>;
+interface Criterion extends Identity {
   prompt: string;
   example?: string;
   help?: string;
   default?: string;
-};
-type CriteriaDict = TemplateDict<Criterion>;
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Settings are for eah type of app-specific context */
-type Setting = {
-  usage: string;
-  label: string;
+}
+
+/*/ Settings are for each type of app-specific context /*/
+type SettingDict = TemplateData<Setting>;
+interface Setting extends Identity {
   type: string;
   nullable: boolean;
   example?: string;
   help?: string;
   default?: string;
-};
-type SettingDict = TemplateDict<Setting>;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const NAMED_IDS = new Set<UIDString>();
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_CheckID(id: UIDString) {
+  const fn = 'CheckNamedID:';
+  if (!id) console.error(fn, 'missing id');
+  if (NAMED_IDS.has(id)) {
+    console.error(fn, `duplicate id: ${id}`);
+    return undefined;
+  }
+  NAMED_IDS.add(id);
+  return id;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** generic template collection manager of type T. Any template collection
+ *  id or property within
+ */
+class TemplateManager<T> {
+  id: UIDString;
+  usage: string;
+  label: string;
+  props: Map<UIDString, T>;
+
+  constructor(options: Identity) {
+    const { id, usage, label } = options || {};
+    this.id = m_CheckID(id);
+    this.usage = usage;
+    this.label = label;
+    this.props = new Map();
+  }
+
+  /** set an entry of the collection type <T>
+   *  you'll have to provide the entire object;
+   *  it will be merged with any existing entry.
+   *  should be called only once
+   */
+  addEntry(propName: UIDString, prop: T) {
+    const entry = this.props.get(propName);
+    if (entry !== undefined) {
+      const newEntry = { ...entry, ...prop };
+      this.props.set(propName, newEntry);
+      return;
+    }
+    this.props.set(propName, prop);
+  }
+
+  /** return the entry matching the key, which
+   *  is an entire object of type <T>
+   */
+  getEntry(propName: UIDString): T {
+    return this.props.get(propName);
+  }
+
+  /** parse a json string object. ideally we would
+   *  be parsing our own template format that is easier
+   *  to read
+   */
+  parseJSON(json: string) {
+    console.log('would parse json', json);
+  }
+
+  /** return a json string representation of the
+   *  template data
+   */
+  JSON(): string {
+    return JSON.stringify(this.props);
+  }
+}
 
 /// DECLARE COLLECTIONS ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const CRITERIA: CriteriaDict = new Map();
-const COLORS: SettingDict = new Map();
-const PROMPTS: SettingDict = new Map();
-
-/*** INSERT CLASS DECLARATION HERE ***/
+const CRITERIA = new TemplateManager<CriteriaDict>({
+  id: 'crit_project_1',
+  usage: 'criteria template',
+  label: 'project criteria'
+});
+const COLORS = new TemplateManager<SettingDict>({
+  id: 'set_colors_overrides',
+  usage: 'color settings template',
+  label: 'color overrides'
+});
+const PROMPTS = new TemplateManager<SettingDict>({
+  id: 'named_prompts',
+  usage: 'prompt settings template',
+  label: 'named prompts'
+});
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
+  TemplateManager, // generic template manager class
   CRITERIA, // project-wide criteria
   COLORS, // color string defintions
   PROMPTS // prompt string definitions
