@@ -14,7 +14,7 @@ const { umdWrapper } = require('esbuild-plugin-umd-wrapper');
 const FSE = require('fs-extra');
 // build-lib can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
-const PROMPTS = require('../_ur/common/prompts');
+const PROMPTS = require('../common/prompts');
 const PR = `${PROMPTS.padString('UR_LIBS', 8)} -`;
 
 /// CONSTANTS AND DECLARATIONS ///////////////////////////////////////////////////////////////

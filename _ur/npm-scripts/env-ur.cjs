@@ -1,13 +1,10 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   A dependency-free environment detection for CJS codebases
-  
-  NOTES: The _ur_cli directory contains several 'task utilities' written for
-  node as CommonJS. This is a requirement because the base project, NetCreate,
-  is stuck using it due to the legacy nature of the project: it predates
-  the use of ESM and the build system 'brunch' is not compatible with ESM.
-  We can not upgrade the build system because the source files themselves are
-  reliant on how brunch emulates a filesystem.
+
+  The _ur directory has a build utility called @ur-build-lib.cjs that depends
+  on various paths; this module can provide those paths and related utilities
+  to any CJS node source file inside the _ur directory.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -18,7 +15,7 @@ const { statSync } = require('node:fs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - -
 const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - -
-const ROOT = normalize(join(__dirname, '../'));
+const ROOT = normalize(join(__dirname, '../../'));
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -51,7 +48,6 @@ const u_short = path => {
 /// RUNTIME CALCULATIONS //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// NOTE: these are declared also in node-server/env-node.mts
-const DIR_APP = u_path('/app');
 const DIR_PUBLIC = u_path('/public');
 const DIR_UR = u_path('/_ur');
 const DIR_UR_DIST = u_path('/_ur/_dist');
@@ -63,8 +59,7 @@ const DIR_URMODS = u_path('/_ur_mods');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 module.exports = {
   ROOT, // root of the project
-  DIR_APP, // path of webbapp source code
-  DIR_PUBLIC, // path to PUBLIC directory for serving webapp
+  DIR_PUBLIC, // path to PUBLIC directory for webapp
   DIR_UR, // path to _ur directory
   DIR_UR_DIST, // path to browser client code
   DIR_BDL_BROWSER, // path to node server code

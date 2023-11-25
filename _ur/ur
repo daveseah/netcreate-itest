@@ -2,7 +2,7 @@
 # URTEST is a CLI development task runner that invokes the URSYS CLI build library
 # it lives inside of the _ur directory
 
-source ./_set.sh
+source ./ur-env.sh
 
 usage() {
     echo "Usage: ur {build|test}"

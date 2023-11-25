@@ -1,6 +1,6 @@
 # PATH SETTINGS
 UR_BUILD="./"
-CLI_BUILD="../_ur_cli"
+CLI_BUILD="./npm-scripts"
 MODS_BUILD="../_ur_mods"
 TEST_BUILD="../_ur_addons"
 
