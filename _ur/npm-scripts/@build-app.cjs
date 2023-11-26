@@ -15,7 +15,7 @@ const UR = require('@ursys/netcreate');
 const { EnsureDir } = UR.FILES;
 // build-lib can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
-const PROMPTS = require('../_ur/common/prompts');
+const PROMPTS = require('../common/prompts');
 const PR = `${PROMPTS.padString('UR_APPS', 8)} -`;
 
 /// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////

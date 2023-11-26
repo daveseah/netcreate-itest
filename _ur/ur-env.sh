@@ -1,9 +1,3 @@
-# PATH SETTINGS
-UR_BUILD="./"
-CLI_BUILD="./npm-scripts"
-MODS_BUILD="../_ur_mods"
-TEST_BUILD="../_ur_addons"
-
 # Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
 DEBUG="--inspect-brk" # use --inspect-brk to break on first line
 OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
@@ -21,4 +15,3 @@ OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
 # $? -  exit status of the last executed command (0 = success is convention)
 # $$ -  process ID (PID) of the currently running script or shell.
 # $! - the PID of the last background command that was executed.
-

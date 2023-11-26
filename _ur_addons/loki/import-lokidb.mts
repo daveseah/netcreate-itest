@@ -10,22 +10,20 @@ import PATH from 'path';
 // our library import
 import { TerminalFormatter } from '@ursys/netcreate';
 // import from local files require extensions
-import * as SESSION from './session.ts';
+import * as SESSION from '../_drafts/session.ts';
 
-/// CONTROL ///
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 const READONLY = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// STATUSES ///
 let m_datafile: string = '';
+let m_options: any = {};
 let m_db: Loki; // loki database
 let m_db_loaded: boolean = false;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_max_edgeID: number;
 let m_max_nodeID: number;
-let m_options: any;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// COLLECTIONS ///
 let NODES: Loki.Collection;
 let EDGES: Loki.Collection;
 

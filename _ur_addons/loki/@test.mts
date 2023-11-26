@@ -4,12 +4,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PromiseLoadDatabase, ListCollections } from './addons/import-lokidb.mts';
+import { PromiseLoadDatabase, ListCollections } from './import-lokidb.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// RUNTIME TESTS /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-await PromiseLoadDatabase('./_data/lokijs/team.loki');
+await PromiseLoadDatabase('./_data_nocommit/lokijs-team-ex/team.loki');
 ListCollections();

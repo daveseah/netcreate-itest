@@ -2,7 +2,11 @@
 # URTEST is a CLI development task runner that invokes the URSYS CLI build library
 # it lives inside of the _ur directory
 
-source ./ur-env.sh
+# PATH SETTINGS
+UR_BUILD="./"
+CLI_BUILD="./npm-scripts"
+MODS_BUILD="../_ur_mods"
+TEST_BUILD="../_ur_addons/loki"
 
 usage() {
     echo "Usage: ur {build|test}"
@@ -23,14 +27,14 @@ fi
 case "$1" in
     build)
         # (1) always build library first
-        node $OPTS $CLI_BUILD/@cli-build-lib.cjs 2>&1 | cat
+        node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
         # (2) add additional tasks here (eventually can be command args)
         node $OPTS $MODS_BUILD/@ur-build-mods.cjs 2>&1 | cat
         ;;
 
     test)
         echo "would be running tests..."
-        # npx ts-node-esm $TEST_BUILD/@test.mts 2>&1 | cat
+        npx ts-node-esm $TEST_BUILD/@test.mts 2>&1 | cat
         ;;
 
     *)
