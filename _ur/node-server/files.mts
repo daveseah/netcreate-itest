@@ -252,7 +252,6 @@ function Files(dirpath, opt = {}): string[] {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Subdirs(dirpath): string[] {
-  LOG('Subdirs', dirpath);
   const result = GetDirContent(dirpath);
   if (!result) return undefined;
   return result.dirs;
