@@ -38,8 +38,6 @@ async function ESBuildWebApp() {
   // make sure DIR_PUBLIC exists
   EnsureDir(DIR_PUBLIC);
 
-  if (!DBG) LOG(PR, 'building @ursys webapp from', _short(ENTRY_JS));
-
   // build the webapp and stuff it into public
   const context = await esbuild.context({
     entryPoints: [ENTRY_JS],
@@ -75,6 +73,9 @@ async function ESBuildWebApp() {
       })
     ]
   });
+  // done!
+  if (!DBG) LOG(PR, 'built @ursys webapp from', _short(ENTRY_JS));
+
   // enable watching
   if (DBG) LOG(PR, 'watching', _short(DIR_PUBLIC));
   await context.watch();

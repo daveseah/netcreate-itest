@@ -45,21 +45,20 @@ async function ESBuildLibrary() {
     packages: 'external'
   };
 
-  if (!DBG) LOG(PR, 'building @ursys core...');
-
   /* build the server library for nodejs */
-  if (DBG) LOG(PR, 'building ur-server ESM...');
   await esbuild.build({
     ...nodeBuild,
     outfile: `${DIR_UR_DIST}/server-esm.mjs`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'building ur-server CJS...');
+  if (DBG) LOG(PR, 'built ur-server ESM');
+
   await esbuild.build({
     ...nodeBuild,
     outfile: `${DIR_UR_DIST}/server.cjs`,
     format: 'cjs'
   });
+  if (DBG) LOG(PR, 'built ur-server CJS');
 
   /** BROWSER CLIENT SHARED BUILD SETTINGS **/
   const browserBuild = {
@@ -69,25 +68,30 @@ async function ESBuildLibrary() {
     target: ['esnext'],
     sourcemap: true
   };
-  if (DBG) LOG(PR, 'building ur-client ESM...');
   await esbuild.build({
     ...browserBuild,
     outfile: `${DIR_UR_DIST}/client-esm.js`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'building ur-client CJS...');
+  if (DBG) LOG(PR, 'built ur-client ESM');
+
   await esbuild.build({
     ...browserBuild,
     outfile: `${DIR_UR_DIST}/client-cjs.js`,
     format: 'cjs'
   });
-  if (DBG) LOG(PR, 'building ur-client UMD...');
+  if (DBG) LOG(PR, 'built ur-client CJS');
+
   await esbuild.build({
     ...browserBuild,
     plugins: [umdWrapper()],
     outfile: `${DIR_UR_DIST}/client-umd.js`,
     format: 'umd' // esbuild-plugin-umd-wrapper
   });
+  if (DBG) LOG(PR, 'built ur-client UMD');
+
+  // if !DBG just emit a simpler message
+  if (!DBG) LOG(PR, 'built @ursys core');
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////
