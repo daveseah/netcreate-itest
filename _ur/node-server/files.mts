@@ -22,7 +22,7 @@ import * as url from 'url';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_DetectDirname() {
+function m_Dirname() {
   if (import.meta) return url.fileURLToPath(new URL('.', import.meta.url));
   return __dirname;
 }
@@ -37,17 +37,18 @@ const DBG = false;
  *  - path: return a normalized path relative to base path with no trailing /
  *  - short: return path without the root directory portion
  */
-function NormalPathUtility(UROOT: string) {
-  const dirname = m_DetectDirname();
-  if (UROOT === undefined) UROOT = PATH.normalize(PATH.join(dirname, '..'));
+function NormalPathUtility(rootRelDir?: string) {
+  const dirname = m_Dirname();
+  // calculate the root dit
+  if (rootRelDir === undefined) rootRelDir = PATH.normalize(PATH.join(dirname, '..'));
   const u_path = path => {
-    if (path.length === 0) return UROOT;
-    path = PATH.normalize(PATH.join(UROOT, path));
+    if (path.length === 0) return rootRelDir;
+    path = PATH.normalize(PATH.join(rootRelDir, path));
     if (path.endsWith('/')) path = path.slice(0, -1);
     return path;
   };
   const u_short = path => {
-    if (path.startsWith(UROOT)) return path.slice(UROOT.length);
+    if (path.startsWith(rootRelDir)) return path.slice(rootRelDir.length);
     return path;
   };
   return {
@@ -102,13 +103,13 @@ function ValidateAddon(addon: string) {
   //
   if (!a_dirs.includes(addonName))
     return {
-      err: `addon ${addonName} not found in ${ADDONS} directory`
+      err: `addon '${addonName}' not found in ${ADDONS} directory`
     };
   // confirmed that the directory exists, now read entry points
   const addon_dir = PATH.join(ADDONS, addonName);
   const a_files = Files(addon_dir);
   if (!a_files) {
-    return { err: `addon ${addonName} has no files` };
+    return { err: `addon '${addonName}' directory has no files` };
   }
   const entry_files = a_files.filter(item => item.startsWith('@'));
   // 1. was it just the addon name provided?
@@ -122,13 +123,13 @@ function ValidateAddon(addon: string) {
         entryFile
       };
     }
-    return { err: `addon ${addonName} has no entry files` };
+    return { err: `addon '${addonName}' has no @entry files` };
   }
   // 2. was an entryName provided? Check that it exists
   const regex = new RegExp(`${entryName}\\.[^\\.]+$`, 'i');
   entryFile = entry_files.find(filename => regex.test(filename));
   if (!entryFile) {
-    LOG(`entry ${entryName} not found in ${addonName} directory`);
+    LOG(`entry '${entryName}' not found in ${addonName} directory`);
     return {};
   }
   return {
@@ -210,7 +211,7 @@ function RemoveDir(dirpath): boolean {
  *  root directory of the project. It defaults to `.nvmrc`
  */
 function DetectedRootDir(rootfile: string = '.nvmrc'): string {
-  let currentDir = m_DetectDirname();
+  let currentDir = m_Dirname();
   const check_dir = dir => FSE.existsSync(PATH.join(dir, rootfile));
   while (currentDir !== PATH.parse(currentDir).root) {
     if (check_dir(currentDir)) return currentDir;
@@ -218,6 +219,13 @@ function DetectedRootDir(rootfile: string = '.nvmrc'): string {
   }
   // If reached root and file not found
   return undefined;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Make a string relative to the project root, returning a normalized path */
+function LocalPath(subdir: string): string {
+  const root = DetectedRootDir();
+  if (!root) throw Error('LocalPath: could not find project root');
+  return PATH.normalize(PATH.join(root, subdir));
 }
 
 /// ASYNC DIRECTORY METHODS ///////////////////////////////////////////////////
@@ -306,6 +314,7 @@ export {
   EnsureDir,
   RemoveDir,
   DetectedRootDir,
+  LocalPath,
   Files,
   Subdirs,
   //
