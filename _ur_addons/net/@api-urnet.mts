@@ -1,17 +1,16 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  simple test framework
+  URNET standalone server (NetCreate compatible version)
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES } from '@ursys/netcreate';
-import { PromiseLoadDatabase, ListCollections } from './import-lokidb.mts';
+import * as URNET from './urnet-server.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const LOG = console.log;
+const ARGS = process.argv.slice(2);
 
-/// RUNTIME TESTS /////////////////////////////////////////////////////////////
+/// RUNTIME INITIALIZATION ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const datadir = FILES.LocalPath('_ur/_data_nocommit/lokijs-team-ex');
-await PromiseLoadDatabase(`${datadir}/team.loki`);
-ListCollections();
+LOG('@api-urnet.mts called with args:', ARGS);

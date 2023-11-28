@@ -1,6 +1,7 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   read a loki database 
+  this code is based on the GEMSTEP version
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -31,7 +32,7 @@ let EDGES: Loki.Collection;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = TerminalFormatter('LOKI', 'TagBlue');
 if (DBG) LOG('module: import-lokidb.mts ');
-LOG(JSON.stringify(SESSION));
+LOG('session init:', JSON.stringify(SESSION));
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -99,6 +100,7 @@ function _LoadDatabase(dataset: string, options: any = {}) {
       m_options.reject();
       m_options.reject = null;
     }
+    return;
   }
   LOG(`LOADING DATABASE ${m_datafile}`);
   let ropt = {
@@ -151,4 +153,5 @@ function GetMaxIdIn(col: Loki.Collection) {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// for direct imports by other modules
 export { PromiseLoadDatabase, ListCollections };
