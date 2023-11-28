@@ -26,14 +26,9 @@ const LOG = console.log;
 
 /// ESBUILD API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function _short(path) {
-  if (path.startsWith(ROOT)) return path.slice(ROOT.length);
-  return path;
-}
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** build the UR libraries for server and client */
 async function ESBuildLibrary() {
-  //
   // FSE.removeSync(DIR_UR_DIST); // don't do this because brunch watch will break
   FSE.ensureDir(DIR_UR_DIST);
 
@@ -43,6 +38,9 @@ async function ESBuildLibrary() {
     bundle: true,
     platform: 'node',
     target: ['node18', 'esnext'],
+    logOverride: {
+      'empty-import-meta': 'silent'
+    },
     sourcemap: true,
     packages: 'external'
   };

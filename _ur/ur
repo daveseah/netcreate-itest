@@ -6,6 +6,7 @@
 UR_BUILD="./"
 CLI_BUILD="./npm-scripts"
 MODS_BUILD="../_ur_mods"
+ADDONS_LIB="../_ur_addons"
 TEST_BUILD="../_ur_addons/loki"
 
 usage() {
@@ -19,28 +20,44 @@ if ! command -v node > /dev/null 2>&1; then
     exit 1
 fi
 
+#
 # If no arguments provided or unknown option, display usage
+#
 if [ $# -eq 0 ]; then
   usage
 fi
 
+#
+# handle built-in commands
+# note: Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
+#
+DEBUG="--inspect-brk" # use --inspect-brk to break on first line
+OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
+TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode
 case "$1" in
     build)
         # (1) always build library first
         node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
         # (2) add additional tasks here (eventually can be command args)
         node $OPTS $MODS_BUILD/@ur-build-mods.cjs 2>&1 | cat
+        exit 0;
         ;;
 
     test)
         echo "would be running tests..."
-        npx ts-node-esm $TEST_BUILD/@test.mts 2>&1 | cat
-        ;;
-
-    *)
-        usage
+        npx ts-node-esm $TSOPTS $TEST_BUILD/@test.mts 2>&1 | cat
+        exit 0;
         ;;
 esac
+
+#
+# if we got this far, assuming that $1 is a directory and we are going
+# to pass arguments to a special script
+#
+node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
+npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts $1 2>&1 | cat
+
+
 
 
 

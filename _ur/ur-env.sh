@@ -1,7 +1,3 @@
-# Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
-DEBUG="--inspect-brk" # use --inspect-brk to break on first line
-OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
-
 # $IFS -  Internal Field Separator variable = field delimiters (e.g. default space, tab, newline) 
 # $LINENO -  current line number in the script where this variable is used.
 # $SHELL -  This variable contains the path to the default shell (e.g., /bin/bash, /bin/sh) used to execute the script.
