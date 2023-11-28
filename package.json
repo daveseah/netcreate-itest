@@ -56,8 +56,7 @@
     "path": "^0.12.7",
     "prettier": "^2.5.1",
     "terser-brunch": "^4.0.0",
-    "tracer": "^1.1.5",
-    "ts-node": "^10.9.1"
+    "tracer": "^1.1.5"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",

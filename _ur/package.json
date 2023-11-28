@@ -28,7 +28,8 @@
   "devDependencies": {
     "esbuild": "^0.19.2",
     "esbuild-plugin-copy": "^2.1.1",
-    "esbuild-plugin-umd-wrapper": "^1.0.7"
+    "esbuild-plugin-umd-wrapper": "^1.0.7",
+    "ts-node": "^10.9.1"
   },
   "dependencies": {
     "fs-extra": "^11.1.1",
