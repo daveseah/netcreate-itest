@@ -7,7 +7,7 @@
 import * as URNET from './urnet-server.mts';
 import PATH from 'path';
 import Keyv from 'keyv';
-import { KeyvFile } from '@ursys/netcreate';
+import { KeyvFile } from 'keyv-file';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -20,16 +20,22 @@ LOG('@api-urnet.mts called with args:', ARGS);
 
 // Create a Keyv instance using file storage
 const filename = PATH.join(process.cwd(), 'pid_nocommit.json');
+const keyvF = new KeyvFile({ filename });
 const keyv = new Keyv({
-  store: new KeyvFile({ filename })
+  store: keyvF,
+  namespace: '' // remove the namespace prefix added to key strings
 });
 // Using keyv
 async function demo() {
-  await keyv.set('foo', 'bar');
-  const foo = await keyv.get('foo');
+  const pid = process.pid.toString();
+  await keyv.set(pid, pid);
+  const foo = await keyv.get(pid);
   console.log(foo); // 'bar'
-
-  console.log('keys', await keyv.iterator());
+  const keys = await keyvF.keys();
+  for (const k of keys) {
+    const key = k.slice(1); // namespace is '', but : separate remains
+    console.log(`"${key}" -`, await keyv.get(key));
+  }
 }
 
 demo();

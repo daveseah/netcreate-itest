@@ -25,7 +25,10 @@ interface TemplateData<T> extends Identity {
 
 /// SPECIFIC TEMPLATES ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/*/ Criteria are the "prompts" used for a project /*/
+/*/ Criteria are the "prompts" used for a project 
+    TODO: "sentence starters" exist for each criteria; there are multiple
+    sentence starters for each criteria
+/*/
 type CriteriaDict = TemplateData<Criterion>;
 interface Criterion extends Identity {
   prompt: string;
