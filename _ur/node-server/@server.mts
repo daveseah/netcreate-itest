@@ -15,6 +15,7 @@ import * as MODMGR from './urmod-mgr.mts';
 import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
+import KeyvFile from './keyv-file.mts';
 // cjs-style modules
 import PROMPTS from '../common/prompts.js';
 const { makeTerminalOut } = PROMPTS;
@@ -44,5 +45,7 @@ export {
   // CLASSES
   UrModule, // ur module wrapper
   // COMMON UTILS
-  makeTerminalOut as TerminalFormatter // prompt style formatter
+  makeTerminalOut as TerminalFormatter, // prompt style formatter
+  // VENDOR UTILS
+  KeyvFile // modified version of keyv-file
 };

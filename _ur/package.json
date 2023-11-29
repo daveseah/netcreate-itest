@@ -33,7 +33,8 @@
   },
   "dependencies": {
     "fs-extra": "^11.1.1",
-    "node-dir": "^0.1.17",
-    "lokijs": "^1.5.12"
+    "keyv": "^4.5.4",
+    "lokijs": "^1.5.12",
+    "node-dir": "^0.1.17"
   }
 }
