@@ -10,7 +10,16 @@ ADDONS_LIB="../_ur_addons"
 TEST_BUILD="../_ur_addons/loki"
 
 usage() {
-    echo "Usage: ur {build|test}"
+    COMMANDS="build test"
+    addons=$(find "$ADDONS_LIB" -mindepth 1 -maxdepth 1 -type d -name "[!_]*" -exec basename {} \;)
+    addons=$(echo "$addons" | tr '\n' ' ')
+    dim=$(tput dim)
+    yellow=$(tput setaf 3)
+    reset=$(tput sgr0)
+    echo "usage:     ${yellow}ur [command | addon]${reset}${dim}"
+    echo "commands   $COMMANDS"
+    echo "addons     $addons"
+    echo "${reset}"
     exit 1
 }
 
