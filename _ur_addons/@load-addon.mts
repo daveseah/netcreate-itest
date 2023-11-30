@@ -10,8 +10,6 @@ import { fork } from 'node:child_process';
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = console.log;
-const ARGS = process.argv.slice(2);
-const CHILDREN = [];
 
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -22,20 +20,20 @@ async function ForkAddon(addonSelector: string, opt = {}) {
     LOG(err);
     return;
   }
-
   // success!
-  LOG('addonName:', addonName);
-  LOG('entryName:', entryName);
-  LOG('entryFile:', entryFile);
-  let child;
+  LOG('.. addonName:', addonName);
+  LOG('.. entryName:', entryName);
+  LOG('.. entryFile:', entryFile);
+  let child_pid;
   const cwd = FILES.LocalPath(`_ur_addons/${addonName}`);
-  child = fork(entryFile, ARGS.slice(1), { cwd });
-  CHILDREN.push(child);
+  child_pid = fork(entryFile, ARGS, { cwd });
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-LOG('load-addon.mts called with args:', ARGS);
+LOG('---');
+const ARGS = process.argv.slice(2);
+LOG('@load-addon.mts called with args:', ARGS);
 const [arg_addon_name] = ARGS;
 ForkAddon(arg_addon_name);
 
