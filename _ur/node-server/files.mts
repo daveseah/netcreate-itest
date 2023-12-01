@@ -74,18 +74,22 @@ function ParseAddonName(shortPath: string) {
     entryName = pathbits[1];
   } else if (pathbits.length === 1) {
     addonName = shortPath;
-  } else throw Error('error: arg has too many slashes');
+  } else return { err: `error: ${entryName} has too many slashes` };
+
   // make sure entryJS is a string or undefined
   if (entryName !== undefined && typeof entryName !== 'string')
-    throw Error('error: bad entryName');
+    return { err: `error: do not use trailing slash for` };
+
   // double-check entry has leading @ if it's a string
   if (entryName) {
     if (!entryName.startsWith('@'))
-      throw Error(`error: entryName '${entryName}' must begin with @`);
+      return {
+        err: `error: entryName '${entryName}' should be called '@${entryName}'`
+      };
     if (entryName.indexOf('.') !== -1)
-      throw Error(`error: entryName '${entryName}' must not contain '.'`);
+      return { err: `error: entryName '${entryName}' must not contain '.'` };
   }
-  // return found add
+  // return found addon
   return { addonName, entryName };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - /
@@ -97,45 +101,53 @@ function ValidateAddon(addon: string) {
   if (!DirExists(ADDONS)) {
     return { err: `directory ${ADDONS} does not exist` };
   }
+  // get list of addon subdirs
   const a_dirs = Subdirs(ADDONS).filter(item => !item.startsWith('_'));
-  let { addonName, entryName } = ParseAddonName(addon);
-  let entryFile;
-  //
+  // parse the addon name
+  let { addonName, entryName, err } = ParseAddonName(addon);
+  if (err) return { err };
+
   if (!a_dirs.includes(addonName))
     return {
-      err: `addon '${addonName}' not found in ${ADDONS} directory`
+      err: `error: addon '${addonName}' not found in ${ADDONS} directory`
     };
-  // confirmed that the directory exists, now read entry points
+
+  // scan for selected add on entry files
   const addon_dir = PATH.join(ADDONS, addonName);
   const a_files = Files(addon_dir);
   if (!a_files) {
-    return { err: `addon '${addonName}' directory has no files` };
+    return { err: `error: addon '${addonName}' directory has no files` };
   }
-  const entry_files = a_files.filter(item => item.startsWith('@'));
+  const entryFiles = a_files.filter(item => item.startsWith('@'));
+  if (entryFiles.length === 0) {
+    return { err: `error: addon '${addonName}' has no @entryfiles` };
+  }
+  let entryFile;
   // 1. was it just the addon name provided?
   if (!entryName) {
-    if (entry_files.length > 0) {
-      entryFile = entry_files[0];
+    if (entryFiles.length > 0) {
+      entryFile = entryFiles[0];
       entryName = PATH.basename(entryFile, PATH.extname(entryFile));
       return {
         addonName,
         entryName,
-        entryFile
+        entryFile,
+        entryFiles
       };
     }
     return { err: `addon '${addonName}' has no @entry files` };
   }
   // 2. was an entryName provided? Check that it exists
   const regex = new RegExp(`${entryName}\\.[^\\.]+$`, 'i');
-  entryFile = entry_files.find(filename => regex.test(filename));
+  entryFile = entryFiles.find(filename => regex.test(filename));
   if (!entryFile) {
-    LOG(`entry '${entryName}' not found in ${addonName} directory`);
-    return {};
+    return { err: `error: entry '${entryName}' not found in '${addonName}' addon` };
   }
   return {
     addonName,
     entryName,
-    entryFile
+    entryFile,
+    entryFiles
   };
 }
 

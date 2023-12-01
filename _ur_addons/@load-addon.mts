@@ -14,18 +14,20 @@ const LOG = console.log;
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ForkAddon(addonSelector: string, opt = {}) {
-  const { addonName, entryName, entryFile, err } =
+  const { addonName, entryName, entryFile, entryFiles, err } =
     FILES.X_ValidateAddon(addonSelector);
   if (err) {
     LOG(err);
     return;
   }
   // success!
-  LOG('.. addonName:', addonName);
-  LOG('.. entryName:', entryName);
-  LOG('.. entryFile:', entryFile);
+  LOG(`.. found ${entryFiles.length} addon entryFile(s)`);
+  entryFiles.forEach(f => LOG(`   . ${addonName}/${f}  `));
+  LOG('.. running:', entryFile);
+
   let child_pid;
   const cwd = FILES.LocalPath(`_ur_addons/${addonName}`);
+
   child_pid = fork(entryFile, ARGS, { cwd });
 }
 
