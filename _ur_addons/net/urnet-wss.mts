@@ -4,22 +4,29 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { Server as WebSocketServer, Socket } from 'ws';
+import PATH from 'node:path';
+import WS from 'ws';
 import { PR } from '@ursys/netcreate';
+import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const LOG = PR('WSS', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const D_PORT = 2929;
 const D_ADDR = '127.0.0.1';
 const D_UADDR = 'URNET-SRV';
-const LOG = PR('UDS', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const ARGS = process.argv.slice(2);
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const m_addon_selector = ARGS[0];
 let m_uaddr_counter = 0;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// PERSISTENT SERVICES ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let WSS: WebSocketServer;
-let UA_SOCKETS = new Map<string, Socket>();
+let WSS: WS.WebSocketServer;
+let UA_SOCKETS = new Map<string, WS.Socket>();
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -68,7 +75,7 @@ function m_OnSocketConnection(socket) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
   const options = { port: D_PORT, host: D_ADDR };
-  WSS = new WebSocketServer(options);
+  WSS = new WS.WebSocketServer(options);
   WSS.on('listening', () => {
     LOG(`listening on ${D_ADDR}:${D_PORT}`);
     WSS.on('connection', socket => m_OnSocketConnection(socket));
@@ -84,6 +91,20 @@ function Stop() {
   LOG(`stopping websocket server for URNET`);
 }
 
+/// RUNTIME TESTING ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function TestProcessManager() {
+  const pid = process.pid.toString();
+  const filename = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
+  await KV.InitKeyStore(filename);
+  await KV.SaveKey(pid, m_addon_selector);
+  const entries = await KV.GetEntries();
+  LOG(JSON.stringify(entries));
+  entries.forEach(e => {
+    LOG(`.. pid:${e.key} = ${e.value}`);
+  });
+}
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { Start, Stop };
+export { Start, Stop, TestProcessManager };

@@ -9,7 +9,7 @@ import { PR, FILES } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('URDS', 'TagBlue');
+const LOG = PR('UDS', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
 const UDS_ROOT = FILES.LocalPath('_ur_addons/net');

@@ -4,9 +4,6 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import PATH from 'path';
-import Keyv from 'keyv';
-import { KeyvFile } from 'keyv-file';
 import { PR } from '@ursys/netcreate';
 import * as UDS from './urnet-uds.mts';
 import * as WSS from './urnet-wss.mts';
@@ -17,41 +14,23 @@ const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const m_addon_selector = ARGS[0];
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let KEYVF, KEYV;
 
-/// KEY STORE /////////////////////////////////////////////////////////////////
+/// TEST FUNCTIONS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function InitKeyStore() {
-  // Create a Keyv instance using file storage
-  const filename = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
-  KEYVF = new KeyvFile({ filename });
-  KEYV = new Keyv({
-    store: KEYVF,
-    namespace: '' // remove the namespace prefix added to key strings
-  });
+function TestUDS() {
+  UDS.StartServer();
+  UDS.X_Connect();
+  setTimeout(() => UDS.X_Disconnect(), 5000);
+  setTimeout(() => UDS.StopServer(), 6000);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function TestKeyStore() {
-  const pid = process.pid.toString();
-  await KEYV.set(pid, m_addon_selector);
-  const foo = await KEYV.get(pid);
-  LOG(`.. test ${pid} contains ${foo}`);
-  const keys = await KEYVF.keys();
-  for (const k of keys) {
-    const key = k.slice(1); // namespace is '', but : separate remains
-    LOG(`.. persisted pid ${key} ...`, await KEYV.get(key));
-  }
+function TestWSS() {
+  WSS.TestProcessManager();
 }
 
 /// RUNTIME INITIALIZATION ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('---');
 LOG('@api-urnet.mts called with args:', ARGS);
-
-InitKeyStore();
-TestKeyStore();
-UDS.StartServer();
-UDS.X_Connect();
-setTimeout(() => UDS.X_Disconnect(), 5000);
-setTimeout(() => UDS.StopServer(), 6000);
+TestUDS();
+TestWSS();
