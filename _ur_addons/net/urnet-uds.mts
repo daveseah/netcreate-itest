@@ -78,10 +78,10 @@ function m_OnSocketConnection(socket) {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Start() {
+function StartServer() {
   LOG(`starting UDS server for URNET`);
 
-  // Start Unix Domain Socket Server
+  // StartServer Unix Domain Socket Server
   IPC.config.id = UDS_SERVER_ID;
   LOG(`starting ${UDS_SERVER_ID} on ${UDS_PATH}`);
   IPC.serve(UDS_PATH, () => {
@@ -93,15 +93,18 @@ function Start() {
   IPC.server.start();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Stop() {
+function StopServer() {
   LOG(`stopping ${UDS_SERVER_ID} on ${UDS_PATH}`);
   IPC.server.stop();
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
 }
+
+/// UDS CLIENTS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Connect() {
+/** Client connect to the UDS server example */
+function X_Connect() {
   // connect to server
   IPC.config.id = UDS_CLIENT_ID;
   LOG(`connecting to ${UDS_SERVER_ID} on ${UDS_PATH}`);
@@ -115,7 +118,8 @@ function Connect() {
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Disconnect() {
+/** Client disconnect from the UDS server example */
+function X_Disconnect() {
   IPC.config.id = UDS_CLIENT_ID;
   LOG(`disconnecting ${UDS_CLIENT_ID} from ${UDS_PATH}`);
   IPC.disconnect(UDS_SERVER_ID);
@@ -123,4 +127,9 @@ function Disconnect() {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { Start, Stop, Connect, Disconnect };
+export {
+  StartServer, // start the UDS server
+  StopServer, // stop the UDS server
+  X_Connect, // client connect to server
+  X_Disconnect // client disconnect from server
+};

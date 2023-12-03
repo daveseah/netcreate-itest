@@ -8,7 +8,8 @@ import PATH from 'path';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import { PR } from '@ursys/netcreate';
-import * as URNET from './urnet-uds.mts';
+import * as UDS from './urnet-uds.mts';
+import * as WSS from './urnet-wss.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -50,7 +51,7 @@ LOG('@api-urnet.mts called with args:', ARGS);
 
 InitKeyStore();
 TestKeyStore();
-URNET.Start();
-URNET.Connect();
-setTimeout(() => URNET.Disconnect(), 5000);
-setTimeout(() => URNET.Stop(), 5000);
+UDS.StartServer();
+UDS.X_Connect();
+setTimeout(() => UDS.X_Disconnect(), 5000);
+setTimeout(() => UDS.StopServer(), 6000);
