@@ -7,15 +7,17 @@
 import PATH from 'path';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
-import * as URNET from './urnet-server.mts';
+import { PR } from '@ursys/netcreate';
+import * as URNET from './urnet-uds.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = console.log;
+const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
-let KEYVF, KEYV;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const m_addon_selector = ARGS[0];
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let KEYVF, KEYV;
 
 /// KEY STORE /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -48,3 +50,7 @@ LOG('@api-urnet.mts called with args:', ARGS);
 
 InitKeyStore();
 TestKeyStore();
+URNET.Start();
+URNET.Connect();
+setTimeout(() => URNET.Disconnect(), 5000);
+setTimeout(() => URNET.Stop(), 5000);

@@ -4,12 +4,12 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES } from '@ursys/netcreate';
+import { FILES, PR } from '@ursys/netcreate';
 import { fork } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = console.log;
+const LOG = PR('ADDON', 'TagCyan');
 
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

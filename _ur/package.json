@@ -32,6 +32,7 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
+    "@achrinza/node-ipc": "^10.1.10",
     "fs-extra": "^11.1.1",
     "keyv": "^4.5.4",
     "keyv-file": "^0.2.0",

@@ -5,13 +5,14 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { Server as WebSocketServer, Socket } from 'ws';
-import { LOG } from '@ursys/netcreate';
+import { PR } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const D_PORT = 2929;
 const D_ADDR = '127.0.0.1';
 const D_UADDR = 'URNET-SRV';
+const LOG = PR('UDS', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_uaddr_counter = 0;
 
@@ -25,7 +26,7 @@ let UA_SOCKETS = new Map<string, Socket>();
 function m_GetNewUADDR() {
   ++m_uaddr_counter;
   let cstr = m_uaddr_counter.toString(10).padStart(2, '0');
-  return `UADDR_${cstr}`;
+  return `UADDR_${cstr}`; // UR ADDRESS
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SocketAdd(socket) {
