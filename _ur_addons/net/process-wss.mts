@@ -91,7 +91,7 @@ function Stop() {
   LOG(`stopping websocket server for URNET`);
 }
 
-/// RUNTIME TESTING ///////////////////////////////////////////////////////////
+/// TESTING ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function TestProcessManager() {
   const pid = process.pid.toString();
@@ -108,6 +108,13 @@ async function TestProcessManager() {
   const addonName = await KV.DeleteKey(pid);
   LOG(`.. removed pic:${pid} ${addonName}`);
 }
+
+/// RUNTIME ///////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+LOG(`${process.pid.toString()} starting URNET WSS`);
+// Start();
+// TestProcessManager();
+LOG(`${process.pid.toString()} exiting URNET WSS`);
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

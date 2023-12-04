@@ -7,9 +7,27 @@
 import IPC, { Socket } from '@achrinza/node-ipc';
 import { PR, FILES } from '@ursys/netcreate';
 
+/// COMMAND PARSER ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDS', 'TagBlue');
+
+/// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+process.on('SIGTERM', () => {
+  (async () => {
+    await Stop();
+  })();
+});
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+process.on('SIGINT', () => {
+  (async () => {
+    await Stop();
+  })();
+});
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
 const UDS_ROOT = FILES.LocalPath('_ur_addons/net');
@@ -35,9 +53,6 @@ function m_GetNewUADDR() {
   let cstr = m_uaddr_counter.toString(10).padStart(2, '0');
   return `URDS_${cstr}`; // UR DOMAIN SOCKET
 }
-
-/// PERSISTENT SERVICES ///////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -78,10 +93,9 @@ function m_OnSocketConnection(socket) {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function StartServer() {
+function Start() {
   LOG(`starting UDS server for URNET`);
-
-  // StartServer Unix Domain Socket Server
+  // Start Unix Domain Socket Server
   IPC.config.id = UDS_SERVER_ID;
   LOG(`starting ${UDS_SERVER_ID} on ${UDS_PATH}`);
   IPC.serve(UDS_PATH, () => {
@@ -93,12 +107,14 @@ function StartServer() {
   IPC.server.start();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function StopServer() {
-  LOG(`stopping ${UDS_SERVER_ID} on ${UDS_PATH}`);
+async function Stop() {
+  LOG(`Terminating ${UDS_SERVER_ID} on ${UDS_PATH}...`);
   IPC.server.stop();
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
+  // fake delay
+  LOG(`.. stopped`);
 }
 
 /// UDS CLIENTS ///////////////////////////////////////////////////////////////
@@ -125,11 +141,6 @@ function X_Disconnect() {
   IPC.disconnect(UDS_SERVER_ID);
 }
 
-/// EXPORTS ///////////////////////////////////////////////////////////////////
+/// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export {
-  StartServer, // start the UDS server
-  StopServer, // stop the UDS server
-  X_Connect, // client connect to server
-  X_Disconnect // client disconnect from server
-};
+Start();

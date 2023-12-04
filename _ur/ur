@@ -64,7 +64,8 @@ esac
 # to pass arguments to a special script
 #
 node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
-npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts $@ 2>&1 | cat
+npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts $@
+
 
 
 
