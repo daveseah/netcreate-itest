@@ -30,7 +30,8 @@
   "dependencies": {
     "@ursys/netcreate": "file:../_ur",
     "graphology": "^0.25.4",
+    "lokijs": "^1.5.12",
     "peggy": "^3.0.2",
-    "lokijs": "^1.5.12"
+    "ws": "^8.14.2"
   }
 }
