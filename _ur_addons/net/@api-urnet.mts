@@ -42,10 +42,9 @@ async function SpawnServer(scriptName: string, id: string) {
   // make sure that this isn't already in here
   let identifier = `${m_addon_selector}`;
   if (id) identifier = `${identifier}-${id}`;
-  const entries = await KV.GetEntries();
-  const found = entries.find(e => e.value === identifier);
+  const found = await KV.GetEntryByValue(identifier);
   if (found) {
-    LOG(`.. ${identifier} already running with pid ${found.key}`);
+    LOG(`!! server '${identifier}' already running (pid ${found.key})`);
     return;
   }
 

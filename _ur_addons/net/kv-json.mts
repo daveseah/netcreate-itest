@@ -4,7 +4,6 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import PATH from 'node:path';
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
 import { PR } from '@ursys/netcreate';
@@ -43,6 +42,12 @@ async function SaveKey(key: string, value: any): Promise<void> {
   if (DBG) LOG(`.. saved ${key} with value ${value}`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return true if key */
+async function HasKey(key: string): Promise<any> {
+  const value = await m_keyv.has(key);
+  return value;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** retrieve key */
 async function GetKey(key: string): Promise<any> {
   const value = await m_keyv.get(key);
@@ -72,6 +77,15 @@ async function GetEntries(): Promise<
   return entries;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** search for an entry that has the matching value (as opposed to key) */
+async function GetEntryByValue(
+  value: any
+): Promise<{ namespace: string; key: string; value: any }> {
+  const entries = await GetEntries();
+  const found = entries.find(e => e.value === value);
+  return found;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** retrieve all keys in { keys, entries } where keys is the short keys
  *  without the associated namespace
  */
@@ -87,4 +101,13 @@ async function GetKeys(): Promise<string[]> {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { InitKeyStore, SaveKey, GetKey, DeleteKey, GetEntries, GetKeys };
+export {
+  InitKeyStore,
+  SaveKey,
+  HasKey,
+  GetKey,
+  DeleteKey,
+  GetEntryByValue,
+  GetEntries,
+  GetKeys
+};
