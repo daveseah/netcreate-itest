@@ -58,7 +58,6 @@ async function GetEntries(): Promise<
   for (const k of keys) {
     let [namespace, key] = k.split(':');
     const value = await m_keyv.get(key);
-    key = key.slice(1);
     entries.push({ namespace, key, value });
   }
   return entries;
