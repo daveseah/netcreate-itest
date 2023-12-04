@@ -32,5 +32,5 @@ function TestWSS() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('---');
 LOG('@api-urnet.mts called with args:', ARGS);
-TestUDS();
+// TestUDS();
 TestWSS();

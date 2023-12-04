@@ -100,9 +100,13 @@ async function TestProcessManager() {
   await KV.SaveKey(pid, m_addon_selector);
   const entries = await KV.GetEntries();
   LOG(JSON.stringify(entries));
-  entries.forEach(e => {
+  LOG(`PIDLIST`);
+  entries.forEach(async e => {
     LOG(`.. pid:${e.key} = ${e.value}`);
   });
+  LOG(`REMOVING PID`);
+  const addonName = await KV.DeleteKey(pid);
+  LOG(`.. removed pic:${pid} ${addonName}`);
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

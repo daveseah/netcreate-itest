@@ -12,6 +12,7 @@ import { PR } from '@ursys/netcreate';
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('KV-JSON');
+const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_keyvfile; // keyv-file json adapter for keyv
 let m_keyv; // keyv instance that uses keyv-file
@@ -24,11 +25,11 @@ let m_keyv; // keyv instance that uses keyv-file
  */
 function InitKeyStore(jsonFilePath: string, namespace?: string) {
   // Create a Keyv instance using file storage
-  LOG(`.. initializing keyv file ${jsonFilePath}`);
+  if (DBG) LOG(`.. initializing keyv file ${jsonFilePath}`);
   m_keyvfile = new KeyvFile({ filename: jsonFilePath });
   if (typeof namespace !== 'string') {
     namespace = '';
-    LOG(`.. namespace set to blank ''`);
+    if (DBG) LOG(`.. namespace set to blank ''`);
   }
   m_keyv = new Keyv({
     store: m_keyvfile,
@@ -39,13 +40,21 @@ function InitKeyStore(jsonFilePath: string, namespace?: string) {
 /** save key value. keyv-file writes to json file as backer */
 async function SaveKey(key: string, value: any): Promise<void> {
   await m_keyv.set(key, value);
+  if (DBG) LOG(`.. saved ${key} with value ${value}`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** retrieve key */
 async function GetKey(key: string): Promise<any> {
-  // const foo = await m_keyv.get(pid);
   const value = await m_keyv.get(key);
-  LOG(`.. test ${key} contains ${value}`);
+  if (DBG) LOG(`.. test ${key} contains ${value}`);
+  return value;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** delete key */
+async function DeleteKey(key: string): Promise<any> {
+  const value = await m_keyv.get(key);
+  await m_keyv.delete(key);
+  if (DBG) LOG(`.. deleted ${key} with value ${value}`);
   return value;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -78,4 +87,4 @@ async function GetKeys(): Promise<string[]> {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { InitKeyStore, SaveKey, GetKey, GetEntries, GetKeys };
+export { InitKeyStore, SaveKey, GetKey, DeleteKey, GetEntries, GetKeys };
