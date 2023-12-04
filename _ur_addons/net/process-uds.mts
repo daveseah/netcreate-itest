@@ -14,7 +14,6 @@ const LOG = PR('UDS', 'TagBlue');
 const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
 const UDS_ROOT = FILES.LocalPath('_ur_addons/net');
 const UDS_SERVER_ID = 'UR-UDS-SRV'; // node-ipc server identifier
-const UDS_CLIENT_ID = 'UR-UDS-CLI'; // node-ipc client identifier
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_urds_counter = 0; // counter for generating unique addresses
 
@@ -109,54 +108,6 @@ async function Stop() {
   LOG(`.. stopped unix domain server`);
 }
 
-/// UDS CLIENTS ///////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Client connect to the UDS server example */
-function X_Connect() {
-  // connect to server
-  IPC.config.id = UDS_CLIENT_ID;
-  LOG(`connecting to ${UDS_SERVER_ID} on ${UDS_PATH}`);
-  IPC.connectTo(UDS_SERVER_ID, UDS_PATH, () => {
-    IPC.of[UDS_SERVER_ID].on('connect', () => {
-      IPC.of[UDS_SERVER_ID].emit('message', 'hello');
-    });
-    IPC.of[UDS_SERVER_ID].on('message', data => {
-      LOG('Received on UDS:', data);
-    });
-  });
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Client disconnect from the UDS server example */
-function X_Disconnect() {
-  IPC.config.id = UDS_CLIENT_ID;
-  LOG(`disconnecting ${UDS_CLIENT_ID} from ${UDS_PATH}`);
-  IPC.disconnect(UDS_SERVER_ID);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Send() {
-  LOG('would send to URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Signal() {
-  LOG('would signal URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Call() {
-  LOG('would call URNET');
-}
-
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Start();
-
-/// EXPORTS ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// used by direct module import
-export {
-  // client interfaces (experimental wip, nonfunctional)
-  X_Connect as Connect,
-  X_Disconnect as Disconnect,
-  X_Send as Send,
-  X_Signal as Signal,
-  X_Call as Call
-};

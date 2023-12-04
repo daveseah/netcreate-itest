@@ -101,39 +101,7 @@ async function Stop() {
   // delete all uaddr sockets
   LOG(`.. stopped websocket server`);
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Connect() {
-  LOG('would connect to URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Disconnect() {
-  LOG('would disconnect from URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Send() {
-  LOG('would send to URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Signal() {
-  LOG('would signal URNET');
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Call() {
-  LOG('would call URNET');
-}
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Start();
-
-/// EXPORTS ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// used by direct module import
-export {
-  // client interfaces (experimental wip, nonfunctional)
-  X_Connect as Connect,
-  X_Disconnect as Disconnect,
-  X_Send as Send,
-  X_Signal as Signal,
-  X_Call as Call
-};
