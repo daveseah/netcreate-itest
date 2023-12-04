@@ -4,29 +4,39 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import PATH from 'node:path';
-import WS from 'ws';
+import { WebSocketServer, Socket } from 'ws';
 import { PR } from '@ursys/netcreate';
-import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('WSS', 'TagBlue');
+const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const D_PORT = 2929;
 const D_ADDR = '127.0.0.1';
 const D_UADDR = 'URNET-SRV';
+
+/// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const ARGS = process.argv.slice(2);
+process.on('SIGTERM', () => {
+  (async () => {
+    await Stop();
+  })();
+});
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+process.on('SIGINT', () => {
+  (async () => {
+    await Stop();
+  })();
+});
+
+/// DATA INIT /////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let WSS: WebSocketServer; // websocket server instance
+let UADDRS = new Map<string, Socket>(); // websocket address dictionary
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const m_addon_selector = ARGS[0];
-let m_uaddr_counter = 0;
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-/// PERSISTENT SERVICES ///////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let WSS: WS.WebSocketServer;
-let UA_SOCKETS = new Map<string, WS.Socket>();
+let m_uaddr_counter = 0; // counter for generating unique addresses
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -39,14 +49,14 @@ function m_GetNewUADDR() {
 function m_SocketAdd(socket) {
   let new_uaddr = m_GetNewUADDR();
   socket.UADDR = new_uaddr;
-  if (UA_SOCKETS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
-  UA_SOCKETS.set(new_uaddr, socket);
+  if (UADDRS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
+  UADDRS.set(new_uaddr, socket);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SocketDelete(socket) {
   let { uaddr } = socket;
   if (uaddr === undefined) throw Error(`socket has no uaddr`);
-  if (UA_SOCKETS.has(uaddr)) UA_SOCKETS.delete(uaddr);
+  if (UADDRS.has(uaddr)) UADDRS.delete(uaddr);
   else throw Error(`${uaddr} not found`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,7 +69,7 @@ function m_SocketConnectionAck(socket) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SocketMessage(socket, json) {
   if (socket.UADDR === undefined) throw Error(`socket has no uaddr`);
-  LOG(`socket ${socket.UADDR} message: ${json}`);
+  LOG(`-> socket ${socket.UADDR} message: ${json}`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_OnSocketConnection(socket) {
@@ -74,48 +84,56 @@ function m_OnSocketConnection(socket) {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
+  LOG(`Starting Websocket Server on ${D_ADDR}:${D_PORT}`);
   const options = { port: D_PORT, host: D_ADDR };
-  WSS = new WS.WebSocketServer(options);
+  WSS = new WebSocketServer(options);
   WSS.on('listening', () => {
-    LOG(`listening on ${D_ADDR}:${D_PORT}`);
+    LOG(`.. listening on ${D_ADDR}:${D_PORT}`);
     WSS.on('connection', socket => m_OnSocketConnection(socket));
   });
-  LOG(`starting websocket server for URNET`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Stop() {
+async function Stop() {
+  LOG(`Terminating Websocket Server on ${D_ADDR}:${D_PORT}...`);
+  await WSS.close();
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
-  WSS.close();
-  LOG(`stopping websocket server for URNET`);
+  LOG(`.. stopped websocket server`);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Connect() {
+  LOG('would connect to URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Disconnect() {
+  LOG('would disconnect from URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Send() {
+  LOG('would send to URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Signal() {
+  LOG('would signal URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Call() {
+  LOG('would call URNET');
 }
 
-/// TESTING ///////////////////////////////////////////////////////////////////
+/// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function TestProcessManager() {
-  const pid = process.pid.toString();
-  const filename = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
-  await KV.InitKeyStore(filename);
-  await KV.SaveKey(pid, m_addon_selector);
-  const entries = await KV.GetEntries();
-  LOG(JSON.stringify(entries));
-  LOG(`PIDLIST`);
-  entries.forEach(async e => {
-    LOG(`.. pid:${e.key} = ${e.value}`);
-  });
-  LOG(`REMOVING PID`);
-  const addonName = await KV.DeleteKey(pid);
-  LOG(`.. removed pic:${pid} ${addonName}`);
-}
-
-/// RUNTIME ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-LOG(`${process.pid.toString()} starting URNET WSS`);
-// Start();
-// TestProcessManager();
-LOG(`${process.pid.toString()} exiting URNET WSS`);
+Start();
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { Start, Stop, TestProcessManager };
+/// used by direct module import
+export {
+  // client interfaces (experimental wip, nonfunctional)
+  X_Connect as Connect,
+  X_Disconnect as Disconnect,
+  X_Send as Send,
+  X_Signal as Signal,
+  X_Call as Call
+};

@@ -11,7 +11,7 @@ import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const DBG = true;
+const DBG = true; // side effect: disables child process detaching
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -65,16 +65,17 @@ async function SpawnServer(scriptName: string, id: string) {
   await KV.SaveKey(pid, `${identifier}`);
   if (!DBG) proc.unref();
   else {
-    LOG(`** DEBUG mode: child process will not be detached`);
-    LOG(`   this allows child process I/O to be seen in this terminal`);
-    LOG(`   press CTRL-C to terminate child process`);
+    const { DIM, RST } = LOG;
+    LOG(
+      `   ${DIM}DBG mode: process '${identifier}' will not be detached. Use ctrl-c to exit.${RST}`
+    );
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function TerminateServers() {
   const entries = await KV.GetEntries();
   if (entries.length === 0) {
-    LOG(`Process list is empty...exiting.`);
+    LOG(`!! Server Process List is empty...exiting.`);
     return;
   }
   LOG(`Terminating Server Processes...`);
@@ -83,10 +84,10 @@ async function TerminateServers() {
     try {
       process.kill(pid, 'SIGTERM');
       const identifier = await KV.DeleteKey(e.key);
-      LOG(`.. removed pid:${pid} ${identifier}`);
+      LOG(`.. SIGTERM '${identifier}' (pid ${pid})`);
     } catch (err) {
       if (err.code === 'ESRCH') {
-        LOG(`.. pid:${pid} has already terminated`);
+        LOG(`.. '${e.key}' (pid ${pid}) has already exited`);
         await KV.DeleteKey(e.key);
       } else LOG(`** Error sending SIGTERM to process ${pid}:`, err.code);
     }
@@ -106,9 +107,13 @@ async function ParseCommandLine() {
   switch (command) {
     case 'start':
       await SpawnServer('./process-uds.mts', 'uds');
+      await SpawnServer('./process-wss.mts', 'wss');
       break;
     case 'stop':
       await TerminateServers();
+      break;
+    case undefined:
+      LOG(`net command requires mode argument (start|stop)`);
       break;
     default:
       LOG(`unknown net command '${command}'`);

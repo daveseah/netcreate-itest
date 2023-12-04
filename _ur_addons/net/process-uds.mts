@@ -7,12 +7,16 @@
 import IPC, { Socket } from '@achrinza/node-ipc';
 import { PR, FILES } from '@ursys/netcreate';
 
-/// COMMAND PARSER ////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDS', 'TagBlue');
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
+const UDS_ROOT = FILES.LocalPath('_ur_addons/net');
+const UDS_SERVER_ID = 'UR-UDS-SRV'; // node-ipc server identifier
+const UDS_CLIENT_ID = 'UR-UDS-CLI'; // node-ipc client identifier
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let m_urds_counter = 0; // counter for generating unique addresses
 
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,45 +32,35 @@ process.on('SIGINT', () => {
   })();
 });
 
+/// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
-const UDS_ROOT = FILES.LocalPath('_ur_addons/net');
-const UDS_SERVER_ID = 'UR-UDS-SRV';
-const UDS_CLIENT_ID = 'UR-UDS-CLI';
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let m_uaddr_counter = 0;
-
-/// PERSISTENT SERVICES ///////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let UDS_SOCKETS = new Map<string, Socket>();
+let URDS = new Map<string, Socket>(); // unix domain socket address dictionary
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// node-ipc baseline configuration
 IPC.config.retry = 1500;
 IPC.config.silent = true;
-IPC.config.unlink = true;
+IPC.config.unlink = true; // unlink socket file on exit
 IPC.config.socketRoot = UDS_ROOT;
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_GetNewUADDR() {
-  ++m_uaddr_counter;
-  let cstr = m_uaddr_counter.toString(10).padStart(2, '0');
+function m_GetNewURDS() {
+  ++m_urds_counter;
+  let cstr = m_urds_counter.toString(10).padStart(2, '0');
   return `URDS_${cstr}`; // UR DOMAIN SOCKET
 }
-
-/// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SocketAdd(socket) {
-  let new_uaddr = m_GetNewUADDR();
+  let new_uaddr = m_GetNewURDS();
   socket.UADDR = new_uaddr;
-  if (UDS_SOCKETS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
-  UDS_SOCKETS.set(new_uaddr, socket);
+  if (URDS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
+  URDS.set(new_uaddr, socket);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SocketDelete(socket) {
   let { uaddr } = socket;
   if (uaddr === undefined) throw Error(`socket has no uaddr`);
-  if (UDS_SOCKETS.has(uaddr)) UDS_SOCKETS.delete(uaddr);
+  if (URDS.has(uaddr)) URDS.delete(uaddr);
   else throw Error(`${uaddr} not found`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -94,10 +88,9 @@ function m_OnSocketConnection(socket) {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  LOG(`starting UDS server for URNET`);
+  LOG(`Starting Unix Domain Socket Server on '${UDS_PATH}'`);
   // Start Unix Domain Socket Server
   IPC.config.id = UDS_SERVER_ID;
-  LOG(`starting ${UDS_SERVER_ID} on ${UDS_PATH}`);
   IPC.serve(UDS_PATH, () => {
     IPC.server.on('message', (data, socket) => {
       LOG('Received on UDS:', data);
@@ -108,13 +101,12 @@ function Start() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`Terminating ${UDS_SERVER_ID} on ${UDS_PATH}...`);
-  IPC.server.stop();
+  LOG(`Terminating Unix Domain Socket Server on '${UDS_PATH}'...`);
+  await IPC.server.stop(); // should also unlink socket file automatically
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
-  // fake delay
-  LOG(`.. stopped`);
+  LOG(`.. stopped unix domain server`);
 }
 
 /// UDS CLIENTS ///////////////////////////////////////////////////////////////
@@ -140,7 +132,31 @@ function X_Disconnect() {
   LOG(`disconnecting ${UDS_CLIENT_ID} from ${UDS_PATH}`);
   IPC.disconnect(UDS_SERVER_ID);
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Send() {
+  LOG('would send to URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Signal() {
+  LOG('would signal URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Call() {
+  LOG('would call URNET');
+}
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Start();
+
+/// EXPORTS ///////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// used by direct module import
+export {
+  // client interfaces (experimental wip, nonfunctional)
+  X_Connect as Connect,
+  X_Disconnect as Disconnect,
+  X_Send as Send,
+  X_Signal as Signal,
+  X_Call as Call
+};

@@ -283,6 +283,9 @@ function makeTerminalOut(prompt, tagColor = DEFAULT_COLOR) {
   const wrap = m_MakeColorPromptFunction(prompt, tagColor);
   wrap.warn = m_MakeColorPromptFunction(prompt, 'TagGreen', 'Green');
   wrap.error = m_MakeColorPromptFunction(prompt, 'TagRed', 'Red');
+  wrap.DIM = '\x1b[2m'; // dim text
+  wrap.BRI = '\x1b[1m'; // bright text
+  wrap.RST = '\x1b[0m'; // reset text
   return wrap;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
