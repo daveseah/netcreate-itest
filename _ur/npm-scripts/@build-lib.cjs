@@ -15,14 +15,13 @@ const FSE = require('fs-extra');
 // build-lib can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
 const PROMPTS = require('../common/prompts');
-const PR = `${PROMPTS.padString('UR_LIBS', 8)} -`;
 
 /// CONSTANTS AND DECLARATIONS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const { ROOT, DIR_UR_DIST } = require('./env-build.cjs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const LOG = console.log;
+const LOG = PROMPTS.makeTerminalOut('BUILD-LIB', 'TagSystem');
 
 /// ESBUILD API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -51,14 +50,14 @@ async function ESBuildLibrary() {
     outfile: `${DIR_UR_DIST}/server-esm.mjs`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'built ur-server ESM');
+  if (DBG) LOG('built ur-server ESM');
 
   await esbuild.build({
     ...nodeBuild,
     outfile: `${DIR_UR_DIST}/server.cjs`,
     format: 'cjs'
   });
-  if (DBG) LOG(PR, 'built ur-server CJS');
+  if (DBG) LOG('built ur-server CJS');
 
   /** BROWSER CLIENT SHARED BUILD SETTINGS **/
   const browserBuild = {
@@ -73,14 +72,14 @@ async function ESBuildLibrary() {
     outfile: `${DIR_UR_DIST}/client-esm.js`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'built ur-client ESM');
+  if (DBG) LOG('built ur-client ESM');
 
   await esbuild.build({
     ...browserBuild,
     outfile: `${DIR_UR_DIST}/client-cjs.js`,
     format: 'cjs'
   });
-  if (DBG) LOG(PR, 'built ur-client CJS');
+  if (DBG) LOG('built ur-client CJS');
 
   await esbuild.build({
     ...browserBuild,
@@ -88,10 +87,10 @@ async function ESBuildLibrary() {
     outfile: `${DIR_UR_DIST}/client-umd.js`,
     format: 'umd' // esbuild-plugin-umd-wrapper
   });
-  if (DBG) LOG(PR, 'built ur-client UMD');
+  if (DBG) LOG('built ur-client UMD');
 
   // if !DBG just emit a simpler message
-  if (!DBG) LOG(PR, 'built @ursys core');
+  if (!DBG) LOG('built @ursys core');
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////

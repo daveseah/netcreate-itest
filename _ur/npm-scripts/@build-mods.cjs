@@ -14,15 +14,14 @@ const { umdWrapper } = require('esbuild-plugin-umd-wrapper');
 const FSE = require('fs-extra');
 // build-lib can not use URSYS library because it's built it!
 // so we yoink the routines out of the source directly
-const PROMPTS = require('../_ur/common/prompts');
-const PR = `${PROMPTS.padString('UR_MODS', 8)} -`;
+const PROMPTS = require('../common/prompts');
 
 /// CONSTANTS AND DECLARATIONS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const { ROOT, DIR_URMODS, DIR_URMODS_DIST } = require('./env-ur-mods.cjs');
+const { ROOT, DIR_URMODS, DIR_URMODS_DIST } = require('./env_mods.cjs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const LOG = console.log;
+const LOG = PROMPTS.makeTerminalOut('BUILD-MOD', 'TagSystem');
 
 /// ESBUILD API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -53,14 +52,14 @@ async function ESBuildModules() {
     outfile: `${DIR_URMODS_DIST}/mod-server-esm.mjs`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'built ur_mods-server ESM');
+  if (DBG) LOG('built ur_mods-server ESM');
 
   await esbuild.build({
     ...nodeBuild,
     outfile: `${DIR_URMODS_DIST}/mod-server.cjs`,
     format: 'cjs'
   });
-  if (DBG) LOG(PR, 'built ur_mods-server CJS');
+  if (DBG) LOG('built ur_mods-server CJS');
 
   /** BROWSER CLIENT SHARED BUILD SETTINGS **/
   const browserBuild = {
@@ -76,14 +75,14 @@ async function ESBuildModules() {
     outfile: `${DIR_URMODS_DIST}/mod-client-esm.js`,
     format: 'esm'
   });
-  if (DBG) LOG(PR, 'built ur_mods-client ESM');
+  if (DBG) LOG('built ur_mods-client ESM');
 
   await esbuild.build({
     ...browserBuild,
     outfile: `${DIR_URMODS_DIST}/mod-client-cjs.js`,
     format: 'cjs'
   });
-  if (DBG) LOG(PR, 'built ur_mods-client CJS');
+  if (DBG) LOG('built ur_mods-client CJS');
 
   await esbuild.build({
     ...browserBuild,
@@ -91,10 +90,10 @@ async function ESBuildModules() {
     outfile: `${DIR_URMODS_DIST}/mod-client-umd.js`,
     format: 'umd' // esbuild-plugin-umd-wrapper
   });
-  if (DBG) LOG(PR, 'built ur_mods-client UMD');
+  if (DBG) LOG('built ur_mods-client UMD');
 
   // if !DBG, print simpler built message
-  if (!DBG) LOG(PR, 'built @ursys modules');
+  if (!DBG) LOG('built @ursys modules');
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////

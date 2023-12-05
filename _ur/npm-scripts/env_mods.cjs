@@ -47,8 +47,8 @@ const u_short = path => {
 /// RUNTIME CALCULATIONS //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// NOTE: these are declared also in node-server/env-node.mts
-const DIR_URMODS = u_path('/_ur_mods');
-const DIR_URMODS_DIST = u_path('/_ur_mods/_dist');
+const DIR_URMODS = u_path('../_ur_mods');
+const DIR_URMODS_DIST = u_path('../_ur_mods/_dist');
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

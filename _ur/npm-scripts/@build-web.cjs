@@ -16,7 +16,6 @@ const { EnsureDir } = UR.FILES;
 // build-lib can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
 const PROMPTS = require('../common/prompts');
-const PR = `${PROMPTS.padString('UR_APPS', 8)} -`;
 
 /// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -24,7 +23,7 @@ const APP_PORT = 3000;
 const { ROOT, DIR_PUBLIC } = require('./env-build.cjs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const LOG = console.log;
+const LOG = PROMPTS.makeTerminalOut('BUILD-APP', 'TagSystem');
 const ENTRY_JS = PATH.join(ROOT, 'app/init.jsx');
 
 /// ESBUILD API ///////////////////////////////////////////////////////////////
@@ -74,18 +73,18 @@ async function ESBuildWebApp() {
     ]
   });
   // done!
-  if (!DBG) LOG(PR, 'built @ursys webapp from', _short(ENTRY_JS));
+  if (!DBG) LOG('built @ursys webapp from', _short(ENTRY_JS));
 
   // enable watching
-  if (DBG) LOG(PR, 'watching', _short(DIR_PUBLIC));
+  if (DBG) LOG('watching', _short(DIR_PUBLIC));
   await context.watch();
   // The return value tells us where esbuild's local server is
-  if (DBG) LOG(PR, 'serving', _short(DIR_PUBLIC));
+  if (DBG) LOG('serving', _short(DIR_PUBLIC));
   const { host, port } = await context.serve({
     servedir: DIR_PUBLIC,
     port: APP_PORT
   });
-  LOG(PR, 'appserver at', `http://${host}:${port}`);
+  LOG('appserver at', `http://${host}:${port}`);
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////

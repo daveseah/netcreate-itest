@@ -5,7 +5,6 @@
 # PATH SETTINGS
 UR_BUILD="./"
 CLI_BUILD="./npm-scripts"
-MODS_BUILD="../_ur_mods"
 ADDONS_LIB="../_ur_addons"
 TEST_BUILD="../_ur_addons/loki"
 
@@ -56,7 +55,7 @@ case "$1" in
         # (1) always build library first
         node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
         # (2) add additional tasks here (eventually can be command args)
-        node $OPTS $MODS_BUILD/@ur-build-mods.cjs 2>&1 | cat
+        node $OPTS $CLI_BUILD/@build-mods.cjs 2>&1 | cat
         exit 0;
         ;;
 

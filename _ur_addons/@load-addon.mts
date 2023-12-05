@@ -13,7 +13,7 @@ const LOG = PR('ADO-LOADR', 'TagCyan');
 
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function ForkAddon(addonSelector: string, opt = {}) {
+async function ForkAddon(addonSelector: string) {
   const { addonName, entryName, entryFile, entryFiles, err } =
     FILES.X_ValidateAddon(addonSelector);
   if (err) {
@@ -23,12 +23,10 @@ async function ForkAddon(addonSelector: string, opt = {}) {
   // success!
   LOG(`.. found ${entryFiles.length} addon entryFile(s)`);
   entryFiles.forEach(f => LOG(`   . ${addonName}/${f}  `));
-  LOG('.. running:', entryFile);
-
-  let child_pid;
   const cwd = FILES.LocalPath(`_ur_addons/${addonName}`);
-
-  child_pid = fork(entryFile, ARGS, { cwd });
+  const child_pid = fork(entryFile, ARGS, { cwd });
+  const { pid } = child_pid;
+  LOG(`.. forking '${addonName}${entryName}' (pid ${pid}`);
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////

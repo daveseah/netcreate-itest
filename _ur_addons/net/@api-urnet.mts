@@ -12,7 +12,7 @@ import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const DBG = true; // side effect: disables child process detaching
+const DBG = false; // side effect: disables child process detaching
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -116,7 +116,7 @@ async function ParseCommandLine() {
       await TerminateServers();
       break;
     case undefined:
-      LOG(`net command requires mode argument (start|stop)`);
+      LOG(`net command requires mode argument [start|stop]`);
       break;
     default:
       LOG(`unknown net command '${command}'`);
