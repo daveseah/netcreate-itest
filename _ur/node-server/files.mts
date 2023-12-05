@@ -99,8 +99,9 @@ function ValidateAddon(addon: string) {
   if (!DirExists(ADDONS)) {
     return { err: `directory ${ADDONS} does not exist` };
   }
-  // get list of addon subdirs
-  const a_dirs = Subdirs(ADDONS).filter(item => !item.startsWith('_'));
+  // get list of valid addon subdirs
+  const f_dir = item => !(item.startsWith('_') || item === 'node_modules');
+  const a_dirs = Subdirs(ADDONS).filter(f_dir);
   // parse the addon name
   let { addonName, entryName, err } = ParseAddonName(addon);
   if (err) return { err };
