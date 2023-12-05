@@ -68,27 +68,25 @@ function ParseAddonName(shortPath: string) {
     return {};
   }
   // handle modname and modname/@entry
-  const pathbits = shortPath.split('/');
+  const pathbits = shortPath.split('@');
   if (pathbits.length === 2) {
     addonName = pathbits[0];
     entryName = pathbits[1];
   } else if (pathbits.length === 1) {
     addonName = shortPath;
-  } else return { err: `error: ${entryName} has too many slashes` };
+  } else return { err: `error: '${shortPath}' has too many '@'` };
 
   // make sure entryJS is a string or undefined
   if (entryName !== undefined && typeof entryName !== 'string')
-    return { err: `error: do not use trailing slash for` };
+    return { err: `error: can't parse @entryname` };
 
   // double-check entry has leading @ if it's a string
   if (entryName) {
-    if (!entryName.startsWith('@'))
-      return {
-        err: `error: entryName '${entryName}' should be called '@${entryName}'`
-      };
     if (entryName.indexOf('.') !== -1)
       return { err: `error: entryName '${entryName}' must not contain '.'` };
   }
+  // restore @ sign to entryName
+  if (entryName !== undefined) entryName = `@${entryName}`;
   // return found addon
   return { addonName, entryName };
 }
