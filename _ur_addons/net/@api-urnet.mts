@@ -5,6 +5,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import PATH from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SpawnOptions, spawn } from 'node:child_process';
 import { PR } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
@@ -98,11 +99,14 @@ async function Initialize() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ParseCommandLine() {
-  const [addon, command] = ARGS;
-  if (addon !== 'net') {
+  // script check that this was invoked from the correct directory
+  const addon_dir = PATH.basename(PATH.join(fileURLToPath(import.meta.url), '..'));
+  if (addon_dir !== 'net') {
     LOG(`invoked without 'net [mode]' command line args`);
     process.exit(1);
   }
+  // execute the command
+  const [, command] = ARGS;
   switch (command) {
     case 'start':
       await SpawnServer('./process-uds.mts', 'uds');
