@@ -91,6 +91,7 @@ function Start() {
   // Start Unix Domain Socket Server
   IPC.config.id = UDS_SERVER_ID;
   IPC.serve(UDS_PATH, () => {
+    LOG(`.. listening on '${UDS_PATH}'`);
     IPC.server.on('message', (data, socket) => {
       LOG('Received on UDS:', data);
       IPC.server.emit(socket, 'message', 'Reply from UDS server');
