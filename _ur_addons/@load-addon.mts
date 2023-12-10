@@ -23,7 +23,7 @@ async function ForkAddon(addonSelector: string) {
   // success!
   LOG(`.. found ${entryFiles.length} addon entryFile(s)`);
   entryFiles.forEach(f => LOG(`   . ${addonName}/${f}  `));
-  const cwd = FILES.LocalPath(`_ur_addons/${addonName}`);
+  const cwd = FILES.AbsLocalPath(`_ur_addons/${addonName}`);
   const child_pid = fork(entryFile, ARGS, { cwd });
   const { pid } = child_pid;
   LOG(`.. forking '${addonName}${entryName}' (pid ${pid}`);

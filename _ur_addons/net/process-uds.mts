@@ -12,7 +12,7 @@ import { PR, FILES } from '@ursys/netcreate';
 const LOG = PR('UDS', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
-const UDS_ROOT = FILES.LocalPath('_ur_addons/net');
+const UDS_ROOT = FILES.AbsLocalPath('_ur_addons/net');
 const UDS_SERVER_ID = 'UR-UDS-SRV'; // node-ipc server identifier
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_urds_counter = 0; // counter for generating unique addresses

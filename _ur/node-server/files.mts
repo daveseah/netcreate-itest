@@ -233,10 +233,18 @@ function DetectedRootDir(rootfile: string = '.nvmrc'): string {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Make a string relative to the project root, returning a normalized path */
-function LocalPath(subdir: string): string {
+function AbsLocalPath(subdir: string): string {
   const root = DetectedRootDir();
-  if (!root) throw Error('LocalPath: could not find project root');
+  if (!root) throw Error('AbsLocalPath: could not find project root');
   return PATH.normalize(PATH.join(root, subdir));
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Make a string that removes the DetectedRootDir() portion of the path */
+function RelLocalPath(subdir: string): string {
+  const root = DetectedRootDir();
+  if (!root) throw Error('AbsLocalPath: could not find project root');
+  const path = PATH.normalize(PATH.join(root, subdir));
+  return path.slice(root.length);
 }
 
 /// ASYNC DIRECTORY METHODS ///////////////////////////////////////////////////
@@ -325,7 +333,8 @@ export {
   EnsureDir,
   RemoveDir,
   DetectedRootDir,
-  LocalPath,
+  AbsLocalPath,
+  RelLocalPath,
   Files,
   Subdirs,
   //
