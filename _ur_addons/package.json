@@ -29,9 +29,11 @@
   },
   "dependencies": {
     "@ursys/netcreate": "file:../_ur",
+    "chokidar": "^3.5.3",
     "graphology": "^0.25.4",
     "lokijs": "^1.5.12",
     "peggy": "^3.0.2",
+    "serve-index": "^1.9.1",
     "ws": "^8.14.2"
   }
 }
