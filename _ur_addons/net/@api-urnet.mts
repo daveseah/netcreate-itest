@@ -12,7 +12,7 @@ import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const DBG = false; // side effect: disables child process detaching
+const DBG = true; // side effect: disables child process detaching
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -45,7 +45,7 @@ async function SpawnServer(scriptName: string, id: string) {
   if (id) identifier = `${identifier}-${id}`;
   const found = await KV.GetEntryByValue(identifier);
   if (found) {
-    LOG(`!! server '${identifier}' already running (pid ${found.key})`);
+    LOG.error(`!! server '${identifier}' already running (pid ${found.key})`);
     return;
   }
 
@@ -72,10 +72,16 @@ async function SpawnServer(scriptName: string, id: string) {
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function StartServers() {
+  // await SpawnServer('./process-uds.mts', 'uds');
+  // await SpawnServer('./process-wss.mts', 'wss');
+  await SpawnServer('./process-http.mts', 'http');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function TerminateServers() {
   const entries = await KV.GetEntries();
   if (entries.length === 0) {
-    LOG(`!! Server Process List is empty...exiting.`);
+    LOG.warn(`!! Server Process List is empty...exiting.`);
     return;
   }
   LOG(`Terminating Server Processes...`);
@@ -109,8 +115,7 @@ async function ParseCommandLine() {
   const [, command] = ARGS;
   switch (command) {
     case 'start':
-      await SpawnServer('./process-uds.mts', 'uds');
-      await SpawnServer('./process-wss.mts', 'wss');
+      await StartServers();
       break;
     case 'stop':
       await TerminateServers();

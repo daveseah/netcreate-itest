@@ -281,7 +281,7 @@ function colorTagString(str, tagColor) {
  */
 function makeTerminalOut(prompt, tagColor = DEFAULT_COLOR) {
   const wrap = m_MakeColorPromptFunction(prompt, tagColor);
-  wrap.warn = m_MakeColorPromptFunction(prompt, 'TagGreen', 'Green');
+  wrap.warn = m_MakeColorPromptFunction(prompt, 'TagYellow', 'Yellow');
   wrap.error = m_MakeColorPromptFunction(prompt, 'TagRed', 'Red');
   wrap.DIM = '\x1b[2m'; // dim text
   wrap.BRI = '\x1b[1m'; // bright text
