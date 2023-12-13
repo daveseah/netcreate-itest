@@ -1,6 +1,6 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET standalone server (NetCreate compatible version)
+  URNET standalone daemon
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -131,6 +131,6 @@ async function ParseCommandLine() {
 /// RUNTIME CLI ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('---');
-LOG('@api-urnet.mts called with args:', ARGS);
+LOG(`${m_addon_selector} called with args:`, ARGS);
 await Initialize();
 await ParseCommandLine();
