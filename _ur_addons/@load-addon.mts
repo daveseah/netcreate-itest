@@ -4,7 +4,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES, PR } from '@ursys/netcreate';
+import { FILES, PR, PROC } from '@ursys/netcreate';
 import { fork } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -15,7 +15,7 @@ const LOG = PR('ADO-LOADR', 'TagCyan');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ForkAddon(addonSelector: string) {
   const { addonName, entryName, entryFile, entryFiles, err } =
-    FILES.X_ValidateAddon(addonSelector);
+    PROC.ValidateAddon(addonSelector);
   if (err) {
     LOG(err);
     return;

@@ -15,6 +15,7 @@ import * as MODMGR from './urmod-mgr.mts';
 import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
+import * as PROC from './processes.mts';
 // cjs-style modules
 import PROMPTS from '../common/prompts.js';
 const { makeTerminalOut } = PROMPTS;
@@ -41,6 +42,7 @@ export {
   MODMGR, // ur module manager
   ENV, // environment utilities and constants
   FILES, // file utilities
+  PROC, // interprocess communication utils
   // CLASSES
   UrModule, // ur module wrapper
   // COMMON UTILS

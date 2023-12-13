@@ -56,99 +56,6 @@ function NormalPathUtility(rootRelDir?: string) {
     short: u_short
   };
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** break string of form 'addon' or 'addon/@entry' into parts
- *  addonName and entryName (no extension)
- */
-function ParseAddonName(shortPath: string) {
-  let addonName, entryName;
-  // required argument
-  if (typeof shortPath !== 'string') {
-    LOG('error: arg must be a string path not', typeof shortPath);
-    return {};
-  }
-  // handle modname and modname/@entry
-  const pathbits = shortPath.split('@');
-  if (pathbits.length === 2) {
-    addonName = pathbits[0];
-    entryName = pathbits[1];
-  } else if (pathbits.length === 1) {
-    addonName = shortPath;
-  } else return { err: `error: '${shortPath}' has too many '@'` };
-
-  // make sure entryJS is a string or undefined
-  if (entryName !== undefined && typeof entryName !== 'string')
-    return { err: `error: can't parse @entryname` };
-
-  // double-check entry has leading @ if it's a string
-  if (entryName) {
-    if (entryName.indexOf('.') !== -1)
-      return { err: `error: entryName '${entryName}' must not contain '.'` };
-  }
-  // restore @ sign to entryName
-  if (entryName !== undefined) entryName = `@${entryName}`;
-  // return found addon
-  return { addonName, entryName };
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - /
-/** given an addonName or addonName/@entryName, return an object with
- *  addonName, entryName, and entryFile and reconcile with addon directory
- */
-function ValidateAddon(addon: string) {
-  const ADDONS = PATH.join(DetectedRootDir(), '_ur_addons');
-  if (!DirExists(ADDONS)) {
-    return { err: `directory ${ADDONS} does not exist` };
-  }
-  // get list of valid addon subdirs
-  const f_dir = item => !(item.startsWith('_') || item === 'node_modules');
-  const a_dirs = Subdirs(ADDONS).filter(f_dir);
-  // parse the addon name
-  let { addonName, entryName, err } = ParseAddonName(addon);
-  if (err) return { err };
-
-  if (!a_dirs.includes(addonName))
-    return {
-      err: `error: addon '${addonName}' not found in ${ADDONS} directory`
-    };
-
-  // scan for selected add on entry files
-  const addon_dir = PATH.join(ADDONS, addonName);
-  const a_files = Files(addon_dir);
-  if (!a_files) {
-    return { err: `error: addon '${addonName}' directory has no files` };
-  }
-  const entryFiles = a_files.filter(item => item.startsWith('@'));
-  if (entryFiles.length === 0) {
-    return { err: `error: addon '${addonName}' has no @entryfiles` };
-  }
-  let entryFile;
-  // 1. was it just the addon name provided?
-  if (!entryName) {
-    if (entryFiles.length > 0) {
-      entryFile = entryFiles[0];
-      entryName = PATH.basename(entryFile, PATH.extname(entryFile));
-      return {
-        addonName,
-        entryName,
-        entryFile,
-        entryFiles
-      };
-    }
-    return { err: `addon '${addonName}' has no @entry files` };
-  }
-  // 2. was an entryName provided? Check that it exists
-  const regex = new RegExp(`${entryName}\\.[^\\.]+$`, 'i');
-  entryFile = entryFiles.find(filename => regex.test(filename));
-  if (!entryFile) {
-    return { err: `error: entry '${entryName}' not found in '${addonName}' addon` };
-  }
-  return {
-    addonName,
-    entryName,
-    entryFile,
-    entryFiles
-  };
-}
 
 /// SYNCHRONOUS FILE METHODS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -342,9 +249,6 @@ export {
   UnsafeWriteFile,
   AsyncReadJSON,
   AsyncWriteJSON,
-  // temporary addon module stuff
-  NormalPathUtility as X_NormalPathUtility,
-  ValidateAddon as X_ValidateAddon,
   //
   Test
 };

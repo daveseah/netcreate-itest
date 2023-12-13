@@ -7,7 +7,7 @@
 import PATH from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SpawnOptions, spawn } from 'node:child_process';
-import { PR } from '@ursys/netcreate';
+import { PR, PROC } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -16,7 +16,7 @@ const DBG = true; // side effect: disables child process detaching
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const m_addon_selector = ARGS[0];
+const [m_script, m_addon, m_args] = PROC.DecodeAddonArgs(process.argv);
 const m_kvfile = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
 
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
@@ -41,7 +41,7 @@ process.on('SIGINT', () => {
  *  with identifier. Allow only one such identifier */
 async function SpawnServer(scriptName: string, id: string) {
   // make sure that this isn't already in here
-  let identifier = `${m_addon_selector}`;
+  let identifier = `${m_script}`;
   if (id) identifier = `${identifier}-${id}`;
   const found = await KV.GetEntryByValue(identifier);
   if (found) {
@@ -73,9 +73,9 @@ async function SpawnServer(scriptName: string, id: string) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function StartServers() {
-  // await SpawnServer('./process-uds.mts', 'uds');
-  // await SpawnServer('./process-wss.mts', 'wss');
-  await SpawnServer('./process-http.mts', 'http');
+  await SpawnServer('./host-urnet-uds.mts', 'uds');
+  await SpawnServer('./serve-wss.mts', 'wss');
+  await SpawnServer('./serve-http.mts', 'http');
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function TerminateServers() {
@@ -121,16 +121,16 @@ async function ParseCommandLine() {
       await TerminateServers();
       break;
     case undefined:
-      LOG(`net command requires mode argument [start|stop]`);
+      LOG.warn(`net command requires mode argument [start|stop]`);
       break;
     default:
-      LOG(`unknown net command '${command}'`);
+      LOG.warn(`unknown net command '${command}'`);
   }
 }
 
 /// RUNTIME CLI ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('---');
-LOG(`${m_addon_selector} called with args:`, ARGS);
+LOG(`${m_script} called with args:`, m_args);
 await Initialize();
 await ParseCommandLine();

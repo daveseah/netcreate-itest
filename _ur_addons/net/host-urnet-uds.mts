@@ -1,11 +1,12 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   URNET UNIX DOMAIN SOCKET (UDS) SERVER
+  This is the main host for URNET. 
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import IPC, { Socket } from '@achrinza/node-ipc';
-import { PR, FILES } from '@ursys/netcreate';
+import ipc, { Socket } from '@achrinza/node-ipc';
+import { PR, FILES, PROC } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -36,10 +37,10 @@ process.on('SIGINT', () => {
 let URDS = new Map<string, Socket>(); // unix domain socket address dictionary
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// node-ipc baseline configuration
-IPC.config.retry = 1500;
-IPC.config.silent = true;
-IPC.config.unlink = true; // unlink socket file on exit
-IPC.config.socketRoot = UDS_ROOT;
+ipc.config.retry = 1500;
+ipc.config.silent = true;
+ipc.config.unlink = true; // unlink socket file on exit
+ipc.config.socketRoot = UDS_ROOT;
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -89,20 +90,20 @@ function m_OnSocketConnection(socket) {
 function Start() {
   LOG(`Starting Unix Domain Socket Server on '${UDS_PATH}'`);
   // Start Unix Domain Socket Server
-  IPC.config.id = UDS_SERVER_ID;
-  IPC.serve(UDS_PATH, () => {
+  ipc.config.id = UDS_SERVER_ID;
+  ipc.serve(UDS_PATH, () => {
     LOG(`.. listening on '${UDS_PATH}'`);
-    IPC.server.on('message', (data, socket) => {
+    ipc.server.on('message', (data, socket) => {
       LOG('Received on UDS:', data);
-      IPC.server.emit(socket, 'message', 'Reply from UDS server');
+      ipc.server.emit(socket, 'message', 'Reply from UDS server');
     });
   });
-  IPC.server.start();
+  ipc.server.start();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
   LOG(`Terminating Unix Domain Socket Server on '${UDS_PATH}'...`);
-  await IPC.server.stop(); // should also unlink socket file automatically
+  await ipc.server.stop(); // should also unlink socket file automatically
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
