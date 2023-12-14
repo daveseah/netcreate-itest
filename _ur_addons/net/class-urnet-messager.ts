@@ -18,6 +18,15 @@ import NetPacket from './class-urnet-packet';
 const m_handlers: Map<UR_MsgName, UR_MsgHandler[]> = new Map();
 const m_netroutes: Map<UR_MsgName, UR_NetSocket> = new Map();
 
+/// HELPERS ///////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** given a message name, return the message channel and name */
+function m_DecodeMessage(msg: UR_MsgName): string[] {
+  const bits = msg.split(':');
+  if (bits.length !== 2) throw Error(`invalid message name: ${msg}`);
+  return bits;
+}
+
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** implementation of UR_MessageDispatcher */
@@ -32,6 +41,7 @@ export class NetMessager {
   /** broadcast instantaneous state change events */
   signal(msg: UR_MsgName, data: UR_MsgData): void {
     const pkt = new NetPacket(msg, data);
+    pkt.init('signal');
   }
   /** send data to other endpoints with matching msg */
   send(msg: UR_MsgName, data: UR_MsgData): void {
@@ -46,6 +56,15 @@ export class NetMessager {
   async ping(msg: UR_MsgName) {
     const pkt = new NetPacket(msg, {});
     return await new Promise((resolve, reject) => {});
+  }
+
+  /** handle a packet received from the network */
+  async dispatchPacket(pkt: NetPacket) {
+    const { name, data } = pkt;
+    const handlers = m_handlers.get(name) || [];
+    for (const handler of handlers) {
+      await handler(data);
+    }
   }
 
   /** register a handler for a particular message */
@@ -70,7 +89,7 @@ export class NetMessager {
   /* static class elements - - - - - - - - - - - - - - - - - - - - - - - - - */
   static gateway: UR_NetSocket;
   static SetGateway(gateway: UR_NetSocket) {
-    this.gateway = gateway;
+    NetMessager.gateway = gateway;
   }
 }
 

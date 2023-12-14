@@ -8,8 +8,15 @@ export type UR_MsgName = `${'NET:' | 'UDS:' | ':'}${string}`;
 export type UR_MsgData = {
   [key: string]: any;
 };
+export type UR_MsgType = 'ping' | 'signal' | 'send' | 'call';
+export type UR_NetDir = 'req' | 'res';
 export type UR_MsgID = `${UR_NetAddr}-${number}`;
 export type UR_PktID = `PKT[${UR_MsgID}]`;
+export type UR_PktOpts = {
+  dir?: UR_NetDir;
+  rsvp?: boolean;
+  addr?: UR_NetAddr;
+};
 export type UR_NetAddr = string;
 export type UR_MsgHandler = (data: UR_MsgData) => any;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -21,11 +28,11 @@ export interface UR_NetMessage {
   id: UR_PktID;
   name: UR_MsgName;
   data: UR_MsgData;
-  msg_type: 'ping' | 'signal' | 'send' | 'call';
+  msg_type: UR_MsgType;
   msg_log: string[];
   src_addr: UR_NetAddr;
   hop_seq: UR_NetAddr[];
-  hop_dir: 'req' | 'res';
+  hop_dir: UR_NetDir;
   hop_rsvp?: boolean;
   err?: string;
 }
