@@ -5,16 +5,16 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import * as UR from '@ursys/netcreate'; // this is a .js file
-const { PrefixStyler } = UR;
+const { ConsoleStyler } = UR;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = PrefixStyler('URMOD', 'TagPink');
+const PF = ConsoleStyler('URMOD', 'TagPink');
 
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function ModuleClientTest() {
-  console.log(...PR('System Integration of new URSYS module successful!'));
+  console.log(...PF('System Integration of new URSYS module successful!'));
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

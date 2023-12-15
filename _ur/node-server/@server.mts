@@ -46,6 +46,5 @@ export {
   // CLASSES
   UrModule, // ur module wrapper
   // COMMON UTILS
-  makeTerminalOut as TerminalFormatter, // prompt style formatter
   makeTerminalOut as PR // prompt style formatter
 };

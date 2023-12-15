@@ -9,7 +9,7 @@ import Loki from 'lokijs';
 import FSE from 'fs-extra';
 import PATH from 'path';
 // our library import
-import { TerminalFormatter } from '@ursys/netcreate';
+import { PR } from '@ursys/netcreate';
 // import from local files require extensions
 import * as SESSION from '../_drafts/session.ts';
 
@@ -30,7 +30,7 @@ let EDGES: Loki.Collection;
 
 /// INITIALIZATION ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = TerminalFormatter('LOKI', 'TagBlue');
+const LOG = PR('LOKI', 'TagBlue');
 if (DBG) LOG('module: import-lokidb.mts ');
 LOG('session init:', JSON.stringify(SESSION));
 

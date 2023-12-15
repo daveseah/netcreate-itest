@@ -24,4 +24,7 @@ function ClientTest(): void {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { ClientTest, makeStyleFormatter as PrefixStyler };
+export {
+  makeStyleFormatter as ConsoleStyler, // style formatter for browser
+  ClientTest
+};
