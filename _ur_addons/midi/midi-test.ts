@@ -8,21 +8,22 @@
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let AUDIO: AudioContext;
 let KEYS: Map<number, HTMLElement>;
+let BUTTON: HTMLButtonElement;
 
 /// WINDOW EVENT HANDLERS /////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** create audio context on click */
 window.onload = function () {
   AUDIO = new window.AudioContext();
-  const button = document.createElement('button');
-  button.textContent = 'Click to Enable Audio';
-  button.style.marginTop = '10px';
-  button.addEventListener('click', function () {
+  BUTTON = document.createElement('button');
+  BUTTON.textContent = 'Click to Enable Audio';
+  BUTTON.style.marginTop = '10px';
+  BUTTON.addEventListener('click', function () {
     AUDIO.resume().then(() => {
       console.log('User Click: Audio Context is now enabled');
     });
   });
-  document.body.appendChild(button);
+  document.body.appendChild(BUTTON);
 };
 
 /// UI GENERATOR HELPERS //////////////////////////////////////////////////////
@@ -32,24 +33,23 @@ function m_MakeKeyDiv(mnote: number) {
   const color = noteName.includes('#') ? 'black' : 'white';
   const octave = getNoteOctave(mnote);
   const div = document.createElement('div');
+  div.classList.add('key', color);
   div.innerHTML = `
-    <div class="key ${color}">
-    <div>${octave}</div>
-    <div>${noteName}</div>
-    </div>
+      <div>${octave}</div>
+      <div>${noteName}</div>
   `;
   return div;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_DrawKeyboard(start: string = 'C2', end: string = 'C4') {
-  const startNote = getMidiNoteFromName(start);
-  const endNote = getMidiNoteFromName(end);
-  console.log(`keyboard created: keys ${start} through ${end}`);
-  const KEYS = new Map();
+function m_DrawKeyboard(start: string = 'C3', end: string = 'C5') {
+  const n1 = getMidiNoteFromName(start);
+  const n2 = getMidiNoteFromName(end);
+  console.log(`keyboard[${n1},${n2}] created: keys ${start} through ${end}`);
   const keyboard = document.getElementById('keyboard');
   if (keyboard) {
+    KEYS = new Map();
     while (keyboard.firstChild) keyboard.removeChild(keyboard.firstChild);
-    for (let mnote = startNote; mnote <= endNote; mnote++) {
+    for (let mnote = n1; mnote <= n2; mnote++) {
       const keyDiv = m_MakeKeyDiv(mnote);
       KEYS.set(mnote, keyDiv);
       keyboard.appendChild(keyDiv);
@@ -63,7 +63,7 @@ function m_DrawKeyboard(start: string = 'C2', end: string = 'C4') {
 function getMidiNoteFromName(name: string) {
   let noteName = name[0];
   let octave = parseInt(name[name.length - 1]);
-  let mnote = octave * 12;
+  let mnote = octave * 12 + 12;
   mnote += 'C D EF G A B'.indexOf(noteName);
   if (name[1] === '#') mnote++;
   else if (name[1] === 'b') mnote--;
@@ -120,6 +120,19 @@ const getMIDIMessage = message => {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to play a sound
 const playSound = (note, velocity) => {
+  // make sure audio is enabled
+  if (!AUDIO || AUDIO.state === 'suspended') {
+    // make BUTTON element flash transition
+    BUTTON.style.backgroundColor = 'red';
+    BUTTON.style.color = 'white';
+    BUTTON.style.transition = 'background-color 0.5s ease-out';
+    setTimeout(() => {
+      BUTTON.style.backgroundColor = 'white';
+      BUTTON.style.color = 'black';
+    }, 500);
+    return;
+  }
+
   // Create an oscillator node
   let oscillator = AUDIO.createOscillator();
   oscillator.type = 'sine';
@@ -139,9 +152,12 @@ const playSound = (note, velocity) => {
   // Start the oscillator
   oscillator.start();
   console.log('playing note', note, 'at frequency', frequency);
-
   // Stop the oscillator after a duration
   oscillator.stop(AUDIO.currentTime + 1);
+  // key highlighting interface
+  const key = KEYS.get(note);
+  key.classList.add('playing');
+  oscillator.onended = () => key.classList.remove('playing');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to stop a sound
