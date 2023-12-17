@@ -1,6 +1,8 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   URNET MESSAGER
+  gateway is the upstream connection
+  clients are the downstream connections
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -16,7 +18,9 @@ import NetPacket from './class-urnet-packet';
 /// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const m_handlers: Map<UR_MsgName, UR_MsgHandler[]> = new Map();
-const m_netroutes: Map<UR_MsgName, UR_NetSocket> = new Map();
+const m_clients: Map<UR_MsgName, UR_NetSocket> = new Map();
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let m_gateway: UR_NetSocket = undefined;
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -25,6 +29,13 @@ function m_DecodeMessage(msg: UR_MsgName): string[] {
   const bits = msg.split(':');
   if (bits.length !== 2) throw Error(`invalid message name: ${msg}`);
   return bits;
+}
+function m_SetGateway(gateway: UR_NetSocket): void {
+  m_gateway = gateway;
+}
+function m_RouteOutgoing(pkt: NetPacket): void {
+  if (m_gateway === undefined) return;
+  m_gateway.sendPacket(pkt);
 }
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
@@ -39,33 +50,28 @@ export class NetMessager {
     this._epid = epid;
   }
   /** broadcast instantaneous state change events */
-  signal(msg: UR_MsgName, data: UR_MsgData): void {
-    const pkt = new NetPacket(msg, data);
+  signal(msgName: UR_MsgName, data: UR_MsgData): void {
+    const [channel, name] = m_DecodeMessage(msgName);
+    if (channel === '') {
+      const handlers = m_handlers.get(msgName) || [];
+      for (const handler of handlers) {
+        handler(data);
+      }
+      return;
+    }
+    const pkt = new NetPacket(msgName, data);
     pkt.init('signal');
+    this.dispatchPacket(pkt);
   }
   /** send data to other endpoints with matching msg */
-  send(msg: UR_MsgName, data: UR_MsgData): void {
-    const pkt = new NetPacket(msg, data);
-  }
+  send(msgName: UR_MsgName, data: UR_MsgData): void {}
   /** send data and receive data response */
-  async call(msg: UR_MsgName, data: UR_MsgData) {
-    const pkt = new NetPacket(msg, data);
-    return await new Promise((resolve, reject) => {});
-  }
+  call(msgName: UR_MsgName, data: UR_MsgData) {}
   /** send ping and receive pong */
-  async ping(msg: UR_MsgName) {
-    const pkt = new NetPacket(msg, {});
-    return await new Promise((resolve, reject) => {});
-  }
+  ping(msgName: UR_MsgName) {}
 
   /** handle a packet received from the network */
-  async dispatchPacket(pkt: NetPacket) {
-    const { name, data } = pkt;
-    const handlers = m_handlers.get(name) || [];
-    for (const handler of handlers) {
-      await handler(data);
-    }
-  }
+  dispatchPacket(pkt: NetPacket): void {}
 
   /** register a handler for a particular message */
   register(msg: UR_MsgName, handler: UR_MsgHandler): void {
@@ -84,12 +90,6 @@ export class NetMessager {
     if (idx === -1) return;
     handlers.splice(idx, 1);
     m_handlers.set(msg, handlers);
-  }
-
-  /* static class elements - - - - - - - - - - - - - - - - - - - - - - - - - */
-  static gateway: UR_NetSocket;
-  static SetGateway(gateway: UR_NetSocket) {
-    NetMessager.gateway = gateway;
   }
 }
 
