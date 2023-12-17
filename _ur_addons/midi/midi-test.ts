@@ -1,34 +1,58 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  description
+  prototype code for implementing MIDI+WebAudio in a browser
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
+
+import * as Tone from 'tone';
+import { ConsoleStyler } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let AUDIO: AudioContext;
 let KEYS: Map<number, HTMLElement>;
 let BUTTON: HTMLButtonElement;
+let SAMPLER: Tone.Sampler;
+const PR = ConsoleStyler('MIDI', 'TagPurple');
 
 /// WINDOW EVENT HANDLERS /////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** create audio context on click */
-window.onload = function () {
+function m_EnableAudioContext() {
   AUDIO = new window.AudioContext();
   BUTTON = document.createElement('button');
+  BUTTON.style.backgroundColor = 'white';
+  BUTTON.style.color = 'black';
   BUTTON.textContent = 'Click to Enable Audio';
   BUTTON.style.marginTop = '10px';
   BUTTON.addEventListener('click', function () {
     AUDIO.resume().then(() => {
-      console.log('User Click: Audio Context is now enabled');
+      console.log(...PR('User Click: Audio Context is now enabled'));
     });
   });
   document.body.appendChild(BUTTON);
-};
+}
 
 /// UI GENERATOR HELPERS //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_MakeKeyDiv(mnote: number) {
+function m_WaitingForAudioActivation() {
+  if (!AUDIO || AUDIO.state === 'suspended') {
+    // make BUTTON element flash transition
+    BUTTON.style.backgroundColor = 'red';
+    BUTTON.style.color = 'white';
+    BUTTON.style.transition = 'background-color 0.5s ease-out';
+    setTimeout(() => {
+      BUTTON.style.backgroundColor = 'white';
+      BUTTON.style.color = 'black';
+    }, 500);
+    // still waiting
+    return true;
+  }
+  // not waiting
+  return false;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function ui_MakeKeyDiv(mnote: number) {
   const noteName = getNameFromMidiNote(mnote);
   const color = noteName.includes('#') ? 'black' : 'white';
   const octave = getNoteOctave(mnote);
@@ -41,21 +65,28 @@ function m_MakeKeyDiv(mnote: number) {
   return div;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_DrawKeyboard(start: string = 'C3', end: string = 'C5') {
+function ui_DrawKeyboard(start: string = 'C3', end: string = 'C5') {
   const n1 = getMidiNoteFromName(start);
   const n2 = getMidiNoteFromName(end);
-  console.log(`keyboard[${n1},${n2}] created: keys ${start} through ${end}`);
+  console.log(...PR(`keyboard[${n1},${n2}] created: keys ${start} through ${end}`));
   const keyboard = document.getElementById('keyboard');
   if (keyboard) {
     KEYS = new Map();
     while (keyboard.firstChild) keyboard.removeChild(keyboard.firstChild);
     for (let mnote = n1; mnote <= n2; mnote++) {
-      const keyDiv = m_MakeKeyDiv(mnote);
+      const keyDiv = ui_MakeKeyDiv(mnote);
       KEYS.set(mnote, keyDiv);
       keyboard.appendChild(keyDiv);
     }
   }
-  console.log(`keyboard ui elements: ${KEYS.size} keys in map`);
+  console.log(...PR(`keyboard ui elements: ${KEYS.size} keys in map`));
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function ui_KeyToggle(mnote: number) {
+  // key highlighting interface
+  const key = KEYS.get(mnote);
+  if (key.classList.contains('playing')) key.classList.remove('playing');
+  else key.classList.add('playing');
 }
 
 /// MIDI NOTE UTILITIES ///////////////////////////////////////////////////////
@@ -90,49 +121,36 @@ const onMIDISuccess = midiAccess => {
   }
   // List connected MIDI devices
   const outputs = midiAccess.outputs.values();
-  if (outputs.length === 0) console.log('No MIDI outputs connected.');
+  if (outputs.length === 0) console.log(...PR('No MIDI outputs connected.'));
   for (let output of outputs) {
-    console.log('Connected MIDI device:', output.name, output.manufacturer);
+    console.log(...PR('Connected MIDI device:', output.name, output.manufacturer));
   }
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// MIDI connection failure
 const onMIDIFailure = () => {
-  console.log('Failed to access MIDI devices.');
+  console.log(...PR('Failed to access MIDI devices.'));
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Handle incoming MIDI messages
 const getMIDIMessage = message => {
   let command = message.data[0];
-  let note = message.data[1];
+  let mnote = message.data[1];
   let velocity = message.data.length > 2 ? message.data[2] : 0;
-
+  ui_KeyToggle(mnote);
   if (command === 144 && velocity > 0) {
     // Note on
-    playSound(note, velocity);
+    playMidiNote(mnote, velocity);
   } else if (command === 128 || (command === 144 && velocity === 0)) {
     // Note off
-    stopSound(note);
+    stopMidiNote(mnote);
   }
 };
 
-/// SOUND GENERATOR ///////////////////////////////////////////////////////////
+/// SOUND GENERATOR HELPERS ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Function to play a sound
-const playSound = (note, velocity) => {
-  // make sure audio is enabled
-  if (!AUDIO || AUDIO.state === 'suspended') {
-    // make BUTTON element flash transition
-    BUTTON.style.backgroundColor = 'red';
-    BUTTON.style.color = 'white';
-    BUTTON.style.transition = 'background-color 0.5s ease-out';
-    setTimeout(() => {
-      BUTTON.style.backgroundColor = 'white';
-      BUTTON.style.color = 'black';
-    }, 500);
-    return;
-  }
-
+/** pure oscillator through audio context */
+function playOscillatorNote(note, velocity) {
   // Create an oscillator node
   let oscillator = AUDIO.createOscillator();
   oscillator.type = 'sine';
@@ -151,31 +169,95 @@ const playSound = (note, velocity) => {
 
   // Start the oscillator
   oscillator.start();
-  console.log('playing note', note, 'at frequency', frequency);
+  console.log(...PR('playing', note, 'osc:frequency', frequency));
   // Stop the oscillator after a duration
   oscillator.stop(AUDIO.currentTime + 1);
-  // key highlighting interface
-  const key = KEYS.get(note);
-  key.classList.add('playing');
-  oscillator.onended = () => key.classList.remove('playing');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// /** piano sampler through tone.js */
+function playPianoNote(mnote: number, mvel: number = 127) {
+  const letter = getNameFromMidiNote(mnote);
+  const octave = getNoteOctave(mnote);
+  const note = `${letter}${octave}`;
+  const velocity = mvel / 127;
+  console.log(...PR(`playing ${note}/${mvel} piano sampler`));
+  SAMPLER.triggerAttackRelease(note, '8n', undefined, velocity);
+}
+
+/// SOUND GENERATOR ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Function to play a sound
+const playMidiNote = (note, velocity) => {
+  // make sure audio is enabled
+  if (m_WaitingForAudioActivation()) return;
+  // playOscillatorNote(note, velocity);
+  playPianoNote(note, velocity);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to stop a sound
-const stopSound = note => {
+const stopMidiNote = note => {
   // Implement logic to stop the sound for the given note
   // This could involve keeping track of the oscillators and stopping the relevant one
 };
 
 /// MODULE INIT ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function InitMIDI() {
+function InitApp() {
+  m_EnableAudioContext();
+  ui_DrawKeyboard();
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function InitMIDI() {
   // Check if the Web MIDI API is supported
-  if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
-    m_DrawKeyboard();
-  } else {
-    console.log('Web MIDI API not supported!');
+  if (!navigator.requestMIDIAccess) {
+    console.log(...PR('Web MIDI API not supported!'));
+    return;
   }
+  // Initialize!
+  navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+  // PIANO SAMPLER
+  SAMPLER = new Tone.Sampler({
+    urls: {
+      A0: 'A0.mp3',
+      C1: 'C1.mp3',
+      'D#1': 'Ds1.mp3',
+      'F#1': 'Fs1.mp3',
+      A1: 'A1.mp3',
+      C2: 'C2.mp3',
+      'D#2': 'Ds2.mp3',
+      'F#2': 'Fs2.mp3',
+      A2: 'A2.mp3',
+      C3: 'C3.mp3',
+      'D#3': 'Ds3.mp3',
+      'F#3': 'Fs3.mp3',
+      A3: 'A3.mp3',
+      C4: 'C4.mp3',
+      'D#4': 'Ds4.mp3',
+      'F#4': 'Fs4.mp3',
+      A4: 'A4.mp3',
+      C5: 'C5.mp3',
+      'D#5': 'Ds5.mp3',
+      'F#5': 'Fs5.mp3',
+      A5: 'A5.mp3',
+      C6: 'C6.mp3',
+      'D#6': 'Ds6.mp3',
+      'F#6': 'Fs6.mp3',
+      A6: 'A6.mp3',
+      C7: 'C7.mp3',
+      'D#7': 'Ds7.mp3',
+      'F#7': 'Fs7.mp3',
+      A7: 'A7.mp3',
+      C8: 'C8.mp3'
+    },
+    release: 10,
+    baseUrl: 'https://tonejs.github.io/audio/salamander/',
+    onload: () => {
+      console.log(...PR('Piano Sampler loaded'));
+      const reverb = new Tone.Reverb(10);
+      SAMPLER.chain(reverb, Tone.Destination);
+      InitApp();
+    }
+  }).toDestination();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

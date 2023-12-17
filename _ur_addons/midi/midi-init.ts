@@ -9,19 +9,12 @@ import { InitMIDI } from './midi-test';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = ConsoleStyler('MIDI', 'TagPurple');
-
-/// API METHODS ///////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function InitUI() {
-  console.log(...PR('midi-init: initializing ui'));
-}
+const PR = ConsoleStyler('MIDI-INIT', 'TagPurple');
 
 /// RUNTIME METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-InitUI();
 InitMIDI();
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { InitUI, InitMIDI };
+export { InitMIDI };
