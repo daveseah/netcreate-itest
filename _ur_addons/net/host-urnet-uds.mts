@@ -88,11 +88,10 @@ function m_OnSocketConnection(socket) {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  LOG(`Starting Unix Domain Socket Server on '${UDS_PATH}'`);
   // Start Unix Domain Socket Server
   ipc.config.id = UDS_SERVER_ID;
   ipc.serve(UDS_PATH, () => {
-    LOG(`.. listening on '${UDS_PATH}'`);
+    LOG(`.. listening on '${ipc.server.path}'`);
     ipc.server.on('message', (data, socket) => {
       LOG('Received on UDS:', data);
       ipc.server.emit(socket, 'message', 'Reply from UDS server');

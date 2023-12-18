@@ -13,14 +13,16 @@ import * as UDS from './urnet-client.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const DBG = true; // side effect: disables child process detaching
+const DBG = true;
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 const m_kvfile = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let IS_MAIN_HOST = true; // set when no other @api-cli is running
+let HOLD_PROCS = true; // disables child process detaching
+let IS_MAIN = true; // set when no other @api-cli is running
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// API: SERVERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -49,7 +51,7 @@ async function SpawnServer(scriptName: string, id: string) {
 
   const pid = proc.pid.toString();
   await KV.SaveKey(pid, `${identifier}`);
-  if (!DBG) proc.unref();
+  if (!HOLD_PROCS) proc.unref();
   else {
     const { DIM, RST } = LOG;
     LOG(
@@ -92,25 +94,35 @@ async function TerminateServers() {
       } else LOG(`** Error sending SIGTERM to process ${pid}:`, err.code);
     }
   });
+  if (IS_MAIN) {
+    LOG(`${m_script} is main host, removing from process list`);
+    const { key } = await KV.GetEntryByValue(m_script);
+    await KV.DeleteKey(key);
+  }
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function GetHosts() {
+  const entries = await KV.GetEntries();
+  if (entries.length === 0) return;
+  if (entries.length === 1 && entries[0].value === m_script) return;
+  return entries.filter(e => e.value !== m_script);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ManageHosts() {
-  // otherwise, list the processes
-  const entries = await KV.GetEntries();
-  if (entries.length === 0) {
-    LOG(`No URNET hosts running`);
-    return;
-  }
-  if (entries.length === 1 && entries[0].value === m_script) {
-    LOG(`No URNET hosts running`);
-    return;
-  }
   // kill
   if (ARGS[2] === 'kill') {
     await TerminateServers();
+    const { key } = await KV.GetEntryByValue(m_script);
+    LOG.info(`.. force-removing ${m_script} (pid ${key})`);
+    await KV.DeleteKey(key);
     return;
   }
   // otherwise just list them
+  const entries = await GetHosts();
+  if (!entries) {
+    LOG(`.. no running server hosts`);
+    return;
+  }
   LOG(`URNET Processes:`);
   entries.forEach(e => {
     LOG(`.. ${e.key}: ${e.value}`);
@@ -127,14 +139,13 @@ async function HandleSend() {
 async function InitializeCLI() {
   // initialize the key-value store
   await KV.InitKeyStore(m_kvfile);
-  // make sure that this process isn't already running, because
-  // we don't want other @api-cli.mts scripts to hook into signals
-  if ((await KV.HasValue(m_script)) === true) {
-    IS_MAIN_HOST = false;
+  if (await KV.HasValue(m_script)) {
+    LOG.info(`CLI: ${m_script} already running`);
     return;
   }
   // got this far, no other instance of this script is running
-  IS_MAIN_HOST = true;
+  IS_MAIN = true;
+  LOG.info(`CLI: ${m_script} setting process signal handlers`);
   process.on('SIGTERM', () => {
     console.log('\n');
     (async () => {
@@ -150,17 +161,21 @@ async function InitializeCLI() {
   // save m_script without the -identifier suffix
   // the suffix is used by SpawnServer to create a unique identifier
   const pid = process.pid.toString();
-  KV.SaveKey(pid, m_script);
+  await KV.SaveKey(pid, m_script);
+  LOG.info(`CLI: ${m_script} added to process list`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** remove the main api script from the process list */
+/** Remove the main api script from the process list. The logic is a bit
+ *  tortuous because DBG flag is used to suspend the process list cleanup
+ *  and should be revisited
+ */
 async function ShutdownCLI() {
-  // don't delete runtime key if DBG or not main host
-  if (!IS_MAIN_HOST || DBG) return;
-  // make sure that this isn't already in here
-  const { key } = await KV.GetEntryByValue(m_script);
-  if (key) await KV.DeleteKey(key);
-  else LOG.error(`!! ${m_script} not found in process list???`);
+  const hosts = await GetHosts();
+  if (IS_MAIN && hosts === undefined) {
+    const { key } = await KV.GetEntryByValue(m_script);
+    await KV.DeleteKey(key);
+    LOG.info(`CLI: ${m_script} removed from process list`);
+  } else LOG.info(`CLI: ${m_script} retained in process list`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ParseCommandLine() {

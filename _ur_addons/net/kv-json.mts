@@ -63,6 +63,10 @@ async function DeleteKey(key: string): Promise<any> {
   return value;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function DeleteAllKeys(): Promise<void> {
+  await m_keyv.clear();
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** retrieve all entries in the key-value store */
 async function GetEntries(): Promise<
   { namespace: string; key: string; value: any }[]
@@ -88,8 +92,10 @@ async function GetEntryByValue(
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return true if matching stored value is found */
 async function HasValue(value: any): Promise<boolean> {
+  LOG('looking for value', value);
   const entries = await GetEntries();
   const found = entries.find(e => e.value === value);
+  if (found) LOG('found', found.key, 'with value', found.value);
   return found !== undefined;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -114,6 +120,7 @@ export {
   HasKey,
   GetKey,
   DeleteKey,
+  DeleteAllKeys,
   GetEntryByValue,
   GetEntries,
   HasValue,
