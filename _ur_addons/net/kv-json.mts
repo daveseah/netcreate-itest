@@ -92,10 +92,9 @@ async function GetEntryByValue(
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return true if matching stored value is found */
 async function HasValue(value: any): Promise<boolean> {
-  LOG('looking for value', value);
   const entries = await GetEntries();
   const found = entries.find(e => e.value === value);
-  if (found) LOG('found', found.key, 'with value', found.value);
+  if (DBG && found) LOG.info('HasValue: found', found.key, 'with value', found.value);
   return found !== undefined;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

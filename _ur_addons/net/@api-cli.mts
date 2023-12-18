@@ -20,9 +20,33 @@ const ARGS = process.argv.slice(2);
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 const m_kvfile = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let HOLD_PROCS = true; // disables child process detaching
+let DETACH_SERVERS = false; // disables child process detaching for debugging
 let IS_MAIN = true; // set when no other @api-cli is running
+
+/// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Delete the script from the process list. Note this is used primarily to
+ *  delete the the m_script entry; other process entries have suffixes like
+ *  -wss and -uds and are deleted by TerminateServers()
+ */
+async function m_DeleteProcessEntry(script: string) {
+  const entry = await KV.GetEntryByValue(script);
+  if (entry === undefined) return;
+  const { key } = entry;
+  if (key === undefined) {
+    LOG.error(`!! ERR ${script} has undefined 'key' property`);
+    return;
+  }
+  await KV.DeleteKey(key);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** convenience function to get all entries except the main script */
+async function m_GetHostEntries() {
+  const entries = await KV.GetEntries();
+  if (entries.length === 0) return;
+  if (entries.length === 1 && entries[0].value === m_script) return;
+  return entries.filter(e => e.value !== m_script);
+}
 
 /// API: SERVERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,7 +58,8 @@ async function SpawnServer(scriptName: string, id: string) {
   if (id) identifier = `${identifier}-${id}`;
   const found = await KV.GetEntryByValue(identifier);
   if (found) {
-    LOG.error(`!! server '${identifier}' already running (pid ${found.key})`);
+    if (DBG)
+      LOG.error(`!! server '${identifier}' already running (pid ${found.key})`);
     return;
   }
   // everything looks good, so spawn the process
@@ -47,16 +72,15 @@ async function SpawnServer(scriptName: string, id: string) {
     ['--transpile-only', scriptName, ...ARGS],
     options
   );
-  LOG(`.. spawned ${identifier} (pid ${proc.pid})`);
+  if (DBG) LOG(`.. spawned ${identifier} (pid ${proc.pid})`);
 
   const pid = proc.pid.toString();
   await KV.SaveKey(pid, `${identifier}`);
-  if (!HOLD_PROCS) proc.unref();
+  if (DETACH_SERVERS) proc.unref();
   else {
     const { DIM, RST } = LOG;
-    LOG(
-      `   ${DIM}DBG mode: process '${identifier}' will not be detached. Use ctrl-c to exit.${RST}`
-    );
+    if (DBG)
+      LOG(`.. ${DIM}'${identifier}' will not be detached. Use ctrl-c to exit.${RST}`);
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -95,30 +119,24 @@ async function TerminateServers() {
     }
   });
   if (IS_MAIN) {
-    LOG(`${m_script} is main host, removing from process list`);
-    const { key } = await KV.GetEntryByValue(m_script);
-    await KV.DeleteKey(key);
+    LOG(`.. ${m_script} is main host, removing from process list`);
+    await m_DeleteProcessEntry(m_script);
+    return;
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function GetHosts() {
-  const entries = await KV.GetEntries();
-  if (entries.length === 0) return;
-  if (entries.length === 1 && entries[0].value === m_script) return;
-  return entries.filter(e => e.value !== m_script);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** handle 'net hosts' command */
 async function ManageHosts() {
   // kill
   if (ARGS[2] === 'kill') {
+    LOG.warn(`killing process list in '${m_kvfile}`);
     await TerminateServers();
-    const { key } = await KV.GetEntryByValue(m_script);
-    LOG.info(`.. force-removing ${m_script} (pid ${key})`);
-    await KV.DeleteKey(key);
+    await m_DeleteProcessEntry(m_script);
+    LOG.warn(`if problems persist, delete file manually`);
     return;
   }
   // otherwise just list them
-  const entries = await GetHosts();
+  const entries = await m_GetHostEntries();
   if (!entries) {
     LOG(`.. no running server hosts`);
     return;
@@ -140,7 +158,7 @@ async function InitializeCLI() {
   // initialize the key-value store
   await KV.InitKeyStore(m_kvfile);
   if (await KV.HasValue(m_script)) {
-    LOG.info(`CLI: ${m_script} already running`);
+    if (DBG) LOG.info(`CLI: ${m_script} already running`);
     return;
   }
   // got this far, no other instance of this script is running
@@ -170,14 +188,13 @@ async function InitializeCLI() {
  *  and should be revisited
  */
 async function ShutdownCLI() {
-  const hosts = await GetHosts();
+  const hosts = await m_GetHostEntries();
   if (IS_MAIN && hosts === undefined) {
-    const { key } = await KV.GetEntryByValue(m_script);
-    await KV.DeleteKey(key);
-    LOG.info(`CLI: ${m_script} removed from process list`);
-  } else LOG.info(`CLI: ${m_script} retained in process list`);
+    await m_DeleteProcessEntry(m_script);
+    if (DBG) LOG.info(`CLI: ${m_script} removed from process list`);
+  } else if (DBG) LOG.info(`CLI: ${m_script} retained in process list`);
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ParseCommandLine() {
   // script check that this was invoked from the correct directory
   const addon_dir = PATH.basename(PATH.join(fileURLToPath(import.meta.url), '..'));
