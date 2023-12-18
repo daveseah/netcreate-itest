@@ -20,12 +20,14 @@ const D_UADDR = 'URNET-SRV';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
+    LOG(`SIGTERM received ${process.pid}`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
+    LOG(`SIGINT received ${process.pid}`);
     await Stop();
   })();
 });

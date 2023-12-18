@@ -7,14 +7,11 @@
 
 import ipc, { Socket } from '@achrinza/node-ipc';
 import { PR, FILES, PROC } from '@ursys/netcreate';
+import { UDS_PATH, UDS_ROOT, UDS_SERVER_ID } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDS', 'TagBlue');
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
-const UDS_ROOT = FILES.AbsLocalPath('_ur_addons/net');
-const UDS_SERVER_ID = 'UR-UDS-SRV'; // node-ipc server identifier
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_urds_counter = 0; // counter for generating unique addresses
 
@@ -22,12 +19,14 @@ let m_urds_counter = 0; // counter for generating unique addresses
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
+    LOG(`SIGTERM received ${process.pid}`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
+    LOG(`SIGINT received ${process.pid}`);
     await Stop();
   })();
 });
@@ -44,6 +43,7 @@ ipc.config.socketRoot = UDS_ROOT;
 
 /// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Return new URDS ID. An URDS is the UDS version of a UADDR */
 function m_GetNewURDS() {
   ++m_urds_counter;
   let cstr = m_urds_counter.toString(10).padStart(2, '0');

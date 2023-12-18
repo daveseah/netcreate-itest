@@ -86,6 +86,13 @@ async function GetEntryByValue(
   return found;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return true if matching stored value is found */
+async function HasValue(value: any): Promise<boolean> {
+  const entries = await GetEntries();
+  const found = entries.find(e => e.value === value);
+  return found !== undefined;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** retrieve all keys in { keys, entries } where keys is the short keys
  *  without the associated namespace
  */
@@ -109,5 +116,6 @@ export {
   DeleteKey,
   GetEntryByValue,
   GetEntries,
+  HasValue,
   GetKeys
 };

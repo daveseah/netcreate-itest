@@ -107,27 +107,27 @@ function m_MakeColorArray(prompt, colorName) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Returns an environment-specific color wrapper function suitable for use
- *  in debug output
+ *  in debug output. Use m_MakeColorArray() for browser output.
  */
-function m_MakeColorPromptFunction(prompt, colorName, resetName = 'Reset') {
+function m_MakeColorPromptFunction(prompt, colorName, opt = {}) {
+  const textColor = opt.color || 'Reset';
+  const dim = opt.dim || false;
   return IS_NODE
     ? (str, ...args) => {
         if (args === undefined) args = '';
-        console.log(
-          `${TERM_COLORS[colorName]}${padString(prompt)}${TERM_COLORS.Reset}${
-            TERM_COLORS[resetName]
-          }    ${str}`,
-          ...args
-        );
+        let TAG = TERM_COLORS[colorName];
+        let TEXT = TERM_COLORS[textColor];
+        let RST = TERM_COLORS.Reset;
+        let PR = padString(prompt);
+        if (dim) TEXT += TERM_COLORS.Dim;
+        console.log(`${RST}${TAG}${PR}${RST}${TEXT}    ${str}`, ...args);
       }
     : (str, ...args) => {
         if (args === undefined) args = '';
-        console.log(
-          `%c${padString(prompt)}%c%c ${str}`,
-          CSS_COLORS.Reset,
-          CSS_COLORS[resetName],
-          ...args
-        );
+        let TEXT = TERM_COLORS[textColor];
+        let RST = CSS_COLORS.Reset;
+        let PR = padString(prompt);
+        console.log(`%c${PR}%c%c ${str}`, RST, TEXT, ...args);
       };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -281,8 +281,9 @@ function colorTagString(str, tagColor) {
  */
 function makeTerminalOut(prompt, tagColor = DEFAULT_COLOR) {
   const wrap = m_MakeColorPromptFunction(prompt, tagColor);
-  wrap.warn = m_MakeColorPromptFunction(prompt, 'TagYellow', 'Yellow');
-  wrap.error = m_MakeColorPromptFunction(prompt, 'TagRed', 'Red');
+  wrap.warn = m_MakeColorPromptFunction(prompt, 'TagYellow', { color: 'Yellow' });
+  wrap.error = m_MakeColorPromptFunction(prompt, 'TagRed', { color: 'Red' });
+  wrap.info = m_MakeColorPromptFunction(prompt, 'TagGray', { dim: true });
   wrap.DIM = '\x1b[2m'; // dim text
   wrap.BRI = '\x1b[1m'; // bright text
   wrap.RST = '\x1b[0m'; // reset text
