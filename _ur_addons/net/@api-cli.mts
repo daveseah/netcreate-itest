@@ -13,12 +13,14 @@ import * as UDS from './urnet-client.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const DBG = false; // side effect: disables child process detaching
+const DBG = true; // side effect: disables child process detaching
 const LOG = PR('API-URNET', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 const m_kvfile = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let IS_MAIN_HOST = true; // set when no other @api-cli is running
 
 /// API: SERVERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -127,8 +129,12 @@ async function InitializeCLI() {
   await KV.InitKeyStore(m_kvfile);
   // make sure that this process isn't already running, because
   // we don't want other @api-cli.mts scripts to hook into signals
-  if ((await KV.HasValue(m_script)) === true) return;
-  //
+  if ((await KV.HasValue(m_script)) === true) {
+    IS_MAIN_HOST = false;
+    return;
+  }
+  // got this far, no other instance of this script is running
+  IS_MAIN_HOST = true;
   process.on('SIGTERM', () => {
     console.log('\n');
     (async () => {
@@ -149,6 +155,8 @@ async function InitializeCLI() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** remove the main api script from the process list */
 async function ShutdownCLI() {
+  // don't delete runtime key if DBG or not main host
+  if (!IS_MAIN_HOST || DBG) return;
   // make sure that this isn't already in here
   const { key } = await KV.GetEntryByValue(m_script);
   if (key) await KV.DeleteKey(key);
