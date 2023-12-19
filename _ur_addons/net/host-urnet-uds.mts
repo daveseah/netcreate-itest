@@ -92,17 +92,26 @@ function Start() {
   ipc.config.id = UDS_SERVER_ID;
   ipc.serve(UDS_PATH, () => {
     LOG(`.. listening on '${ipc.server.path}'`);
-    ipc.server.on('message', (data, socket) => {
-      LOG('Received on UDS:', data);
-      ipc.server.emit(socket, 'message', 'Reply from UDS server');
+    ipc.server.on('connect', socket => {
+      LOG(`.. client connected on '${ipc.server.path}'`);
+    });
+    ipc.server.on('disconnect', socket => {
+      LOG(`.. client disconnected on '${ipc.server.path}'`);
+    });
+    ipc.server.on('app.message', (data, socket) => {
+      ipc.log('got a message from', data.id, data.message);
+      ipc.server.emit(socket, 'app.message', {
+        id: ipc.config.id,
+        message: data.message + ' world!'
+      });
     });
   });
   ipc.server.start();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`Terminating Unix Domain Socket Server on '${UDS_PATH}'...`);
-  await ipc.server.stop(); // should also unlink socket file automatically
+  LOG.warn(`Terminating Unix Domain Socket Server on '${UDS_PATH}'...`);
+  ipc.server.stop(); // should also unlink socket file automatically
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
