@@ -85,6 +85,8 @@ async function SpawnServer(scriptName: string, id: string) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function StartServers() {
+  if (m_args.find(a => a === '--detach')) DETACH_SERVERS = true;
+  if (DETACH_SERVERS) LOG.warn(`.. servers will be detached`);
   // main protocol host
   await SpawnServer('./host-urnet-uds.mts', 'uds');
   // supplementary protocol hosts
@@ -151,6 +153,8 @@ async function ManageHosts() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function HandleSend() {
   await UDS.Connect();
+  await UDS.Send('hello', 'world');
+  await UDS.Disconnect();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** keep track of main api script running status in the process list */
