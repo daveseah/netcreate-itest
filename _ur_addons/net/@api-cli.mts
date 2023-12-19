@@ -155,7 +155,7 @@ async function ManageHosts() {
   }
   // otherwise just list them
   const entries = await m_GetActiveHostList();
-  if (!entries) {
+  if (entries.length === 0) {
     LOG(`.. no running server hosts`);
     return;
   }
@@ -205,13 +205,13 @@ async function InitializeCLI() {
   if (DBG_CLI) LOG.info(`CLI: ${m_script} added to process list`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Remove the main api script from the process list. The logic is a bit
- *  tortuous because DBG flag is used to suspend the process list cleanup
- *  and should be revisited
+/** Remove the main api script from the process list on shutdown.
+ *  If there are still processes running, don't remove it because
+ *  it's used to indicate that net api is still active (review this later)
  */
 async function ShutdownCLI() {
   const hosts = await m_GetActiveHostList();
-  if (IS_MAIN && hosts === undefined) {
+  if (IS_MAIN && hosts.length === 0) {
     await m_DeleteProcessEntry(m_script);
     if (DBG_CLI) LOG.info(`CLI: ${m_script} removed from process list`);
   } else if (DBG_CLI) LOG.info(`CLI: ${m_script} retained in process list`);
