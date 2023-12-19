@@ -9,14 +9,16 @@
     <style>
         #keyboard {
             font-family: monospace;
-            display: grid;
-            grid-template-columns: repeat(36, 1fr);
+            display: flex;
+            flex-direction: row;
+            gap: 0.25em;
         }
 
         .key {
             /* center text */
             display: flex;
             flex-direction: column;
+            min-width: 2em;
             gap: 5em;
             align-items: center;
         }
@@ -28,7 +30,6 @@
 
 
         .key.white {
-            width: 2em;
             height: 10em;
             color: black;
             background-color: white;
@@ -36,7 +37,6 @@
         }
 
         .key.black {
-            width: 2em;
             height: 8em;
             color: white;
             background-color: #444;
@@ -46,13 +46,15 @@
         .key.playing {
             background-color: rgba(0, 127, 127, 0.5) !important;
         }
+
+        .output-select {
+            padding-bottom: 2em;
+        }
     </style>
 </head>
 
 <body>
     <h1>MIDI TEST!</h1>
-    <div id="keyboard"></div>
-
     <script src="scripts/midi-bundle.js"></script>
 </body>
 

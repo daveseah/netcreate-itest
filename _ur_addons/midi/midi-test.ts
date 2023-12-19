@@ -12,30 +12,14 @@ import { ConsoleStyler } from '@ursys/netcreate';
 let AUDIO: AudioContext;
 let KEYS: Map<number, HTMLElement>;
 let BUTTON: HTMLButtonElement;
+let RADIO: HTMLElement;
 let SAMPLER: Tone.Sampler;
+let FnOutput;
 const PR = ConsoleStyler('MIDI', 'TagPurple');
 
-/// WINDOW EVENT HANDLERS /////////////////////////////////////////////////////
+/// UI EFFECTS ////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** create audio context on click */
-function m_EnableAudioContext() {
-  AUDIO = new window.AudioContext();
-  BUTTON = document.createElement('button');
-  BUTTON.style.backgroundColor = 'white';
-  BUTTON.style.color = 'black';
-  BUTTON.textContent = 'Click to Enable Audio';
-  BUTTON.style.marginTop = '10px';
-  BUTTON.addEventListener('click', function () {
-    AUDIO.resume().then(() => {
-      console.log(...PR('User Click: Audio Context is now enabled'));
-    });
-  });
-  document.body.appendChild(BUTTON);
-}
-
-/// UI GENERATOR HELPERS //////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_WaitingForAudioActivation() {
+function ui_WaitingForAudioContext() {
   if (!AUDIO || AUDIO.state === 'suspended') {
     // make BUTTON element flash transition
     BUTTON.style.backgroundColor = 'red';
@@ -65,11 +49,75 @@ function ui_MakeKeyDiv(mnote: number) {
   return div;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function ui_DrawKeyboard(start: string = 'C3', end: string = 'C5') {
+function ui_KeyToggle(mnote: number) {
+  // key highlighting interface
+  const key = KEYS.get(mnote);
+  if (key.classList.contains('playing')) key.classList.remove('playing');
+  else key.classList.add('playing');
+}
+
+/// FEATURES //////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** create audio context on click */
+function m_EnableAudioContext() {
+  AUDIO = new window.AudioContext();
+  BUTTON = document.createElement('button');
+  BUTTON.style.backgroundColor = 'white';
+  BUTTON.style.color = 'black';
+  BUTTON.textContent = 'Click to Enable Audio';
+  BUTTON.style.marginTop = '2em';
+  BUTTON.addEventListener('click', function () {
+    AUDIO.resume().then(() => {
+      console.log(...PR('User Click: Audio Context is now enabled'));
+      BUTTON.style.display = 'none';
+    });
+  });
+  document.body.appendChild(BUTTON);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_EnableOutputSelect() {
+  RADIO = document.createElement('div');
+  RADIO.classList.add('output-select');
+
+  const radioItem1 = document.createElement('input');
+  radioItem1.type = 'radio';
+  radioItem1.name = 'radio-group';
+  radioItem1.value = 'piano';
+  radioItem1.checked = true;
+  RADIO.appendChild(radioItem1);
+  const radioLabel1 = document.createElement('label');
+  radioLabel1.textContent = 'Piano';
+  RADIO.appendChild(radioLabel1);
+  //
+  const radioItem2 = document.createElement('input');
+  radioItem2.type = 'radio';
+  radioItem2.name = 'radio-group';
+  radioItem2.value = 'oscillator';
+  RADIO.appendChild(radioItem2);
+  const radioLabel2 = document.createElement('label');
+  radioLabel2.textContent = 'Oscillator';
+  RADIO.appendChild(radioLabel2);
+
+  // add radio button handler
+  RADIO.addEventListener('change', () => {
+    const radio: HTMLInputElement = document.querySelector(
+      'input[name="radio-group"]:checked'
+    );
+    if (radio.value === 'piano') FnOutput = playPianoNote;
+    else FnOutput = playOscillatorNote;
+  });
+  // set default output function
+  FnOutput = playPianoNote;
+  // add to DOM
+  document.body.appendChild(RADIO);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_EnableKeyboard(start: string = 'C3', end: string = 'C5') {
+  const keyboard = document.createElement('div');
+  keyboard.id = 'keyboard';
   const n1 = getMidiNoteFromName(start);
   const n2 = getMidiNoteFromName(end);
   console.log(...PR(`keyboard[${n1},${n2}] created: keys ${start} through ${end}`));
-  const keyboard = document.getElementById('keyboard');
   if (keyboard) {
     KEYS = new Map();
     while (keyboard.firstChild) keyboard.removeChild(keyboard.firstChild);
@@ -80,13 +128,8 @@ function ui_DrawKeyboard(start: string = 'C3', end: string = 'C5') {
     }
   }
   console.log(...PR(`keyboard ui elements: ${KEYS.size} keys in map`));
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function ui_KeyToggle(mnote: number) {
-  // key highlighting interface
-  const key = KEYS.get(mnote);
-  if (key.classList.contains('playing')) key.classList.remove('playing');
-  else key.classList.add('playing');
+  // add to DOM
+  document.body.appendChild(keyboard);
 }
 
 /// MIDI NOTE UTILITIES ///////////////////////////////////////////////////////
@@ -189,9 +232,8 @@ function playPianoNote(mnote: number, mvel: number = 127) {
 // Function to play a sound
 const playMidiNote = (note, velocity) => {
   // make sure audio is enabled
-  if (m_WaitingForAudioActivation()) return;
-  // playOscillatorNote(note, velocity);
-  playPianoNote(note, velocity);
+  if (ui_WaitingForAudioContext()) return;
+  if (FnOutput) FnOutput(note, velocity);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to stop a sound
@@ -203,8 +245,9 @@ const stopMidiNote = note => {
 /// MODULE INIT ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function InitApp() {
+  m_EnableOutputSelect();
+  m_EnableKeyboard();
   m_EnableAudioContext();
-  ui_DrawKeyboard();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function InitMIDI() {
