@@ -92,9 +92,21 @@ function Start() {
   ipc.config.id = UDS_SERVER_ID;
   ipc.serve(UDS_PATH, () => {
     LOG(`.. listening on '${ipc.server.path}'`);
-    ipc.server.on('message', (data, socket) => {
+
+    ipc.server.on('urnet', (data, socket) => {
       LOG('Received on UDS:', data);
-      ipc.server.emit(socket, 'message', 'Reply from UDS server');
+      ipc.server.emit(socket, 'urnet', 'Reply from UDS server');
+    });
+
+    ipc.server.on('connect', () => {
+      LOG('Client connected');
+    });
+
+    ipc.server.on('disconnect', () => {
+      LOG('Client disconnected1:');
+    });
+    ipc.server.on('socket.disconnect', (socket, destroydId) => {
+      LOG('Client disconnected2:', socket.id, destroydId);
     });
   });
   ipc.server.start();

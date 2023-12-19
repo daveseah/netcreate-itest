@@ -22,6 +22,7 @@ const m_kvfile = PATH.join(process.cwd(), 'pid_keyv_nocommit.json');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let DETACH_SERVERS = false; // disables child process detaching for debugging
 let IS_MAIN = true; // set when no other @api-cli is running
+let UDS_ONLY = false; // set when only UDS server will be spawned
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -90,8 +91,10 @@ async function StartServers() {
   // main protocol host
   await SpawnServer('./host-urnet-uds.mts', 'uds');
   // supplementary protocol hosts
-  await SpawnServer('./serve-wss.mts', 'wss');
-  await SpawnServer('./serve-http.mts', 'http');
+  if (!UDS_ONLY) {
+    await SpawnServer('./serve-wss.mts', 'wss');
+    await SpawnServer('./serve-http.mts', 'http');
+  }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function TerminateServers() {
@@ -153,7 +156,7 @@ async function ManageHosts() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function HandleSend() {
   await UDS.Connect();
-  await UDS.Send('hello', 'world');
+  await UDS.Send('hello world');
   await UDS.Disconnect();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
