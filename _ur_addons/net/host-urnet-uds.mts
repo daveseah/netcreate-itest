@@ -19,14 +19,14 @@ let m_urds_counter = 0; // counter for generating unique addresses
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
-    LOG(`SIGTERM received ${process.pid}`);
+    // LOG(`SIGTERM received ${process.pid}`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
-    LOG(`SIGINT received ${process.pid}`);
+    // LOG(`SIGINT received ${process.pid}`);
     await Stop();
   })();
 });
@@ -91,7 +91,7 @@ function Start() {
   // Start Unix Domain Socket Server
   ipc.config.id = UDS_SERVER_ID;
   ipc.serve(UDS_PATH, () => {
-    LOG(`.. listening on '${ipc.server.path}'`);
+    LOG(`.. UDS Server listening on '${ipc.server.path}'`);
 
     ipc.server.on('urnet', (data, socket) => {
       LOG('Received on UDS:', data);
@@ -113,12 +113,11 @@ function Start() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`Terminating Unix Domain Socket Server on '${UDS_PATH}'...`);
+  LOG(`.. stopping UDS Server on ${ipc.server.path}`);
   await ipc.server.stop(); // should also unlink socket file automatically
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
-  LOG(`.. stopped unix domain server`);
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////

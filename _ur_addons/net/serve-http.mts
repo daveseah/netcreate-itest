@@ -58,21 +58,21 @@ function m_AddDefaultRoutes() {
 function m_AppListen() {
   if (!APP) throw Error(`Can't start server because APP not initialized`);
   SERVER = APP.listen(HTTP_PORT, IP_ADDR, () => {
-    LOG(`HTTP Server listening at http://${IP_ADDR}:${HTTP_PORT}`);
+    LOG(`.. HTTP Server listening at http://${IP_ADDR}:${HTTP_PORT}`);
   });
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  LOG(`Starting Web Server on ${IP_ADDR}:${HTTP_PORT}`);
+  // LOG.wa(`Starting Web Server on ${IP_ADDR}:${HTTP_PORT}`);
   APP = express();
   m_AddDefaultRoutes();
   m_AppListen();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`Stopping Web Server on ${IP_ADDR}:${HTTP_PORT}`);
+  LOG(`.. stopping HTTP Server on ${IP_ADDR}:${HTTP_PORT}`);
   SERVER.close();
 }
 

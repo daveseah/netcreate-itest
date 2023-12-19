@@ -20,14 +20,12 @@ const D_UADDR = 'URNET-SRV';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
-    LOG(`SIGTERM received ${process.pid}`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
-    LOG(`SIGINT received ${process.pid}`);
     await Stop();
   })();
 });
@@ -86,22 +84,22 @@ function m_OnSocketConnection(socket) {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  LOG(`Starting Websocket Server on ${D_ADDR}:${D_PORT}`);
+  // LOG(`Starting Websocket Server on ${D_ADDR}:${D_PORT}`);
   const options = { port: D_PORT, host: D_ADDR };
   WSS = new WebSocketServer(options);
   WSS.on('listening', () => {
-    LOG(`.. listening on ${D_ADDR}:${D_PORT}`);
+    LOG(`.. WebSocket Server listening on ${D_ADDR}:${D_PORT}`);
     WSS.on('connection', socket => m_OnSocketConnection(socket));
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`Terminating Websocket Server on ${D_ADDR}:${D_PORT}...`);
+  // LOG(`Terminating Websocket Server on ${D_ADDR}:${D_PORT}...`);
   await WSS.close();
   // process all pending transactions
   // delete all registered messages
   // delete all uaddr sockets
-  LOG(`.. stopped websocket server`);
+  LOG(`.. stopping Websocket Server`);
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
