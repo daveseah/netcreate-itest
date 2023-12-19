@@ -97,11 +97,11 @@ async function StartServers() {
 async function TerminateServers() {
   const entries = await KV.GetEntries();
   if (entries.length === 0) {
-    LOG.info(`.. no running servers to terminate`);
+    LOG(`!! no running servers to terminate`);
     return;
   }
   if (entries.length === 1 && entries[0].value === m_script) {
-    LOG.info(`.. no running servers to terminate`);
+    LOG(`!! no running servers to terminate`);
     return;
   }
   LOG(`Terminating Server Processes...`);
@@ -130,7 +130,7 @@ async function TerminateServers() {
 /** handle 'net hosts' command */
 async function ManageHosts() {
   // kill
-  if (ARGS[2] === 'kill') {
+  if (m_args.find(a => a === '--kill')) {
     LOG.warn(`killing process list in '${m_kvfile}`);
     await TerminateServers();
     await m_DeleteProcessEntry(m_script);
