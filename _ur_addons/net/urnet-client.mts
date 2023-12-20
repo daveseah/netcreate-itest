@@ -13,6 +13,9 @@ import {
   UDS_SERVER_ID
 } from './urnet-constants.mts';
 import ipc, { Socket } from '@achrinza/node-ipc';
+import { UR_MsgName } from './urnet-types.ts';
+import CLASS_NP from './class-urnet-packet.ts';
+const NetPacket = CLASS_NP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -40,64 +43,68 @@ function m_CheckForUDSHost() {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function X_Connect(): Promise<void> {
+async function X_Connect() {
   /// node-ipc baseline configuration
   ipc.config.socketRoot = UDS_ROOT;
   ipc.config.unlink = true; // unlink socket file on exit
   ipc.config.retry = 1500;
   ipc.config.maxRetries = 1;
   ipc.config.silent = true;
-
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     /// check that UDS host is running
     if (!m_CheckForUDSHost()) {
-      LOG.error(`Connect: URNET host pipe not detected`);
-      reject();
+      reject(`Connect: URNET host pipe not detected`);
+    } else {
+      // Connect to the socket file
+      ipc.connectTo('client', UDS_PATH, () => {
+        // Handle connection events
+        const client = ipc.of['client'];
+        client.on('urnet', data => {
+          LOG(`on_urnet: received '${data}'`);
+        });
+        client.on('connect', () => {
+          LOG(`on_connect: connected to ${client.path}`);
+          IS_CONNECTED = true;
+          resolve();
+        });
+        client.on('disconnected', () => {
+          LOG(`on_disconnect: disconnected`);
+          IS_CONNECTED = false;
+        });
+        client.on('socket.disconnected', (socket, destroyedId) => {
+          LOG(`${destroyedId} socket.disconnected!`);
+          IS_CONNECTED = false;
+        });
+      });
     }
-    // Connect to the socket file
-    ipc.connectTo('client', UDS_PATH, () => {
-      // Handle connection events
-      const client = ipc.of['client'];
-      client.on('urnet', data => {
-        LOG(`on_urnet: received '${data}'`);
-      });
-      client.on('connect', () => {
-        LOG(`on_connect: connected to ${client.path}`);
-        IS_CONNECTED = true;
-        resolve();
-      });
-      client.on('disconnected', () => {
-        LOG(`on_disconnect: disconnected`);
-        IS_CONNECTED = false;
-      });
-      client.on('socket.disconnected', (socket, destroyedId) => {
-        LOG(`${destroyedId} socket.disconnected!`);
-        IS_CONNECTED = false;
-      });
-    });
+  }).catch(err => {
+    LOG.error(err);
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function X_Disconnect() {
-  (async () => {
-    await new Promise((resolve, reject) => {
-      if (!IS_CONNECTED) {
-        LOG.error(`Disconnect: not connected to URNET host`);
-        reject();
-      }
+async function X_Disconnect() {
+  await new Promise((resolve, reject) => {
+    if (!IS_CONNECTED) {
+      reject(`Disconnect: was not connected to URNET host`);
+    } else {
       ipc.disconnect('client');
       IS_CONNECTED = false;
       m_Sleep(1000, resolve);
-      LOG(`Disconnect: disconnected from URNET host`);
-    });
-  })();
+    }
+  }).catch(err => {
+    LOG.error(err);
+  });
 }
 
 /// URSYS MESSAGE API /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Send(data) {
+async function X_Send(message: UR_MsgName, data: any) {
   if (IS_CONNECTED) {
-    await ipc.of['client'].emit('urnet', data);
+    //
+    const pkt = new NetPacket();
+    pkt.setMsgData(message, data);
+    await ipc.of['client'].emit('urnet', pkt);
+    //
     const id = ipc.of['client'].id;
     LOG(`${id}: sending '${data}' to URNET host`);
     await m_Sleep(1000);

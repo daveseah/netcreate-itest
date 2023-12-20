@@ -169,7 +169,9 @@ async function ManageHosts() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function HandleSend() {
   await UDS.Connect();
-  await UDS.Send('hello world');
+  const data = ARGS.slice(2);
+  const name = 'NET:TEST';
+  await UDS.Send(name, { name, data });
   await UDS.Disconnect();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -252,7 +254,7 @@ async function ParseCommandLine() {
 if (DBG) LOG('---');
 let arglist = m_args ? m_args.join(' ') : '';
 if (arglist.length > 0) arglist = ` ${arglist}`;
-LOG(`net command: '${m_addon}${arglist}'`);
+// LOG(`net command: '${m_addon}${arglist}'`);
 await InitializeCLI();
 await ParseCommandLine();
 await ShutdownCLI();

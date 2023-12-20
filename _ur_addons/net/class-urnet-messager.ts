@@ -59,8 +59,9 @@ export class NetMessager {
       }
       return;
     }
-    const pkt = new NetPacket(msgName, data);
-    pkt.init('signal');
+    const pkt = new NetPacket();
+    pkt.setMsgData(msgName, data);
+    pkt.initType('signal');
     this.dispatchPacket(pkt);
   }
   /** send data to other endpoints with matching msg */

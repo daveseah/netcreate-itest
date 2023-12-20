@@ -1,20 +1,25 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET PACKET
+  URNET PACKET 
+  
   encapsulates a message sent over URNET
 
+  To use from esmodule code, need to import using commonjs semantics:
+  
+    import CLASS_NP from './class-urnet-packet.ts';
+    const NetPacket = CLASS_NP.default;
+    
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import {
-  UR_NetMessage,
   UR_MsgName,
   UR_MsgData,
-  UR_NetDir,
-  UR_MsgID,
-  UR_PktOpts,
-  UR_PktID,
   UR_MsgType,
-  UR_NetAddr
+  UR_NetAddr,
+  UR_NetDir,
+  UR_PktID,
+  UR_PktOpts,
+  UR_NetMessage
 } from './urnet-types';
 
 /// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////
@@ -25,7 +30,7 @@ function m_InvalidType(msg_type: UR_MsgType): boolean {
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default class NetPacket implements UR_NetMessage {
+class NetPacket implements UR_NetMessage {
   id: UR_PktID;
   name: UR_MsgName;
   data: UR_MsgData;
@@ -37,24 +42,22 @@ export default class NetPacket implements UR_NetMessage {
   hop_rsvp?: boolean;
   err?: string;
 
-  constructor(...args: any[]) {
-    if (args.length === 1) return this.deserialize(args[0]);
-    if (args.length === 2) return this.construct(args[0], args[1]);
-    throw Error(`invalid constructor args: ${args}`);
-  }
-
-  /** lifecycle - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
-  /** make a new packet with a message name and data */
-  construct(msg: UR_MsgName, data: UR_MsgData): NetPacket {
-    // payload
-    this.name = msg;
-    this.data = data;
+  constructor() {
     // metadata
     this.msg_log = [];
     this.hop_seq = [];
     this.hop_dir = 'req';
     this.hop_rsvp = false;
     this.err = undefined;
+    // after construct,
+  }
+
+  /** lifecycle - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
+  /** make a new packet with a message name and data */
+  setMsgData(msg: UR_MsgName, data: UR_MsgData): NetPacket {
+    // payload
+    this.name = msg;
+    this.data = data;
     // set on send
     this.id = undefined;
     this.src_addr = undefined;
@@ -62,16 +65,20 @@ export default class NetPacket implements UR_NetMessage {
     //
     return this;
   }
+  /** make a package from existing JSON */
+  setFromJSON(json: string): NetPacket {
+    return this.deserialize(json);
+  }
   /** initialize new packet with id and type, with optional meta overrides */
-  init(msg_type: UR_MsgType, opt?: UR_PktOpts) {
+  initType(msg_type: UR_MsgType, opt?: UR_PktOpts) {
     if (m_InvalidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
     this.msg_type = msg_type;
     this.id = NetPacket.NewPacketID(this);
+    // optional overrides
     this.src_addr = opt?.addr;
     this.hop_dir = opt?.dir;
     this.hop_rsvp = opt?.rsvp;
   }
-  /** return */
 
   /** serialization - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
   serialize(): string {
@@ -93,7 +100,8 @@ export default class NetPacket implements UR_NetMessage {
   }
   // create a new NetPacket with the same data but new id
   clone(): NetPacket {
-    const pkt = new NetPacket(this.serialize());
+    const pkt = new NetPacket();
+    pkt.setFromJSON(this.serialize());
     pkt.id = NetPacket.NewPacketID(pkt);
     return pkt;
   }
@@ -109,3 +117,4 @@ export default class NetPacket implements UR_NetMessage {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export default NetPacket;
