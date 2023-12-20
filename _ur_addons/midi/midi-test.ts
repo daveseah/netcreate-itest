@@ -2,6 +2,14 @@
 
   prototype code for implementing MIDI+WebAudio in a browser
 
+  OCTAVE_OFFSET is used to shift the reference octave number
+  midi note 60 is defined as middle C, but the octave number varies by software
+
+  TODO: look at these for octave offset bugs
+  .. getNoteOctave() 
+  .. getMidiNoteFromName()
+  .. getNameFromMidiNote()
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import * as Tone from 'tone';
@@ -14,7 +22,8 @@ let KEYS: Map<number, HTMLElement>;
 let BUTTON: HTMLButtonElement;
 let RADIO: HTMLElement;
 let SAMPLER: Tone.Sampler;
-let FnOutput;
+let OCTAVE_OFFSET = 0;
+let FnOutput: Function;
 const PR = ConsoleStyler('MIDI', 'TagPurple');
 
 /// UI EFFECTS ////////////////////////////////////////////////////////////////
@@ -121,6 +130,7 @@ function m_EnableKeyboard(start: string = 'C3', end: string = 'C5') {
   if (keyboard) {
     KEYS = new Map();
     while (keyboard.firstChild) keyboard.removeChild(keyboard.firstChild);
+
     for (let mnote = n1; mnote <= n2; mnote++) {
       const keyDiv = ui_MakeKeyDiv(mnote);
       KEYS.set(mnote, keyDiv);
@@ -137,7 +147,7 @@ function m_EnableKeyboard(start: string = 'C3', end: string = 'C5') {
 function getMidiNoteFromName(name: string) {
   let noteName = name[0];
   let octave = parseInt(name[name.length - 1]);
-  let mnote = octave * 12 + 12;
+  let mnote = (octave + OCTAVE_OFFSET) * 12 + 12;
   mnote += 'C D EF G A B'.indexOf(noteName);
   if (name[1] === '#') mnote++;
   else if (name[1] === 'b') mnote--;
@@ -193,18 +203,18 @@ const getMIDIMessage = message => {
 /// SOUND GENERATOR HELPERS ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** pure oscillator through audio context */
-function playOscillatorNote(note, velocity) {
+function playOscillatorNote(mnote, mvel) {
   // Create an oscillator node
   let oscillator = AUDIO.createOscillator();
   oscillator.type = 'sine';
 
   // Calculate frequency based on MIDI note value
-  let frequency = Math.pow(2, (note - 69) / 12) * 440;
+  let frequency = Math.pow(2, (mnote - 69) / 12) * 440;
   oscillator.frequency.setValueAtTime(frequency, AUDIO.currentTime);
 
   // Create a gain node to control volume
   let gainNode = AUDIO.createGain();
-  gainNode.gain.value = velocity / 127;
+  gainNode.gain.value = mvel / 127;
 
   // Connect the oscillator to the gain node and the gain node to the output
   oscillator.connect(gainNode);
@@ -212,7 +222,7 @@ function playOscillatorNote(note, velocity) {
 
   // Start the oscillator
   oscillator.start();
-  console.log(...PR('playing', note, 'osc:frequency', frequency));
+  console.log(...PR(`playing (K${mnote}V${mvel}) osc freq:${frequency}`));
   // Stop the oscillator after a duration
   oscillator.stop(AUDIO.currentTime + 1);
 }
@@ -223,17 +233,17 @@ function playPianoNote(mnote: number, mvel: number = 127) {
   const octave = getNoteOctave(mnote);
   const note = `${letter}${octave}`;
   const velocity = mvel / 127;
-  console.log(...PR(`playing ${note}/${mvel} piano sampler`));
+  console.log(...PR(`playing ${note} (K${mnote}V${mvel}) piano sampler`));
   SAMPLER.triggerAttackRelease(note, '8n', undefined, velocity);
 }
 
 /// SOUND GENERATOR ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to play a sound
-const playMidiNote = (note, velocity) => {
+const playMidiNote = (mnote, velocity) => {
   // make sure audio is enabled
   if (ui_WaitingForAudioContext()) return;
-  if (FnOutput) FnOutput(note, velocity);
+  if (FnOutput) FnOutput(mnote, velocity);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Function to stop a sound
