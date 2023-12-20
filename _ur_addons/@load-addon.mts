@@ -11,6 +11,8 @@ import { fork } from 'node:child_process';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('ADO-LOADR', 'TagCyan');
 const DBG = false;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const ARGS = process.argv.slice(2);
 
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -33,7 +35,6 @@ async function ForkAddon(addonSelector: string) {
 /// RUNTIME ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 if (DBG) LOG('---');
-const ARGS = process.argv.slice(2);
 if (DBG) LOG('@load-addon.mts called with args:', ARGS);
 const [arg_addon_name] = ARGS;
 ForkAddon(arg_addon_name);
