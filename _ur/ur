@@ -49,7 +49,7 @@ fi
 #
 DEBUG="--inspect-brk" # use --inspect-brk to break on first line
 OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
-TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode
+TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode (disables typecheck)
 case "$1" in
     build)
         # (1) always build library first
@@ -71,13 +71,5 @@ esac
 # to pass arguments to a special script
 #
 node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
+# to debug the addon loader, remove the TSOPTS (--transpile-only)
 npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts "$@"
-
-
-
-
-
-
-
-
-
