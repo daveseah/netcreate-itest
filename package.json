@@ -8,7 +8,7 @@
     "_ur_addons/"
   ],
   "scripts": {
-    "dev": "node ./_ur/npm-scripts/@build-lib.cjs && node ./_ur_mods/@ur-build-mods.cjs && brunch w -s",
+    "dev": "node ./_ur/npm-scripts/@build-lib.cjs && node ./_ur/npm-scripts/@build-mods.cjs && brunch w -s",
     "build-libs": "node ./_ur/npm-scripts/@build-lib.cjs",
     "lint": "npm exec --workspaces -- npm run lint && eslint app/",
     "dev:inspect": "node --inspect brunch-server.js",
