@@ -8,16 +8,18 @@ import { FILES } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const UDS_PATH = 'uds_nocommit.sock'; // Name of the Unix Domain Socket file
-const UDS_ROOT = FILES.AbsLocalPath('_ur_addons/net');
-const UDS_SERVER_ID = 'URDS_SRV'; // node-ipc server identifier
-const UDS_CLIENT_ID = 'URDS_CLI'; // node-ipc client identifier
+const ADIR_NET = FILES.AbsLocalPath('_ur_addons/net');
+const SOCKET_FILE = 'URNET_nocommit.sock';
+const URNET_INFO = {
+  ipc_id: 'URNET', // used for ipc.config.id and ipc.on('id')
+  ipc_message: 'UDS.URNET', // used for ipc.server.on('UDS.URNET')
+  net_dir: ADIR_NET,
+  sock_file: SOCKET_FILE, // Name of the Unix Domain Socket file
+  sock_path: `${ADIR_NET}/${SOCKET_FILE}` // Path to the Unix Domain Socket file
+};
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
-  UDS_PATH, // used for ipc.connectToNet
-  UDS_ROOT, // used for ipc.config.socketRoot
-  UDS_CLIENT_ID, // used for ipc.config.id for clients
-  UDS_SERVER_ID // used for ipc.config.id for servers
+  URNET_INFO // used for ipc.connectToNet
 };

@@ -26,14 +26,14 @@ export type UR_MsgHandler = (data: UR_MsgData) => any;
  */
 export interface UR_NetMessage {
   id: UR_PktID;
+  msg_type: UR_MsgType;
   name: UR_MsgName;
   data: UR_MsgData;
-  msg_type: UR_MsgType;
-  msg_log: string[];
   src_addr: UR_NetAddr;
-  hop_seq: UR_NetAddr[];
   hop_dir: UR_NetDir;
   hop_rsvp?: boolean;
+  hop_seq: UR_NetAddr[];
+  hop_log: string[];
   err?: string;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
