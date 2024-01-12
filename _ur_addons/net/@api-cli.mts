@@ -242,7 +242,7 @@ async function ParseCommandLine() {
       await HandleSend();
       break;
     case undefined:
-      LOG.warn(`net command requires mode argument [start|stop|hosts]`);
+      LOG.warn(`net command requires mode argument [start|stop|hosts|send]`);
       break;
     default:
       LOG.warn(`unknown net command '${command}'`);

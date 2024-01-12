@@ -6,14 +6,14 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import ipc, { Socket } from '@achrinza/node-ipc';
-import { PR, FILES, PROC } from '@ursys/netcreate';
-import { UDS_PATH, UDS_ROOT, UDS_SERVER_ID } from './urnet-constants.mts';
+import { PR } from '@ursys/netcreate';
+import { URNET_INFO } from './urnet-constants.mts';
+import CLASS_NP from './class-urnet-packet.ts';
+const NetPacket = CLASS_NP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDS', 'TagBlue');
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let m_urds_counter = 0; // counter for generating unique addresses
 
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -33,55 +33,27 @@ process.on('SIGINT', () => {
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let URDS = new Map<string, Socket>(); // unix domain socket address dictionary
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// node-ipc baseline configuration
 ipc.config.retry = 1500;
 ipc.config.silent = true;
 ipc.config.unlink = true; // unlink socket file on exit
-ipc.config.socketRoot = UDS_ROOT;
 
-/// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
+/// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Return new URDS ID. An URDS is the UDS version of a UADDR */
-function m_GetNewURDS() {
-  ++m_urds_counter;
-  let cstr = m_urds_counter.toString(10).padStart(2, '0');
-  return `URDS_${cstr}`; // UR DOMAIN SOCKET
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketAdd(socket) {
-  let new_uaddr = m_GetNewURDS();
-  socket.UADDR = new_uaddr;
-  if (URDS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
-  URDS.set(new_uaddr, socket);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketDelete(socket) {
-  let { uaddr } = socket;
-  if (uaddr === undefined) throw Error(`socket has no uaddr`);
-  if (URDS.has(uaddr)) URDS.delete(uaddr);
-  else throw Error(`${uaddr} not found`);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketConnectionAck(socket) {
-  let data = {
-    UADDR: socket.UADDR
-  };
-  socket.write(JSON.stringify(data)); // UDS uses 'write' instead of send
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketMessage(socket, json) {
-  if (socket.UADDR === undefined) throw Error(`socket has no uaddr`);
-  LOG(`socket ${socket.UADDR} message: ${json}`);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_OnSocketConnection(socket) {
-  m_SocketAdd(socket);
-  m_SocketConnectionAck(socket);
-  socket.on('close', socket => m_SocketDelete(socket));
-  socket.on('message', json => {
-    m_SocketMessage(socket, json);
+function m_ConfigureServer() {
+  const { ipc_message } = URNET_INFO;
+  ipc.server.on('connect', () => {
+    LOG(`${ipc.config.id} connect: connected`);
+  });
+  ipc.server.on(ipc_message, (pktObj, socket) => {
+    const pkt = new NetPacket();
+    // pkt.setFromObject(pktObj);
+    pkt.setFromJSON(JSON.stringify(pktObj));
+    LOG(`${ipc.config.id} message '${ipc_message}' received packet`);
+    LOG.info(JSON.stringify(pktObj));
+    LOG(`${ipc.config.id} returning packet on '${socket.id}'`);
+    LOG.info(pkt.serialize());
+    ipc.server.emit(socket, ipc_message, pkt);
   });
 }
 
@@ -89,27 +61,11 @@ function m_OnSocketConnection(socket) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
   // Start Unix Domain Socket Server
-  ipc.config.id = UDS_SERVER_ID;
-  ipc.serve(UDS_PATH, () => {
-    LOG(`.. UDS Server listening on '${ipc.server.path}'`);
-
-    ipc.server.on('urnet', (data, socket) => {
-      LOG('Received on UDS:', data);
-      ipc.server.emit(socket, 'urnet', 'Reply from UDS server');
-    });
-
-    ipc.server.on('connect', () => {
-      LOG('Client connected');
-    });
-
-    ipc.server.on('disconnect', () => {
-      LOG('Client disconnected1:');
-    });
-    ipc.server.on('socket.disconnect', (socket, destroydId) => {
-      LOG('Client disconnected2:', socket.id, destroydId);
-    });
-  });
+  const { ipc_id, sock_path } = URNET_INFO;
+  ipc.config.id = ipc_id;
+  ipc.serve(sock_path, () => m_ConfigureServer());
   ipc.server.start();
+  LOG(`.. UDS Server listening on '${ipc.server.path}'`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {

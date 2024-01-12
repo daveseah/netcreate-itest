@@ -6,20 +6,22 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { PR, FILES } from '@ursys/netcreate';
-import {
-  UDS_PATH,
-  UDS_ROOT,
-  UDS_CLIENT_ID,
-  UDS_SERVER_ID
-} from './urnet-constants.mts';
+import { URNET_INFO } from './urnet-constants.mts';
 import ipc, { Socket } from '@achrinza/node-ipc';
-import { UR_MsgName } from './urnet-types.ts';
+import {
+  UR_NetMessage,
+  UR_MsgName,
+  UR_MsgData,
+  UR_MsgHandler
+} from './urnet-types.ts';
 import CLASS_NP from './class-urnet-packet.ts';
 const NetPacket = CLASS_NP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('NETCLI', 'TagBlue');
+const LOCAL_HANDLERS = new Map<string, UR_MsgHandler[]>();
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDS_DETECTED = false;
 let IS_CONNECTED = false;
@@ -36,77 +38,137 @@ function m_Sleep(ms, resolve?): Promise<void> {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_CheckForUDSHost() {
-  const pipeFile = `${UDS_ROOT}/${UDS_PATH}`;
-  UDS_DETECTED = FILES.FileExists(pipeFile);
+  const { sock_path } = URNET_INFO;
+  UDS_DETECTED = FILES.FileExists(sock_path);
   return UDS_DETECTED;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_DecodePacketName(name: string): {
+  msg_channel: string;
+  msg_name: string;
+} {
+  if (typeof name !== 'string') {
+    LOG(`message name must be a string`);
+    return;
+  }
+  const bits = name.split(':');
+  if (bits.length > 2) {
+    LOG(`too many colons in message name`);
+    return;
+  }
+  if (bits.length < 2) {
+    return {
+      msg_channel: '',
+      msg_name: bits[0].toUpperCase()
+    };
+  }
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_DecodePacket(pkt: UR_NetMessage): {
+  msg_channel: string;
+  msg_name: string;
+  msg_data: UR_MsgData;
+} {
+  const { name, data } = pkt;
+  const { msg_channel, msg_name } = m_DecodePacketName(name);
+  return { msg_channel, msg_name, msg_data: data };
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_RegisterHandler(name: UR_MsgName, handler: UR_MsgHandler) {
+  const { msg_channel, msg_name } = m_DecodePacketName(name);
+  if (!NetPacket.ValidChannel(msg_channel)) {
+    LOG(`invalid message channel ${msg_channel}`);
+    return;
+  }
+  if (typeof handler !== 'function') {
+    LOG(`message handler must be a function`);
+    return;
+  }
+  const handlerKey = name; // only use non-channel name
+  if (!LOCAL_HANDLERS.has(handlerKey)) LOCAL_HANDLERS.set(handlerKey, []);
+  const handlers = LOCAL_HANDLERS.get(handlerKey);
+  handlers.push(handler);
+}
+
+/// MESSAGE DISPATCHER ////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** API: Main Message Handler
+ */
+function m_HandleMessage(pktObj) {
+  const pkt = new NetPacket();
+  pkt.setFromObject(pktObj);
+  const { msg_name, msg_channel, msg_data } = m_DecodePacket(pkt);
+
+  let SOURCE = '';
+  if (msg_channel === 'NET') SOURCE = 'NET';
+  else if (msg_channel === '') SOURCE = 'LOCAL';
+  else {
+    LOG.error(`unknown message channel ${msg_channel}`);
+    LOG.info(pkt.serialize());
+    return;
+  }
+  const handlers = LOCAL_HANDLERS.get(msg_name);
+
+  LOG(`${msg_name} is a ${SOURCE} invocation`);
+
+  LOG.info(JSON.stringify(msg_data));
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function X_Connect() {
   /// node-ipc baseline configuration
-  ipc.config.socketRoot = UDS_ROOT;
   ipc.config.unlink = true; // unlink socket file on exit
   ipc.config.retry = 1500;
   ipc.config.maxRetries = 1;
   ipc.config.silent = true;
+
   await new Promise<void>((resolve, reject) => {
+    const { ipc_id, ipc_message, sock_path } = URNET_INFO;
     /// check that UDS host is running
     if (!m_CheckForUDSHost()) {
-      reject(`Connect: URNET host pipe not detected`);
-    } else {
-      // Connect to the socket file
-      ipc.connectTo('client', UDS_PATH, () => {
-        // Handle connection events
-        const client = ipc.of['client'];
-        client.on('urnet', data => {
-          LOG(`on_urnet: received '${data}'`);
-        });
-        client.on('connect', () => {
-          LOG(`on_connect: connected to ${client.path}`);
-          IS_CONNECTED = true;
-          resolve();
-        });
-        client.on('disconnected', () => {
-          LOG(`on_disconnect: disconnected`);
-          IS_CONNECTED = false;
-        });
-        client.on('socket.disconnected', (socket, destroyedId) => {
-          LOG(`${destroyedId} socket.disconnected!`);
-          IS_CONNECTED = false;
-        });
+      reject(`Connect: ${ipc_id} pipe not found`); // reject promise
+      return;
+    }
+    // if good connect to the socket file
+    ipc.connectTo(ipc_id, sock_path, () => {
+      const client = ipc.of[ipc_id];
+      client.on('connect', () => {
+        LOG(`${client.id} connect: connected`);
+        IS_CONNECTED = true;
+        resolve(); // resolve promise
       });
-    }
+      client.on(ipc_message, pktObj => m_HandleMessage(pktObj));
+      client.on('disconnected', () => {
+        LOG(`${client.id} disconnect: disconnected`);
+        IS_CONNECTED = false;
+      });
+      client.on('socket.disconnected', (socket, destroyedId) => {
+        let status = '';
+        if (socket) status += `socket:${socket.id || 'undefined'}`;
+        if (destroyedId) status += ` destroyedId:${destroyedId || 'undefined'}`;
+        LOG(`${client.id} socket.disconnected: disconnected ${status}`);
+        IS_CONNECTED = false;
+      });
+    });
   }).catch(err => {
     LOG.error(err);
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Disconnect() {
-  await new Promise((resolve, reject) => {
-    if (!IS_CONNECTED) {
-      reject(`Disconnect: was not connected to URNET host`);
-    } else {
-      ipc.disconnect('client');
-      IS_CONNECTED = false;
-      m_Sleep(1000, resolve);
-    }
-  }).catch(err => {
-    LOG.error(err);
-  });
-}
-
-/// URSYS MESSAGE API /////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Send(message: UR_MsgName, data: any) {
+async function X_Send(message: UR_MsgName, data: UR_MsgData) {
   if (IS_CONNECTED) {
     //
     const pkt = new NetPacket();
+    pkt.initializeMeta('send');
     pkt.setMsgData(message, data);
-    await ipc.of['client'].emit('urnet', pkt);
+    const { ipc_id, ipc_message } = URNET_INFO;
+    const client = ipc.of[ipc_id];
+    await client.emit(ipc_message, pkt);
     //
-    const id = ipc.of['client'].id;
-    LOG(`${id}: sending '${data}' to URNET host`);
+    const json = JSON.stringify(data);
+    LOG(`${client.id} sending to ${ipc_message}`);
+    LOG.info(json);
     await m_Sleep(1000);
     return;
   }
@@ -119,6 +181,21 @@ async function X_Signal() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function X_Call() {
   LOG('would call URNET');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function X_Disconnect() {
+  await new Promise((resolve, reject) => {
+    if (!IS_CONNECTED) {
+      reject(`Disconnect: was not connected to URNET host`);
+    } else {
+      const { ipc_id } = URNET_INFO;
+      ipc.disconnect(ipc_id);
+      IS_CONNECTED = false;
+      m_Sleep(1000, resolve);
+    }
+  }).catch(err => {
+    LOG.error(err);
+  });
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
