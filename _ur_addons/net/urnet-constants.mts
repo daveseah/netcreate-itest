@@ -10,7 +10,7 @@ import { FILES } from '@ursys/netcreate';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const ADIR_NET = FILES.AbsLocalPath('_ur_addons/net');
 const SOCKET_FILE = 'URNET_nocommit.sock';
-const URNET_INFO = {
+const UDS_INFO = {
   ipc_id: 'URNET', // used for ipc.config.id and ipc.on('id')
   ipc_message: 'UDS.URNET', // used for ipc.server.on('UDS.URNET')
   net_dir: ADIR_NET,
@@ -21,5 +21,5 @@ const URNET_INFO = {
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
-  URNET_INFO // used for ipc.connectToNet
+  UDS_INFO // used for ipc.connectToNet
 };

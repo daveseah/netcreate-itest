@@ -7,7 +7,7 @@
 
 import ipc, { Socket } from '@achrinza/node-ipc';
 import { PR } from '@ursys/netcreate';
-import { URNET_INFO } from './urnet-constants.mts';
+import { UDS_INFO } from './urnet-constants.mts';
 import CLASS_NP from './class-urnet-packet.ts';
 const NetPacket = CLASS_NP.default;
 
@@ -41,11 +41,38 @@ ipc.config.unlink = true; // unlink socket file on exit
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_ConfigureServer() {
-  const { ipc_message } = URNET_INFO;
+  const { ipc_message } = UDS_INFO;
+
+  // note: 'connect' doesn't provide useful data
   ipc.server.on('connect', () => {
     LOG(`${ipc.config.id} connect: connected`);
   });
+
+  // message handler, where ipc_message is the message name
   ipc.server.on(ipc_message, (pktObj, socket) => {
+    // have we seen this socket before? PSEUDOCODE
+    if (!ipc.server.sockets[socket.id]) {
+      LOG(`${ipc.config.id} new socket '${socket.id}'`);
+      ipc.server.sockets[socket.id] = socket;
+      // set the state of this socket to 'awaiting authentication'
+      ipc.server.sockets[socket.id].auth = false;
+      // send a new UADDR back that's unique to this socket
+      const pkt = new NetPacket();
+      const welcomeData = { hello: 'there' };
+      pkt.setMsgData('UDS:CONNECT', welcomeData); // remember
+      ipc.server.emit(socket, ipc_message, pkt);
+      return;
+    }
+    // if we get a packet with UDS:CLIENT_AUTHENTICATED, set the state to 'authenticated'
+    if (pktObj.name === 'UDS:CLIENT_AUTHENTICATE') {
+      ipc.server.sockets[socket.id].auth = true; // this would be hardened
+      LOG(`${ipc.config.id} socket '${socket.id}' authenticated`);
+      // return the transacation with authentication token
+      // return packet
+      return;
+    }
+
+    // dummy handshake to send back
     const pkt = new NetPacket();
     // pkt.setFromObject(pktObj);
     pkt.setFromJSON(JSON.stringify(pktObj));
@@ -61,7 +88,7 @@ function m_ConfigureServer() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
   // Start Unix Domain Socket Server
-  const { ipc_id, sock_path } = URNET_INFO;
+  const { ipc_id, sock_path } = UDS_INFO;
   ipc.config.id = ipc_id;
   ipc.serve(sock_path, () => m_ConfigureServer());
   ipc.server.start();

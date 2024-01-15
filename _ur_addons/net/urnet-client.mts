@@ -6,7 +6,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { PR, FILES } from '@ursys/netcreate';
-import { URNET_INFO } from './urnet-constants.mts';
+import { UDS_INFO } from './urnet-constants.mts';
 import ipc, { Socket } from '@achrinza/node-ipc';
 import {
   UR_NetMessage,
@@ -38,7 +38,7 @@ function m_Sleep(ms, resolve?): Promise<void> {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_CheckForUDSHost() {
-  const { sock_path } = URNET_INFO;
+  const { sock_path } = UDS_INFO;
   UDS_DETECTED = FILES.FileExists(sock_path);
   return UDS_DETECTED;
 }
@@ -124,7 +124,7 @@ async function X_Connect() {
   ipc.config.silent = true;
 
   await new Promise<void>((resolve, reject) => {
-    const { ipc_id, ipc_message, sock_path } = URNET_INFO;
+    const { ipc_id, ipc_message, sock_path } = UDS_INFO;
     /// check that UDS host is running
     if (!m_CheckForUDSHost()) {
       reject(`Connect: ${ipc_id} pipe not found`); // reject promise
@@ -162,7 +162,7 @@ async function X_Send(message: UR_MsgName, data: UR_MsgData) {
     const pkt = new NetPacket();
     pkt.initializeMeta('send');
     pkt.setMsgData(message, data);
-    const { ipc_id, ipc_message } = URNET_INFO;
+    const { ipc_id, ipc_message } = UDS_INFO;
     const client = ipc.of[ipc_id];
     await client.emit(ipc_message, pkt);
     //
@@ -188,7 +188,7 @@ async function X_Disconnect() {
     if (!IS_CONNECTED) {
       reject(`Disconnect: was not connected to URNET host`);
     } else {
-      const { ipc_id } = URNET_INFO;
+      const { ipc_id } = UDS_INFO;
       ipc.disconnect(ipc_id);
       IS_CONNECTED = false;
       m_Sleep(1000, resolve);
