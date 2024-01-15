@@ -124,21 +124,21 @@ async function X_Connect() {
   ipc.config.silent = true;
 
   await new Promise<void>((resolve, reject) => {
-    const { ipc_id, ipc_message, sock_path } = UDS_INFO;
+    const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
     /// check that UDS host is running
     if (!m_CheckForUDSHost()) {
-      reject(`Connect: ${ipc_id} pipe not found`); // reject promise
+      reject(`Connect: ${uds_id} pipe not found`); // reject promise
       return;
     }
     // if good connect to the socket file
-    ipc.connectTo(ipc_id, sock_path, () => {
-      const client = ipc.of[ipc_id];
+    ipc.connectTo(uds_id, sock_path, () => {
+      const client = ipc.of[uds_id];
       client.on('connect', () => {
         LOG(`${client.id} connect: connected`);
         IS_CONNECTED = true;
         resolve(); // resolve promise
       });
-      client.on(ipc_message, pktObj => m_HandleMessage(pktObj));
+      client.on(uds_sysmsg, pktObj => m_HandleMessage(pktObj));
       client.on('disconnected', () => {
         LOG(`${client.id} disconnect: disconnected`);
         IS_CONNECTED = false;
@@ -162,12 +162,12 @@ async function X_Send(message: UR_MsgName, data: UR_MsgData) {
     const pkt = new NetPacket();
     pkt.initializeMeta('send');
     pkt.setMsgData(message, data);
-    const { ipc_id, ipc_message } = UDS_INFO;
-    const client = ipc.of[ipc_id];
-    await client.emit(ipc_message, pkt);
+    const { uds_id, uds_sysmsg } = UDS_INFO;
+    const client = ipc.of[uds_id];
+    await client.emit(uds_sysmsg, pkt);
     //
     const json = JSON.stringify(data);
-    LOG(`${client.id} sending to ${ipc_message}`);
+    LOG(`${client.id} sending to ${uds_sysmsg}`);
     LOG.info(json);
     await m_Sleep(1000);
     return;
@@ -188,8 +188,8 @@ async function X_Disconnect() {
     if (!IS_CONNECTED) {
       reject(`Disconnect: was not connected to URNET host`);
     } else {
-      const { ipc_id } = UDS_INFO;
-      ipc.disconnect(ipc_id);
+      const { uds_id } = UDS_INFO;
+      ipc.disconnect(uds_id);
       IS_CONNECTED = false;
       m_Sleep(1000, resolve);
     }
