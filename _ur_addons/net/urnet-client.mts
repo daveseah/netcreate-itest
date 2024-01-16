@@ -160,7 +160,7 @@ async function X_Send(message: UR_MsgName, data: UR_MsgData) {
   if (IS_CONNECTED) {
     //
     const pkt = new NetPacket();
-    pkt.initializeMeta('send');
+    pkt.setMeta('send');
     pkt.setMsgData(message, data);
     const { uds_id, uds_sysmsg } = UDS_INFO;
     const client = ipc.of[uds_id];

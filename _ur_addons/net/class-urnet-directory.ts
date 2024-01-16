@@ -60,8 +60,8 @@ let AGE_MAX = 60 * 30; // 30 minutes
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** assigned a new UADDR from this host */
-function m_AllocateUADDR(socket: NP_Sockish): NP_ADDR {
-  const fn = 'm_AllocateUADDR:';
+function m_AllocateAddress(socket: NP_Sockish): NP_ADDR {
+  const fn = 'm_AllocateAddress:';
   const id = `${UADDR_COUNTER++}`.padStart(3, '0');
   const uaddr = `UADDR-${id}` as NP_ADDR;
   socket.UADDR = uaddr; // save uaddr to socket
@@ -137,6 +137,13 @@ function m_GetRemoteAddresses(msg: NP_Msg): NP_ADDR[] {
   return addr_list;
 }
 
+/// API: UPLINK TO GATEWAY /////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Become a downstream distribution endpoint for a gateway host
+function X_ConnectToGateway() {
+  // do stuff here
+}
+
 /// API: MAIN DISPATCHER //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** main dispatcher for incoming messages or packets */
@@ -151,10 +158,15 @@ function DispatchMessage(pkt: NetPacket) {
       // has to handle transactions
       handler(pkt.data);
     });
+    // ALWAYS return if the handlers were local
     return;
   }
-  // remote handlers
+  // otherwise, see if there were remote handlers
   const remote_addresses = m_GetRemoteAddresses(msg);
+  if (remote_addresses.length === 0) {
+    if (DBG) LOG.error(`${fn} no remote handlers for message '${msg}'`);
+    return;
+  }
   remote_addresses.forEach(uaddr => {
     const clone = pkt.clone();
     const socket = SOCK_MAP.get(uaddr);
@@ -178,7 +190,7 @@ function AddSocket(socket: NP_Sockish): NP_ADDR {
   let uaddr = socket.UADDR;
   if (typeof uaddr === 'string' && SOCK_MAP.has(uaddr))
     throw new Error(`${fn} socket ${uaddr} already registered`);
-  uaddr = m_AllocateUADDR(socket);
+  uaddr = m_AllocateAddress(socket);
   socket.UADDR = uaddr;
   if (DBG) LOG(`AddSocket: socket ${uaddr} registered`);
   return uaddr;
@@ -187,8 +199,9 @@ function AddSocket(socket: NP_Sockish): NP_ADDR {
 /** when a client disconnects from this endpoint, delete its socket and
  *  remove all message forwarding.
  */
-function DeleteSocket(uaddr: NP_ADDR) {
+function DeleteSocket(sobj: NP_ADDR | NP_Sockish): NP_ADDR {
   const fn = 'DeleteSocket:';
+  let uaddr = typeof sobj === 'string' ? sobj : sobj.UADDR;
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
   // MSG_FWD_MAP maps msg->set of uaddr, so iterate over all messages
@@ -201,6 +214,7 @@ function DeleteSocket(uaddr: NP_ADDR) {
   // delete the socket
   SOCK_MAP.delete(uaddr);
   if (DBG) LOG(fn, `socket ${uaddr} deleted`);
+  return uaddr;
 }
 
 /// API: REMOTE HANDLERS //////////////////////////////////////////////////////
@@ -209,8 +223,8 @@ function DeleteSocket(uaddr: NP_ADDR) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** register a message handler for a given message to passed uaddr.
  */
-function RegisterRemoteHandler(uaddr: NP_ADDR, msgList: NP_Msg[]) {
-  const fn = 'RegisterRemoteHandler:';
+function RegisterRemoteMessages(uaddr: NP_ADDR, msgList: NP_Msg[]) {
+  const fn = 'RegisterRemoteMessages:';
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
   msgList.forEach(msg => {
@@ -222,13 +236,16 @@ function RegisterRemoteHandler(uaddr: NP_ADDR, msgList: NP_Msg[]) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** unregister a message handler for a given message to passed uaddr.
  */
-function UnregisterRemoteHandler(uaddr: NP_ADDR) {
-  const fn = 'UnregisterRemoteHandler:';
+function UnregisterRemote(uaddr: NP_ADDR): NP_Msg[] {
+  const fn = 'UnregisterRemote:';
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
-  MSG_FWD_MAP.forEach(msg_set => {
+  const removed = [];
+  MSG_FWD_MAP.forEach((msg_set, msg) => {
+    if (msg_set.has(uaddr)) removed.push(msg);
     msg_set.delete(uaddr);
   });
+  return removed;
 }
 
 /// API: LOCAL HANDLERS ///////////////////////////////////////////////////////
@@ -236,8 +253,8 @@ function UnregisterRemoteHandler(uaddr: NP_ADDR) {
 /// MSG_DIS_MAP is a map of msg->set of handler functions for direct invocation
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** for local handlers, register a message handler for a given message. */
-function RegisterHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
-  const fn = 'RegisterHandler:';
+function AddMessageHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
+  const fn = 'AddMessageHandler:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
   if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
   const handler_set = MSG_DIS_MAP.get(msg);
@@ -246,8 +263,8 @@ function RegisterHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** for local handlers, unregister a message handler for a given message. */
-function UnregisterHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
-  const fn = 'UnregisterHandler:';
+function RemoveMessageHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
+  const fn = 'RemoveMessageHandler:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
   if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
   const handler_set = MSG_DIS_MAP.get(msg);
@@ -262,14 +279,14 @@ m_EnableDeadSocketCheck(true);
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
-  AddSocket,
-  DeleteSocket,
+  AddSocket, // (socket)=>
+  DeleteSocket, // (uaddr)=>void
   //
-  RegisterRemoteHandler,
-  UnregisterRemoteHandler,
+  RegisterRemoteMessages, // (uaddr, msgList)=>void
+  UnregisterRemote, // (uaddr)=>void
   //
-  RegisterHandler,
-  UnregisterHandler,
+  AddMessageHandler, // (msg, handler)=>void
+  RemoveMessageHandler, // (msg, handler)=>void
   //
-  DispatchMessage
+  DispatchMessage // (pkt)=>void
 };

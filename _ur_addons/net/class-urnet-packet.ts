@@ -53,14 +53,14 @@ class NetPacket implements UR_NetMessage {
     this.hop_seq = [];
     this.hop_log = [];
     this.err = undefined;
-    // to make a new packet, call initializeMeta() with msg_type
+    // to make a new packet, call setMeta() with msg_type
     // then setMsgData() with msg_name and msg_data
   }
 
   /** lifecycle - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
   /** initialize new packet with id and type, with optional meta overrides */
-  initializeMeta(msg_type: UR_MsgType, opt?: UR_PktOpts) {
+  setMeta(msg_type: UR_MsgType, opt?: UR_PktOpts) {
     if (m_InvalidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
     this.msg_type = msg_type;
     this.id = NetPacket.NewPacketID(this);
@@ -76,7 +76,7 @@ class NetPacket implements UR_NetMessage {
     return this;
   }
   /** set the address before sending */
-  stampSrcAddr(s_addr: UR_NetAddr): NetPacket {
+  setSrcAddr(s_addr: UR_NetAddr): NetPacket {
     const last = this.hop_seq[this.hop_seq.length - 1];
     if (last === s_addr) this.error(`duplicate address ${s_addr} ${this.id}`);
     this.src_addr = s_addr;
@@ -143,24 +143,33 @@ class NetPacket implements UR_NetMessage {
     return msg;
   }
 
-  /** static class elements - - - - - - - - - - - - - - - - - - - - - - - - **/
+  /** static class vars - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
   static packet_counter = 100;
+  static urnet_endpoint: UR_NetSocket;
+
+  /** static class methods - - - - - - - - - - - - - - - - - - - - - - - - **/
+
+  /** create a new packet id based on an existing packet. this is used for
+   *  creating a new packet id for a cloned packet.
+   */
   static NewPacketID(pkt: NetPacket): UR_PktID {
     const addr = pkt.src_addr || 'NO_ADDR';
     const count = NetPacket.packet_counter++;
     return `PKT[${addr}-${count}]`;
   }
-  static urnet_endpoint: UR_NetSocket;
+
+  /** set the socket-ish endpoint that sends all packets to its upstream
+   *  connecting interfaces, established during client connection elsewhere.
+   */
   static SetEndpoint(endpoint: UR_NetSocket) {
-    if (typeof endpoint.sendPacket !== 'function') {
+    if (typeof endpoint.send !== 'function')
       throw Error(`SetEndpoint: endpoint must have sendPacket() method`);
-    }
     NetPacket.urnet_endpoint = endpoint;
   }
   static Send(pkt: NetPacket) {
     if (!NetPacket.urnet_endpoint) pkt.error(`urnet_endpoint, failed to send`);
-    NetPacket.urnet_endpoint.sendPacket(pkt);
+    NetPacket.urnet_endpoint.send(pkt);
   }
 
   static ValidChannel(msg_channel: string): boolean {
