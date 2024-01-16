@@ -63,7 +63,7 @@
           "${env:SHELL}",
           "-i",
           "-c",
-          "export VSCODE_PROFILE='x86 shell';source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='force x86_64';source .vscode/check_env; exec ${env:SHELL}"
         ]
       },
       "arm64 macos": {
@@ -74,7 +74,7 @@
           "${env:SHELL}",
           "-i",
           "-c",
-          "export VSCODE_PROFILE='arm64 shell'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='force arm64'; source .vscode/check_env; exec ${env:SHELL}"
         ]
       },
       "generic macos": {
@@ -82,7 +82,7 @@
         "args": [
           "-i",
           "-c",
-          "export VSCODE_PROFILE='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
         ]
       }
     },
@@ -92,7 +92,7 @@
         "args": [
           "-i",
           "-c",
-          "export VSCODE_PROFILE='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
         ]
       }
     },
