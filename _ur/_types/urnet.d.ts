@@ -8,29 +8,30 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-type NP_Channel = 'LOCAL:' | 'NET:' | 'SRV:' | '';
-type NP_Message = `${NP_Channel}${string}`;
+type NP_Chan = 'LOCAL:' | 'NET:' | 'UDS:' | '';
+type NP_Msg = `${NP_Chan}${string}`;
 type NP_Type = 'msend' | 'msig' | 'mreq' | 'mres';
 type NP_AuthToken = any;
 type NP_Data = { [key: string]: any };
 type NP_Opt = { [key: string]: any };
 type NP_ID = `pkt${number}`;
-type NP_ADDR = `UADDR-${number}`;
+type NP_ADDR = `UA${number}`; // range 001-999
 type NP_Hash = `${NP_ADDR}:${NP_ID}`; // used for transaction lookups
 
 /** Assuming our socket interface has these properties. NetPackets are
- *  capable of sending themselves over a provided INetSocket
+ *  capable of sending themselves over a provided NP_Sockish
  */
-interface INetSocket {
-  UADDR: string; // local urnet address
-  send(json: string, err: function): void;
-}
+type NP_Sockish = {
+  UADDR: NP_ADDR; // assigned UADDR for this socket-ish object
+  AGE: number; // number of seconds since this socket was used
+  send: (data: any, err: (err: any) => void) => void; // send data to socket-ish
+};
 
-/** INetPacket is the data transport object that's serialized and sent through
+/** I_NetPacket is the data transport object that's serialized and sent through
  *  URNET using a message-based addressing mode.
  */
-interface INetPacket {
-  msg: NP_Message; // message name of form CHANNEL:MESSAGE
+interface I_NetPacket {
+  msg: NP_Msg; // message name of form CHANNEL:MESSAGE
   data: NP_Data; // message data payload
   auth: NP_AuthToken; // authentication token
   //
@@ -43,31 +44,37 @@ interface INetPacket {
   seqnum: number; // sequence number for every hop
   seqlog: any[]; // sequence log for debugging per hop
 
-  new (arg: object | string, data?: any, type?: NP_Type): INetPacket;
-  setMessage(msg: NP_Message): void; // set message string
-  getMessage(): NP_Message; // return packet message string
+  new (arg: object | string, data?: any, type?: NP_Type): I_NetPacket;
+  setMessage(msg: NP_Msg): void; // set message string
+  getMessage(): NP_Msg; // return packet message string
   setData(arg: object | string, val?: any): void;
   getData(arg?: string): any;
-  socketSend(socket: INetSocket): void;
+  socketSend(socket: NP_Sockish): void;
 
-  transactionStart(socket: INetSocket): Promise<NP_Data>;
-  transactionReturn(socket: INetSoket): void;
+  transactionStart(socket: NP_Sockish): Promise<NP_Data>;
+  transactionReturn(socket: NP_Sockish): void;
   transactionComplete(): void;
 }
 
-type HandlerFunc = (data: NP_Data) => void;
-type HandlerMap = Map<NP_Message, HandlerFunc>;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type NP_HandlerFunc = (data: NP_Data) => Promise<NP_Data>;
+type NP_HandlerSet = Set<NP_HandlerFunc>; // set(handler1, handler2, ...)
+type NP_AddrSet = Set<NP_ADDR>; // ['UA001', 'UA002', ...]
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type NP_SocketMap = Map<NP_ADDR, NP_Sockish>; //
+type NP_MsgDispatchMap = Map<NP_Msg, NP_HandlerSet>; // msg->handler functions
+type NP_MsgForwardMap = Map<NP_Msg, NP_AddrSet>; // msg->set of uaddr
 
 /** IEndPoint is the interface talking to URNET. Both class-messager and class-endpointg
  *  implement a similar interface; this might be combined
  */
 interface IEndPoint {
-  handleMessage(msg: NP_Message, handler: HandlerFunc): void;
-  unhandleMessage(msg: NP_Message, handler: HandlerFunc): void;
+  handleMessage(msg: NP_Msg, handler: NP_HandlerFunc): void;
+  unhandleMessage(msg: NP_Msg, handler: NP_HandlerFunc): void;
   //
-  callMessage(msg: NP_Message, inData: NP_Data, options: NP_Opt): Promise<NP_Data>;
-  sendMessage(msg: NP_Message, inData: NP_Data, options: NP_Opt): void;
-  raiseMessage(msg: NP_Message, inData: NP_Data, options: NP_Opt): void;
+  callMessage(msg: NP_Msg, inData: NP_Data, options: NP_Opt): Promise<NP_Data>;
+  sendMessage(msg: NP_Msg, inData: NP_Data, options: NP_Opt): void;
+  raiseMessage(msg: NP_Msg, inData: NP_Data, options: NP_Opt): void;
 }
 
 /*/ 
