@@ -11,39 +11,23 @@
     
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import {
-  UR_MsgName,
-  UR_MsgData,
-  UR_MsgType,
-  UR_NetAddr,
-  UR_NetDir,
-  UR_PktID,
-  UR_PktOpts,
-  UR_NetMessage,
-  UR_NetSocket
-} from './urnet-types';
-
-/// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-const MSG_CHANNELS = ['NET', 'UDS', ''];
-const PKT_TYPES = ['ping', 'signal', 'send', 'call'];
-function m_InvalidType(msg_type: UR_MsgType): boolean {
-  return !PKT_TYPES.includes(msg_type);
-}
+import { I_NetMessage, NP_Address } from './urnet-types';
+import { NP_ID, NP_Type, NP_Msg, NP_Data, NP_Dir } from './urnet-types';
+import { NP_Options, NP_SendFunction, NP_HandlerFunction } from './urnet-types';
+import { IsValidType, IsValidChannel } from './urnet-types';
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class NetPacket implements UR_NetMessage {
-  id: UR_PktID; // network-wide unique id for this packet
-  msg_type: UR_MsgType; // ping, signal, send, call
-  name: UR_MsgName; // name of the URNET message
-  data: UR_MsgData; // payload of the URNET message
-  src_addr: UR_NetAddr; // URNET address of the sender
+class NetPacket implements I_NetMessage {
+  id: NP_ID; // network-wide unique id for this packet
+  msg_type: NP_Type; // ping, signal, send, call
+  msg: NP_Msg; // name of the URNET message
+  data: NP_Data; // payload of the URNET message
+  src_addr: NP_Address; // URNET address of the sender
+  hop_seq: NP_Address[]; // URNET addresses that have seen this packet
   hop_log: string[]; // log of debug messages by hop
-  hop_dir: UR_NetDir; // direction of the packet 'req' or 'res'
+  hop_dir: NP_Dir; // direction of the packet 'req' or 'res'
   hop_rsvp?: boolean; // whether the packet is a response to a request
-  hop_seq: UR_NetAddr[]; // URNET addresses that have seen this packet
   err?: string; // returned error message
 
   constructor() {
@@ -60,8 +44,8 @@ class NetPacket implements UR_NetMessage {
   /** lifecycle - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
   /** initialize new packet with id and type, with optional meta overrides */
-  setMeta(msg_type: UR_MsgType, opt?: UR_PktOpts) {
-    if (m_InvalidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
+  setMeta(msg_type: NP_Type, opt?: NP_Options) {
+    if (!IsValidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
     this.msg_type = msg_type;
     this.id = NetPacket.NewPacketID(this);
     // optional overrides
@@ -70,13 +54,13 @@ class NetPacket implements UR_NetMessage {
     this.hop_rsvp = opt?.rsvp;
   }
   /** make a new packet with a message name and data */
-  setMsgData(msg: UR_MsgName, data: UR_MsgData): NetPacket {
-    this.name = msg;
+  setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
+    this.msg = msg;
     this.data = data;
     return this;
   }
   /** set the address before sending */
-  setSrcAddr(s_addr: UR_NetAddr): NetPacket {
+  setSrcAddr(s_addr: NP_Address): NetPacket {
     const last = this.hop_seq[this.hop_seq.length - 1];
     if (last === s_addr) this.error(`duplicate address ${s_addr} ${this.id}`);
     this.src_addr = s_addr;
@@ -85,7 +69,7 @@ class NetPacket implements UR_NetMessage {
   /** invoke global endpoint to send packet */
   send() {
     this.hop_dir = 'req';
-    NetPacket.Send(this);
+    NetPacket.SendPacket(this);
     return this;
   }
 
@@ -98,7 +82,7 @@ class NetPacket implements UR_NetMessage {
   /** make a packet from existing object */
   setFromObject(pktObj) {
     this.id = pktObj.id;
-    this.name = pktObj.name;
+    this.msg = pktObj.msg;
     this.data = pktObj.data;
     this.src_addr = pktObj.src_addr;
     this.hop_log = pktObj.hop_log;
@@ -146,41 +130,39 @@ class NetPacket implements UR_NetMessage {
   /** static class vars - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
   static packet_counter = 100;
-  static urnet_endpoint: UR_NetSocket;
+  static urnet_send: NP_SendFunction;
+  static urnet_handler: NP_HandlerFunction;
 
   /** static class methods - - - - - - - - - - - - - - - - - - - - - - - - **/
 
   /** create a new packet id based on an existing packet. this is used for
    *  creating a new packet id for a cloned packet.
    */
-  static NewPacketID(pkt: NetPacket): UR_PktID {
-    const addr = pkt.src_addr || 'NO_ADDR';
+  static NewPacketID(pkt: NetPacket): NP_ID {
+    const addr = pkt.src_addr;
     const count = NetPacket.packet_counter++;
-    return `PKT[${addr}-${count}]`;
+    return `pkt[${addr}${count}]`;
   }
-
-  /** set the socket-ish endpoint that sends all packets to its upstream
-   *  connecting interfaces, established during client connection elsewhere.
+  static SendPacket(pkt: NetPacket) {
+    if (typeof NetPacket.urnet_send !== 'function')
+      pkt.error(`urnet_send not defined, failed to send.`);
+    NetPacket.urnet_send(pkt);
+  }
+  /** set the function that sends packets for the given type
+   *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
    */
-  static SetEndpoint(endpoint: UR_NetSocket) {
-    if (typeof endpoint.send !== 'function')
-      throw Error(`SetEndpoint: endpoint must have sendPacket() method`);
-    NetPacket.urnet_endpoint = endpoint;
+  static URNET_SetSendFunction(f: NP_SendFunction) {
+    const fn = 'URNET_SetSendFunction:';
+    if (typeof f !== 'function') throw Error(`${fn} invalid send function`);
+    NetPacket.urnet_send = f;
   }
-  static Send(pkt: NetPacket) {
-    if (!NetPacket.urnet_endpoint) pkt.error(`urnet_endpoint, failed to send`);
-    NetPacket.urnet_endpoint.send(pkt);
-  }
-
-  static ValidChannel(msg_channel: string): boolean {
-    const ok = MSG_CHANNELS.includes(msg_channel);
-    if (!ok) {
-      if (MSG_CHANNELS.includes(msg_channel.toUpperCase())) {
-        throw Error(`message channel ${msg_channel} must be UPPERCASE`);
-      }
-      return false;
-    }
-    return true;
+  /** set the function that handles incoming packets for the given type
+   *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
+   */
+  static URNET_SetHandlerFunction(f: NP_HandlerFunction) {
+    const fn = 'URNET_SetHandlerFunction:';
+    if (typeof f !== 'function') throw Error(`${fn} invalid dispatch function`);
+    NetPacket.urnet_handler = f;
   }
 }
 

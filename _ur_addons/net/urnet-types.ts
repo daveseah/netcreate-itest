@@ -1,38 +1,70 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  description
+  URNET BASE TYPES
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-export type UR_MsgName = `${'NET:' | 'UDS:' | ':'}${string}`;
-export type UR_MsgData = {
-  [key: string]: any;
-};
-export type UR_MsgType = 'ping' | 'signal' | 'send' | 'call';
-export type UR_NetDir = 'req' | 'res';
-export type UR_MsgID = `${UR_NetAddr}-${number}`;
-export type UR_PktID = `PKT[${UR_MsgID}]`;
-export type UR_PktOpts = {
-  dir?: UR_NetDir;
+/// RUNTIME UTILITIES /////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const VALID_CHANNELS = ['NET', 'UDS', ''] as const;
+const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of NP_Type */
+export function IsValidType(msg_type: string): boolean {
+  return VALID_TYPES.includes(msg_type as NP_Type);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of NP_Chan */
+export function IsValidChannel(msg_chan: string): boolean {
+  return VALID_CHANNELS.includes(msg_chan as NP_Chan);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** given a CHANNEL:MESSAGE string, return the channel and message name in
+ *  an array */
+export function DecodeMessage(msg: NP_Msg): [NP_Chan, string] {
+  const bits = msg.split(':');
+  if (bits.length !== 2) throw Error(`invalid message name: ${msg}`);
+  if (!IsValidChannel(bits[0])) throw Error(`invalid channel: ${bits[0]}`);
+  let [chan, name] = bits;
+  return [chan as NP_Chan, name];
+}
+
+/// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export type NP_Chan = (typeof VALID_CHANNELS)[number];
+export type NP_ID = `pkt[${NP_Address}${number}]`;
+export type NP_Type = (typeof VALID_TYPES)[number];
+export type NP_Msg = `${NP_Chan}${string}`;
+export type NP_Data = { [key: string]: any };
+export type NP_Dir = 'req' | 'res';
+export type NP_Address = `UA${number}`; // range 001-999
+
+/// NETPACKET-RELATED TYPES ///////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export type NP_AuthToken = any;
+export type NP_Opt = { [key: string]: any };
+export type NP_Hash = `${NP_Address}:${NP_ID}`; // used for transaction lookups
+export type NP_Options = {
+  dir?: NP_Dir;
   rsvp?: boolean;
-  addr?: UR_NetAddr;
+  addr?: NP_Address;
 };
-export type UR_NetAddr = string;
-export type UR_MsgHandler = (data: UR_MsgData) => any;
+
+/// INTERFACES ////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** NetMessages are the encapsulated MESSAGE+DATA that are sent over URNET,
  *  with additional metadata to help with request/response and logging.
  *  They can
  */
-export interface UR_NetMessage {
-  id: UR_PktID;
-  msg_type: UR_MsgType;
-  name: UR_MsgName;
-  data: UR_MsgData;
-  src_addr: UR_NetAddr;
-  hop_dir: UR_NetDir;
+export interface I_NetMessage {
+  id: NP_ID;
+  msg_type: NP_Type;
+  msg: NP_Msg;
+  data: NP_Data;
+  src_addr: NP_Address;
+  hop_dir: NP_Dir;
   hop_rsvp?: boolean;
-  hop_seq: UR_NetAddr[];
+  hop_seq: NP_Address[];
   hop_log: string[];
   err?: string;
 }
@@ -40,18 +72,16 @@ export interface UR_NetMessage {
 /** MessageDispatcher instances are used to dispatch several types of messages
  *  to URNET.
  */
-export interface UR_MessageDispatcher {
-  signal(msg: UR_MsgName, data: UR_MsgData): void;
-  send(msg: UR_MsgName, data: UR_MsgData): void;
-  call(msg: UR_MsgName, data: UR_MsgData): Promise<UR_MsgData>;
-  ping(msg: UR_MsgName): Promise<UR_MsgData>;
-  register(msg: UR_MsgName, handler: UR_MsgHandler): void;
+export interface I_Messager {
+  signal(msg: NP_Msg, data: NP_Data): void;
+  send(msg: NP_Msg, data: NP_Data): void;
+  call(msg: NP_Msg, data: NP_Data): Promise<NP_Data>;
+  ping(msg: NP_Msg): Promise<NP_Data>;
 }
+
+/// FUNCTION SIGNATURES ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** NetSockets are adapters that know how to send and receive NetMessage
- *  packets over a particular transport protocol.
- */
-export interface UR_NetSocket {
-  sendPacket(pkt: UR_NetMessage): void;
-  dispatchPacket(pkt: UR_NetMessage): void;
-}
+/** NetMessage class implementation holds on to this static functions that are
+ *  set during network connection */
+export type NP_SendFunction = (pkt: I_NetMessage) => void;
+export type NP_HandlerFunction = (pkt: I_NetMessage) => void;

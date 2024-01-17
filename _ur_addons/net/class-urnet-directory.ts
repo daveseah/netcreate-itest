@@ -15,42 +15,33 @@
 
 import { PR } from '@ursys/netcreate';
 import NetPacket from './class-urnet-packet.ts';
+import { NP_Address, NP_Msg, NP_Data } from './urnet-types';
 
-/// TYPES /////////////////////////////////////////////////////////////////////
+/// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// COPIED FROM _ur/_types/urnet.d.ts for development purposes
-type NP_Chan = 'LOCAL:' | 'NET:' | 'UDS:' | '';
-type NP_Msg = `${NP_Chan}${string}`;
-type NP_Type = 'msend' | 'msig' | 'mreq' | 'mres';
-type NP_AuthToken = any;
-type NP_Data = { [key: string]: any };
-type NP_Opt = { [key: string]: any };
-type NP_ID = `pkt${number}`;
-type NP_ADDR = `UA${number}`; // range 001-999
-type NP_Hash = `${NP_ADDR}:${NP_ID}`; // used for transaction lookups
-/// notion of an endpoint that is connected to...something
-type NP_Sockish = {
-  UADDR: NP_ADDR; // assigned UADDR for this socket-ish object
+/** this is the socket-ish object that we use to send data to a UDS socket */
+type UDS_Socket = {
+  UADDR: NP_Address; // assigned UADDR for this socket-ish object
   AGE: number; // number of seconds since this socket was used
   send: (data: any, err: (err: any) => void) => void; // send data to socket-ish
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type NP_HandlerFunc = (data: NP_Data) => Promise<NP_Data>;
-type NP_HandlerSet = Set<NP_HandlerFunc>; // set(handler1, handler2, ...)
-type NP_AddrSet = Set<NP_ADDR>; // ['UA001', 'UA002', ...]
+type HandlerFunc = (data: NP_Data) => Promise<NP_Data>;
+type HandlerSet = Set<HandlerFunc>; // set(handler1, handler2, ...)
+type AddressSet = Set<NP_Address>; // ['UA001', 'UA002', ...]
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type NP_SocketMap = Map<NP_ADDR, NP_Sockish>; //
-type NP_MsgDispatchMap = Map<NP_Msg, NP_HandlerSet>; // msg->handler functions
-type NP_MsgForwardMap = Map<NP_Msg, NP_AddrSet>; // msg->set of uaddr
+type SocketMap = Map<NP_Address, UDS_Socket>; //
+type ForwardMap = Map<NP_Msg, AddressSet>; // msg->set of uaddr
+type HandlerMap = Map<NP_Msg, HandlerSet>; // msg->handler functions
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('URNET', 'TagBlue');
 const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const SOCK_MAP: NP_SocketMap = new Map(); // uaddr->socket
-const MSG_FWD_MAP: NP_MsgForwardMap = new Map(); // msg->UADDR[]
-const MSG_DIS_MAP: NP_MsgDispatchMap = new Map(); // msg->handlers[]
+const SOCK_MAP: SocketMap = new Map(); // uaddr->socket
+const MAP_FORWARD: ForwardMap = new Map(); // msg->UADDR[]
+const MAP_HANDLER: HandlerMap = new Map(); // msg->handlers[]
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UADDR_COUNTER = 0;
 let AGE_TIMER = null;
@@ -60,14 +51,13 @@ let AGE_MAX = 60 * 30; // 30 minutes
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** assigned a new UADDR from this host */
-function m_AllocateAddress(socket: NP_Sockish): NP_ADDR {
+function m_AllocateAddress(socket: UDS_Socket): NP_Address {
   const fn = 'm_AllocateAddress:';
   const id = `${UADDR_COUNTER++}`.padStart(3, '0');
-  const uaddr = `UADDR-${id}` as NP_ADDR;
+  const uaddr = `UADDR-${id}` as NP_Address;
   socket.UADDR = uaddr; // save uaddr to socket
   socket.AGE = 0; // reset age
   SOCK_MAP.set(uaddr, socket); // save socket to uaddr map
-  MSG_FWD_MAP.set(uaddr, new Set()); // save empty set of remote messages
   if (DBG) LOG(fn, `socket ${uaddr} allocated`);
   return uaddr;
 }
@@ -94,44 +84,44 @@ function m_EnableDeadSocketCheck(activate: boolean) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** get list of messages allocated to a UADDR */
-function m_GetMessageListForAddress(uaddr: NP_ADDR): NP_Msg[] {
+function m_GetMessageListForAddress(uaddr: NP_Address): NP_Msg[] {
   const fn = 'm_GetMessageList:';
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
-  // MSG_FWD_MAP maps msg->set of uaddr, so iterate over all messages
+  // MAP_FORWARD maps msg->set of uaddr, so iterate over all messages
   const msg_list: NP_Msg[] = [];
-  MSG_FWD_MAP.forEach((msg_set, msg) => {
+  MAP_FORWARD.forEach((msg_set, msg) => {
     if (msg_set.has(uaddr)) msg_list.push(msg);
   });
   return msg_list;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** get list of UADDRs that a message is forwarded to */
-function m_GetAddressListForMessage(msg: NP_Msg): NP_ADDR[] {
+function m_GetAddressListForMessage(msg: NP_Msg): NP_Address[] {
   const fn = 'm_GetAddressListForMessage:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-  // MSG_FWD_MAP maps msg->set of uaddr, so return set of uaddr as array
-  const addr_set = MSG_FWD_MAP.get(msg);
+  // MAP_FORWARD maps msg->set of uaddr, so return set of uaddr as array
+  const addr_set = MAP_FORWARD.get(msg);
   if (!addr_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
   const addr_list = Array.from(addr_set);
   return addr_list;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return list of local handlers for given message */
-function m_GetLocalHandlers(msg: NP_Msg): NP_HandlerFunc[] {
+function m_GetLocalHandlers(msg: NP_Msg): HandlerFunc[] {
   const fn = 'm_GetLocalHandlers:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-  const handler_set = MSG_DIS_MAP.get(msg);
+  const handler_set = MAP_HANDLER.get(msg);
   if (!handler_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
   const handler_list = Array.from(handler_set);
   return handler_list;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return list of remote addresses for given message */
-function m_GetRemoteAddresses(msg: NP_Msg): NP_ADDR[] {
+function m_GetRemoteAddresses(msg: NP_Msg): NP_Address[] {
   const fn = 'm_GetRemoteAddresses:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-  const addr_set = MSG_FWD_MAP.get(msg);
+  const addr_set = MAP_FORWARD.get(msg);
   if (!addr_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
   const addr_list = Array.from(addr_set);
   return addr_list;
@@ -149,7 +139,7 @@ function X_ConnectToGateway() {
 /** main dispatcher for incoming messages or packets */
 function DispatchMessage(pkt: NetPacket) {
   const fn = 'DispatchMessage:';
-  const { name: msg } = pkt;
+  const { msg } = pkt;
   // local handlers
   const local_handlers = m_GetLocalHandlers(msg);
   if (local_handlers.length > 0) {
@@ -185,7 +175,7 @@ function DispatchMessage(pkt: NetPacket) {
 /** when a client connects to this endpoint, register it as a socket and
  *  allocate a UADDR for it.
  */
-function AddSocket(socket: NP_Sockish): NP_ADDR {
+function AddSocket(socket: UDS_Socket): NP_Address {
   const fn = 'AddSocket:';
   let uaddr = socket.UADDR;
   if (typeof uaddr === 'string' && SOCK_MAP.has(uaddr))
@@ -199,15 +189,15 @@ function AddSocket(socket: NP_Sockish): NP_ADDR {
 /** when a client disconnects from this endpoint, delete its socket and
  *  remove all message forwarding.
  */
-function DeleteSocket(sobj: NP_ADDR | NP_Sockish): NP_ADDR {
+function DeleteSocket(sobj: NP_Address | UDS_Socket): NP_Address {
   const fn = 'DeleteSocket:';
   let uaddr = typeof sobj === 'string' ? sobj : sobj.UADDR;
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
-  // MSG_FWD_MAP maps msg->set of uaddr, so iterate over all messages
+  // MAP_FORWARD maps msg->set of uaddr, so iterate over all messages
   const msg_list = m_GetMessageListForAddress(uaddr);
   msg_list.forEach(msg => {
-    const msg_set = MSG_FWD_MAP.get(msg);
+    const msg_set = MAP_FORWARD.get(msg);
     if (!msg_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
     msg_set.delete(uaddr);
   });
@@ -219,16 +209,16 @@ function DeleteSocket(sobj: NP_ADDR | NP_Sockish): NP_ADDR {
 
 /// API: REMOTE HANDLERS //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// MSG_FWD_MAP is a map of msg->set of uaddr to forward
+/// MAP_FORWARD is a map of msg->set of uaddr to forward
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** register a message handler for a given message to passed uaddr.
  */
-function RegisterRemoteMessages(uaddr: NP_ADDR, msgList: NP_Msg[]) {
+function RegisterRemoteMessages(uaddr: NP_Address, msgList: NP_Msg[]) {
   const fn = 'RegisterRemoteMessages:';
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
   msgList.forEach(msg => {
-    const msg_set = MSG_FWD_MAP.get(msg);
+    const msg_set = MAP_FORWARD.get(msg);
     if (!msg_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
     msg_set.add(uaddr);
   });
@@ -236,12 +226,12 @@ function RegisterRemoteMessages(uaddr: NP_ADDR, msgList: NP_Msg[]) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** unregister a message handler for a given message to passed uaddr.
  */
-function UnregisterRemote(uaddr: NP_ADDR): NP_Msg[] {
+function UnregisterRemote(uaddr: NP_Address): NP_Msg[] {
   const fn = 'UnregisterRemote:';
   if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
   if (!SOCK_MAP.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
   const removed = [];
-  MSG_FWD_MAP.forEach((msg_set, msg) => {
+  MAP_FORWARD.forEach((msg_set, msg) => {
     if (msg_set.has(uaddr)) removed.push(msg);
     msg_set.delete(uaddr);
   });
@@ -250,24 +240,24 @@ function UnregisterRemote(uaddr: NP_ADDR): NP_Msg[] {
 
 /// API: LOCAL HANDLERS ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// MSG_DIS_MAP is a map of msg->set of handler functions for direct invocation
+/// MAP_HANDLER is a map of msg->set of handler functions for direct invocation
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** for local handlers, register a message handler for a given message. */
-function AddMessageHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
+function AddMessageHandler(msg: NP_Msg, handler: HandlerFunc) {
   const fn = 'AddMessageHandler:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
   if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
-  const handler_set = MSG_DIS_MAP.get(msg);
+  const handler_set = MAP_HANDLER.get(msg);
   if (!handler_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
   handler_set.add(handler);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** for local handlers, unregister a message handler for a given message. */
-function RemoveMessageHandler(msg: NP_Msg, handler: NP_HandlerFunc) {
+function RemoveMessageHandler(msg: NP_Msg, handler: HandlerFunc) {
   const fn = 'RemoveMessageHandler:';
   if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
   if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
-  const handler_set = MSG_DIS_MAP.get(msg);
+  const handler_set = MAP_HANDLER.get(msg);
   if (!handler_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
   handler_set.delete(handler);
 }

@@ -8,19 +8,14 @@
 import { PR, FILES } from '@ursys/netcreate';
 import { UDS_INFO } from './urnet-constants.mts';
 import ipc, { Socket } from '@achrinza/node-ipc';
-import {
-  UR_NetMessage,
-  UR_MsgName,
-  UR_MsgData,
-  UR_MsgHandler
-} from './urnet-types.ts';
+import { DecodeMessage } from './urnet-types.ts';
+import { NP_Msg, NP_Data } from './urnet-types.ts';
 import CLASS_NP from './class-urnet-packet.ts';
 const NetPacket = CLASS_NP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('NETCLI', 'TagBlue');
-const LOCAL_HANDLERS = new Map<string, UR_MsgHandler[]>();
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDS_DETECTED = false;
@@ -63,32 +58,6 @@ function m_DecodePacketName(name: string): {
     };
   }
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_DecodePacket(pkt: UR_NetMessage): {
-  msg_channel: string;
-  msg_name: string;
-  msg_data: UR_MsgData;
-} {
-  const { name, data } = pkt;
-  const { msg_channel, msg_name } = m_DecodePacketName(name);
-  return { msg_channel, msg_name, msg_data: data };
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_RegisterHandler(name: UR_MsgName, handler: UR_MsgHandler) {
-  const { msg_channel, msg_name } = m_DecodePacketName(name);
-  if (!NetPacket.ValidChannel(msg_channel)) {
-    LOG(`invalid message channel ${msg_channel}`);
-    return;
-  }
-  if (typeof handler !== 'function') {
-    LOG(`message handler must be a function`);
-    return;
-  }
-  const handlerKey = name; // only use non-channel name
-  if (!LOCAL_HANDLERS.has(handlerKey)) LOCAL_HANDLERS.set(handlerKey, []);
-  const handlers = LOCAL_HANDLERS.get(handlerKey);
-  handlers.push(handler);
-}
 
 /// MESSAGE DISPATCHER ////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -97,21 +66,19 @@ function m_RegisterHandler(name: UR_MsgName, handler: UR_MsgHandler) {
 function m_HandleMessage(pktObj) {
   const pkt = new NetPacket();
   pkt.setFromObject(pktObj);
-  const { msg_name, msg_channel, msg_data } = m_DecodePacket(pkt);
+  const [channel, name] = DecodeMessage(pkt.msg);
+  const { data } = pkt;
 
   let SOURCE = '';
-  if (msg_channel === 'NET') SOURCE = 'NET';
-  else if (msg_channel === '') SOURCE = 'LOCAL';
+  if (channel === 'NET') SOURCE = 'NET';
+  else if (channel === '') SOURCE = 'LOCAL';
   else {
-    LOG.error(`unknown message channel ${msg_channel}`);
+    LOG.error(`unknown message channel ${channel}`);
     LOG.info(pkt.serialize());
     return;
   }
-  const handlers = LOCAL_HANDLERS.get(msg_name);
-
-  LOG(`${msg_name} is a ${SOURCE} invocation`);
-
-  LOG.info(JSON.stringify(msg_data));
+  LOG(`${name} is a ${SOURCE} invocation`);
+  LOG.info(JSON.stringify(data));
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
@@ -156,7 +123,7 @@ async function X_Connect() {
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function X_Send(message: UR_MsgName, data: UR_MsgData) {
+async function X_Send(message: NP_Msg, data: NP_Data) {
   if (IS_CONNECTED) {
     //
     const pkt = new NetPacket();

@@ -56,15 +56,6 @@ interface I_NetPacket {
   transactionComplete(): void;
 }
 
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type NP_HandlerFunc = (data: NP_Data) => Promise<NP_Data>;
-type NP_HandlerSet = Set<NP_HandlerFunc>; // set(handler1, handler2, ...)
-type NP_AddrSet = Set<NP_ADDR>; // ['UA001', 'UA002', ...]
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type NP_SocketMap = Map<NP_ADDR, NP_Sockish>; //
-type NP_MsgDispatchMap = Map<NP_Msg, NP_HandlerSet>; // msg->handler functions
-type NP_MsgForwardMap = Map<NP_Msg, NP_AddrSet>; // msg->set of uaddr
-
 /** IEndPoint is the interface talking to URNET. Both class-messager and class-endpointg
  *  implement a similar interface; this might be combined
  */
