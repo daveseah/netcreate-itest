@@ -9,6 +9,7 @@ import ipc, { Socket } from '@achrinza/node-ipc';
 import { PR } from '@ursys/netcreate';
 import { UDS_INFO } from './urnet-constants.mts';
 import CLASS_NP from './class-urnet-packet.ts';
+import URNET from './class-urnet-endpoint.ts';
 const NetPacket = CLASS_NP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////

@@ -15,7 +15,7 @@
 
 import { PR } from '@ursys/netcreate';
 import NetPacket from './class-urnet-packet.ts';
-import { NP_Address, NP_Msg, NP_Data } from './urnet-types';
+import { NP_Address, NP_Msg, NP_Data } from './urnet-types.ts';
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
