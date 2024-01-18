@@ -1,7 +1,7 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   urnet server-related CLI commands
-  assumes that this is imported by @api-cli.mts and shares same CLI args
+  imported by @api-cli.mts and uses its process.argv
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
