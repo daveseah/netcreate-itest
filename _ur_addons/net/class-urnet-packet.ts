@@ -14,7 +14,7 @@
 import { I_NetMessage, NP_Address } from './urnet-types';
 import { NP_ID, NP_Type, NP_Dir } from './urnet-types';
 import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
-import { NP_Msg, NP_Chan, NP_Data, DecodeMessage } from './urnet-types';
+import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options, NP_SendFunction, NP_HandlerFunction } from './urnet-types';
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////

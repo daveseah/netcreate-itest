@@ -21,7 +21,7 @@
 import { PR } from '@ursys/netcreate';
 import NetPacket from './class-urnet-packet.ts';
 import { NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
-import { GetPacketHashString, IsValidMessage } from './urnet-types.ts';
+import { GetPacketHashString, UADDR_DIGITS } from './urnet-types.ts';
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -52,7 +52,6 @@ type ReturnsMap = Map<NP_Hash, PktResolver>; // hash->resolver
 const LOG = PR('URNET', 'TagBlue');
 const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 let AGE_INTERVAL = 1000; // milliseconds
 let AGE_MAX = 60 * 30; // 30 minutes
 

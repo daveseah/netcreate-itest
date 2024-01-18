@@ -6,6 +6,8 @@
 
 /// RUNTIME UTILITIES /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_CHANNELS = ['NET', 'UDS', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
