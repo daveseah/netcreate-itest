@@ -52,6 +52,7 @@ type ReturnsMap = Map<NP_Hash, PktResolver>; // hash->resolver
 const LOG = PR('URNET', 'TagBlue');
 const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 let AGE_INTERVAL = 1000; // milliseconds
 let AGE_MAX = 60 * 30; // 30 minutes
 
@@ -82,7 +83,7 @@ class NetEndpoint {
   /** allocate a unique UADDR for a socket */
   allocateAddress(socket: UDS_Socket): NP_Address {
     const fn = 'allocateAddress:';
-    const id = `${this.uaddr_counter++}`.padStart(3, '0');
+    const id = `${this.uaddr_counter++}`.padStart(UADDR_DIGITS, '0');
     const uaddr = `UA${id}` as NP_Address;
     socket.UADDR = uaddr; // save uaddr to socket
     socket.AGE = 0; // reset age
