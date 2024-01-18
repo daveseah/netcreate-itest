@@ -8,15 +8,18 @@
 import { PR, FILES } from '@ursys/netcreate';
 import { UDS_INFO } from './urnet-constants.mts';
 import ipc, { Socket } from '@achrinza/node-ipc';
-import { DecodeMessage } from './urnet-types.ts';
-import { NP_Msg, NP_Data } from './urnet-types.ts';
+// in node, ts files are imported as commonjs with only default export availalble
+import TYPECHECK from './urnet-types.ts';
 import CLASS_NP from './class-urnet-packet.ts';
+// destructure commonjs default exports
 const NetPacket = CLASS_NP.default;
+const { DecodeMessage } = TYPECHECK;
+// import types
+import { NP_Msg, NP_Data } from './urnet-types.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('NETCLI', 'TagBlue');
-
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDS_DETECTED = false;
 let IS_CONNECTED = false;

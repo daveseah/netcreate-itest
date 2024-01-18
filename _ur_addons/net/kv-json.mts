@@ -15,6 +15,7 @@ const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_keyvfile; // keyv-file json adapter for keyv
 let m_keyv; // keyv instance that uses keyv-file
+let m_jsonfile: string; // path to json file used by keyv-file
 
 /// KEY STORE /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,6 +35,7 @@ function InitKeyStore(jsonFilePath: string, namespace?: string) {
     store: m_keyvfile,
     namespace // remove the namespace prefix added to key strings
   });
+  m_jsonfile = jsonFilePath;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** save key value. keyv-file writes to json file as backer */
@@ -111,6 +113,12 @@ async function GetKeys(): Promise<string[]> {
   return results;
 }
 
+/// UTILITY INFO //////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function GetJSONFilePath(): string {
+  return m_jsonfile;
+}
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
@@ -123,5 +131,7 @@ export {
   GetEntryByValue,
   GetEntries,
   HasValue,
-  GetKeys
+  GetKeys,
+  //
+  GetJSONFilePath
 };
