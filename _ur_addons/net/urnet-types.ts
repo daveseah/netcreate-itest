@@ -28,6 +28,28 @@ export function DecodeMessage(msg: NP_Msg): [NP_Chan, string] {
   let [chan, name] = bits;
   return [chan as NP_Chan, name];
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of NP_Msg */
+export function IsValidMessage(msg: string): boolean {
+  if (typeof msg !== 'string') return false;
+  const bits = msg.split(':');
+  if (bits.length !== 2) return false;
+  if (!IsValidChannel(bits[0])) return false;
+  return true;
+}
+/** runtime check of NP_Address */
+export function IsValidAddress(addr: string): boolean {
+  if (typeof addr !== 'string') return false;
+  if (!addr.startsWith('UA')) return false;
+  const num = parseInt(addr.slice(2));
+  if (isNaN(num)) return false;
+  return true;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** given a packet, return a unique hash string */
+export function GetPacketHashString(pkt: I_NetMessage): NP_Hash {
+  return `${pkt.src_addr}:${pkt.id}`;
+}
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -49,12 +71,13 @@ export type NP_Options = {
   rsvp?: boolean;
   addr?: NP_Address;
 };
+export type NP_Callback = (data: NP_Data) => void;
 
 /// INTERFACES ////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** NetMessages are the encapsulated MESSAGE+DATA that are sent over URNET,
  *  with additional metadata to help with request/response and logging.
- *  They can
+ *  This defines the data structure only. See NetPacket class for more.
  */
 export interface I_NetMessage {
   id: NP_ID;

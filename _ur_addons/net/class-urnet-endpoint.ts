@@ -15,7 +15,8 @@
 
 import { PR } from '@ursys/netcreate';
 import NetPacket from './class-urnet-packet.ts';
-import { NP_Address, NP_Msg, NP_Data } from './urnet-types.ts';
+import { NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
+import { GetPacketHashString, IsValidMessage } from './urnet-types.ts';
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -26,13 +27,20 @@ type UDS_Socket = {
   send: (data: any, err: (err: any) => void) => void; // send data to socket-ish
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type PktResolver = {
+  success: (value?: unknown) => void;
+  error: (reason?: any) => void;
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerFunc = (data: NP_Data) => Promise<NP_Data>;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerSet = Set<HandlerFunc>; // set(handler1, handler2, ...)
 type AddressSet = Set<NP_Address>; // ['UA001', 'UA002', ...]
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type SocketMap = Map<NP_Address, UDS_Socket>; //
 type ForwardMap = Map<NP_Msg, AddressSet>; // msg->set of uaddr
 type HandlerMap = Map<NP_Msg, HandlerSet>; // msg->handler functions
+type ReturnsMap = Map<NP_Hash, PktResolver>; // hash->resolver
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -48,16 +56,21 @@ class NetEndpoint {
   sck_map: SocketMap; // uaddr->socket
   fwd_map: ForwardMap; // msg->UADDR[]
   hnd_map: HandlerMap; // msg->handlers[]
+  pkt_map: ReturnsMap; // hash->resolver
+
   uaddr_counter: number; // counter for generating unique uaddr
   sck_timer: any; // timer for checking socket age
+  auth_jwt: any; // jtw for authenticating socket
 
   constructor() {
-    this.sck_map = new Map();
-    this.fwd_map = new Map();
-    this.hnd_map = new Map();
+    this.sck_map = new Map<NP_Address, UDS_Socket>();
+    this.fwd_map = new Map<NP_Msg, AddressSet>();
+    this.hnd_map = new Map<NP_Msg, HandlerSet>();
+    this.pkt_map = new Map<NP_Hash, PktResolver>();
+
     this.uaddr_counter = 1;
     this.sck_timer = null;
-
+    this.auth_jwt = null;
     // note that the socket aging is currently disabled
   }
 
@@ -215,36 +228,138 @@ class NetEndpoint {
     handler_set.delete(handler);
   }
 
+  /** call message, returning promise that will resolve on packet return */
+  call(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
+    const fn = 'call:';
+    const pkt = new NetPacket(msg, data);
+    pkt.setMeta('call', {
+      dir: 'req',
+      rsvp: true
+    });
+    const p = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      this.pkt_map.set(hash, { success: resolve, error: reject });
+      pkt.send();
+    });
+    return p;
+  }
+
+  /** send message, returning promise that will resolve on packet return */
+  send(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
+    const fn = 'send:';
+    const pkt = new NetPacket(msg, data);
+    pkt.setMeta('send', {
+      dir: 'req',
+      rsvp: false
+    });
+    const p = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      this.pkt_map.set(hash, { success: resolve, error: reject });
+      pkt.send();
+    });
+    return p;
+  }
+
+  /** signal message, returning promise that resolves immediately */
+  signal(msg: NP_Msg, data: NP_Data): Promise<void> {
+    const fn = 'signal:';
+    const pkt = new NetPacket(msg, data);
+    pkt.setMeta('signal', {
+      dir: 'req',
+      rsvp: false
+    });
+    pkt.send();
+    return Promise.resolve();
+  }
+
+  /** see if there is a return for the message */
+  ping(msg: NP_Msg): Promise<NP_Data> {
+    const fn = 'ping:';
+    const pkt = new NetPacket(msg);
+    pkt.setMeta('ping', {
+      dir: 'req',
+      rsvp: true
+    });
+    const p = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      this.pkt_map.set(hash, { success: resolve, error: reject });
+      pkt.send();
+    });
+    return p;
+  }
+
   /** given a netmessage packet, dispatch it to the appropriate handlers */
   dispatchMessage(pkt: NetPacket) {
     const fn = 'dispatchMessage:';
-    const { msg } = pkt;
-    // local handlers
-    const local_handlers = this.getLocalHandlers(msg);
-    if (local_handlers.length > 0) {
-      local_handlers.forEach(handler => {
-        // todo: promises here
-        // has to handle transactions
-        handler(pkt.data);
-      });
-      // otherwise, see if there were remote handlers
-      const remote_addresses = this.getRemoteAddresses(msg);
-      if (remote_addresses.length === 0) {
-        if (DBG) LOG.error(`${fn} no remote handlers for message '${msg}'`);
-        return;
-      }
-      remote_addresses.forEach(uaddr => {
+    if (this.resolveReturned(pkt)) return;
+    if (this.resolveHandlers(pkt)) return;
+    if (this.resolveRemote(pkt)) return;
+    LOG.error(`${fn} no handler for packet`, pkt.msg);
+  }
+
+  /** if the packet is a return, resolve the promise */
+  resolveReturned(pkt: NetPacket) {
+    const fn = 'resolveReturned:';
+    // don't handle this packet if it's not a returning packet
+    if (!pkt.isPacketReturning()) return false;
+    // get the hash for this packet and look up resolver
+    const hash = GetPacketHashString(pkt);
+    const resolver = this.pkt_map.get(hash);
+    if (!resolver) {
+      LOG.error(`${fn} unexpected error no resolver for ${hash}`);
+      return true;
+    }
+    const { error, ...data } = pkt.data;
+    if (error) {
+      resolver.error(error);
+      return true;
+    }
+    this.pkt_map.delete(hash);
+    resolver.success(data);
+    return true;
+  }
+
+  /** if the packet is a request, call handlers and return response */
+  async resolveHandlers(pkt: NetPacket) {
+    const fn = 'resolveHandled:';
+    const { msg, data } = pkt;
+    const handler_list = this.getLocalHandlers(msg);
+    // if no handlers found, no local handlers found
+    if (handler_list.length === 0) return false;
+    const retdata = [];
+    handler_list.forEach(async handler => {
+      retdata.push(await handler(data));
+    });
+    if (pkt.isPacketRsvp()) {
+      if (retdata.length === 1) pkt.data = retdata[0];
+      else pkt.data = retdata;
+      pkt.return();
+    }
+    return true;
+  }
+
+  /** if the packet has remote handlers, call them and return on completion */
+  async resolveRemote(pkt: NetPacket) {
+    const fn = 'resolveRemote:';
+    const { msg, data } = pkt;
+    const remote_addresses = this.getRemoteAddresses(msg);
+    if (remote_addresses.length === 0) return false;
+    const promises = [];
+    remote_addresses.forEach(uaddr => {
+      const p = new Promise((resolve, reject) => {
         const clone = pkt.clone();
         const socket = this.sck_map.get(uaddr);
         if (!socket) throw new Error(`${fn} unknown uaddr ${uaddr}`);
-        // todo: promises here
-        // has to handle transactions as a forwarding operation
-        // with caching of responses and address chains
+        const hash = GetPacketHashString(clone);
+        this.pkt_map.set(hash, { success: resolve, error: reject });
         socket.send(clone, err => {
           LOG.error(`${fn} ${err}`);
         });
       });
-    }
+      promises.push(p);
+    });
+    await Promise.all(promises);
+    return;
   }
 } // end class
 
