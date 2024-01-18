@@ -6,8 +6,8 @@
 
 /// RUNTIME UTILITIES /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const VALID_CHANNELS = ['NET', 'UDS', ''] as const;
-const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
+export const VALID_CHANNELS = ['NET', 'UDS', ''] as const;
+export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Type */
 export function IsValidType(msg_type: string): boolean {

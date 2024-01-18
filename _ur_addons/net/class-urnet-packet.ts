@@ -1,20 +1,21 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET PACKET 
+  NetPacket encapsulates a message sent over URNET.
+
+  This is implemented as a pure typescript class for use in both nodejs
+  and browser environments. When using from nodejs, you can only import
+  as default, so you will have to destructure in two steps.
   
-  encapsulates a message sent over URNET
-
-  To use from esmodule code, need to import using commonjs semantics:
-
     import CLASS_NP from './class-urnet-packet.ts';
     const NetPacket = CLASS_NP.default;
     
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { I_NetMessage, NP_Address } from './urnet-types';
-import { NP_ID, NP_Type, NP_Msg, NP_Data, NP_Dir } from './urnet-types';
+import { NP_ID, NP_Type, NP_Dir } from './urnet-types';
+import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
+import { NP_Msg, NP_Chan, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options, NP_SendFunction, NP_HandlerFunction } from './urnet-types';
-import { IsValidType, IsValidMessage, IsValidAddress } from './urnet-types';
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -42,18 +43,32 @@ class NetPacket implements I_NetMessage {
     if (IsValidMessage(msg)) this.setMsgData(msg, data);
   }
 
-  /** lifecycle - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
-
-  /** initialize new packet with id and type, with optional meta overrides */
+  /** after creating a new packet, use setMeta() to assign id and envelope
+   *  meta used for routing and return packets
+   */
   setMeta(msg_type: NP_Type, opt?: NP_Options) {
     if (!IsValidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
     this.msg_type = msg_type;
     this.id = NetPacket.AssignNewID(this);
     // optional overrides
-    this.src_addr = opt?.addr;
-    this.hop_dir = opt?.dir;
-    this.hop_rsvp = opt?.rsvp;
+    this.src_addr = opt?.addr || NetPacket.urnet_address;
+    this.hop_dir = opt?.dir || 'req';
+    this.hop_rsvp = opt?.rsvp || false;
   }
+
+  /** utility setters w/ checks - - - - - - - - - - - - - - - - - - - - - - **/
+
+  /** manually set the source address, with check */
+  setSrcAddr(s_addr: NP_Address): NetPacket {
+    if (!IsValidAddress(s_addr)) throw Error(`invalid src_addr: ${s_addr}`);
+    // don't allow changing the src_addr once it's set by send()
+    // use clone() to make a new packet with a different src_addr
+    if (this.hop_seq.length > 0 && this.hop_seq[0] !== s_addr)
+      throw Error(`src_addr ${s_addr} != ${this.hop_seq[0]}`);
+    this.src_addr = s_addr;
+    return this;
+  }
+
   /** set message and data */
   setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
     this.setMsg(msg);
@@ -73,13 +88,6 @@ class NetPacket implements I_NetMessage {
   /** merge data */
   mergeData(data: NP_Data): NetPacket {
     this.data = { ...this.data, ...data };
-    return this;
-  }
-  /** set the address before sending */
-  setSrcAddr(s_addr: NP_Address): NetPacket {
-    const last = this.hop_seq[this.hop_seq.length - 1];
-    if (last === s_addr) this.error(`duplicate address ${s_addr} ${this.id}`);
-    this.src_addr = s_addr;
     return this;
   }
 
@@ -146,12 +154,26 @@ class NetPacket implements I_NetMessage {
     let obj = JSON.parse(data);
     return this.setFromObject(obj);
   }
-  // create a new NetPacket with the same data but new id
+  /** create a new NetPacket with the same data but new id */
   clone(): NetPacket {
     const pkt = new NetPacket();
     pkt.setFromJSON(this.serialize());
     pkt.id = NetPacket.AssignNewID(pkt);
     return pkt;
+  }
+
+  /** information utilities - - - - - - - - - - - - - - - - - - - - - - - - **/
+
+  isValidType(type: NP_Type): boolean {
+    return IsValidType(type);
+  }
+
+  isValidMessage(msg: NP_Msg): boolean {
+    return IsValidMessage(msg);
+  }
+
+  decodeMessage(msg: NP_Msg): [chan: string, msg: string] {
+    return DecodeMessage(msg);
   }
 
   /** debugging - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -163,22 +185,24 @@ class NetPacket implements I_NetMessage {
     return msg;
   }
 
-  /** add a transport-related message eto the hog log */
+  /** manually add a transport-related message eto the hog log. this is not
+   *  the same as hop_seq which is used to track the routing of the packet.
+   */
   hopLog(msg: string) {
     const info = `${this.id} ${this.hop_dir}`;
     this.hop_log.push(`${info}: ${msg}`);
     return msg;
   }
 
-  /** static class vars - - - - - - - - - - - - - - - - - - - - - - - - - -**/
-
+  /// STATIC CLASS VARIABLES /////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   static packet_counter = 100;
   static urnet_send: NP_SendFunction;
   static urnet_handler: NP_HandlerFunction;
   static urnet_address: NP_Address;
 
-  /** static class methods - - - - - - - - - - - - - - - - - - - - - - - - **/
-
+  /// STATIC CLASS METHODS //////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** create a new packet id based on an existing packet. this is used for
    *  creating a new packet id for a cloned packet.
    */

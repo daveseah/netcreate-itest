@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 import { PR, PROC } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
 import * as UDS from './urnet-client.mts';
-import * as SERVE_CTRL from './serve-control.mts';
 import * as SERVE_CTRL from './cli-serve-control.mts';
 // ts files are commonjs with only default export availalble
 import URNET from './class-urnet-endpoint.ts';

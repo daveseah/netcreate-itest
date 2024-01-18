@@ -1,16 +1,21 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  The URNET Directory is a system that manages message dictionaries and
-  associated addresses of "sockets"
+  NetEndpoint implements a connection to URNET as an implementation-
+  independent object. It provides the API for sending and receiving messages
+  in conjunction with the NetPacket class.
 
-  This module abstracts network connection points as URNET ADDRESSES or 
-  UADDRs. These are network-unique ids that are assigned to a socket-like
-  object.
+  * Host: sending packets (as message originator)
+  * Host: receiving packets (as message handler and router)
+  * Client: sending packet (as message originator)
+  * Client: receiving packets (as message returns and message handler)
 
-  Each socket connection is called an endpoint with its own unique UADDR.
-  Each endpoint has a list of its own message handlers and possibly a list of
-  remote UADDRs that it forwards messages to for messages it doesn't handle.
+  This class handles the logic for:
 
+  * message **source** - originates a message
+  * message **handler** - handles and possibly returns a message
+  * message **router** - forwards messages it doesn't handle
+  * message **return** - handles returning messages to originator
+  
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { PR } from '@ursys/netcreate';
