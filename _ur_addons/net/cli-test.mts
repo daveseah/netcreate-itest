@@ -24,15 +24,15 @@ const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
-/// HELPER FUNCTIONS //////////////////////////////////////////////////////////
+/// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-/// API METHODS ///////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function RunTests() {
-  LOG('Running Tests');
+async function RunLocalTests() {
+  LOG('Running Local Tests');
   try {
     /* start tests */
+
+    /// configure the endpoint handlers ///
+
     const ep = new NetEndpoint();
 
     ep.registerHandler('FOO', async data => {
@@ -46,6 +46,8 @@ async function RunTests() {
       return 'two';
     });
 
+    /// directly invoke the endpoint ///
+
     ep.call('FOO', { bar: 'baz' }).then(data => {
       LOG('test 1: FOO call returned: ', data);
     });
@@ -54,10 +56,16 @@ async function RunTests() {
       LOG('test 2: LOCAL:FOO send returned void:', data === undefined);
     });
 
+    /* skip signal because it's the same as send in the local context */
+
+    /// test the different versions of local message calls ///
+
     let pingStat = ep.ping(':FOO') ? 'PING OK' : 'PING FAIL';
     LOG('test 3:', pingStat);
+
     pingStat = ep.ping('FOO') ? 'PING OK' : 'PING FAIL';
     LOG('test 4:', pingStat);
+
     pingStat = ep.ping('LOCAL:FOO') ? 'PING OK' : 'PING FAIL';
     LOG('test 5:', pingStat);
 
@@ -66,6 +74,13 @@ async function RunTests() {
     LOG.error(err.message);
     LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
   }
+}
+
+/// TEST METHODS //////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RunTests() {
+  RunLocalTests();
+  // RunPacketTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

@@ -153,7 +153,9 @@ class NetEndpoint {
   getRemoteAddresses(msg: NP_Msg): NP_Address[] {
     const fn = 'getRemoteAddresses:';
     if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-    const addr_set = this.fwd_map.get(msg);
+    const key = GetMessageHash(msg);
+    if (!this.fwd_map.has(key)) this.fwd_map.set(key, new Set<NP_Address>());
+    const addr_set = this.fwd_map.get(key);
     if (!addr_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
     const addr_list = Array.from(addr_set);
     return addr_list;

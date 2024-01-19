@@ -8,14 +8,28 @@
   
     import CLASS_NP from './class-urnet-packet.ts';
     const NetPacket = CLASS_NP.default;
-    
+
+  Packets know how to "Send themselves" by invoking a global Send method that
+  is assigned to it during the URNET handshake. Likewise, packets also own
+  the global handler function that is assigned to it during the URNET handshake.
+  The idea is that the packet class should know about both incoming and 
+  outgoing packet transport, but it should not know about the transport itself.
+  This allows the packet class to be used in both nodejs and browser
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { I_NetMessage, NP_Address } from './urnet-types';
 import { NP_ID, NP_Type, NP_Dir } from './urnet-types';
 import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
-import { NP_Options, NP_SendFunction, NP_HandlerFunction } from './urnet-types';
+import { NP_Options } from './urnet-types';
+
+/// TYPE DECLARATIONS /////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** NetMessage class implementation holds on to this static functions that are
+ *  set during network connection */
+export type NP_SendFunction = (pkt: NetPacket) => void;
+export type NP_HandlerFunction = (pkt: NetPacket) => void;
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -41,6 +55,7 @@ class NetPacket implements I_NetMessage {
     //
     if (data === undefined) data = {};
     if (IsValidMessage(msg)) this.setMsgData(msg, data);
+    else throw Error(`invalid msg format: ${msg}`);
   }
 
   /** after creating a new packet, use setMeta() to assign id and envelope
@@ -73,6 +88,7 @@ class NetPacket implements I_NetMessage {
   setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
     this.setMsg(msg);
     this.setData(data);
+    console.log('setMsgData: ', msg, data);
     return this;
   }
   /** set message */
@@ -169,7 +185,8 @@ class NetPacket implements I_NetMessage {
   }
 
   isValidMessage(msg: NP_Msg): boolean {
-    return IsValidMessage(msg);
+    return IsValidMessage(msg) !== undefined;
+    // note difference with IsValidMessage(), which returns [chan, msg] if valid
   }
 
   decodeMessage(msg: NP_Msg): [chan: string, msg: string] {
@@ -196,7 +213,7 @@ class NetPacket implements I_NetMessage {
 
   /// STATIC CLASS VARIABLES /////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  static packet_counter = 100;
+  static packet_counter = 0;
   static urnet_send: NP_SendFunction;
   static urnet_handler: NP_HandlerFunction;
   static urnet_address: NP_Address;
@@ -208,8 +225,8 @@ class NetPacket implements I_NetMessage {
    */
   static AssignNewID(pkt: NetPacket): NP_ID {
     const addr = pkt.src_addr || NetPacket.urnet_address;
-    const count = NetPacket.packet_counter++;
-    pkt.id = `pkt[${addr}${count}]`;
+    const count = ++NetPacket.packet_counter;
+    pkt.id = `pkt[${addr}:${count}]`;
     return pkt.id;
   }
   /** send a packet to the global endpoint. it's assumed that NetPacket static
