@@ -41,6 +41,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const { EDGE_NOT_SET_LABEL } = require('system/util/constant');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -283,6 +284,7 @@ class NCAutoSuggest extends UNISYS.Component {
           onKeyDown={this.m_UIKeyDown}
           onFocus={this.m_UIInputFocus}
           onClick={this.m_UIInputClick}
+          placeholder={EDGE_NOT_SET_LABEL}
           autoComplete="off" // turn off Chrome's default autocomplete, which conflicts
         />
         <br />
