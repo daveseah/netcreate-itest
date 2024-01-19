@@ -1,5 +1,5 @@
 .matchlist {
-  position: fixed;
+  position: absolute;
   color: #3339;
   background-color: #fff;
   margin: 1px 0 0 0;

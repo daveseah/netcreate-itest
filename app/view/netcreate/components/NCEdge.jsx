@@ -25,6 +25,11 @@
 const React = require('react');
 const UNISYS = require('unisys/client');
 const { EDITORTYPE, BUILTIN_FIELDS_EDGE } = require('system/util/enum');
+const {
+  EDGE_NOT_SET_LABEL,
+  ARROW_DOWN,
+  ARROW_UPDOWN
+} = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
@@ -43,9 +48,6 @@ const TABS = {
   ATTRIBUTES: 'ATTRIBUTES',
   PROVENANCE: 'PROVENANCE'
 };
-const EDGE_NOT_SET_LABEL = '...';
-const ARROW_DOWN = `\u2193`;
-const ARROW_UPDOWN = `\u21F5`;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDATA;
 
@@ -432,10 +434,10 @@ class NCEdge extends UNISYS.Component {
     // Look up source/target nodes
     const NCDATA = UDATA.AppState('NCDATA');
     const dSourceNode = NCDATA.nodes.find(n => n.id === sourceId) || {
-      label: EDGE_NOT_SET_LABEL
+      label: ''
     };
     const dTargetNode = NCDATA.nodes.find(n => n.id === targetId) || {
-      label: EDGE_NOT_SET_LABEL
+      label: ''
     };
     this.setState(
       {
@@ -1083,7 +1085,7 @@ class NCEdge extends UNISYS.Component {
             style={{ backgroundColor: color + '55', borderColor: color }}
             disabled={disabled}
           >
-            {value}
+            {value || EDGE_NOT_SET_LABEL}
           </button>
         </div>
       );

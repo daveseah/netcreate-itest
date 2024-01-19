@@ -107,7 +107,7 @@ class SelectFilter extends React.Component {
       key,
       keylabel,
       operator: this.state.operator,
-      value: this.state.value,
+      value: this.state.operator === FILTER.OPERATORS.NO_OP.key ? '' : this.state.value,
       options
     };
     if (UDATA)
