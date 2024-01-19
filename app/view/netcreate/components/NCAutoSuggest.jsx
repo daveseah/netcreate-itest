@@ -289,12 +289,14 @@ class NCAutoSuggest extends UNISYS.Component {
         />
         <br />
         {uShowMatchlist && matchList && (
+          <div style={{ position: 'relative' }}>
           <div
             id="matchlist"
             className="matchlist"
             onMouseLeave={this.m_UIMouseUnhighlightLine}
           >
             {matchList}
+          </div>
           </div>
         )}
       </div>
