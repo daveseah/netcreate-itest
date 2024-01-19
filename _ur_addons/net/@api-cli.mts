@@ -10,7 +10,7 @@ import { PR, PROC } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
-// ts files are commonjs with only default export available
+// note: ts files imported by node contain { default }
 import NetEndpoint from './class-urnet-endpoint.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////

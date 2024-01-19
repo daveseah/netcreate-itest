@@ -8,7 +8,7 @@
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const VALID_CHANNELS = ['NET', 'UDS', ''] as const;
+export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Type */
@@ -24,12 +24,45 @@ export function IsValidChannel(msg_chan: string): boolean {
 /** given a CHANNEL:MESSAGE string, return the channel and message name in
  *  an array */
 export function DecodeMessage(msg: NP_Msg): [NP_Chan, string] {
+  if (typeof msg !== 'string') throw Error(`message must be string: ${msg}`);
+  if (msg !== msg.toUpperCase()) throw Error(`message must be uppercase: ${msg}`);
   const bits = msg.split(':');
-  if (bits.length !== 2) throw Error(`invalid message name: ${msg}`);
-  if (!IsValidChannel(bits[0])) throw Error(`invalid channel: ${bits[0]}`);
+  if (bits.length === 0) throw Error(`invalid empty message`);
+  if (bits.length > 2) throw Error(`invalid channel:message format ${msg}`);
   let [chan, name] = bits;
+  if (bits.length === 1) {
+    name = chan;
+    chan = 'LOCAL';
+  }
+  if (chan === '') chan = 'LOCAL';
+  if (!IsValidChannel(chan)) throw Error(`invalid channel: ${chan}`);
   return [chan as NP_Chan, name];
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export function GetMessageHash(msg: NP_Msg): NP_Msg {
+  let [chan, name] = DecodeMessage(msg);
+  if (chan === 'LOCAL') chan = '';
+  return `${chan}:${name}`;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return true if message is a local request */
+export function IsLocalMessage(msg: NP_Msg): boolean {
+  const [chan] = DecodeMessage(msg);
+  return chan === 'LOCAL';
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return true if message is a network request */
+export function IsRemoteMessage(msg: NP_Msg): boolean {
+  const [chan] = DecodeMessage(msg);
+  return chan === 'NET';
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return true if message is implemented by main URNET server */
+export function IsServerMessage(msg: NP_Msg): boolean {
+  const [chan] = DecodeMessage(msg);
+  return chan === 'UDS';
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Msg */
 export function IsValidMessage(msg: string): boolean {
@@ -39,6 +72,7 @@ export function IsValidMessage(msg: string): boolean {
   if (!IsValidChannel(bits[0])) return false;
   return true;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Address */
 export function IsValidAddress(addr: string): boolean {
   if (typeof addr !== 'string') return false;
