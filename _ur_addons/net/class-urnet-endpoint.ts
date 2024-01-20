@@ -271,7 +271,7 @@ class NetEndpoint {
       promises.push(
         new Promise((resolve, reject) => {
           try {
-            resolve(handler(data));
+            resolve(handler({ ...data })); // copy of data
           } catch (err) {
             reject(err);
           }
@@ -287,7 +287,7 @@ class NetEndpoint {
     if (!IsLocalMessage(msg)) return await this._netSend(msg, data);
     const handlers = this.getLocalHandlers(msg);
     handlers.forEach(handler => {
-      handler(data);
+      handler({ ...data }); // copy of data
     });
     return Promise.resolve();
   }
