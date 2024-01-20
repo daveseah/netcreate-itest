@@ -24,12 +24,9 @@ import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options } from './urnet-types';
 
-/// TYPE DECLARATIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** NetMessage class implementation holds on to this static functions that are
- *  set during network connection */
-export type NP_SendFunction = (pkt: NetPacket) => void;
-export type NP_HandlerFunction = (pkt: NetPacket) => void;
+export type NP_PacketSend = (pkt: NetPacket) => void;
+export type NP_PacketReceive = (pkt: NetPacket) => void;
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -37,7 +34,7 @@ class NetPacket implements I_NetMessage {
   id: NP_ID; // network-wide unique id for this packet
   msg_type: NP_Type; // ping, signal, send, call
   msg: NP_Msg; // name of the URNET message
-  data: NP_Data; // payload of the URNET message
+  data: any; // payload of the URNET message
   src_addr: NP_Address; // URNET address of the sender
   hop_seq: NP_Address[]; // URNET addresses that have seen this packet
   hop_log: string[]; // log of debug messages by hop
@@ -81,6 +78,13 @@ class NetPacket implements I_NetMessage {
     if (this.hop_seq.length > 0 && this.hop_seq[0] !== s_addr)
       throw Error(`src_addr ${s_addr} != ${this.hop_seq[0]}`);
     this.src_addr = s_addr;
+    return this;
+  }
+
+  /** manually set direction */
+  setDir(dir: NP_Dir): NetPacket {
+    if (dir !== 'req' && dir !== 'res') throw Error(`invalid dir: ${dir}`);
+    this.hop_dir = dir;
     return this;
   }
 
@@ -130,23 +134,27 @@ class NetPacket implements I_NetMessage {
 
   /** packet transport  - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
-  /** is this packet a return? */
-  isPacketReturning() {
-    const fn = 'isReturn:';
-    if (this.src_addr === undefined) {
-      console.error(`${fn} src_addr undefined`);
-      return false;
-    }
-    if (this.hop_rsvp === false) return false;
-    if (this.hop_dir !== 'res') return false;
-    if (this.hop_seq.length < 2) return false;
-    if (this.hop_seq.length[0] !== this.src_addr) return false;
-    return true;
+  /** rsvp required? */
+  isRsvp() {
+    return this.hop_rsvp;
   }
 
-  /** rsvp required? */
-  isPacketRsvp() {
-    return this.hop_rsvp;
+  lastHop() {
+    return this.hop_seq[this.hop_seq.length - 1];
+  }
+
+  isLoopback() {
+    const sameOrigin = NetPacket.urnet_address === this.src_addr;
+    const oneHop = this.hop_seq.length === 1;
+    return sameOrigin && oneHop;
+  }
+
+  isRequest() {
+    return this.hop_dir === 'req';
+  }
+
+  isResponse() {
+    return this.hop_dir === 'res';
   }
 
   /** invoke global endpoint to send packet */
@@ -154,11 +162,6 @@ class NetPacket implements I_NetMessage {
     this.hop_seq.push(this.src_addr);
     NetPacket.SendPacket(this);
     return this;
-  }
-  /** return the packet to source */
-  return() {
-    this.hop_dir = 'res';
-    this.send();
   }
 
   /** serialization - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -211,15 +214,13 @@ class NetPacket implements I_NetMessage {
     return msg;
   }
 
-  /// STATIC CLASS VARIABLES /////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// STATIC CLASS METHODS ////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   static packet_counter = 0;
-  static urnet_send: NP_SendFunction;
-  static urnet_handler: NP_HandlerFunction;
+  static f_packet_out: NP_PacketSend;
+  static f_packet_in: NP_PacketReceive;
   static urnet_address: NP_Address;
-
-  /// STATIC CLASS METHODS //////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** create a new packet id based on an existing packet. this is used for
    *  creating a new packet id for a cloned packet.
    */
@@ -236,34 +237,41 @@ class NetPacket implements I_NetMessage {
   static SendPacket(pkt: NetPacket) {
     if (NetPacket.urnet_address === undefined)
       throw Error(`NetPacket urnet_address not initialized, aborted.`);
-    if (typeof NetPacket.urnet_send !== 'function')
-      throw Error(`NetPacket urnet_send not defined, aborted.`);
+    if (typeof NetPacket.f_packet_out !== 'function')
+      throw Error(`NetPacket f_packet_out not defined, aborted.`);
     if (!pkt.id) throw Error(`NetPacket ${pkt.id} id not defined, aborted.`);
     if (!pkt.src_addr)
       throw Error(`NetPacket ${pkt.id} src_addr not defined, aborted.`);
-    NetPacket.urnet_send(pkt);
+    NetPacket.f_packet_out(pkt);
   }
+
+  /** static defaults - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
+
   /** set the function that sends packets for the given type
    *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
    */
-  static URNET_SetSendFunction(f: NP_SendFunction) {
-    const fn = 'URNET_SetSendFunction:';
+  static NP_SetPacketSender(f: NP_PacketSend) {
+    const fn = 'NP_SetPacketSender:';
     if (typeof f !== 'function') throw Error(`${fn} invalid send function`);
-    NetPacket.urnet_send = f;
+    NetPacket.f_packet_out = f;
   }
   /** set the function that handles incoming packets for the given type
    *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
    */
-  static URNET_SetHandlerFunction(f: NP_HandlerFunction) {
-    const fn = 'URNET_SetHandlerFunction:';
+  static NP_SetPacketReceiver(f: NP_PacketReceive) {
+    const fn = 'NP_SetPacketReceiver:';
     if (typeof f !== 'function') throw Error(`${fn} invalid dispatch function`);
-    NetPacket.urnet_handler = f;
+    NetPacket.f_packet_in = f;
   }
   /** set the global address for all packets on this platform */
-  static URNET_SetAddress(addr: NP_Address) {
-    const fn = 'URNET_SetAddress:';
+  static NP_SetDefaultAddress(addr: NP_Address) {
+    const fn = 'NP_SetDefaultAddress:';
     if (!IsValidAddress(addr)) throw Error(`${fn} invalid address`);
     NetPacket.urnet_address = addr;
+  }
+  /** return the global address for all packets on this platform */
+  static NP_GetDefaultAddress(): NP_Address {
+    return NetPacket.urnet_address;
   }
 }
 

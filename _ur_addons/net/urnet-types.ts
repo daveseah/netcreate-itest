@@ -17,7 +17,7 @@ export type NP_Chan = (typeof VALID_CHANNELS)[number];
 export type NP_ID = `pkt[${NP_Address}:${number}]`;
 export type NP_Type = (typeof VALID_TYPES)[number];
 export type NP_Msg = `${NP_Chan}${string}`;
-export type NP_Data = { [key: string]: any };
+export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
 export type NP_Address = `UA${number}`; // range 001-999
 
