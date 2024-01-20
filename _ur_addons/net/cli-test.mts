@@ -29,9 +29,7 @@ const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 async function RunLocalTests() {
   LOG('Running Local Tests');
   try {
-    /* start tests */
-
-    /// configure the endpoint handlers ///
+    // configure the endpoint handlers
 
     const ep = new NetEndpoint();
 
@@ -46,7 +44,7 @@ async function RunLocalTests() {
       return 'two';
     });
 
-    /// directly invoke the endpoint ///
+    // directly invoke the endpoint
 
     ep.call('FOO', { bar: 'baz' }).then(data => {
       LOG('test 1: FOO call returned: ', data);
@@ -58,7 +56,7 @@ async function RunLocalTests() {
 
     /* skip signal because it's the same as send in the local context */
 
-    /// test the different versions of local message calls ///
+    // test the different versions of local message calls
 
     let pingStat = ep.ping(':FOO') ? 'PING OK' : 'PING FAIL';
     LOG('test 3:', pingStat);
@@ -76,11 +74,65 @@ async function RunLocalTests() {
   }
 }
 
+/// REMOTE LOOPBACK ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RunPacketTests() {
+  LOG('Running Packet Tests');
+  try {
+    // configure endpoint handlers
+
+    const ep = new NetEndpoint();
+
+    ep.registerHandler('BAR', async data => {
+      data.result = data.result || [];
+      data.result.push('one');
+      console.log('BAR handler called, returned data: ', data);
+      return data;
+    });
+    ep.registerHandler('BAR', async data => {
+      data.result = data.result || [];
+      data.result.push('two');
+      console.log('BAR handler called, returned data: ', data);
+      return data;
+    });
+
+    // fake a URNET environment
+
+    /*  the source address is normally assigned by the host endpoint, but
+     *  for testing purposes we can set it manually */
+    NetPacket.NP_SetDefaultAddress('UA001');
+
+    /*  the send function is called when a packet should be sent over the
+     *  network via whatever transport is being used */
+    NetPacket.NP_SetPacketSender(pkt => {
+      LOG('send function called with packet: ', pkt);
+      ep.receivePacket(pkt);
+    });
+
+    /*  the handler function is called when a packet is received from the
+     *  network via whatever transport is being used */
+    NetPacket.NP_SetPacketReceiver(pkt => {
+      LOG('handler function called with packet: ', pkt);
+    });
+
+    // simulate the endpoint remote handler
+
+    ep.call('BAR', { foo: 'meow' }).then(data => {
+      LOG('test 1: BAR netCall returned: ', data);
+    });
+
+    /* end tests */
+  } catch (err) {
+    LOG.error(err.message);
+    LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
+  }
+}
+
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
-  RunLocalTests();
-  // RunPacketTests();
+  // RunLocalTests();
+  RunPacketTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
