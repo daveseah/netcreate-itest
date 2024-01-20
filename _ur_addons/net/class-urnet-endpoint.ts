@@ -29,6 +29,7 @@ import { IsLocalMessage, IsValidAddress, GetMessageHash } from './urnet-types.ts
 /** this is the socket-ish object that we use to send data to a UDS socket */
 type UDS_Socket = {
   UADDR: NP_Address; // assigned UADDR for this socket-ish object
+  AUTH: string; //
   AGE: number; // number of seconds since this socket was used
   send: (data: any, err: (err: any) => void) => void; // send data to socket-ish
 };
@@ -93,6 +94,22 @@ class NetEndpoint {
 
   /** client connection management  - - - - - - - - - - - - - - - - - - - - **/
 
+  /** given a socket, see if it's already registered */
+  validatedSocket(socket: UDS_Socket): boolean {
+    const fn = 'validateSocket:';
+    if (typeof socket !== 'object') throw new Error(`${fn} invalid socket`);
+    if (socket.UADDR === undefined) this.addSocket(socket);
+    return this.authorizedSocket(socket);
+  }
+
+  /** return true if this socket passes authentication status */
+  authorizedSocket(socket: UDS_Socket): boolean {
+    const fn = 'authorizedSocket:';
+    LOG.warn(fn, 'would check JWT in socket.AUTH');
+    if (!socket.AUTH) return false;
+    return true;
+  }
+
   /** when a client connects to this endpoint, register it as a socket and
    *  allocate a UADDR for it */
   addSocket(socket: UDS_Socket): NP_Address {
@@ -100,7 +117,11 @@ class NetEndpoint {
     let uaddr = socket.UADDR;
     if (typeof uaddr === 'string' && this.sck_map.has(uaddr))
       throw new Error(`${fn} socket ${uaddr} already registered`);
-    uaddr = this.allocateAddress(socket);
+    //
+    const id = `${this.client_counter++}`.padStart(UADDR_DIGITS, '0');
+    socket.UADDR = `UA${id}` as NP_Address;
+    socket.AGE = 0; // reset age
+    socket.AUTH = undefined;
     if (DBG) LOG(fn, `socket ${uaddr} registered`);
     return uaddr;
   }
@@ -122,18 +143,6 @@ class NetEndpoint {
     // delete the socket
     this.sck_map.delete(uaddr);
     if (DBG) LOG(fn, `socket ${uaddr} deleted`);
-    return uaddr;
-  }
-
-  /** allocate a unique UADDR for a socket */
-  allocateAddress(socket: UDS_Socket): NP_Address {
-    const fn = 'allocateAddress:';
-    const id = `${this.client_counter++}`.padStart(UADDR_DIGITS, '0');
-    const uaddr = `UA${id}` as NP_Address;
-    socket.UADDR = uaddr; // save uaddr to socket
-    socket.AGE = 0; // reset age
-    this.sck_map.set(uaddr, socket); // save socket to uaddr map
-    if (DBG) LOG(fn, `socket ${uaddr} allocated`);
     return uaddr;
   }
 

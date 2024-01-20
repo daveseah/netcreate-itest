@@ -10,6 +10,8 @@ export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export const GENERATED_ADDRS = new Set<NP_Address>();
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,7 +21,7 @@ export type NP_Type = (typeof VALID_TYPES)[number];
 export type NP_Msg = `${NP_Chan}${string}`;
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
-export type NP_Address = `UA${number}`; // range 001-999
+export type NP_Address = `UA${number}`; // range is nominally 001-999
 
 /// NETPACKET-RELATED TYPES ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -83,6 +85,21 @@ export function IsValidMessage(msg: string): [NP_Chan, string] {
     console.log(err.stack.split('\n').slice(1).join('\n').trim());
     return undefined;
   }
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime create formatted address */
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let ADDR_MAX_ID = 0;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export function AllocateAddress(id?: number): NP_Address {
+  if (typeof id !== 'number') id = ++ADDR_MAX_ID;
+  else if (id > ADDR_MAX_ID) ADDR_MAX_ID = id;
+  let padId = `${id}`.padStart(UADDR_DIGITS, '0');
+  let addr = `UA${padId}` as NP_Address;
+  // check for collision
+  if (GENERATED_ADDRS.has(addr)) return AllocateAddress();
+  GENERATED_ADDRS.add(addr);
+  return addr;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Address */
