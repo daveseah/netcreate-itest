@@ -164,7 +164,7 @@ class EdgeTable extends UNISYS.Component {
       ) {
         edges = edges.filter(edge => {
           const filteredEdge = filteredEdges.find(n => n.id === edge.id);
-          return edge;
+          return filteredEdge; // keep if it's in the list of filtered edges
         });
       } else {
         edges = edges.map(edge => {
