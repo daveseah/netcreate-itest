@@ -50,7 +50,7 @@ class NetPacket implements I_NetMessage {
     this.hop_log = [];
     this.err = undefined;
     //
-    if (data === undefined) data = {};
+    if (data !== undefined) this.data = data;
     if (typeof msg === 'string') {
       if (!IsValidMessage(msg)) throw Error(`invalid msg format: ${msg}`);
       this.msg = msg;
