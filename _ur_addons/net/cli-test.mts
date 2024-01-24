@@ -128,15 +128,17 @@ function RunPacketTests() {
       remotes.forEach(remep => remep.receivePacket(pkt));
     };
     host.registerHandler('NET:SRV', data => {
-      LOG('NET:SRV handler called with data', data);
-      return { hello: 'NET:SRV says hello' };
+      LOG(`<<< HANDLER: host recv 'NET:SRV' <<<`, data);
+      data.host = 'NET:SRV says hello';
+      LOG(`>>> HANDLER: host retn >>>`, data);
+      return data;
     });
 
     // configure fake remotes 0 and 1
     const remotes = [];
     for (let num = 3; num > 0; num--) remotes.push(new NetEndpoint());
     remotes.forEach((remep, i) => {
-      let index = i + 1;
+      let index = i;
       remep.urnet_addr = AllocateAddress(`remote${index}`);
       host_remotes.set(remep.urnet_addr, remep);
       const r_out = pkt => {
@@ -152,8 +154,9 @@ function RunPacketTests() {
           LOG.error(`error: ${msgName} handler received undefined data`);
           data = {};
         }
-        LOG(`NET:REMOTE${index} handler received data`, data);
+        LOG(`<<< HANDLER: remote[${i}] recv 'NET:REMOTE${index}' <<< data`, data);
         data.remote = `${msgName} says hello`;
+        LOG(`>>> HANDLER: remote[${i}] retn >>>`, data);
         return data;
       });
     });
@@ -163,21 +166,27 @@ function RunPacketTests() {
     host.setWireOut(host_out);
     host.setWireIn(host_in);
 
-    host.send('NET:REMOTE1', { host: 'calling' }).then(data => {
-      LOG('host <<< NET:REMOTE1', data);
-    });
+    // host.send('NET:REMOTE1', { host: 'calling' }).then(data => {
+    //   LOG(`>>> DONE: host recv 'NET:REMOTE1 >>>`, data);
+    // });
 
-    remotes[0].send('NET:SRV', { remote1: 'calling' }).then(data => {
-      LOG('remote[0] <<< NET:SRV', data);
-    });
+    const u_send_remote = (src, dst) => {
+      const data = {};
+      const msgName = `NET:REMOTE${dst}`;
+      data[`remote${src}`] = 'calling';
+      LOG(`<<< SEND: remote[${src}] send '${msgName}' <<<`, data);
+      remotes[src].send(msgName, data).then(data => {
+        LOG(`>>> DONE: remote[${src}] recv '${msgName} >>>`, data);
+      });
+    };
 
-    remotes[1].send('NET:REMOTE3', { remote2: 'calling' }).then(data => {
-      LOG('remote[1] <<< NET:REMOTE3', data);
-    });
+    u_send_remote(2, 1);
+    u_send_remote(0, 2);
+    u_send_remote(0, 1);
 
-    remotes[2].send('NET:REMOTE2', { remote3: 'calling' }).then(data => {
-      LOG('remote[2] <<< NET:REMOTE2', data);
-    });
+    // remotes[1].send('NET:SRV', { remote1: 'calling' }).then(data => {
+    //   LOG(`>>> DONE: remote[1] recv 'NET:SRV >>>`, data);
+    // });
 
     /* end tests */
   } catch (err) {
