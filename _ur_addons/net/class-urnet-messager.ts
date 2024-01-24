@@ -37,7 +37,7 @@ export class NetMessager {
   }
   /** handle a packet received from the network */
   dispatchPacket(pkt: NetPacket): void {
-    NetPacket.SendPacket(pkt);
+    NetPacket.SendOnWire(pkt);
   }
 }
 

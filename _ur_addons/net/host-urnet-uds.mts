@@ -53,44 +53,28 @@ function m_ConfigureServer() {
     LOG(`${ipc.config.id} connect: connected`);
   });
 
-  ipc.server.on(uds_sysmsg, (pktObj, socket) => {
-    if (EP.validatedSocket(socket)) EP.receivePacket(pktObj);
-  });
+  // setup plugin functions
+  const f_wire_in = (wdata, socket) => {
+    const pkt = EP.newPacket();
+    if (!EP.validatedSocket(socket)) return;
+    pkt.setFromObject(wdata);
+    EP.dispatchPacket(pkt);
+  };
+  const f_wire_out = pkt => {
+    const { uds_sysmsg } = UDS_INFO;
+    const { socket } = pkt;
+    if (!EP.validatedSocket(socket)) return;
+    ipc.server.emit(socket, uds_sysmsg, pkt);
+  };
+  EP.setWireOut(f_wire_out);
+  EP.setWireIn(f_wire_in);
 
-  // // message handler, where uds_sysmsg is the message name
-  // ipc.server.on(uds_sysmsg, (pktObj, socket) => {
-  //   // have we seen this socket before? PSEUDOCODE
-  //   if (!ipc.server.sockets[socket.id]) {
-  //     LOG(`${ipc.config.id} new socket '${socket.id}'`);
-  //     ipc.server.sockets[socket.id] = socket;
-  //     // set the state of this socket to 'awaiting authentication'
-  //     ipc.server.sockets[socket.id].auth = false;
-  //     // send a new UADDR back that's unique to this socket
-  //     const pkt = new NetPacket();
-  //     const welcomeData = { hello: 'there' };
-  //     pkt.setMsgData('UDS:CONNECT', welcomeData); // remember
-  //     ipc.server.emit(socket, uds_sysmsg, pkt);
-  //     return;
-  //   }
-  //   // if we get a packet with UDS:CLIENT_AUTHENTICATED, set the state to 'authenticated'
-  //   if (pktObj.name === 'UDS:CLIENT_AUTHENTICATE') {
-  //     ipc.server.sockets[socket.id].auth = true; // this would be hardened
-  //     LOG(`${ipc.config.id} socket '${socket.id}' authenticated`);
-  //     // return the transacation with authentication token
-  //     // return packet
-  //     return;
-  //   }
+  // configure node-ipc incoming connection server
+  ipc.server.on(uds_sysmsg, EP.dispatchPacket);
 
-  //   // dummy handshake to send back
-  //   const pkt = new NetPacket();
-  //   // pkt.setFromObject(pktObj);
-  //   pkt.setFromJSON(JSON.stringify(pktObj));
-  //   LOG(`${ipc.config.id} message '${uds_sysmsg}' received packet`);
-  //   LOG.info(JSON.stringify(pktObj));
-  //   LOG(`${ipc.config.id} returning packet on '${socket.id}'`);
-  //   LOG.info(pkt.serialize());
-  //   ipc.server.emit(socket, uds_sysmsg, pkt);
-  // });
+  // after this is connected, it's assumed that the f_wire_in
+  // is smart enough to handle the handshake connection, which
+  // is independent of the transport layer
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////

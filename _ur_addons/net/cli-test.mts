@@ -8,12 +8,10 @@
 import { PR, PROC } from '@ursys/netcreate';
 // note: ts files imported by node contain { default }
 import EP_DEFAULT from './class-urnet-endpoint.ts';
-import NP_DEFAULT from './class-urnet-packet.ts';
 import RT_DEFAULT from './urnet-types.ts';
 // destructure defaults
 const NetEndpoint = EP_DEFAULT.default;
-const NetPacket = NP_DEFAULT.default;
-const { DecodeMessage } = RT_DEFAULT;
+const { AllocateAddress } = RT_DEFAULT;
 // types can be imported as-is
 import { NP_Data } from './urnet-types.ts';
 
@@ -76,7 +74,7 @@ async function RunLocalTests() {
 
 /// REMOTE LOOPBACK ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RunPacketTests() {
+function RunPacketLoopbackTests() {
   LOG('Running Packet Tests');
   try {
     // configure endpoint handlers
@@ -96,25 +94,6 @@ function RunPacketTests() {
       return data;
     });
 
-    // fake a URNET environment
-
-    /*  the source address is normally assigned by the host endpoint, but
-     *  for testing purposes we can set it manually */
-    NetPacket.NP_SetDefaultAddress('UA001');
-
-    /*  the send function is called when a packet should be sent over the
-     *  network via whatever transport is being used */
-    NetPacket.NP_SetPacketSender(pkt => {
-      LOG('send function called with packet: ', pkt);
-      ep.receivePacket(pkt);
-    });
-
-    /*  the handler function is called when a packet is received from the
-     *  network via whatever transport is being used */
-    NetPacket.NP_SetPacketReceiver(pkt => {
-      LOG('handler function called with packet: ', pkt);
-    });
-
     // simulate the endpoint remote handler
 
     ep.call('BAR', { foo: 'meow' }).then(data => {
@@ -128,10 +107,76 @@ function RunPacketTests() {
   }
 }
 
+/// PACKET TESTS //////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RunPacketTests() {
+  LOG('Running Packet Tests');
+  try {
+    // configure fake host
+    const host = new NetEndpoint();
+    const host_remotes = new Map();
+
+    const host_in = (...data) => {
+      const pkt = host.newPacket();
+      pkt.setFromObject(data);
+      if (pkt.data === undefined) LOG('host_in: pkt.data is undefined');
+      host.receivePacket(pkt);
+    };
+    const host_out = pkt => {
+      const remotes = [...host_remotes.values()];
+      if (pkt.data === undefined) LOG('host_out: pkt.data is undefined');
+      remotes.forEach(remep => remep.receivePacket(pkt));
+    };
+    host.registerHandler('NET:SRV', data => {
+      LOG('NET:SRV handler called with data', data);
+      return { hello: 'NET:SRV says hello' };
+    });
+
+    // configure fake remotes 0 and 1
+    const remotes = [];
+    for (let num = 3; num > 0; num--) remotes.push(new NetEndpoint());
+    remotes.forEach((remep, i) => {
+      let index = i + 1;
+      remep.urnet_addr = AllocateAddress(`remote${index}`);
+      host_remotes.set(remep.urnet_addr, remep);
+      const r_out = pkt => {
+        host.receivePacket(pkt);
+      };
+      const r_in = data => remep.receivePacket(data);
+      remep.setWireOut(r_out);
+      remep.setWireIn(r_in);
+      remep.registerHandler(`NET:REMOTE${index}`, data => {
+        if (data === undefined) {
+          LOG.error(`error: NET:REMOTE${index} handler received undefined data`);
+          data = {};
+        }
+        LOG(`NET:REMOTE${index} handler received data`, data);
+        data.remote = `NET:REMOTE${index} says hello`;
+        return data;
+      });
+    });
+
+    // allocate server address last so it's UA003
+    host.setAddress(AllocateAddress('host'));
+    host.setWireOut(host_out);
+    host.setWireIn(host_in);
+
+    host.send('NET:REMOTE1', { host: 'calling' }).then(data => {
+      LOG('host <<< NET:REMOTE1', data);
+    });
+
+    /* end tests */
+  } catch (err) {
+    LOG.error(err.message);
+    LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
+  }
+}
+
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
   // RunLocalTests();
+  // RunPacketLoopbackTests();
   RunPacketTests();
 }
 

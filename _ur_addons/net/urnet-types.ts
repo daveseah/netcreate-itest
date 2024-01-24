@@ -31,7 +31,6 @@ export type NP_Hash = `${NP_Address}:${NP_ID}`; // used for transaction lookups
 export type NP_Options = {
   dir?: NP_Dir;
   rsvp?: boolean;
-  addr?: NP_Address;
 };
 export type NP_Callback = (data: NP_Data) => void;
 
@@ -91,14 +90,17 @@ export function IsValidMessage(msg: string): [NP_Chan, string] {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let ADDR_MAX_ID = 0;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export function AllocateAddress(id?: number): NP_Address {
-  if (typeof id !== 'number') id = ++ADDR_MAX_ID;
-  else if (id > ADDR_MAX_ID) ADDR_MAX_ID = id;
+export function AllocateAddress(label?: string): NP_Address {
+  const fn = 'AllocateAddress';
+  label = label || '';
+  if (label) label = `- ${label}`;
+  let id = ++ADDR_MAX_ID;
   let padId = `${id}`.padStart(UADDR_DIGITS, '0');
   let addr = `UA${padId}` as NP_Address;
   // check for collision
   if (GENERATED_ADDRS.has(addr)) return AllocateAddress();
   GENERATED_ADDRS.add(addr);
+  console.log(fn, `${addr}${label}`);
   return addr;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

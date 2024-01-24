@@ -18,15 +18,14 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
+import { PR } from '@ursys/netcreate';
 import { I_NetMessage, NP_Address } from './urnet-types';
 import { NP_ID, NP_Type, NP_Dir } from './urnet-types';
 import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options } from './urnet-types';
 
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export type NP_PacketSend = (pkt: NetPacket) => void;
-export type NP_PacketReceive = (pkt: NetPacket) => void;
+const LOG = PR('NP', 'TagOrange');
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -44,6 +43,7 @@ class NetPacket implements I_NetMessage {
 
   constructor(msg?: NP_Msg, data?: NP_Data) {
     // metadata
+    this.id = undefined;
     this.src_addr = undefined;
     this.hop_rsvp = false;
     this.hop_seq = [];
@@ -51,8 +51,10 @@ class NetPacket implements I_NetMessage {
     this.err = undefined;
     //
     if (data === undefined) data = {};
-    if (IsValidMessage(msg)) this.setMsgData(msg, data);
-    else throw Error(`invalid msg format: ${msg}`);
+    if (typeof msg === 'string') {
+      if (!IsValidMessage(msg)) throw Error(`invalid msg format: ${msg}`);
+      this.msg = msg;
+    }
   }
 
   /** after creating a new packet, use setMeta() to assign id and envelope
@@ -61,11 +63,15 @@ class NetPacket implements I_NetMessage {
   setMeta(msg_type: NP_Type, opt?: NP_Options) {
     if (!IsValidType(msg_type)) throw Error(`invalid msg_type: ${msg_type}`);
     this.msg_type = msg_type;
-    this.id = NetPacket.AssignNewID(this);
     // optional overrides
-    this.src_addr = opt?.addr || NetPacket.urnet_address;
     this.hop_dir = opt?.dir || 'req';
     this.hop_rsvp = opt?.rsvp || false;
+  }
+
+  /** add hop to the hop sequence */
+  addHop(hop: NP_Address) {
+    if (!IsValidAddress(hop)) throw Error(`invalid hop: ${hop}`);
+    this.hop_seq.push(hop);
   }
 
   /** utility setters w/ checks - - - - - - - - - - - - - - - - - - - - - - **/
@@ -92,7 +98,6 @@ class NetPacket implements I_NetMessage {
   setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
     this.setMsg(msg);
     this.setData(data);
-    console.log('setMsgData: ', msg, data);
     return this;
   }
   /** set message */
@@ -115,12 +120,17 @@ class NetPacket implements I_NetMessage {
 
   /** make a packet from existing JSON */
   setFromJSON(json: string): NetPacket {
+    if (typeof json !== 'string') throw Error(`invalid json: ${json}`);
     return this.deserialize(json);
   }
   /** make a packet from existing object */
   setFromObject(pktObj) {
+    const fn = 'setFromObject';
+    if (typeof pktObj !== 'object') throw Error(`invalid pktObj: ${pktObj}`);
     this.id = pktObj.id;
     this.msg = pktObj.msg;
+    if (pktObj.data === undefined)
+      LOG(fn, `... pktObj${pktObj.id} .data is undefined`);
     this.data = pktObj.data;
     this.src_addr = pktObj.src_addr;
     this.hop_log = pktObj.hop_log;
@@ -143,25 +153,12 @@ class NetPacket implements I_NetMessage {
     return this.hop_seq[this.hop_seq.length - 1];
   }
 
-  isLoopback() {
-    const sameOrigin = NetPacket.urnet_address === this.src_addr;
-    const oneHop = this.hop_seq.length === 1;
-    return sameOrigin && oneHop;
-  }
-
   isRequest() {
     return this.hop_dir === 'req';
   }
 
   isResponse() {
     return this.hop_dir === 'res';
-  }
-
-  /** invoke global endpoint to send packet */
-  send() {
-    this.hop_seq.push(this.src_addr);
-    NetPacket.SendPacket(this);
-    return this;
   }
 
   /** serialization - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -172,13 +169,6 @@ class NetPacket implements I_NetMessage {
   deserialize(data: string): NetPacket {
     let obj = JSON.parse(data);
     return this.setFromObject(obj);
-  }
-  /** create a new NetPacket with the same data but new id */
-  clone(): NetPacket {
-    const pkt = new NetPacket();
-    pkt.setFromJSON(this.serialize());
-    pkt.id = NetPacket.AssignNewID(pkt);
-    return pkt;
   }
 
   /** information utilities - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -212,66 +202,6 @@ class NetPacket implements I_NetMessage {
     const info = `${this.id} ${this.hop_dir}`;
     this.hop_log.push(`${info}: ${msg}`);
     return msg;
-  }
-
-  /// STATIC CLASS METHODS ////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  static packet_counter = 0;
-  static f_packet_out: NP_PacketSend;
-  static f_packet_in: NP_PacketReceive;
-  static urnet_address: NP_Address;
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /** create a new packet id based on an existing packet. this is used for
-   *  creating a new packet id for a cloned packet.
-   */
-  static AssignNewID(pkt: NetPacket): NP_ID {
-    const addr = pkt.src_addr || NetPacket.urnet_address;
-    const count = ++NetPacket.packet_counter;
-    pkt.id = `pkt[${addr}:${count}]`;
-    return pkt.id;
-  }
-  /** send a packet to the global endpoint. it's assumed that NetPacket static
-   *  globals are set early in the URNET handshake and they are the same for
-   *  as long as the URNET connection is active on the connected app instance.
-   */
-  static SendPacket(pkt: NetPacket) {
-    if (NetPacket.urnet_address === undefined)
-      throw Error(`NetPacket urnet_address not initialized, aborted.`);
-    if (typeof NetPacket.f_packet_out !== 'function')
-      throw Error(`NetPacket f_packet_out not defined, aborted.`);
-    if (!pkt.id) throw Error(`NetPacket ${pkt.id} id not defined, aborted.`);
-    if (!pkt.src_addr)
-      throw Error(`NetPacket ${pkt.id} src_addr not defined, aborted.`);
-    NetPacket.f_packet_out(pkt);
-  }
-
-  /** static defaults - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
-
-  /** set the function that sends packets for the given type
-   *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
-   */
-  static NP_SetPacketSender(f: NP_PacketSend) {
-    const fn = 'NP_SetPacketSender:';
-    if (typeof f !== 'function') throw Error(`${fn} invalid send function`);
-    NetPacket.f_packet_out = f;
-  }
-  /** set the function that handles incoming packets for the given type
-   *  of transport (e.g. websockets, unix domain sockets, mqtt, etc.)
-   */
-  static NP_SetPacketReceiver(f: NP_PacketReceive) {
-    const fn = 'NP_SetPacketReceiver:';
-    if (typeof f !== 'function') throw Error(`${fn} invalid dispatch function`);
-    NetPacket.f_packet_in = f;
-  }
-  /** set the global address for all packets on this platform */
-  static NP_SetDefaultAddress(addr: NP_Address) {
-    const fn = 'NP_SetDefaultAddress:';
-    if (!IsValidAddress(addr)) throw Error(`${fn} invalid address`);
-    NetPacket.urnet_address = addr;
-  }
-  /** return the global address for all packets on this platform */
-  static NP_GetDefaultAddress(): NP_Address {
-    return NetPacket.urnet_address;
   }
 }
 
