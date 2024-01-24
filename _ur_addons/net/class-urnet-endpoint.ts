@@ -100,11 +100,12 @@ class NetEndpoint {
     this.f_wire_out = undefined;
     this.f_wire_in = undefined;
 
+    // authentication and aging
     this.sck_timer = null;
     this.auth_jwt = null;
     this.pkt_counter = 0;
     this.client_counter = 0;
-    // note that the socket aging is currently disabled
+    // note that the socket aging is currently disabled\
   }
 
   /** client connection management  - - - - - - - - - - - - - - - - - - - - **/
@@ -294,7 +295,6 @@ class NetEndpoint {
   /** create a new packet with proper address */
   newPacket(msg?: NP_Msg, data?: NP_Data): NetPacket {
     const fn = 'newPacket:';
-    LOG(this.urnet_addr, fn, 'create', msg, data);
     const pkt = new NetPacket(msg, data);
     if (this.urnet_addr === undefined)
       throw Error(`newPacket: endpoint address was not assigned`);
@@ -329,12 +329,10 @@ class NetEndpoint {
   wireOut(pkt: NetPacket) {
     const fn = 'wireOut:';
     const { msg, data } = pkt;
-    LOG(this.urnet_addr, fn, 'sent', msg, data);
     this.f_wire_out.call(this, pkt);
   }
   wireIn(...data: any) {
     const fn = 'wireIn:';
-    LOG(this.urnet_addr, fn, 'received', data);
     this.f_wire_in.call(this, ...data);
   }
 
@@ -343,13 +341,11 @@ class NetEndpoint {
   /** main packet sender, which is called by all the other send functions */
   sendPacket(pkt: NetPacket) {
     const fn = 'sendPacket:';
-    if (pkt.src_addr === undefined) throw Error(`sendPacket: src_addr undefined`);
+    if (pkt.src_addr === undefined) throw Error(`${fn}src_addr undefined`);
     pkt.addHop(this.urnet_addr);
     const { msg, data } = pkt;
-    LOG(this.urnet_addr, fn, 'sent', msg, data);
+    if (data === undefined) throw Error(`${fn}data undefined`);
     this.wireOut(pkt);
-    if (!DBG) return;
-    LOG.info(this.urnet_addr, fn, pkt.id, `${msg} hop:${pkt.hop_seq.join('..')}`);
   }
 
   /** return a packet  */
@@ -358,15 +354,13 @@ class NetEndpoint {
     if (pkt.hop_dir !== 'res') pkt.setDir('res'); // response
     else throw Error(`returnPacket: already a response packet`);
     pkt.addHop(this.urnet_addr);
+    const { msg, data } = pkt;
     this.wireOut(pkt);
-    if (!DBG) return;
-    LOG.info(this.urnet_addr, fn, pkt.id, `${pkt.msg} hop:${pkt.hop_seq.join('..')}`);
   }
 
   receivePacket(pkt: NetPacket) {
     const fn = 'receivePacket:';
     const { msg, data } = pkt;
-    LOG(this.urnet_addr, fn, 'received', msg, data);
     this.dispatchPacket(pkt);
   }
 
@@ -441,19 +435,17 @@ class NetEndpoint {
   /** send net message, returning promise that will resolve on packet return */
   async _netSend(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = '_netSend:';
-    LOG(this.urnet_addr, fn, 'with', msg, data);
-    const pkt = this.newPacket(msg, data);
-    pkt.setMeta('send', {
-      dir: 'req',
-      rsvp: true
-    });
     const p = new Promise((resolve, reject) => {
+      const pkt = this.newPacket(msg, data);
+      pkt.setMeta('send', {
+        dir: 'req',
+        rsvp: true
+      });
       const hash = GetPacketHashString(pkt);
       if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
       this.transactions.set(hash, { resolve, reject });
       try {
         this.sendPacket(pkt);
-        LOG(this.urnet_addr, fn, 'sent', msg, data);
       } catch (err) {
         reject(err);
       }
@@ -499,17 +491,24 @@ class NetEndpoint {
   /** given a netmessage packet, dispatch it to the appropriate handlers */
   async dispatchPacket(pkt: NetPacket) {
     const fn = 'dispatchPacket:';
-    if (DBG) LOG(this.urnet_addr, fn, pkt.serialize());
     let promises: Promise<NP_Data>[] = [];
-    const { msg, data } = pkt;
-    promises = this.resolveTransaction(pkt);
-    if (promises.length && DBG) LOG(this.urnet_addr, fn, 'resolve trns', msg, data);
-    if (!promises.length) promises = this.handleMessage(pkt);
-    if (promises.length && DBG) LOG(this.urnet_addr, fn, 'handled mesg', msg, data);
-    if (!promises.length) promises = [...(await this.forwardMessage(pkt))];
-    if (promises.length && DBG) LOG(this.urnet_addr, fn, 'forward mesg', msg, data);
-    if (!promises.length && DBG) {
-      LOG.info(this.urnet_addr, fn, `no handlers for ${msg}`);
+    // 1. is this a returning packet?
+    let tr = this.resolveTransaction(pkt);
+    // 2. is this a request packet and we have handlers?
+    let hn = this.handleMessage(pkt);
+    // 3. is this a request packet and we have no handlers but can forward?
+    let fw = [...(await this.forwardMessage(pkt))];
+    if (tr.length) {
+      if (DBG) LOG(this.urnet_addr, fn, 'resolving transaction', pkt.msg, pkt.data);
+      promises.push(...tr);
+    } else if (hn.length) {
+      if (DBG) LOG(this.urnet_addr, fn, 'handling message', pkt.msg, pkt.data);
+      promises.push(...hn);
+    } else if (fw.length) {
+      if (DBG) LOG(this.urnet_addr, fn, 'forwarding message', pkt.msg, pkt.data);
+      promises.push(...fw);
+    } else {
+      LOG.info(this.urnet_addr, fn, `no handlers for ${pkt.msg}`);
       return;
     }
     // if got this far, then we have promises to resolve
@@ -563,7 +562,7 @@ class NetEndpoint {
     const handler_list = this.getLocalHandlers(msg);
     const promises = [];
     handler_list.forEach(handler => {
-      if (DBG) LOG(this.urnet_addr, fn, `.. processing ${pkt.id}`, pkt.msg, pkt.data);
+      if (DBG) LOG(this.urnet_addr, fn, `invoke ${pkt.id}`, pkt.msg, pkt.data);
       const p = new Promise((resolve, reject) => {
         try {
           const retData = handler(data);
@@ -584,7 +583,7 @@ class NetEndpoint {
     const remote_addresses = this.getRemoteAddresses(msg);
     const promises = [];
     remote_addresses.forEach(uaddr => {
-      if (DBG) LOG(this.urnet_addr, fn, `.. processing ${pkt.id}`, pkt.msg, pkt.data);
+      if (DBG) LOG(this.urnet_addr, fn, `forward ${pkt.id}`, pkt.msg, pkt.data);
       const p = new Promise((resolve, reject) => {
         const clone = this.clonePacket(pkt);
         const socket = this.sck_map.get(uaddr);

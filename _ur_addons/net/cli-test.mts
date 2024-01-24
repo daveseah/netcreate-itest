@@ -145,13 +145,15 @@ function RunPacketTests() {
       const r_in = data => remep.receivePacket(data);
       remep.setWireOut(r_out);
       remep.setWireIn(r_in);
-      remep.registerHandler(`NET:REMOTE${index}`, data => {
+      const msgName = `NET:REMOTE${index}`;
+      console.log('.. registering handler for', msgName);
+      remep.registerHandler(msgName, data => {
         if (data === undefined) {
-          LOG.error(`error: NET:REMOTE${index} handler received undefined data`);
+          LOG.error(`error: ${msgName} handler received undefined data`);
           data = {};
         }
         LOG(`NET:REMOTE${index} handler received data`, data);
-        data.remote = `NET:REMOTE${index} says hello`;
+        data.remote = `${msgName} says hello`;
         return data;
       });
     });
@@ -163,6 +165,18 @@ function RunPacketTests() {
 
     host.send('NET:REMOTE1', { host: 'calling' }).then(data => {
       LOG('host <<< NET:REMOTE1', data);
+    });
+
+    remotes[0].send('NET:SRV', { remote1: 'calling' }).then(data => {
+      LOG('remote[0] <<< NET:SRV', data);
+    });
+
+    remotes[1].send('NET:REMOTE3', { remote2: 'calling' }).then(data => {
+      LOG('remote[1] <<< NET:REMOTE3', data);
+    });
+
+    remotes[2].send('NET:REMOTE2', { remote3: 'calling' }).then(data => {
+      LOG('remote[2] <<< NET:REMOTE2', data);
     });
 
     /* end tests */
