@@ -486,12 +486,17 @@ MOD.Hook('INITIALIZE', () => {
     // try updating existing nodes with this id?
     let updatedNodes = m_SetMatchingNodesByProp({ id: node.id }, node);
     if (DBG) console.log('SOURCE_UPDATE: updated', updatedNodes);
-    // if no nodes had matched, then add a new node!
     if (updatedNodes.length > 1) {
-      console.error('SOURCE_UPDATE: duplicate ids in', updatedNodes);
+      // if more than one matched, then there are duplicate ids
       throw Error('SOURCE_UPDATE: found duplicate IDs');
+    } else if (updatedNodes.length === 1) {
+      // if one matched, update NCDATA with the refreshed node from the db
+      const index = NCDATA.nodes.find(n => n.id === node.id);
+      NCDATA.nodes.splice(index, 1, node);
+    } else if (updatedNodes.length === 0) {
+      // if no nodes had matched, then add a new node!
+      NCDATA.nodes.push(node);
     }
-    if (updatedNodes.length === 0) NCDATA.nodes.push(node);
     UDATA.SetAppState('NCDATA', NCDATA);
   });
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook

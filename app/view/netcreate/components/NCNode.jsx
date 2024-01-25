@@ -229,7 +229,10 @@ class NCNode extends UNISYS.Component {
   /*
       Called by NCDATA AppState updates
   */
-  UpdateNCData() {
+  UpdateNCData(data) {
+    // If NCDATA is updated, reload the node AND the edges b/c db has changed
+    const updatedNode = data.nodes.find(n => n.id === this.state.id);
+    this.LoadNode(updatedNode);
     this.LoadEdges(this.state.id);
   }
   SetPermissions(data) {
@@ -325,9 +328,9 @@ class NCNode extends UNISYS.Component {
         degrees: node.degrees,
         attributes: attributes,
         provenance: node.provenance,
-        created: node.created,
-        updated: node.updated,
-        revision: node.revision
+        created: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        updated: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        revision: node.meta ? node.meta.revision : ''
       },
       () => {
         this.SetBackgroundColor();
@@ -448,34 +451,32 @@ class NCNode extends UNISYS.Component {
     const { id, label, attributes, provenance, created, updated, revision } =
       this.state;
 
-    // update revision number
-    const updatedRevision = revision + 1;
-    // update time stamp
-    const timestamp = new Date().toLocaleString('en-US');
-
     const node = {
       id,
       label,
-      provenance,
-      created,
-      updated: timestamp,
-      revision: updatedRevision
+      provenance
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
 
+    // Exit Edit mode first, then send the update
+    // (This is necessary otherwise the db update will trigger a
+    // NCDATA update followed by LoadNode, which will skip loading because
+    // it's still in edit mode)
+    this.setState(
+      {
+        uViewMode: VIEWMODE.VIEW
+      },
+      () => {
     // write data to database
     // setting dbWrite to true will distinguish this update
     // from a remote one
     this.AppCall('DB_UPDATE', { node }).then(() => {
       this.UnlockNode(() => {
-        this.setState({
-          uViewMode: VIEWMODE.VIEW,
-          uIsLockedByDB: false,
-          updated: node.updated,
-          revision: node.revision
-        });
+            this.setState({ uIsLockedByDB: false });
       });
     });
+  }
+    );
   }
   DeleteNode() {
     const { id, uReplacementNodeId } = this.state;
