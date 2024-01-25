@@ -112,10 +112,11 @@ function RunPacketLoopbackTests() {
 function RunPacketTests() {
   LOG('Running Packet Tests');
   try {
-    // configure fake host
+    /** CONFIGURE HOST **/
+
     const host = new NetEndpoint();
     const host_remotes = new Map();
-
+    //
     const host_in = (...data) => {
       const pkt = host.newPacket();
       pkt.setFromObject(data);
@@ -123,10 +124,11 @@ function RunPacketTests() {
       host.receivePacket(pkt);
     };
     const host_out = pkt => {
-      const remotes = [...host_remotes.values()];
       if (pkt.data === undefined) LOG('host_out: pkt.data is undefined');
-      remotes.forEach(remep => remep.receivePacket(pkt));
+      const remep = host_remotes.get(pkt);
+      remep.receivePacket(pkt);
     };
+    //
     host.registerHandler('NET:SRV', data => {
       LOG(`<<< HANDLER: host recv 'NET:SRV' <<<`, data);
       data.host = 'NET:SRV says hello';
@@ -134,12 +136,13 @@ function RunPacketTests() {
       return data;
     });
 
-    // configure fake remotes 0 and 1
+    /** CONFIGURE REMOTES **/
+
     const remotes = [];
     for (let num = 3; num > 0; num--) remotes.push(new NetEndpoint());
     remotes.forEach((remep, i) => {
       let index = i;
-      remep.urnet_addr = AllocateAddress(`remote${index}`);
+      remep.urnet_addr = AllocateAddress({ label: `remote${index}` });
       host_remotes.set(remep.urnet_addr, remep);
       const r_out = pkt => {
         host.receivePacket(pkt);
@@ -156,36 +159,35 @@ function RunPacketTests() {
         }
         LOG(`<<< HANDLER: remote[${i}] recv 'NET:REMOTE${index}' <<< data`, data);
         data.remote = `${msgName} says hello`;
-        LOG(`>>> HANDLER: remote[${i}] retn >>>`, data);
+        LOG(`>>> HANDLER: ${remep.urnet_addr} retn >>>`, data);
         return data;
       });
+      const handlers = [msgName];
+      host._setRemoteMessages(remep.urnet_addr, handlers);
     });
 
     // allocate server address last so it's UA003
-    host.setAddress(AllocateAddress('host'));
+    host.setAddress(AllocateAddress({ label: 'host' }));
     host.setWireOut(host_out);
     host.setWireIn(host_in);
 
-    // host.send('NET:REMOTE1', { host: 'calling' }).then(data => {
-    //   LOG(`>>> DONE: host recv 'NET:REMOTE1 >>>`, data);
-    // });
+    /** SEND TESTS **/
 
     const u_send_remote = (src, dst) => {
       const data = {};
       const msgName = `NET:REMOTE${dst}`;
       data[`remote${src}`] = 'calling';
-      LOG(`<<< SEND: remote[${src}] send '${msgName}' <<<`, data);
-      remotes[src].send(msgName, data).then(data => {
-        LOG(`>>> DONE: remote[${src}] recv '${msgName} >>>`, data);
+      const remep = remotes[src];
+      LOG(`<<< ${remep.urnet_addr} send '${msgName}' <<<`, data);
+      remep.netSend(msgName, data).then(data => {
+        LOG(`>>> ${remep.urnet_addr} recv '${msgName}' >>>`, data);
       });
     };
 
-    u_send_remote(2, 1);
-    u_send_remote(0, 2);
     u_send_remote(0, 1);
 
-    // remotes[1].send('NET:SRV', { remote1: 'calling' }).then(data => {
-    //   LOG(`>>> DONE: remote[1] recv 'NET:SRV >>>`, data);
+    // host.netSend('NET:REMOTE1', { host: 'calling' }).then(data => {
+    //   LOG(`>>> DONE: host recv 'NET:REMOTE1 >>>`, data);
     // });
 
     /* end tests */
