@@ -90,9 +90,9 @@ export function IsValidMessage(msg: string): [NP_Chan, string] {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let ADDR_MAX_ID = 0;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export function AllocateAddress(label?: string): NP_Address {
+export function AllocateAddress(opt?: { label?: string }): NP_Address {
   const fn = 'AllocateAddress';
-  label = label || '';
+  let label = opt.label || '';
   if (label) label = `- ${label}`;
   let id = ++ADDR_MAX_ID;
   let padId = `${id}`.padStart(UADDR_DIGITS, '0');

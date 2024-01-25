@@ -21,8 +21,13 @@
 import { PR } from '@ursys/netcreate';
 import NetPacket from './class-urnet-packet.ts';
 import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
-import { GetPacketHashString, UADDR_DIGITS } from './urnet-types.ts';
-import { IsLocalMessage, AllocateAddress, GetMessageHash } from './urnet-types.ts';
+import { GetPacketHashString } from './urnet-types.ts';
+import {
+  IsLocalMessage,
+  IsRemoteMessage,
+  AllocateAddress,
+  GetMessageHash
+} from './urnet-types.ts';
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -36,8 +41,17 @@ type UDS_Socket = {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** transactions store promises for resolving sent packet with return values */
 type PktResolver = {
+  msg: NP_Msg;
+  uaddr: NP_Address;
   resolve: (value?: unknown) => void;
   reject: (reason?: any) => void;
+};
+/** returned by getRoutingInfo() for external users of this class */
+type PktRoutingInfo = {
+  msg: NP_Msg;
+  src_addr: NP_Address;
+  remotes: NP_Address[];
+  handlers: HandlerFunc[];
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerFunc = (data: NP_Data) => NP_Data | void;
@@ -49,6 +63,7 @@ type SocketMap = Map<NP_Address, UDS_Socket>; //
 type ForwardMap = Map<NP_Msg, AddressSet>; // msg->set of uaddr
 type HandlerMap = Map<NP_Msg, HandlerSet>; // msg->handler functions
 type TransactionMap = Map<NP_Hash, PktResolver>; // hash->resolver
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// These define plugin function that convert packets to and from the "wire"
 /// of a socket-like connection to the network transport layer. They have
@@ -70,6 +85,14 @@ let AGE_MAX = 60 * 30; // 30 minutes
 function u_NormalizeData(data: NP_Data): any {
   if (Array.isArray(data) && data.length == 1) return data[0];
   return data;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** utility to dump packet info to console */
+function pr_pkt(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
+  const { id, msg } = pkt;
+  let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '•');
+  out += ` at ${fn.padEnd(16, ' ')} ${id}`;
+  return out;
 }
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
@@ -113,7 +136,7 @@ class NetEndpoint {
   /** given a socket, see if it's already registered */
   validatedSocket(socket: UDS_Socket): boolean {
     const fn = 'validateSocket:';
-    if (typeof socket !== 'object') throw new Error(`${fn} invalid socket`);
+    if (typeof socket !== 'object') throw Error(`${fn} invalid socket`);
     if (socket.UADDR === undefined) this.addSocket(socket);
     return this.authorizedSocket(socket);
   }
@@ -122,6 +145,7 @@ class NetEndpoint {
   authorizedSocket(socket: UDS_Socket): boolean {
     const fn = 'authorizedSocket:';
     LOG.warn(fn, 'would check JWT in socket.AUTH');
+    LOG.warn(this.urnet_addr, 'would check JWT in socket.AUTH');
     if (!socket.AUTH) return false;
     return true;
   }
@@ -132,7 +156,7 @@ class NetEndpoint {
     const fn = 'addSocket:';
     let uaddr = socket.UADDR;
     if (typeof uaddr === 'string' && this.sck_map.has(uaddr))
-      throw new Error(`${fn} socket ${uaddr} already registered`);
+      throw Error(`${fn} socket ${uaddr} already registered`);
     //
     socket.UADDR = AllocateAddress();
     socket.AGE = 0; // reset age
@@ -146,13 +170,13 @@ class NetEndpoint {
   deleteSocket(sobj: NP_Address | UDS_Socket): NP_Address {
     const fn = 'deleteSocket:';
     let uaddr = typeof sobj === 'string' ? sobj : sobj.UADDR;
-    if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
-    if (!this.sck_map.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
+    if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
+    if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     // msg_fwd_map is msg->set of uaddr, so iterate over all messages
     const msg_list = this.getMessageListForAddress(uaddr);
     msg_list.forEach(msg => {
       const msg_set = this.msg_fwd_map.get(msg);
-      if (!msg_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
+      if (!msg_set) throw Error(`${fn} unexpected empty set '${msg}'`);
       msg_set.delete(uaddr);
     });
     // delete the socket
@@ -187,8 +211,8 @@ class NetEndpoint {
   /** get list of messages allocated to a UADDR */
   getMessageListForAddress(uaddr: NP_Address): NP_Msg[] {
     const fn = 'getMessageListForAddress:';
-    if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
-    if (!this.sck_map.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
+    if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
+    if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     // msg_fwd_map is msg->set of uaddr, so iterate over all messages
     const msg_list: NP_Msg[] = [];
     this.msg_fwd_map.forEach((addr_set, msg) => {
@@ -200,10 +224,10 @@ class NetEndpoint {
   /** get list of UADDRs that a message is forwarded to */
   getAddressListForMessage(msg: NP_Msg): NP_Address[] {
     const fn = 'getAddressListForMessage:';
-    if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     // msg_fwd_map is msg->set of uaddr, so return set of uaddr as array
     const addr_set = this.msg_fwd_map.get(msg);
-    if (!addr_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
+    if (!addr_set) throw Error(`${fn} unexpected empty set '${msg}'`);
     const addr_list = Array.from(addr_set);
     return addr_list;
   }
@@ -211,11 +235,11 @@ class NetEndpoint {
   /** return list of local handlers for given message */
   getLocalHandlers(msg: NP_Msg): HandlerFunc[] {
     const fn = 'getLocalHandlers:';
-    if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     const key = GetMessageHash(msg);
     if (!this.msg_hnd_map.has(key)) this.msg_hnd_map.set(key, new Set<HandlerFunc>());
     const handler_set = this.msg_hnd_map.get(key);
-    if (!handler_set) throw new Error(`${fn} unexpected empty set '${key}'`);
+    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
     const handler_list = Array.from(handler_set);
     return handler_list;
   }
@@ -223,23 +247,41 @@ class NetEndpoint {
   /** return list of remote addresses for given message */
   getRemoteAddresses(msg: NP_Msg): NP_Address[] {
     const fn = 'getRemoteAddresses:';
-    if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     const key = GetMessageHash(msg);
     if (!this.msg_fwd_map.has(key)) this.msg_fwd_map.set(key, new Set<NP_Address>());
     const addr_set = this.msg_fwd_map.get(key);
-    if (!addr_set) throw new Error(`${fn} unexpected empty set '${msg}'`);
+    if (!addr_set) throw Error(`${fn} unexpected empty set '${msg}'`);
     const addr_list = Array.from(addr_set);
     return addr_list;
+  }
+
+  /** return list of active transactions for this endpoint */
+  getTransactionList(): { hash: NP_Hash; msg: NP_Msg; uaddr: NP_Address }[] {
+    // return array of objects { hash, msg, uaddr }
+    const fn = 'getTransactionList:';
+    const list = [];
+    this.transactions.forEach((transaction, hash) => {
+      const { msg, uaddr } = transaction;
+      list.push({ hash, msg, uaddr });
+    });
+    return list;
   }
 
   /** register a message handler for a given message to passed uaddr */
   registerRemoteMessages(uaddr: NP_Address, msgList: NP_Msg[]) {
     const fn = 'registerRemoteMessages:';
-    if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
-    if (!this.sck_map.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
+    if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
+    if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
+    this._setRemoteMessages(uaddr, msgList);
+  }
+
+  /** secret utility function for registerRemoteMessages */
+  _setRemoteMessages(uaddr: NP_Address, msgList: NP_Msg[]) {
+    const fn = '_setRemoteMessages:';
     msgList.forEach(msg => {
-      if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-      if (msg !== msg.toUpperCase()) throw new Error(`${fn} msg must be uppercase`);
+      if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+      if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
       const key = GetMessageHash(msg);
       if (!this.msg_fwd_map.has(key))
         this.msg_fwd_map.set(key, new Set<NP_Address>());
@@ -251,8 +293,8 @@ class NetEndpoint {
   /** unregister a message handler for a given message to passed uaddr */
   removeRemote(uaddr: NP_Address): NP_Msg[] {
     const fn = 'removeRemote:';
-    if (typeof uaddr !== 'string') throw new Error(`${fn} invalid uaddr`);
-    if (!this.sck_map.has(uaddr)) throw new Error(`${fn} unknown uaddr ${uaddr}`);
+    if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
+    if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     const removed = [];
     this.msg_fwd_map.forEach((msg_set, key) => {
       if (msg_set.has(uaddr)) removed.push(key);
@@ -264,9 +306,9 @@ class NetEndpoint {
   /** for local handlers, register a message handler for a given message */
   registerHandler(msg: NP_Msg, handler: HandlerFunc) {
     const fn = 'registerHandler:';
-    if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-    if (msg !== msg.toUpperCase()) throw new Error(`${fn} msg must be uppercase`);
-    if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
     const key = GetMessageHash(msg);
     if (!this.msg_hnd_map.has(key)) this.msg_hnd_map.set(key, new Set<HandlerFunc>());
     const handler_set = this.msg_hnd_map.get(key);
@@ -276,12 +318,25 @@ class NetEndpoint {
   /** for local handlers, unregister a message handler for a given message */
   removeHandler(msg: NP_Msg, handler: HandlerFunc) {
     const fn = 'removeHandler:';
-    if (typeof msg !== 'string') throw new Error(`${fn} invalid msg`);
-    if (typeof handler !== 'function') throw new Error(`${fn} invalid handler`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
     const key = GetMessageHash(msg);
     const handler_set = this.msg_hnd_map.get(key);
-    if (!handler_set) throw new Error(`${fn} unexpected empty set '${key}'`);
+    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
     handler_set.delete(handler);
+  }
+
+  /** return routing information for packet for external users of this class
+   *  that are moving packets onto the wire implementation */
+  getRoutingInfo(pkt: NetPacket): PktRoutingInfo {
+    const fn = 'getRoutingInfo:';
+    if (typeof pkt !== 'object') throw Error(`${fn} invalid packet`);
+    const { msg, src_addr } = pkt;
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (typeof src_addr !== 'string') throw Error(`${fn} invalid src_addr`);
+    const remotes = this.getAddressListForMessage(msg);
+    const handlers = this.getLocalHandlers(msg);
+    return { msg, src_addr, remotes, handlers };
   }
 
   /** packet utility - - - - - - - - - - - - - - - - - - - - - - - - - - - -**/
@@ -297,7 +352,7 @@ class NetEndpoint {
     const fn = 'newPacket:';
     const pkt = new NetPacket(msg, data);
     if (this.urnet_addr === undefined)
-      throw Error(`newPacket: endpoint address was not assigned`);
+      throw Error(`${fn} endpoint address was not assigned`);
     pkt.id = this.assignPacketId(pkt);
     return pkt;
   }
@@ -305,6 +360,7 @@ class NetEndpoint {
   clonePacket(pkt: NetPacket): NetPacket {
     const clone = this.newPacket(pkt.msg, pkt.data);
     clone.setFromJSON(pkt.serialize());
+    clone.src_addr = this.urnet_addr;
     clone.id = this.assignPacketId(clone);
     return clone;
   }
@@ -327,48 +383,18 @@ class NetEndpoint {
     this.f_wire_in = f_wire_in;
   }
   wireOut(pkt: NetPacket) {
-    const fn = 'wireOut:';
-    const { msg, data } = pkt;
     this.f_wire_out.call(this, pkt);
   }
   wireIn(...data: any) {
-    const fn = 'wireIn:';
     this.f_wire_in.call(this, ...data);
-  }
-
-  /** packet sender - - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
-
-  /** main packet sender, which is called by all the other send functions */
-  sendPacket(pkt: NetPacket) {
-    const fn = 'sendPacket:';
-    if (pkt.src_addr === undefined) throw Error(`${fn}src_addr undefined`);
-    pkt.addHop(this.urnet_addr);
-    const { msg, data } = pkt;
-    if (data === undefined) throw Error(`${fn}data undefined`);
-    this.wireOut(pkt);
-  }
-
-  /** return a packet  */
-  returnPacket(pkt: NetPacket) {
-    const fn = 'returnPacket:';
-    if (pkt.hop_dir !== 'res') pkt.setDir('res'); // response
-    else throw Error(`returnPacket: already a response packet`);
-    pkt.addHop(this.urnet_addr);
-    const { msg, data } = pkt;
-    this.wireOut(pkt);
-  }
-
-  receivePacket(pkt: NetPacket) {
-    const fn = 'receivePacket:';
-    const { msg, data } = pkt;
-    this.dispatchPacket(pkt);
   }
 
   /** message invocation - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
   /** call local message */
   async call(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
-    if (!IsLocalMessage(msg)) return await this._netCall(msg, { ...data });
+    const fn = 'call:';
+    if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
     const handlers = this.getLocalHandlers(msg);
     const promises = [];
     handlers.forEach(handler => {
@@ -388,7 +414,8 @@ class NetEndpoint {
 
   /** send local message, returning immediately */
   async send(msg: NP_Msg, data: NP_Data): Promise<void> {
-    if (!IsLocalMessage(msg)) return await this._netSend(msg, { ...data });
+    const fn = 'send:';
+    if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
     const handlers = this.getLocalHandlers(msg);
     handlers.forEach(handler => {
       handler({ ...data }); // copy of data
@@ -396,23 +423,29 @@ class NetEndpoint {
     return Promise.resolve();
   }
 
-  /** signal local message, returning immediately. in the local context,
-   *  signal is the same as send, but in net context it doesn't reflect
-   *  to the originating address */
+  /** signal local message, returning immediately. similar to send */
   async signal(msg: NP_Msg, data: NP_Data): Promise<void> {
-    return await this.send(msg, data);
+    const fn = 'signal:';
+    if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
+    const handlers = this.getLocalHandlers(msg);
+    handlers.forEach(handler => {
+      handler({ ...data }); // copy of data
+    });
+    return Promise.resolve();
   }
 
   /** ping local message, return with number of handlers */
   async ping(msg: NP_Msg): Promise<NP_Data> {
-    if (!IsLocalMessage(msg)) return await this._netPing(msg);
+    const fn = 'ping:';
+    if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
     const handlers = this.getLocalHandlers(msg);
     return Promise.resolve(handlers.length);
   }
 
   /** call net message, returning promise that will resolve on packet return */
-  async _netCall(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
-    const fn = '_netCall:';
+  async netCall(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
+    const fn = 'netCall:';
+    if (!IsRemoteMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
     const pkt = this.newPacket(msg, data);
     pkt.setMeta('call', {
       dir: 'req',
@@ -421,7 +454,8 @@ class NetEndpoint {
     const p = new Promise((resolve, reject) => {
       const hash = GetPacketHashString(pkt);
       if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
-      this.transactions.set(hash, { resolve, reject });
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
       try {
         this.sendPacket(pkt);
       } catch (err) {
@@ -433,8 +467,9 @@ class NetEndpoint {
   }
 
   /** send net message, returning promise that will resolve on packet return */
-  async _netSend(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
-    const fn = '_netSend:';
+  async netSend(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
+    const fn = 'netSend:';
+    if (!IsRemoteMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
     const p = new Promise((resolve, reject) => {
       const pkt = this.newPacket(msg, data);
       pkt.setMeta('send', {
@@ -443,7 +478,8 @@ class NetEndpoint {
       });
       const hash = GetPacketHashString(pkt);
       if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
-      this.transactions.set(hash, { resolve, reject });
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
       try {
         this.sendPacket(pkt);
       } catch (err) {
@@ -455,7 +491,9 @@ class NetEndpoint {
   }
 
   /** signal net message, returning void (not promise)  */
-  _netSignal(msg: NP_Msg, data: NP_Data): void {
+  netSignal(msg: NP_Msg, data: NP_Data): void {
+    const fn = 'netSignal:';
+    if (!IsRemoteMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
     const pkt = this.newPacket(msg, data);
     pkt.setMeta('signal', {
       dir: 'req',
@@ -465,8 +503,9 @@ class NetEndpoint {
   }
 
   /** see if there is a return for the net message */
-  async _netPing(msg: NP_Msg): Promise<NP_Data> {
-    const fn = '_netPing:';
+  async netPing(msg: NP_Msg): Promise<NP_Data> {
+    const fn = 'netPing:';
+    if (!IsRemoteMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
     const pkt = this.newPacket(msg);
     pkt.setMeta('ping', {
       dir: 'req',
@@ -475,7 +514,8 @@ class NetEndpoint {
     const p = new Promise((resolve, reject) => {
       const hash = GetPacketHashString(pkt);
       if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
-      this.transactions.set(hash, { resolve, reject });
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
       try {
         this.sendPacket(pkt);
       } catch (err) {
@@ -488,49 +528,88 @@ class NetEndpoint {
 
   /** packet receiver - - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
+  /** main packet sender, which is called by all the other send functions */
+  sendPacket(pkt: NetPacket) {
+    const fn = 'sendPacket:';
+    if (pkt.src_addr === undefined) throw Error(`${fn}src_addr undefined`);
+    pkt.addHop(this.urnet_addr);
+    const { msg, data } = pkt;
+    if (data === undefined) throw Error(`${fn}data undefined`);
+    if (DBG) LOG(pr_pkt(this, fn, '-send-', pkt), pkt.data);
+    this.wireOut(pkt);
+  }
+
+  /** receive a packet from the wire */
+  receivePacket(pkt: NetPacket) {
+    const fn = 'receivePacket:';
+    if (DBG) LOG(pr_pkt(this, fn, '-recv-', pkt), pkt.data);
+    this.dispatchPacket(pkt);
+  }
+
+  /** return a packet  */
+  returnPacket(pkt: NetPacket) {
+    const fn = 'returnPacket:';
+    if (pkt.hop_dir !== 'res') pkt.setDir('res'); // response
+    else throw Error(`returnPacket: already a response packet`);
+    pkt.addHop(this.urnet_addr);
+    const { msg, data } = pkt;
+    if (DBG) LOG(pr_pkt(this, fn, '-retn-', pkt), pkt.data);
+    this.wireOut(pkt);
+  }
+
+  /** send a packet to matching sockets */
+  forwardPacket(pkt: NetPacket) {}
+
   /** given a netmessage packet, dispatch it to the appropriate handlers */
   async dispatchPacket(pkt: NetPacket) {
     const fn = 'dispatchPacket:';
     let promises: Promise<NP_Data>[] = [];
     // 1. is this a returning packet?
-    let tr = this.resolveTransaction(pkt);
+    let tr = this.dp_resolveTransaction(pkt);
     // 2. is this a request packet and we have handlers?
-    let hn = this.handleMessage(pkt);
+    let hn = this.dp_hndlMessage(pkt);
     // 3. is this a request packet and we have no handlers but can forward?
-    let fw = [...(await this.forwardMessage(pkt))];
+    //    and this endpoint is managing clients?
+    let fw = [];
+    if (this.urnet_addr && this.msg_fwd_map.size) {
+      fw.push(...(await this.dp_fwrdMessage(pkt)));
+    }
     if (tr.length) {
-      if (DBG) LOG(this.urnet_addr, fn, 'resolving transaction', pkt.msg, pkt.data);
+      if (DBG) LOG(pr_pkt(this, fn, '-retn-', pkt), pkt.data);
       promises.push(...tr);
     } else if (hn.length) {
-      if (DBG) LOG(this.urnet_addr, fn, 'handling message', pkt.msg, pkt.data);
+      if (DBG) LOG(pr_pkt(this, fn, '-hndl-', pkt), pkt.data);
       promises.push(...hn);
     } else if (fw.length) {
-      if (DBG) LOG(this.urnet_addr, fn, 'forwarding message', pkt.msg, pkt.data);
+      if (DBG) LOG(pr_pkt(this, fn, '-fwrd-', pkt), pkt.data);
       promises.push(...fw);
     } else {
       LOG.info(this.urnet_addr, fn, `no handlers for ${pkt.msg}`);
       return;
     }
     // if got this far, then we have promises to resolve
-    let retData = await Promise.all(promises);
+    let retData = await Promise.all(promises).catch(err => {
+      LOG.error(this.urnet_addr, 'ERROR', fn, err);
+      pkt.setData({ error: err });
+    });
     retData = u_NormalizeData(retData);
     pkt.setData(retData);
     // don't return loopback packets because they are already returned
     if (this.isLoopback(pkt)) {
       LOG(this.urnet_addr, fn, 'loopback packet, not returning data on wire');
-      this.resolveLoopback(pkt);
+      this.dp_resolveLoopback(pkt);
       return;
     }
     // otherwise return the packet
     if (pkt.isRsvp()) {
-      if (DBG) LOG(this.urnet_addr, fn, 'returning packet', pkt.msg, pkt.data);
+      if (DBG) LOG(pr_pkt(this, fn, '-retn-', pkt), pkt.data);
       this.returnPacket(pkt);
     }
   }
 
   /** if the packet is a return, resolve the promise transaction */
-  resolveTransaction(pkt: NetPacket): Promise<NP_Data>[] {
-    const fn = 'resolveTransaction:';
+  dp_resolveTransaction(pkt: NetPacket): Promise<NP_Data>[] {
+    const fn = 'dp_resolveTransaction:';
     // don't handle this packet if it's not a returning packet
     if (pkt.src_addr !== this.urnet_addr) return [];
     if (!pkt.isRsvp()) return [];
@@ -556,13 +635,13 @@ class NetEndpoint {
   }
 
   /** if the packet is a request, call handlers and return response */
-  handleMessage(pkt: NetPacket): Promise<NP_Data>[] {
-    const fn = 'handleMessage:';
+  dp_hndlMessage(pkt: NetPacket): Promise<NP_Data>[] {
+    const fn = 'dp_hndlMessage:';
     const { msg, data } = pkt;
     const handler_list = this.getLocalHandlers(msg);
     const promises = [];
     handler_list.forEach(handler => {
-      if (DBG) LOG(this.urnet_addr, fn, `invoke ${pkt.id}`, pkt.msg, pkt.data);
+      if (DBG) LOG(pr_pkt(this, fn, '-hndl-', pkt), pkt.data);
       const p = new Promise((resolve, reject) => {
         try {
           const retData = handler(data);
@@ -577,22 +656,23 @@ class NetEndpoint {
   }
 
   /** if the packet has remote handlers, call them and return on completion */
-  async forwardMessage(pkt: NetPacket) {
-    const fn = 'forwardMessage:';
-    const { msg, data } = pkt;
+  async dp_fwrdMessage(pkt: NetPacket) {
+    const fn = 'dp_fwrdMessage:';
+    const { msg } = pkt;
     const remote_addresses = this.getRemoteAddresses(msg);
+    LOG.info(this.urnet_addr, `'${msg}' found remotes:`, remote_addresses);
     const promises = [];
     remote_addresses.forEach(uaddr => {
-      if (DBG) LOG(this.urnet_addr, fn, `forward ${pkt.id}`, pkt.msg, pkt.data);
       const p = new Promise((resolve, reject) => {
         const clone = this.clonePacket(pkt);
-        const socket = this.sck_map.get(uaddr);
-        if (!socket) reject(`${fn} unknown uaddr ${uaddr}`);
+        clone.id = this.assignPacketId(clone);
+        // const socket = this.sck_map.get(uaddr);
+        // if (!socket) reject(`${fn} -fwrd- unknown uaddr ${uaddr}`);
         const hash = GetPacketHashString(clone);
-        this.transactions.set(hash, { resolve, reject });
-        if (DBG) LOG(this.urnet_addr, fn, 'forwarding', clone.msg, clone.data);
-        this.sendPacket(clone);
-        //
+        const meta = { msg, uaddr };
+        this.transactions.set(hash, { resolve, reject, ...meta });
+        if (DBG) LOG(pr_pkt(this, fn, '-fwrd-', clone), clone.data);
+        LOG.warn(fn, 'would send packet to remotes');
       });
       promises.push(p);
     });
@@ -600,8 +680,8 @@ class NetEndpoint {
   }
 
   /** if the packet is a loopback, remove originating hash */
-  async resolveLoopback(pkt: NetPacket) {
-    const fn = 'resolveLoopback:';
+  async dp_resolveLoopback(pkt: NetPacket) {
+    const fn = 'dp_resolveLoopback:';
     const hash = GetPacketHashString(pkt);
     if (this.transactions.has(hash)) {
       if (DBG) LOG(this.urnet_addr, fn, 'removing loopback hash', hash);
