@@ -491,7 +491,7 @@ MOD.Hook('INITIALIZE', () => {
       throw Error('SOURCE_UPDATE: found duplicate IDs');
     } else if (updatedNodes.length === 1) {
       // if one matched, update NCDATA with the refreshed node from the db
-      const index = NCDATA.nodes.find(n => n.id === node.id);
+      const index = NCDATA.nodes.findIndex(n => n.id === node.id);
       NCDATA.nodes.splice(index, 1, node);
     } else if (updatedNodes.length === 0) {
       // if no nodes had matched, then add a new node!
