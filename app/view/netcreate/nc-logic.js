@@ -508,9 +508,7 @@ MOD.Hook('INITIALIZE', () => {
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
       const node = {
-        id: newNodeID, label: data.label, provenance,
-        created: timestamp,
-        revision: -1
+        id: newNodeID, label: data.label, provenance
       };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
@@ -635,9 +633,7 @@ MOD.Hook('INITIALIZE', () => {
         source: data.nodeId,
         target: undefined,
         attributes: {},
-        provenance,
-        created: timestamp,
-        revision: -1
+        provenance
       };
       return UDATA.LocalCall('DB_UPDATE', { edge }).then(() => {
         console.log('...DB_UPDATE node is now', edge);
