@@ -696,20 +696,20 @@ MOD.Hook('INITIALIZE', () => {
     let updatedEdges = m_SetMatchingEdgesByProp({ id: edge.id }, edge);
     if (DBG) console.log('nc-logic.EDGE_UPDATE: updated', updatedEdges);
 
-    // if no edges had matched, then add a new edge!
     if (updatedEdges.length === 0) {
+      // if no edges had matched, then add a new edge!
       if (DBG) console.log('nc-logic.EDGE_UPDATE: adding new edge', edge);
       // created edges should have a default size
       edge.size = 1;
       NCDATA.edges.push(edge);
-    }
-    // if there was one edge
-    if (updatedEdges.length === 1) {
+    } else if (updatedEdges.length === 1) {
+      // if there was one edge, update it
+      const index = NCDATA.edges.findIndex(e => e.id === edge.id);
+      NCDATA.edges.splice(index, 1, edge);
       if (DBG)
         console.log('nc-logic.EDGE_UPDATE: updating existing edge', updatedEdges);
-    }
+    } else if (updatedEdges.length > 1) {
     // if there were more edges than expected
-    if (updatedEdges.length > 1) {
       throw Error('EdgeUpdate found duplicate IDs');
     }
 
