@@ -1006,7 +1006,7 @@ class NCEdge extends UNISYS.Component {
                 {uSelectedTab === TABS.ATTRIBUTES &&
                   NCUI.RenderAttributesTabEdit(this.state, defs, this.UIInputUpdate)}
                 {uSelectedTab === TABS.PROVENANCE &&
-                  NCUI.RenderProvenanceTabEdit(this.state, defs)}
+                  NCUI.RenderProvenanceTabEdit(this.state, defs, this.UIInputUpdate)}
               </div>
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}
