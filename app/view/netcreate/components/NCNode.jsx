@@ -582,7 +582,8 @@ class NCNode extends UNISYS.Component {
     const { revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved node, delete the node instead
-    if (revision < 0) {
+    // Initial Node creation is rev 0, saving it for the first time bumps it to rev 1
+    if (revision < 1) {
       this.UIDisableEditMode();
       this.DeleteNode();
       return;
