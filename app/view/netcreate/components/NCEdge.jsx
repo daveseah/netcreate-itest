@@ -724,7 +724,7 @@ class NCEdge extends UNISYS.Component {
     const { revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved edge, delete the edge instead
-    if (revision < 0) {
+    if (revision < 1) {
       this.UIDisableEditMode();
       this.DeleteEdge();
       return;
@@ -999,7 +999,7 @@ class NCEdge extends UNISYS.Component {
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}
             <div className="controlbar" style={{ justifyContent: 'space-between' }}>
-              {revision > -1 && (
+              {revision > 0 && (
                 <button className="cancelbtn" onClick={this.UIDeleteEdge}>
                   Delete
                 </button>
