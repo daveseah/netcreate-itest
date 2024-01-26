@@ -11,17 +11,18 @@ export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const GENERATED_ADDRS = new Set<NP_Address>();
+export const USED_ADDRS = new Set<NP_Address>();
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export type NP_Chan = (typeof VALID_CHANNELS)[number];
 export type NP_ID = `pkt[${NP_Address}:${number}]`;
+export type NP_Chan = (typeof VALID_CHANNELS)[number];
 export type NP_Type = (typeof VALID_TYPES)[number];
 export type NP_Msg = `${NP_Chan}${string}`;
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
-export type NP_Address = `UA${number}`; // range is nominally 001-999
+export type NP_AddrPre = 'UA' | 'SRV' | 'HOST';
+export type NP_Address = `${NP_AddrPre}${number}`; // range is nominally 001-999
 
 /// NETPACKET-RELATED TYPES ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -89,17 +90,23 @@ export function IsValidMessage(msg: string): [NP_Chan, string] {
 /** runtime create formatted address */
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let ADDR_MAX_ID = 0;
+type AllocateOptions = { label?: string; addr?: NP_Address };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export function AllocateAddress(opt?: { label?: string }): NP_Address {
+export function AllocateAddress(opt?: AllocateOptions): NP_Address {
   const fn = 'AllocateAddress';
-  let label = opt.label || '';
+  let label = opt?.label || '';
   if (label) label = ` - ${label}`;
-  let id = ++ADDR_MAX_ID;
-  let padId = `${id}`.padStart(UADDR_DIGITS, '0');
-  let addr = `UA${padId}` as NP_Address;
-  // check for collision
-  if (GENERATED_ADDRS.has(addr)) return AllocateAddress();
-  GENERATED_ADDRS.add(addr);
+  let addr = opt?.addr; // manually-set address
+  if (addr === undefined) {
+    // generate a new address
+    let id = ++ADDR_MAX_ID;
+    let padId = `${id}`.padStart(UADDR_DIGITS, '0');
+    addr = `UA${padId}` as NP_Address;
+  } else if (USED_ADDRS.has(addr)) {
+    // the manually-set address is already in use
+    throw Error(`${fn} - address ${addr} already allocated`);
+  }
+  USED_ADDRS.add(addr);
   console.log(fn, `${addr}${label}`);
   return addr;
 }
