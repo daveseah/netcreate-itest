@@ -93,7 +93,7 @@ let ADDR_MAX_ID = 0;
 export function AllocateAddress(opt?: { label?: string }): NP_Address {
   const fn = 'AllocateAddress';
   let label = opt.label || '';
-  if (label) label = `- ${label}`;
+  if (label) label = ` - ${label}`;
   let id = ++ADDR_MAX_ID;
   let padId = `${id}`.padStart(UADDR_DIGITS, '0');
   let addr = `UA${padId}` as NP_Address;

@@ -106,7 +106,7 @@ class NetEndpoint {
   client_counter: number; // counter for generating unique uaddr
   pkt_counter: number; // counter for generating packet ids
 
-  urnet_addr: NP_Address; // the address for this endpoint
+  public urnet_addr: NP_Address; // the address for this endpoint
   f_wire_out: EP_PL_WireOut; // inherited function to send packet
   f_wire_in: EP_PL_WireIn; // inherited function to receive packet
   sck_timer: any; // timer for checking socket age
@@ -173,7 +173,7 @@ class NetEndpoint {
     if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
     if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     // msg_fwd_map is msg->set of uaddr, so iterate over all messages
-    const msg_list = this.getMessageListForAddress(uaddr);
+    const msg_list = this.getMessagesForAddress(uaddr);
     msg_list.forEach(msg => {
       const msg_set = this.msg_fwd_map.get(msg);
       if (!msg_set) throw Error(`${fn} unexpected empty set '${msg}'`);
@@ -206,11 +206,11 @@ class NetEndpoint {
     if (DBG) LOG(this.urnet_addr, fn, `timer stopped`);
   }
 
-  /** message & address management - - - - - - - - - - - - - - - - - - - - -**/
+  /** endpoint lookup tables - - - - - - - - - - - - - - - - - - - -  - - - **/
 
   /** get list of messages allocated to a UADDR */
-  getMessageListForAddress(uaddr: NP_Address): NP_Msg[] {
-    const fn = 'getMessageListForAddress:';
+  getMessagesForAddress(uaddr: NP_Address): NP_Msg[] {
+    const fn = 'getMessagesForAddress:';
     if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
     if (!this.sck_map.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     // msg_fwd_map is msg->set of uaddr, so iterate over all messages
@@ -222,8 +222,8 @@ class NetEndpoint {
   }
 
   /** get list of UADDRs that a message is forwarded to */
-  getAddressListForMessage(msg: NP_Msg): NP_Address[] {
-    const fn = 'getAddressListForMessage:';
+  getAddressesForMessage(msg: NP_Msg): NP_Address[] {
+    const fn = 'getAddressesForMessage:';
     if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     // msg_fwd_map is msg->set of uaddr, so return set of uaddr as array
     const addr_set = this.msg_fwd_map.get(msg);
@@ -233,8 +233,8 @@ class NetEndpoint {
   }
 
   /** return list of local handlers for given message */
-  getLocalHandlers(msg: NP_Msg): HandlerFunc[] {
-    const fn = 'getLocalHandlers:';
+  getHandlersForMessage(msg: NP_Msg): HandlerFunc[] {
+    const fn = 'getHandlersForMessage:';
     if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     const key = GetMessageHash(msg);
     if (!this.msg_hnd_map.has(key)) this.msg_hnd_map.set(key, new Set<HandlerFunc>());
@@ -244,9 +244,34 @@ class NetEndpoint {
     return handler_list;
   }
 
+  /** endpoint routing information - - - - - - - - - - - - - - - - - -  - - **/
+
+  /** return routing information for packet for external users of this class
+   *  that are moving packets onto the wire implementation */
+  getRoutingInfo(pkt: NetPacket): PktRoutingInfo {
+    const fn = 'getRoutingInfo:';
+    if (typeof pkt !== 'object') throw Error(`${fn} invalid packet`);
+    const { msg, src_addr } = pkt;
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (typeof src_addr !== 'string') throw Error(`${fn} invalid src_addr`);
+    const remotes = this.getAddressesForMessage(msg);
+    const handlers = this.getHandlersForMessage(msg);
+    return { msg, src_addr, remotes, handlers };
+  }
+
+  /** return handler list for this endpoint */
+  getMessages(): NP_Msg[] {
+    // get message keys from msg_hnd_map
+    const list = [];
+    this.msg_hnd_map.forEach((handler_set, key) => {
+      list.push(key);
+    });
+    return list;
+  }
+
   /** return list of remote addresses for given message */
-  getRemoteAddresses(msg: NP_Msg): NP_Address[] {
-    const fn = 'getRemoteAddresses:';
+  getRemotes(msg: NP_Msg): NP_Address[] {
+    const fn = 'getRemotes:';
     if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     const key = GetMessageHash(msg);
     if (!this.msg_fwd_map.has(key)) this.msg_fwd_map.set(key, new Set<NP_Address>());
@@ -257,9 +282,9 @@ class NetEndpoint {
   }
 
   /** return list of active transactions for this endpoint */
-  getTransactionList(): { hash: NP_Hash; msg: NP_Msg; uaddr: NP_Address }[] {
+  getTransactions(): { hash: NP_Hash; msg: NP_Msg; uaddr: NP_Address }[] {
     // return array of objects { hash, msg, uaddr }
-    const fn = 'getTransactionList:';
+    const fn = 'getTransactions:';
     const list = [];
     this.transactions.forEach((transaction, hash) => {
       const { msg, uaddr } = transaction;
@@ -267,6 +292,8 @@ class NetEndpoint {
     });
     return list;
   }
+
+  /** remote messages registration - - - - - - - - - - - - - - - - -  - - - **/
 
   /** register a message handler for a given message to passed uaddr */
   registerRemoteMessages(uaddr: NP_Address, msgList: NP_Msg[]) {
@@ -303,6 +330,8 @@ class NetEndpoint {
     return removed;
   }
 
+  /** local message handlers registration - - - - - - - - - - - - - - - - - **/
+
   /** for local handlers, register a message handler for a given message */
   registerHandler(msg: NP_Msg, handler: HandlerFunc) {
     const fn = 'registerHandler:';
@@ -324,19 +353,6 @@ class NetEndpoint {
     const handler_set = this.msg_hnd_map.get(key);
     if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
     handler_set.delete(handler);
-  }
-
-  /** return routing information for packet for external users of this class
-   *  that are moving packets onto the wire implementation */
-  getRoutingInfo(pkt: NetPacket): PktRoutingInfo {
-    const fn = 'getRoutingInfo:';
-    if (typeof pkt !== 'object') throw Error(`${fn} invalid packet`);
-    const { msg, src_addr } = pkt;
-    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
-    if (typeof src_addr !== 'string') throw Error(`${fn} invalid src_addr`);
-    const remotes = this.getAddressListForMessage(msg);
-    const handlers = this.getLocalHandlers(msg);
-    return { msg, src_addr, remotes, handlers };
   }
 
   /** packet utility - - - - - - - - - - - - - - - - - - - - - - - - - - - -**/
@@ -395,7 +411,7 @@ class NetEndpoint {
   async call(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'call:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
-    const handlers = this.getLocalHandlers(msg);
+    const handlers = this.getHandlersForMessage(msg);
     const promises = [];
     handlers.forEach(handler => {
       promises.push(
@@ -416,7 +432,7 @@ class NetEndpoint {
   async send(msg: NP_Msg, data: NP_Data): Promise<void> {
     const fn = 'send:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
-    const handlers = this.getLocalHandlers(msg);
+    const handlers = this.getHandlersForMessage(msg);
     handlers.forEach(handler => {
       handler({ ...data }); // copy of data
     });
@@ -427,7 +443,7 @@ class NetEndpoint {
   async signal(msg: NP_Msg, data: NP_Data): Promise<void> {
     const fn = 'signal:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
-    const handlers = this.getLocalHandlers(msg);
+    const handlers = this.getHandlersForMessage(msg);
     handlers.forEach(handler => {
       handler({ ...data }); // copy of data
     });
@@ -438,7 +454,7 @@ class NetEndpoint {
   async ping(msg: NP_Msg): Promise<NP_Data> {
     const fn = 'ping:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
-    const handlers = this.getLocalHandlers(msg);
+    const handlers = this.getHandlersForMessage(msg);
     return Promise.resolve(handlers.length);
   }
 
@@ -638,7 +654,7 @@ class NetEndpoint {
   dp_hndlMessage(pkt: NetPacket): Promise<NP_Data>[] {
     const fn = 'dp_hndlMessage:';
     const { msg, data } = pkt;
-    const handler_list = this.getLocalHandlers(msg);
+    const handler_list = this.getHandlersForMessage(msg);
     const promises = [];
     handler_list.forEach(handler => {
       if (DBG) LOG(pr_pkt(this, fn, '-hndl-', pkt), pkt.data);
@@ -659,7 +675,7 @@ class NetEndpoint {
   async dp_fwrdMessage(pkt: NetPacket) {
     const fn = 'dp_fwrdMessage:';
     const { msg } = pkt;
-    const remote_addresses = this.getRemoteAddresses(msg);
+    const remote_addresses = this.getRemotes(msg);
     LOG.info(this.urnet_addr, `'${msg}' found remotes:`, remote_addresses);
     const promises = [];
     remote_addresses.forEach(uaddr => {

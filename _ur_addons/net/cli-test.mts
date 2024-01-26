@@ -111,84 +111,108 @@ function RunPacketLoopbackTests() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunPacketTests() {
   LOG('Running Packet Tests');
-  try {
-    /** CONFIGURE HOST **/
 
+  function tc() {
+    let self = tc as any;
+    if (self.count === undefined) self.count = 0;
+    return `Test ${++self.count}`;
+  }
+
+  function TestCreateHost(name: string) {
     const host = new NetEndpoint();
     const host_remotes = new Map();
+
+    /// REGISTER ADDRESS ///
+    name = name.toUpperCase();
+    host.urnet_addr = AllocateAddress({ label: name });
+
+    /// REGISTER HANDLERS ///
+    name = name.toUpperCase();
+    const netMsg = `NET:${name}`;
+    const msg = name;
     //
-    const host_in = (...data) => {
-      const pkt = host.newPacket();
-      pkt.setFromObject(data);
-      if (pkt.data === undefined) LOG('host_in: pkt.data is undefined');
-      host.receivePacket(pkt);
-    };
-    const host_out = pkt => {
-      if (pkt.data === undefined) LOG('host_out: pkt.data is undefined');
-      const remep = host_remotes.get(pkt);
-      remep.receivePacket(pkt);
-    };
-    //
-    host.registerHandler('NET:SRV', data => {
-      LOG(`<<< HANDLER: host recv 'NET:SRV' <<<`, data);
-      data.host = 'NET:SRV says hello';
+    host.registerHandler(netMsg, data => {
+      LOG(`<<< HANDLER: host recv '${netMsg}' <<<`, data);
+      data.host = `${netMsg} says hello`;
+      LOG(`>>> HANDLER: host retn >>>`, data);
+      return data;
+    });
+    host.registerHandler(msg, data => {
+      LOG(`<<< HANDLER: host recv '${msg}' <<<`, data);
+      data.host = `${msg} says hello`;
       LOG(`>>> HANDLER: host retn >>>`, data);
       return data;
     });
 
-    /** CONFIGURE REMOTES **/
-
-    const remotes = [];
-    for (let num = 3; num > 0; num--) remotes.push(new NetEndpoint());
-    remotes.forEach((remep, i) => {
-      let index = i;
-      remep.urnet_addr = AllocateAddress({ label: `remote${index}` });
-      host_remotes.set(remep.urnet_addr, remep);
-      const r_out = pkt => {
-        host.receivePacket(pkt);
-      };
-      const r_in = data => remep.receivePacket(data);
-      remep.setWireOut(r_out);
-      remep.setWireIn(r_in);
-      const msgName = `NET:REMOTE${index}`;
-      console.log('.. registering handler for', msgName);
-      remep.registerHandler(msgName, data => {
-        if (data === undefined) {
-          LOG.error(`error: ${msgName} handler received undefined data`);
-          data = {};
-        }
-        LOG(`<<< HANDLER: remote[${i}] recv 'NET:REMOTE${index}' <<< data`, data);
-        data.remote = `${msgName} says hello`;
-        LOG(`>>> HANDLER: ${remep.urnet_addr} retn >>>`, data);
-        return data;
-      });
-      const handlers = [msgName];
-      host._setRemoteMessages(remep.urnet_addr, handlers);
-    });
-
-    // allocate server address last so it's UA003
-    host.setAddress(AllocateAddress({ label: 'host' }));
-    host.setWireOut(host_out);
-    host.setWireIn(host_in);
-
-    /** SEND TESTS **/
-
-    const u_send_remote = (src, dst) => {
-      const data = {};
-      const msgName = `NET:REMOTE${dst}`;
-      data[`remote${src}`] = 'calling';
-      const remep = remotes[src];
-      LOG(`<<< ${remep.urnet_addr} send '${msgName}' <<<`, data);
-      remep.netSend(msgName, data).then(data => {
-        LOG(`>>> ${remep.urnet_addr} recv '${msgName}' >>>`, data);
-      });
+    /// ADDITIONAL METHODS ///
+    const xhost = host as any;
+    xhost.X_RegisterRemote = (remote: InstanceType<typeof NetEndpoint>) => {
+      const addr = remote.urnet_addr;
+      host_remotes.set(addr, remote);
+      const handled = remote.getMessages();
+      const list = handled.map(netMsg => `'${netMsg}'`).join(', ');
+      console.log(`host registered ${addr} - ${list}`);
+      host._setRemoteMessages(addr, handled);
     };
 
-    u_send_remote(0, 1);
+    /// EXPORT ///
+    return xhost;
+  }
 
-    // host.netSend('NET:REMOTE1', { host: 'calling' }).then(data => {
-    //   LOG(`>>> DONE: host recv 'NET:REMOTE1 >>>`, data);
-    // });
+  function TestCreateRemote(name: string) {
+    const remote = new NetEndpoint();
+
+    /// REGISTER ADDRESS ///
+    name = name.toUpperCase();
+    remote.urnet_addr = AllocateAddress({ label: name });
+
+    /// REGISTER HANDLERS ///
+    name = name.toUpperCase();
+    const netMsg = `NET:${name}`;
+    const msg = name;
+    remote.registerHandler(netMsg, data => {
+      LOG(`<<< HANDLER: remote recv '${netMsg}' <<<`, data);
+      data.remote = `${netMsg} says hello`;
+      LOG(`>>> HANDLER: remote retn >>>`, data);
+      return data;
+    });
+    remote.registerHandler(msg, data => {
+      LOG(`<<< HANDLER: remote recv '${msg}' <<<`, data);
+      data.remote = `${msg} says hello`;
+      LOG(`>>> HANDLER: remote retn >>>`, data);
+      return data;
+    });
+
+    /// ADDITIONAL METHODS ///
+    const xremote = remote as any;
+
+    /// EXPORT ///
+    return xremote;
+  }
+
+  try {
+    // create endpoint handlers
+    const host = TestCreateHost('server');
+    const alice = TestCreateRemote('alice');
+    const bob = TestCreateRemote('bob');
+    // manually register remotes to the host
+    // simulating the connection handshake and message list capture
+    host.X_RegisterRemote(alice);
+    host.X_RegisterRemote(bob);
+
+    // test endpoint local handler
+    alice.call('ALICE', { caller: 'alice' }).then(data => {
+      LOG(tc(), 'ALICE call returned', data);
+    });
+    host.call('SERVER', { caller: 'server' }).then(data => {
+      LOG(tc(), 'SERVER call returned', data);
+    });
+
+    /**** WORKS UP TO HERE ****/
+
+    alice.netCall('NET:ALICE', { caller: 'alice' }).then(data => {
+      LOG(tc(), 'NET:ALICE netCall returned', data);
+    });
 
     /* end tests */
   } catch (err) {
