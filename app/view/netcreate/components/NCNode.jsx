@@ -53,10 +53,6 @@ const PR = 'NCNode';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const isAdmin = SETTINGS.IsAdmin();
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const VIEWMODE = {
-  EDIT: 'edit',
-  VIEW: 'view'
-};
 const TABS = {
   // Also used as labels
   ATTRIBUTES: 'ATTRIBUTES',
@@ -179,7 +175,7 @@ class NCNode extends UNISYS.Component {
       // UI State
       uEditBtnDisable: false,
       uEditBtnHide: false,
-      uViewMode: VIEWMODE.VIEW,
+      uViewMode: NCUI.VIEWMODE.VIEW,
       uSelectedTab: TABS.ATTRIBUTES,
       selectedEdgeId: null,
       uBackgroundColor: 'transparent',
@@ -200,7 +196,7 @@ class NCNode extends UNISYS.Component {
   ///
   CheckUnload(event) {
     event.preventDefault();
-    if (this.state.uViewMode === VIEWMODE.EDIT) {
+    if (this.state.uViewMode === NCUI.VIEWMODE.EDIT) {
       (event || window.event).returnValue = null;
     } else {
       Reflect.deleteProperty(event, 'returnValue');
@@ -208,7 +204,7 @@ class NCNode extends UNISYS.Component {
     return event;
   }
   DoUnload(event) {
-    if (this.state.uViewMode === VIEWMODE.EDIT) {
+    if (this.state.uViewMode === NCUI.VIEWMODE.EDIT) {
       UDATA.NetCall('SRV_DBUNLOCKNODE', { nodeID: this.state.id });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
     }
@@ -229,7 +225,10 @@ class NCNode extends UNISYS.Component {
   /*
       Called by NCDATA AppState updates
   */
-  UpdateNCData() {
+  UpdateNCData(data) {
+    // If NCDATA is updated, reload the node AND the edges b/c db has changed
+    const updatedNode = data.nodes.find(n => n.id === this.state.id);
+    this.LoadNode(updatedNode);
     this.LoadEdges(this.state.id);
   }
   SetPermissions(data) {
@@ -305,7 +304,7 @@ class NCNode extends UNISYS.Component {
     const { id, uViewMode } = this.state;
 
     // If we're editing, ignore the select!
-    if (uViewMode === VIEWMODE.EDIT) return;
+    if (uViewMode === NCUI.VIEWMODE.EDIT) return;
 
     // If no node was selected, deselect
     if (!node) {
@@ -325,9 +324,9 @@ class NCNode extends UNISYS.Component {
         degrees: node.degrees,
         attributes: attributes,
         provenance: node.provenance,
-        created: node.created,
-        updated: node.updated,
-        revision: node.revision
+        created: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        updated: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        revision: node.meta ? node.meta.revision : ''
       },
       () => {
         this.SetBackgroundColor();
@@ -448,34 +447,32 @@ class NCNode extends UNISYS.Component {
     const { id, label, attributes, provenance, created, updated, revision } =
       this.state;
 
-    // update revision number
-    const updatedRevision = revision + 1;
-    // update time stamp
-    const timestamp = new Date().toLocaleString('en-US');
-
     const node = {
       id,
       label,
-      provenance,
-      created,
-      updated: timestamp,
-      revision: updatedRevision
+      provenance
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
 
+    // Exit Edit mode first, then send the update
+    // (This is necessary otherwise the db update will trigger a
+    // NCDATA update followed by LoadNode, which will skip loading because
+    // it's still in edit mode)
+    this.setState(
+      {
+        uViewMode: NCUI.VIEWMODE.VIEW
+      },
+      () => {
     // write data to database
     // setting dbWrite to true will distinguish this update
     // from a remote one
     this.AppCall('DB_UPDATE', { node }).then(() => {
       this.UnlockNode(() => {
-        this.setState({
-          uViewMode: VIEWMODE.VIEW,
-          uIsLockedByDB: false,
-          updated: node.updated,
-          revision: node.revision
-        });
+            this.setState({ uIsLockedByDB: false });
       });
     });
+  }
+    );
   }
   DeleteNode() {
     const { id, uReplacementNodeId } = this.state;
@@ -575,7 +572,7 @@ class NCNode extends UNISYS.Component {
       // provenance: Object.assign({}, provenance) // uncomment after provenence is implemented
     };
     this.setState({
-      uViewMode: VIEWMODE.EDIT,
+      uViewMode: NCUI.VIEWMODE.EDIT,
       uSelectedTab: editableTab,
       previousState
     });
@@ -585,7 +582,8 @@ class NCNode extends UNISYS.Component {
     const { revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved node, delete the node instead
-    if (revision < 0) {
+    // Initial Node creation is rev 0, saving it for the first time bumps it to rev 1
+    if (revision < 1) {
       this.UIDisableEditMode();
       this.DeleteNode();
       return;
@@ -605,7 +603,7 @@ class NCNode extends UNISYS.Component {
   UIDisableEditMode() {
     this.UnlockNode(() => {
       this.setState({
-        uViewMode: VIEWMODE.VIEW,
+        uViewMode: NCUI.VIEWMODE.VIEW,
         uIsLockedByDB: false
       });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
@@ -896,7 +894,7 @@ class NCNode extends UNISYS.Component {
   render() {
     const { id, uViewMode } = this.state;
     if (!id) return ''; // nothing selected
-    if (uViewMode === VIEWMODE.VIEW) {
+    if (uViewMode === NCUI.VIEWMODE.VIEW) {
       return this.RenderView();
     } else {
       return this.RenderEdit();

@@ -322,9 +322,9 @@ class NCEdge extends UNISYS.Component {
         targetId: edge.target,
         attributes: attributes,
         provenance: edge.provenance,
-        created: edge.created,
-        updated: edge.updated,
-        revision: edge.revision
+        created: edge.meta ? new Date(edge.meta.created).toLocaleString() : '',
+        updated: edge.meta ? new Date(edge.meta.updated).toLocaleString() : '',
+        revision: edge.meta ? edge.meta.revision : ''
       },
       () => this.UpdateDerivedValues()
     );
@@ -594,32 +594,21 @@ class NCEdge extends UNISYS.Component {
   /// DATA SAVING
   ///
   SaveEdge() {
-    const {
-      id,
-      sourceId,
-      targetId,
-      attributes,
-      provenance,
-      created,
-      updated,
-      revision
-    } = this.state;
-
-    // update revision number
-    const updatedRevision = revision + 1;
-    // update time stamp
-    const timestamp = new Date().toLocaleString('en-US');
+    const { id, sourceId, targetId, attributes, provenance } = this.state;
 
     const edge = {
       id,
       source: sourceId,
       target: targetId,
-      provenance,
-      created,
-      updated: timestamp,
-      revision: updatedRevision
+      provenance
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+
+    this.setState(
+      {
+        uViewMode: NCUI.VIEWMODE.VIEW
+      },
+      () => {
     this.AppCall('DB_UPDATE', { edge }).then(() => {
       this.UnlockEdge(() => {
         // Clear the secondary selection
@@ -627,14 +616,13 @@ class NCEdge extends UNISYS.Component {
 
         UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
         this.setState({
-          uViewMode: NCUI.VIEWMODE.VIEW,
           uIsLockedByDB: false,
-          uSelectSourceTarget: undefined,
-          updated: edge.updated,
-          revision: edge.revision
+              uSelectSourceTarget: undefined
         });
       });
     });
+  }
+    );
   }
   DeleteEdge() {
     const { id } = this.state;
@@ -736,7 +724,7 @@ class NCEdge extends UNISYS.Component {
     const { revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved edge, delete the edge instead
-    if (revision < 0) {
+    if (revision < 1) {
       this.UIDisableEditMode();
       this.DeleteEdge();
       return;
@@ -1006,12 +994,12 @@ class NCEdge extends UNISYS.Component {
                 {uSelectedTab === TABS.ATTRIBUTES &&
                   NCUI.RenderAttributesTabEdit(this.state, defs, this.UIInputUpdate)}
                 {uSelectedTab === TABS.PROVENANCE &&
-                  NCUI.RenderProvenanceTabEdit(this.state, defs)}
+                  NCUI.RenderProvenanceTabEdit(this.state, defs, this.UIInputUpdate)}
               </div>
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}
             <div className="controlbar" style={{ justifyContent: 'space-between' }}>
-              {revision > -1 && (
+              {revision > 0 && (
                 <button className="cancelbtn" onClick={this.UIDeleteEdge}>
                   Delete
                 </button>
