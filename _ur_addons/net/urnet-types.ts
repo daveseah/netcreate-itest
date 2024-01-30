@@ -10,6 +10,7 @@ export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
+export const VALID_ADDR_PRE = ['UA', 'SRV', 'HOST'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
 
@@ -21,7 +22,7 @@ export type NP_Type = (typeof VALID_TYPES)[number];
 export type NP_Msg = `${NP_Chan}${string}`;
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
-export type NP_AddrPre = 'UA' | 'SRV' | 'HOST';
+export type NP_AddrPre = (typeof VALID_ADDR_PRE)[number];
 export type NP_Address = `${NP_AddrPre}${number}`; // range is nominally 001-999
 
 /// NETPACKET-RELATED TYPES ///////////////////////////////////////////////////
@@ -76,6 +77,22 @@ export function IsValidChannel(msg_chan: string): boolean {
   return VALID_CHANNELS.includes(msg_chan as NP_Chan);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of NP_Address */
+export function IsValidAddress(addr: string): boolean {
+  if (typeof addr !== 'string') return false;
+  let prelen = 0;
+  if (
+    !VALID_ADDR_PRE.some(pre => {
+      prelen = pre.length;
+      return addr.startsWith(pre);
+    })
+  )
+    return false;
+  const num = parseInt(addr.slice(prelen));
+  if (isNaN(num)) return false;
+  return true;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Msg, returns array if good otherwise it returns undefined */
 export function IsValidMessage(msg: string): [NP_Chan, string] {
   try {
@@ -90,34 +107,24 @@ export function IsValidMessage(msg: string): [NP_Chan, string] {
 /** runtime create formatted address */
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let ADDR_MAX_ID = 0;
-type AllocateOptions = { label?: string; addr?: NP_Address };
+type AllocateOptions = { prefix?: NP_AddrPre; addr?: NP_Address };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** allocate a new address, optionally with a label */
 export function AllocateAddress(opt?: AllocateOptions): NP_Address {
   const fn = 'AllocateAddress';
-  let label = opt?.label || '';
-  if (label) label = ` - ${label}`;
   let addr = opt?.addr; // manually-set address
+  let pre = opt?.prefix || 'UA'; // address prefix
   if (addr === undefined) {
     // generate a new address
     let id = ++ADDR_MAX_ID;
     let padId = `${id}`.padStart(UADDR_DIGITS, '0');
-    addr = `UA${padId}` as NP_Address;
+    addr = `${pre}${padId}` as NP_Address;
   } else if (USED_ADDRS.has(addr)) {
     // the manually-set address is already in use
     throw Error(`${fn} - address ${addr} already allocated`);
   }
   USED_ADDRS.add(addr);
-  console.log(fn, `${addr}${label}`);
   return addr;
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** runtime check of NP_Address */
-export function IsValidAddress(addr: string): boolean {
-  if (typeof addr !== 'string') return false;
-  if (!addr.startsWith('UA')) return false;
-  const num = parseInt(addr.slice(2));
-  if (isNaN(num)) return false;
-  return true;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** given a CHANNEL:MESSAGE string, return the channel and message name in
@@ -138,10 +145,17 @@ export function DecodeMessage(msg: NP_Msg): [NP_Chan, string] {
   return [chan as NP_Chan, name];
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export function GetMessageHash(msg: NP_Msg): NP_Msg {
+/** make sure that the message is always consistent */
+export function NormalizeMessage(msg: NP_Msg): NP_Msg {
   let [chan, name] = DecodeMessage(msg);
   if (chan === 'LOCAL') chan = '';
   return `${chan}:${name}`;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** make sure that degenerate arrays turn into single objet */
+export function NormalizeData(data: NP_Data): NP_Data {
+  if (Array.isArray(data) && data.length == 1) return data[0];
+  return data;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return true if message is a local request */
@@ -151,7 +165,7 @@ export function IsLocalMessage(msg: NP_Msg): boolean {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return true if message is a network request */
-export function IsRemoteMessage(msg: NP_Msg): boolean {
+export function IsNetMessage(msg: NP_Msg): boolean {
   const [chan] = DecodeMessage(msg);
   return chan === 'NET';
 }
