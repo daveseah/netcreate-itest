@@ -1,20 +1,22 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  NetPacket encapsulates a message sent over URNET.
+  NetPacket encapsulates a message sent over URNET, including metadata
+  to route the packet across the network and return responses.
 
-  This is implemented as a pure typescript class for use in both nodejs
-  and browser environments. When using from nodejs, you can only import
-  as default, so you will have to destructure in two steps.
-  
+  Works closely with NetEndpoint, which handles the actual sending and
+  receiving of packets. In practice, use Endpoint.newPacket() to create a new 
+  packet that has the correct source address and id.
+
+  CROSS PLATFORM USAGE --------------------------------------------------------
+
+  When using from nodejs mts file, you can only import this ts file as 'default' 
+  property. To access the NetPacket class do this:
+
     import CLASS_NP from './class-urnet-packet.ts';
-    const NetPacket = CLASS_NP.default;
+    const NetPacket = CLASS_NP.default; // note .default
 
-  Packets know how to "Send themselves" by invoking a global Send method that
-  is assigned to it during the URNET handshake. Likewise, packets also own
-  the global handler function that is assigned to it during the URNET handshake.
-  The idea is that the packet class should know about both incoming and 
-  outgoing packet transport, but it should not know about the transport itself.
-  This allows the packet class to be used in both nodejs and browser
+  This is not required when importing from another .ts typescript file
+  such as class-urnet-endpoint.ts.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -25,7 +27,7 @@ import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options } from './urnet-types';
 
-const LOG = PR('NP', 'TagOrange');
+const LOG = PR('Packet', 'TagOrange');
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

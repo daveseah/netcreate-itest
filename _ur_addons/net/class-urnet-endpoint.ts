@@ -4,8 +4,20 @@
   independent object. It provides the API for sending and receiving messages
   in conjunction with the NetPacket class.
 
-  An endpoint designed to be used as both a client or a server that manages
-  clients. This feature is disabled currently.
+  CROSS PLATFORM USAGE --------------------------------------------------------
+
+  When using from nodejs mts file, you can only import 'default', which is the
+  NetEndpoint class. If you want to import other exports, you need to
+  destructure the .default prop; to access the NetPacket class do this:
+
+    import EP_DEFAULT from './class-urnet-endpoint.ts';
+    const NetEndpoint = UR_TYPES.default; // note .default
+
+  You can import the types as usual, though:
+
+    import EP_DEFAULT, { EP_Socket } from './urnet-types.ts';
+
+  This is not required when importing from another .ts typescript file.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -24,7 +36,7 @@ import {
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('EP', 'TagBlue');
+const LOG = PR('Endpoint', 'TagBlue');
 const DBG = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let AGE_INTERVAL = 1000; // milliseconds

@@ -1,6 +1,33 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET BASE TYPES
+  URNET Types and Type Conformance Utilities
+
+  This file contains the types used by NetEndpoint and NetPacket.
+  The NetEndpoint class is the main interface for sending and receiving
+  NetPackets. NetPackets are the encapsulated messages that are sent.
+
+  Type Concepts:
+
+  MSG Messages  - made of CHANNEL and a NAME, e.g. 'NET:HELLO_WORLD'
+  ADDR Address  - every endpoint has an address, e.g. 'UR_001'
+  NP NetPacket  - NetPacket-related types, e.g. NP_ID, NP_Chan, NP_Msg
+  EP Endpoint   - Endpoint-related type are in class-urnet-endpoint.ts
+  PKT Packet    - shorthand for NetPacket
+
+  CROSS PLATFORM USAGE --------------------------------------------------------
+
+  When using from nodejs mts file, you can only import functions from 'default',
+  so to access the NetPacket class do this:
+
+    import UR_TYPES from './urnet-types.ts';
+    const { AllocateAddress } = UR_TYPES.default; // note .default
+
+  You can import the types as usual, though:
+
+    import UR_TYPES, { NP_Msg, NP_Data } from './urnet-types.ts';
+
+  This is not required when importing from another .ts typescript file
+  such as class-urnet-endpoint.ts.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -8,33 +35,31 @@
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
-export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
-export const VALID_ADDR_PRE = ['UR_', 'SRV'] as const;
+export const VALID_MSG_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
+export const VALID_PKT_TYPES = ['ping', 'signal', 'send', 'call'] as const;
+export const VALID_ADDR_PREFIX = ['UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export type NP_ID = `pkt[${NP_Address}:${number}]`;
-export type NP_Chan = (typeof VALID_CHANNELS)[number];
-export type NP_Type = (typeof VALID_TYPES)[number];
+export type NP_Chan = (typeof VALID_MSG_CHANNELS)[number];
+export type NP_Type = (typeof VALID_PKT_TYPES)[number];
 export type NP_Msg = `${NP_Chan}${string}`;
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
-export type NP_AddrPre = (typeof VALID_ADDR_PRE)[number];
-export type NP_Address = `${NP_AddrPre}${number}`; // range is nominally 001-999
+export type NP_AddrPre = (typeof VALID_ADDR_PREFIX)[number];
+export type NP_Address = `${NP_AddrPre}${number}`; // range set by UADDR_DIGITS
 
 /// NETPACKET-RELATED TYPES ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export type NP_AuthToken = any;
-export type NP_Opt = { [key: string]: any };
-export type NP_Hash = `${NP_Address}:${NP_ID}`; // used for transaction lookups
+export type NP_Hash = `${NP_Address}:${NP_ID}`; // for endpoint transactions
 export type NP_Options = {
+  // for packet creation
   dir?: NP_Dir;
   rsvp?: boolean;
 };
-export type NP_Callback = (data: NP_Data) => void;
 
 /// INTERFACES ////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -54,27 +79,17 @@ export interface I_NetMessage {
   hop_log: string[];
   err?: string;
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** MessageDispatcher instances are used to dispatch several types of messages
- *  to URNET.
- */
-export interface I_Messager {
-  signal(msg: NP_Msg, data: NP_Data): void;
-  send(msg: NP_Msg, data: NP_Data): void;
-  call(msg: NP_Msg, data: NP_Data): Promise<NP_Data>;
-  ping(msg: NP_Msg): Promise<NP_Data>;
-}
 
 /// FUNCTION SIGNATURES ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Type */
 export function IsValidType(msg_type: string): boolean {
-  return VALID_TYPES.includes(msg_type as NP_Type);
+  return VALID_PKT_TYPES.includes(msg_type as NP_Type);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Chan */
 export function IsValidChannel(msg_chan: string): boolean {
-  return VALID_CHANNELS.includes(msg_chan as NP_Chan);
+  return VALID_MSG_CHANNELS.includes(msg_chan as NP_Chan);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Address */
@@ -82,7 +97,7 @@ export function IsValidAddress(addr: string): boolean {
   if (typeof addr !== 'string') return false;
   let prelen = 0;
   if (
-    !VALID_ADDR_PRE.some(pre => {
+    !VALID_ADDR_PREFIX.some(pre => {
       prelen = pre.length;
       return addr.startsWith(pre);
     })
