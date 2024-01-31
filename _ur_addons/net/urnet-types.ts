@@ -10,7 +10,7 @@ export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
 export const VALID_TYPES = ['ping', 'signal', 'send', 'call'] as const;
-export const VALID_ADDR_PRE = ['UA', 'SRV', 'HOST'] as const;
+export const VALID_ADDR_PRE = ['UR_', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
 
