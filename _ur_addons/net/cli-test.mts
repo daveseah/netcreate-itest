@@ -37,24 +37,24 @@ async function RunLocalTests() {
     const ep = new NetEndpoint();
 
     ep.registerHandler('FOO', async data => {
-      console.log('FOO handler called, returned data: ', data);
+      LOG('FOO handler called, returned data: ', data);
       data.one = 1;
-      return 'one';
+      return data;
     });
     ep.registerHandler('FOO', async data => {
-      console.log('FOO handler 2 called, returned data: ', data);
+      LOG('FOO handler 2 called, returned data: ', data);
       data.two = 2;
-      return 'two';
+      return data;
     });
 
     // directly invoke the endpoint
 
     ep.call('FOO', { bar: 'baz' }).then(data => {
-      LOG('test 1: FOO call returned: ', data);
+      LOG('L1 FOO call returned: ', data);
     });
 
     ep.send('LOCAL:FOO', { bar: 'banana' }).then(data => {
-      LOG('test 2: LOCAL:FOO send returned void:', data === undefined);
+      LOG('L2 LOCAL:FOO send returned:', data);
     });
 
     /* skip signal because it's the same as send in the local context */
@@ -62,13 +62,13 @@ async function RunLocalTests() {
     // test the different versions of local message calls
 
     let pingStat = ep.ping(':FOO') ? 'PING OK' : 'PING FAIL';
-    LOG('test 3:', pingStat);
+    LOG('L3:', pingStat);
 
     pingStat = ep.ping('FOO') ? 'PING OK' : 'PING FAIL';
-    LOG('test 4:', pingStat);
+    LOG('L4:', pingStat);
 
     pingStat = ep.ping('LOCAL:FOO') ? 'PING OK' : 'PING FAIL';
-    LOG('test 5:', pingStat);
+    LOG('L5:', pingStat);
 
     /* end tests */
   } catch (err) {
@@ -89,20 +89,20 @@ function RunPacketLoopbackTests() {
     ep.registerHandler('BAR', async data => {
       data.result = data.result || [];
       data.result.push('one');
-      console.log('BAR handler called, returned data: ', data);
+      LOG('BAR handler called, returned data: ', data);
       return data;
     });
     ep.registerHandler('BAR', async data => {
       data.result = data.result || [];
       data.result.push('two');
-      console.log('BAR handler called, returned data: ', data);
+      LOG('BAR handler called, returned data: ', data);
       return data;
     });
 
     // simulate the endpoint remote handler
 
     ep.call('BAR', { foo: 'meow' }).then(data => {
-      LOG('test 1: BAR netCall returned: ', data);
+      LOG('L3 BAR netCall returned: ', data);
     });
 
     /* end tests */
@@ -124,11 +124,13 @@ function RunPacketTests() {
     const msg = name;
     //
     ep.registerHandler(netMsg, data => {
-      data[name] = `${netMsg} succeeded`;
+      data[name] = `'${netMsg}' succeeded`;
+      LOG.info(`'${netMsg}' handler called, returned data: `, data);
       return data;
     });
     ep.registerHandler(msg, data => {
-      data[name] = `${msg} succeeded`;
+      data[name] = `'${msg}' succeeded`;
+      LOG.info(`'${msg}' handler called, returned data: `, data);
       return data;
     });
     return ep;
@@ -165,12 +167,13 @@ function RunPacketTests() {
 
     const alice = PT_AddClient('alice', host, client_gateway);
     const bob = PT_AddClient('bob', host, client_gateway);
+    const bob2 = PT_AddClient('bob', host, client_gateway);
 
     // test test local calls
-    host.call('ALICE', { caller: 'alice' }).then(data => {
+    host.call('ALICE', { caller: 'host' }).then(data => {
       LOG(1, 'host ALICE call returned', data);
     });
-    host.call('SERVER', { caller: 'server' }).then(data => {
+    host.call('SERVER', { caller: 'host' }).then(data => {
       LOG(2, 'host SERVER call returned', data);
     });
 
@@ -178,6 +181,16 @@ function RunPacketTests() {
     alice.netCall('NET:BOB', { caller: 'alice' }).then(data => {
       LOG(3, 'NET:BOB netCall returned', data);
     });
+    alice.netSend('NET:ALICE', { caller: 'alice' }).then(data => {
+      LOG(4, 'NET:ALICE netSend returned', data);
+    });
+    bob.netPing('NET:SERVER').then(data => {
+      LOG(5, 'SERVER netPing NET:SERVER returned', data);
+    });
+    bob.netPing('NET:BOB').then(data => {
+      LOG(6, 'SERVER netPing NET:BOB returned', data);
+    });
+    bob.netSignal('NET:ALICE', { caller: 'bob' });
 
     /* end tests */
   } catch (err) {
@@ -189,8 +202,8 @@ function RunPacketTests() {
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
-  // RunLocalTests();
-  // RunPacketLoopbackTests();
+  RunLocalTests();
+  RunPacketLoopbackTests();
   RunPacketTests();
 }
 

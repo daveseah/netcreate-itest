@@ -22,6 +22,14 @@ import {
   NormalizeData
 } from './urnet-types.ts';
 
+/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const LOG = PR('EP', 'TagBlue');
+const DBG = true;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let AGE_INTERVAL = 1000; // milliseconds
+let AGE_MAX = 60 * 30; // 30 minutes
+
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export type EP_SendFunc = (pkt: NetPacket) => void;
@@ -61,14 +69,6 @@ type PktRoutingInfo = {
   gateway: EP_Socket;
   clients: EP_Socket[];
 };
-
-/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('EP', 'TagBlue');
-const DBG = true;
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let AGE_INTERVAL = 1000; // milliseconds
-let AGE_MAX = 60 * 30; // 30 minutes
 
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -192,7 +192,7 @@ class NetEndpoint {
     socket.age = 0;
     socket.auth = undefined;
     this.srv_socks.set(new_uaddr, socket);
-    if (DBG) LOG(this.urnet_addr, `socket ${new_uaddr} registered`);
+    // if (DBG) LOG(this.urnet_addr, `socket ${new_uaddr} registered`);
     return new_uaddr;
   }
 
@@ -333,7 +333,7 @@ class NetEndpoint {
       if (!this.srv_msgs.has(key)) this.srv_msgs.set(key, new Set<NP_Address>());
       const msg_set = this.srv_msgs.get(key);
       msg_set.add(uaddr);
-      LOG(this.urnet_addr, `reg remote ${key} for ${uaddr}`);
+      // if (DBG) LOG(this.urnet_addr, `reg remote ${key} for ${uaddr}`);
     });
   }
 
@@ -355,7 +355,7 @@ class NetEndpoint {
   /** for local handlers, register a message handler for a given message */
   registerHandler(msg: NP_Msg, handler: HandlerFunc) {
     const fn = 'registerHandler:';
-    LOG(this.urnet_addr, `reg handler '${msg}'`);
+    // if (DBG) LOG(this.urnet_addr, `reg handler '${msg}'`);
     if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
     if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
     if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
@@ -402,12 +402,6 @@ class NetEndpoint {
     clone.id = this.assignPacketId(clone);
     return clone;
   }
-  /** return if it's a loopback to this endpoint */
-  isLoopback(pkt: NetPacket): boolean {
-    const sameOrigin = this.urnet_addr === pkt.src_addr;
-    const oneHop = pkt.hop_seq.length === 1;
-    return sameOrigin && oneHop;
-  }
 
   /** message invocation - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
@@ -428,30 +422,37 @@ class NetEndpoint {
         })
       );
     });
+    if (promises.length === 0)
+      return Promise.resolve({ error: `no handler for '${msg}'` });
+    // wait for all promises to resolve
     const resData = await Promise.all(promises);
     return resData;
   }
 
   /** send local message, returning immediately */
-  async send(msg: NP_Msg, data: NP_Data): Promise<void> {
+  async send(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'send:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
     const handlers = this.getHandlersForMessage(msg);
+    if (handlers.length === 0)
+      return Promise.resolve({ error: `no handler for '${msg}'` });
     handlers.forEach(handler => {
       handler({ ...data }); // copy of data
     });
-    return Promise.resolve();
+    return Promise.resolve(true);
   }
 
   /** signal local message, returning immediately. similar to send */
-  async signal(msg: NP_Msg, data: NP_Data): Promise<void> {
+  async signal(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'signal:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
     const handlers = this.getHandlersForMessage(msg);
+    if (handlers.length === 0)
+      return Promise.resolve({ error: `no handler for '${msg}'` });
     handlers.forEach(handler => {
       handler({ ...data }); // copy of data
     });
-    return Promise.resolve();
+    return Promise.resolve(true);
   }
 
   /** ping local message, return with number of handlers */
@@ -560,10 +561,8 @@ class NetEndpoint {
    */
   async pktReceive(pkt: NetPacket) {
     const fn = 'pktReceive:';
-    LOG(this.urnet_addr, 'received', pkt.msg);
     // is this a response to a transaction?
     if (pkt.isResponse()) {
-      LOG(this.urnet_addr, 'is response');
       if (pkt.src_addr === this.urnet_addr) this.pktResolveRequest(pkt);
       else this.pktSendResponse(pkt);
       return;
@@ -573,27 +572,42 @@ class NetEndpoint {
       LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
       return;
     }
+    // if it's a ping, we just want to return number of
+    // messages this server knows about.
+    if (pkt.msg_type === 'ping') {
+      const addrs = this.getAddressesForMessage(pkt.msg);
+      const handlers = this.getHandlersForMessage(pkt.msg);
+      if (handlers.length > 0) addrs.push(this.urnet_addr);
+      pkt.setData(addrs);
+      this.pktSendResponse(pkt);
+      return;
+    }
+    // if it's a signal, this is not an rsvp, but log it
+    if (pkt.msg_type === 'signal') {
+      if (DBG) LOG(_PKT(this, fn, '-recv-sig-', pkt), pkt.data);
+      // will be handled normally and get routed
+    }
+    //
     const { msg } = pkt;
     let retData;
     if (this.msg_handlers.has(msg)) {
-      LOG(this.urnet_addr, 'is local message', pkt.msg);
       retData = await this.pktAwaitHandlers(pkt);
     } else if (this.srv_msgs.has(msg)) {
       retData = await this.pktAwaitRequest(pkt);
     } else {
-      LOG(msg, 'remotes', [...this.srv_msgs.keys()]);
       LOG.error(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
-      return;
+      retData = { error: `unknown message '${msg}'` };
     }
 
-    LOG(this.urnet_addr, 'returning data', retData);
+    if (!pkt.isRsvp()) return;
+
     // if we got this far, then we have data to return
-    if (pkt.isRsvp()) {
-      LOG(this.urnet_addr, 'handling RSVP');
+    if (pkt.msg_type !== 'call') pkt.data = true;
+    else {
       retData = NormalizeData(retData);
       pkt.setData(retData);
-      this.pktSendResponse(pkt);
     }
+    this.pktSendResponse(pkt);
   }
 
   /** Send a single packet on all available interfaces based on the
@@ -602,14 +616,14 @@ class NetEndpoint {
    */
   pktSendRequest(pkt: NetPacket) {
     const fn = 'pktSendRequest:';
-    LOG(this.urnet_addr, 'sending', pkt.msg);
     // sanity checks
     if (pkt.src_addr === undefined) throw Error(`${fn}src_addr undefined`);
     if (this.urnet_addr === undefined) throw Error(`${fn} urnet_addr undefined`);
     if (pkt.hop_seq.length !== 0) throw Error(`${fn} pkt must have no hops yet`);
-    if (pkt.data === undefined) throw Error(`${fn}data undefined`);
+    if (pkt.msg_type !== 'ping' && pkt.data === undefined)
+      throw Error(`${fn} data undefined`);
     // prep for sending
-    if (DBG) LOG(_PKT(this, fn, '-neto-', pkt), pkt.data);
+    if (DBG) LOG(_PKT(this, fn, '-send-req-', pkt), pkt.data);
     const { gateway, clients } = this.pktGetSocketRouting(pkt);
     // send on the wire
     pkt.addHop(this.urnet_addr);
@@ -643,7 +657,7 @@ class NetEndpoint {
    */
   pktResolveRequest(pkt: NetPacket) {
     const fn = 'pktResolveRequest:';
-    LOG(this.urnet_addr, 'resolving', pkt.msg);
+    // if (DBG) LOG(this.urnet_addr, 'resolving', pkt.msg);
     if (pkt.hop_rsvp !== true) throw Error(`${fn} packet is not RSVP`);
     if (pkt.hop_dir !== 'res') throw Error(`${fn} packet is not a response`);
     if (pkt.hop_seq.length < 2) throw Error(`${fn} packet has no hops`);
@@ -652,7 +666,7 @@ class NetEndpoint {
     if (!resolver) throw Error(`${fn} no resolver for hash ${hash}`);
     const { resolve, reject } = resolver;
     const { data } = pkt;
-    if (DBG) LOG(_PKT(this, fn, '-recv-', pkt), pkt.data);
+    if (DBG) LOG(_PKT(this, fn, '-recv-res-', pkt), pkt.data);
     if (pkt.err) reject(pkt.err);
     else resolve(data);
     this.transactions.delete(hash);
@@ -665,7 +679,6 @@ class NetEndpoint {
    */
   pktSendResponse(pkt: NetPacket) {
     const fn = 'pktSendResponse:';
-    LOG(this.urnet_addr, 'sending', pkt.msg);
     // check for validity
     if (pkt.hop_rsvp !== true) throw Error(`${fn} packet is not RSVP`);
     if (pkt.hop_dir !== 'req') throw Error(`${fn} packet is not a request`);
@@ -673,16 +686,19 @@ class NetEndpoint {
     // prep for return
     pkt.setDir('res');
     pkt.addHop(this.urnet_addr);
+    if (DBG) LOG(_PKT(this, fn, '-send-res-', pkt), pkt.data);
     const { gateway, src_addr } = this.pktGetSocketRouting(pkt);
     if (this.isServer()) {
-      LOG(this.urnet_addr, 'returning to', src_addr);
+      // if (DBG) LOG(this.urnet_addr, 'returning to', src_addr);
       const socket = this.getClient(src_addr);
       if (socket) socket.send(pkt);
+      // responses go to a single address; if we found it here,
+      // then we're done
       return;
     }
-    // if we got this far, just pass the packet back to gateway
+    // if we have a gateway, pass the buck onward and let it
+    // find the client
     if (gateway) {
-      LOG(this.urnet_addr, 'returning to gateway', gateway);
       gateway.send(pkt);
       return;
     }
@@ -695,24 +711,24 @@ class NetEndpoint {
    */
   async pktAwaitRequest(pkt: NetPacket) {
     const fn = 'pktAwaitRequest:';
-    LOG(this.urnet_addr, 'is remote message', pkt.msg);
-    if (pkt.hop_rsvp !== true) throw Error(`${fn} packet is not RSVP`);
     if (pkt.hop_dir !== 'req') throw Error(`${fn} packet is not a request`);
     // prep for return
     const { gateway, clients } = this.pktGetSocketRouting(pkt);
     const promises = [];
     if (gateway) {
-      LOG(this.urnet_addr, 'await gateway', pkt.msg, gateway.uaddr);
+      if (DBG) LOG(_PKT(this, fn, '-wait-req-', pkt), pkt.data);
       promises.push(this.pktQueueRequest(pkt, gateway));
     }
     if (Array.isArray(clients)) {
+      if (DBG) LOG(_PKT(this, fn, '-wait-req-', pkt), pkt.data);
       clients.forEach(sock => {
-        LOG(this.urnet_addr, 'await remote', pkt.msg, sock.uaddr);
+        // if (DBG) LOG(this.urnet_addr, 'await remote', pkt.msg, sock.uaddr);
         promises.push(this.pktQueueRequest(pkt, sock));
       });
     }
     let data = await Promise.all(promises);
     if (Array.isArray(data) && data.length === 1) data = data[0];
+    if (DBG) LOG(_PKT(this, fn, '-retn-req-', pkt), pkt.data);
     return data;
   }
 
@@ -723,7 +739,10 @@ class NetEndpoint {
     const fn = 'pktAwaitHandlers:';
     const { msg } = pkt;
     const handlers = this.getHandlersForMessage(msg);
+    if (handlers.length === 0)
+      return Promise.resolve({ error: `no handler for '${msg}'` });
     const promises = [];
+    if (DBG) LOG(_PKT(this, fn, '-wait-hnd-', pkt), pkt.data);
     handlers.forEach(handler => {
       promises.push(
         new Promise((resolve, reject) => {
@@ -737,6 +756,7 @@ class NetEndpoint {
     });
     let data = await Promise.all(promises);
     if (Array.isArray(data) && data.length === 1) data = data[0];
+    if (DBG) LOG(_PKT(this, fn, '-retn-hnd-', pkt), pkt.data);
     return data;
   }
 
