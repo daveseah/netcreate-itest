@@ -93,7 +93,7 @@ async function StartServers() {
     LOG.warn(`note: 'net start' will not exit automatically; use ctrl-c to exit`);
   }
   // main protocol host
-  await SpawnServer('./host-urnet-uds.mts', 'uds');
+  await SpawnServer('./serve-uds.mts', 'uds');
   // supplementary protocol hosts
   if (!UDS_ONLY) {
     await SpawnServer('./serve-wss.mts', 'wss');

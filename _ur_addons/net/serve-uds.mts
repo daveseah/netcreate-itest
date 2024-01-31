@@ -1,22 +1,20 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   URNET UNIX DOMAIN SOCKET (UDS) SERVER
-  This is the main host for URNET. 
+
+  This is an URNET host that is spawned as a standalone process.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import ipc, { Socket } from '@achrinza/node-ipc';
 import { PR } from '@ursys/netcreate';
 import { UDS_INFO } from './urnet-constants.mts';
-import CLASS_NP from './class-urnet-packet.ts';
 import CLASS_EP from './class-urnet-endpoint.ts';
-import URNET from './class-urnet-endpoint.ts';
-const NetPacket = CLASS_NP.default;
 const Endpoint = CLASS_EP.default;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('UDS', 'TagBlue');
+const LOG = PR('UDSHost', 'TagBlue');
 
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -42,6 +40,7 @@ ipc.config.silent = true;
 ipc.config.unlink = true; // unlink socket file on exit
 //
 const EP = new Endpoint();
+EP.configAsServer('SRV01');
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -52,25 +51,22 @@ function m_ConfigureServer() {
   ipc.server.on('connect', () => {
     LOG(`${ipc.config.id} connect: connected`);
   });
-
-  // setup plugin functions
-  const f_wire_in = (wdata, socket) => {
-    const pkt = EP.newPacket();
-    if (!EP.validatedSocket(socket)) return;
-    pkt.setFromObject(wdata);
-    EP.dispatchPacket(pkt);
-  };
-  const f_wire_out = pkt => {
-    const { uds_sysmsg } = UDS_INFO;
-    const { socket } = pkt;
-    if (!EP.validatedSocket(socket)) return;
-    ipc.server.emit(socket, uds_sysmsg, pkt);
-  };
-  EP.setWireOut(f_wire_out);
-  EP.setWireIn(f_wire_in);
-
   // configure node-ipc incoming connection server
-  ipc.server.on(uds_sysmsg, EP.dispatchPacket);
+  ipc.server.on(uds_sysmsg, (data, socket) => {
+    // first time we're seeing this socket? save it
+    if (EP.isNewSocket(socket)) {
+      const uaddr = EP.addClient(socket);
+      LOG('.. new client socket', uaddr);
+    }
+    // now handle the message
+    const pkt = EP.newPacket().deserialize(data);
+    EP.pktReceive(pkt);
+  });
+  // client socket disconnected
+  ipc.server.on('socket.disconnected', (socket, destroyedSocketID) => {
+    const uaddr = EP.removeClient(socket);
+    LOG('.. client socket disconnected', uaddr, destroyedSocketID);
+  });
 
   // after this is connected, it's assumed that the f_wire_in
   // is smart enough to handle the handshake connection, which
