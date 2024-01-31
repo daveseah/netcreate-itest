@@ -115,98 +115,68 @@ function RunPacketLoopbackTests() {
 /// PACKET TESTS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunPacketTests() {
-  LOG('Running Packet Tests');
+  LOG.info('Running Packet Tests');
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function tc() {
-    let self = tc as any;
-    if (self.count === undefined) self.count = 0;
-    return `Test ${++self.count}`;
-  }
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function PT_CreateHost(name: string) {
-    const host: T_Endpoint = new NetEndpoint();
-
+  function PT_Register(name: string, ep: T_Endpoint) {
     /// REGISTER HANDLERS
     name = name.toUpperCase();
     const netMsg = `NET:${name}`;
     const msg = name;
     //
-    host.registerHandler(netMsg, data => {
-      LOG(`<<< HANDLER: host recv '${netMsg}' <<<`, data);
-      data.host = `${netMsg} says hello`;
-      LOG(`>>> HANDLER: host retn >>>`, data);
+    ep.registerHandler(netMsg, data => {
+      data[name] = `${netMsg} succeeded`;
       return data;
     });
-    host.registerHandler(msg, data => {
-      LOG(`<<< HANDLER: host recv '${msg}' <<<`, data);
-      data.host = `${msg} says hello`;
-      LOG(`>>> HANDLER: host retn >>>`, data);
+    ep.registerHandler(msg, data => {
+      data[name] = `${msg} succeeded`;
       return data;
     });
-
+    return ep;
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function PT_AddServer(name: string) {
+    const host: T_Endpoint = new NetEndpoint();
+    const serverAddr = AllocateAddress({ prefix: 'SRV' });
+    host.configAsServer(serverAddr);
+    PT_Register(name, host);
     return host;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function PT_CreateRemote(name: string) {
-    const remote: T_Endpoint = new NetEndpoint();
-
-    /// REGISTER HANDLERS
-    name = name.toUpperCase();
-    const netMsg = `NET:${name}`;
-    const msg = name;
-    remote.registerHandler(netMsg, data => {
-      LOG(`<<< HANDLER: remote recv '${netMsg}' <<<`, data);
-      data.remote = `${netMsg} says hello`;
-      LOG(`>>> HANDLER: remote retn >>>`, data);
-      return data;
-    });
-    remote.registerHandler(msg, data => {
-      LOG(`<<< HANDLER: remote recv '${msg}' <<<`, data);
-      data.remote = `${msg} says hello`;
-      LOG(`>>> HANDLER: remote retn >>>`, data);
-      return data;
-    });
-
-    return remote;
+  function PT_AddClient(name, host: T_Endpoint, gateway: EP_Socket) {
+    const client: T_Endpoint = new NetEndpoint();
+    const sock = {
+      send: (pkt: T_Packet) => client.pktReceive(pkt)
+    };
+    const addr = host.addClient(sock);
+    client.configAsClient(addr, gateway);
+    PT_Register(name, client);
+    host.registerRemoteMessages(addr, client.listNetMessages());
+    return client;
   }
 
   /// RUNTIME PACKET TESTS ////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   try {
     // create endpoint handler for server
-    const host = PT_CreateHost('server');
-    const serverAddr = AllocateAddress({ prefix: 'SRV' });
-    host.configAsServer(serverAddr);
-
-    // create endpoint handler for clients
-    const gateway = {
+    const host = PT_AddServer('server');
+    const client_gateway = {
       send: (pkt: T_Packet) => host.pktReceive(pkt)
     };
-    const add_client = (name: string) => {
-      const client = PT_CreateRemote(name);
-      const sock = {
-        send: (pkt: T_Packet) => client.pktReceive(pkt)
-      };
-      const addr = host.addClient(sock);
-      client.configAsClient(addr, gateway);
-      return client;
-    };
-    const alice = add_client('alice');
-    const bob = add_client('bob');
 
-    // register messages for clients
-    host.registerRemoteMessages(alice.urnet_addr, alice.listMessages());
-    host.registerRemoteMessages(bob.urnet_addr, bob.listMessages());
+    const alice = PT_AddClient('alice', host, client_gateway);
+    const bob = PT_AddClient('bob', host, client_gateway);
 
-    // test the different versions of local message calls
+    // test test local calls
     host.call('ALICE', { caller: 'alice' }).then(data => {
-      LOG(tc(), 'host ALICE call returned', data);
+      LOG(1, 'host ALICE call returned', data);
     });
     host.call('SERVER', { caller: 'server' }).then(data => {
-      LOG(tc(), 'host SERVER call returned', data);
+      LOG(2, 'host SERVER call returned', data);
     });
+
+    // test network calls
     alice.netCall('NET:BOB', { caller: 'alice' }).then(data => {
-      LOG(tc(), 'NET:BOB netCall returned', data);
+      LOG(3, 'NET:BOB netCall returned', data);
     });
 
     /* end tests */
