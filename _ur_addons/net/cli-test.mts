@@ -7,13 +7,18 @@
 
 import { PR, PROC } from '@ursys/netcreate';
 // note: ts files imported by node contain { default }
-import EP_DEFAULT from './class-urnet-endpoint.ts';
+import EP_DEFAULT, { EP_Socket } from './class-urnet-endpoint.ts';
+import NP_DEFAULT from './class-urnet-packet.ts';
 import RT_DEFAULT from './urnet-types.ts';
 // destructure defaults
 const NetEndpoint = EP_DEFAULT.default;
+const NetPacket = NP_DEFAULT.default;
 const { AllocateAddress } = RT_DEFAULT;
-// types can be imported as-is
-import { NP_Data } from './urnet-types.ts';
+
+/// TYPE DECLARATIONS /////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type T_Endpoint = InstanceType<typeof NetEndpoint>;
+type T_Packet = InstanceType<typeof NetPacket>;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -111,22 +116,17 @@ function RunPacketLoopbackTests() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunPacketTests() {
   LOG('Running Packet Tests');
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function tc() {
     let self = tc as any;
     if (self.count === undefined) self.count = 0;
     return `Test ${++self.count}`;
   }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function PT_CreateHost(name: string) {
+    const host: T_Endpoint = new NetEndpoint();
 
-  function TestCreateHost(name: string) {
-    const host = new NetEndpoint();
-    const host_remotes = new Map();
-
-    /// REGISTER ADDRESS ///
-    name = name.toUpperCase();
-    host.urnet_addr = AllocateAddress({ label: name });
-
-    /// REGISTER HANDLERS ///
+    /// REGISTER HANDLERS
     name = name.toUpperCase();
     const netMsg = `NET:${name}`;
     const msg = name;
@@ -144,29 +144,13 @@ function RunPacketTests() {
       return data;
     });
 
-    /// ADDITIONAL METHODS ///
-    const xhost = host as any;
-    xhost.X_RegisterRemote = (remote: InstanceType<typeof NetEndpoint>) => {
-      const addr = remote.urnet_addr;
-      host_remotes.set(addr, remote);
-      const handled = remote.getMessages();
-      const list = handled.map(netMsg => `'${netMsg}'`).join(', ');
-      console.log(`host registered ${addr} - ${list}`);
-      host._setRemoteMessages(addr, handled);
-    };
-
-    /// EXPORT ///
-    return xhost;
+    return host;
   }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function PT_CreateRemote(name: string) {
+    const remote: T_Endpoint = new NetEndpoint();
 
-  function TestCreateRemote(name: string) {
-    const remote = new NetEndpoint();
-
-    /// REGISTER ADDRESS ///
-    name = name.toUpperCase();
-    remote.urnet_addr = AllocateAddress({ label: name });
-
-    /// REGISTER HANDLERS ///
+    /// REGISTER HANDLERS
     name = name.toUpperCase();
     const netMsg = `NET:${name}`;
     const msg = name;
@@ -183,35 +167,46 @@ function RunPacketTests() {
       return data;
     });
 
-    /// ADDITIONAL METHODS ///
-    const xremote = remote as any;
-
-    /// EXPORT ///
-    return xremote;
+    return remote;
   }
 
+  /// RUNTIME PACKET TESTS ////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   try {
-    // create endpoint handlers
-    const host = TestCreateHost('server');
-    const alice = TestCreateRemote('alice');
-    const bob = TestCreateRemote('bob');
-    // manually register remotes to the host
-    // simulating the connection handshake and message list capture
-    host.X_RegisterRemote(alice);
-    host.X_RegisterRemote(bob);
+    // create endpoint handler for server
+    const host = PT_CreateHost('server');
+    const serverAddr = AllocateAddress({ prefix: 'SRV' });
+    host.configAsServer(serverAddr);
 
-    // test endpoint local handler
-    alice.call('ALICE', { caller: 'alice' }).then(data => {
-      LOG(tc(), 'ALICE call returned', data);
+    // create endpoint handler for clients
+    const gateway = {
+      send: (pkt: T_Packet) => host.pktReceive(pkt)
+    };
+    const add_client = (name: string) => {
+      const client = PT_CreateRemote(name);
+      const sock = {
+        send: (pkt: T_Packet) => client.pktReceive(pkt)
+      };
+      const addr = host.addClient(sock);
+      client.configAsClient(addr, gateway);
+      return client;
+    };
+    const alice = add_client('alice');
+    const bob = add_client('bob');
+
+    // register messages for clients
+    host.registerRemoteMessages(alice.urnet_addr, alice.listMessages());
+    host.registerRemoteMessages(bob.urnet_addr, bob.listMessages());
+
+    // test the different versions of local message calls
+    host.call('ALICE', { caller: 'alice' }).then(data => {
+      LOG(tc(), 'host ALICE call returned', data);
     });
     host.call('SERVER', { caller: 'server' }).then(data => {
-      LOG(tc(), 'SERVER call returned', data);
+      LOG(tc(), 'host SERVER call returned', data);
     });
-
-    /**** WORKS UP TO HERE ****/
-
-    alice.netCall('NET:ALICE', { caller: 'alice' }).then(data => {
-      LOG(tc(), 'NET:ALICE netCall returned', data);
+    alice.netCall('NET:BOB', { caller: 'alice' }).then(data => {
+      LOG(tc(), 'NET:BOB netCall returned', data);
     });
 
     /* end tests */
