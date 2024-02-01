@@ -193,6 +193,13 @@ function Subdirs(dirpath): string[] {
 
 /// FILE READING //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function ReadFile(filepath, opt?) {
+  opt = opt || {};
+  opt.encoding = opt.encoding || 'utf8';
+  return FSE.readFileSync(filepath, opt);
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function AsyncReadFile(filepath, opt?) {
   opt = opt || {};
   opt.encoding = opt.encoding || 'utf8';
@@ -245,6 +252,7 @@ export {
   Files,
   Subdirs,
   //
+  ReadFile,
   AsyncReadFile,
   UnsafeWriteFile,
   AsyncReadJSON,

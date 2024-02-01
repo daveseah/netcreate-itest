@@ -1,6 +1,6 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  GRAPHDATA
+  (WIP) GRAPHDATA
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -13,14 +13,16 @@ import { stdin as input, stdout as output } from 'node:process';
 import readline from 'node:readline';
 import { readFileSync } from 'node:fs';
 //
-const Graph = require('graphology'); // CJS library requires this
-const { generate } = require('peggy');
-import { PreprocessDataText } from '../../_ur/common/text.js';
-import { makeTerminalOut } from '../../_ur/common/prompts.js';
+import { PR, TEXT } from '@ursys/netcreate';
+import GRAPHOLOGY from 'graphology';
+import PG_CJS from 'peggy';
+const { generate } = PG_CJS;
+// @ts-ignore - graphology package does not export .mts-compatible mainfiles
+const { Graph } = GRAPHOLOGY;
 
 /// DECLARATIONS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = makeTerminalOut(' GRAPH', 'TagPurple');
+const LOG = PR('Graph', 'TagPurple');
 
 /// METHODS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,8 +30,9 @@ const GRAMMAR = readFileSync('parser.peg', 'utf8');
 const PARSER = generate(GRAMMAR, { trace: false });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function ParseGraphData(filename) {
+  LOG(`Loading ${filename}...`);
   let data = readFileSync(filename, 'utf8');
-  data = PreprocessDataText(data);
+  data = TEXT.PreprocessDataText(data);
   let result = PARSER.parse(data);
   return result;
 }
@@ -38,8 +41,7 @@ function ParseGraphData(filename) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Run() {
   const filename = 'test-ncgraphdata.txt';
-  LOG(`.. loading ${filename}...`);
-  const graph = new Graph.default({ multi: true });
+  const graph = new Graph({ multi: true });
   let out = '';
   const results = ParseGraphData(filename);
   results.forEach(entry => {
@@ -55,20 +57,19 @@ function Run() {
         graph.addEdge(source, target);
       });
   });
-  LOG(`.. parsed ${results.length} entries from ${filename}`);
+  LOG(`Parsed ${results.length} entries from ${filename}`);
+  let padding = 0;
+  results.forEach(entry => {
+    if (entry?.node?.length > padding) padding = entry.node.length;
+  });
+  results.forEach(entry => {
+    const { node, edges } = entry;
+    if (node === undefined) return;
+    const msg = node.padEnd(padding + 2, ' ');
+    LOG.info(`${msg} -> ${edges}`);
+  });
 }
-
-/// DATAEX CONTROL LOGIC //////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** run control logic test **/
-process.on('message', controlMsg => {
-  const { dataex, data } = controlMsg as any;
-  LOG('received DATAEX:', controlMsg);
-  if (dataex === '_CONFIG_REQ') {
-    process.send({ dataex: '_CONFIG_ACK', data: { name: 'graph/@init' } });
-    Run();
-  }
-});
 
 /// EXPORT MODULE /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Run();

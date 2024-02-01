@@ -1,14 +1,19 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  TESTBED for PEGGY PARSER
+  (WIP) TESTBED for PEGGY PARSER
+
+  There is stub code for a process control message handler, but it is not
+  currently used. It's left as a placeholder for future development.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 /* added for pull request #81 so 'npm run lint' test appears clean */
 /* eslint-disable no-unused-vars */
 
-import { generate } from 'peggy';
 import { readFileSync } from 'node:fs';
+import { PR } from '@ursys/netcreate';
+import PG_CJS from 'peggy';
+const { generate } = PG_CJS;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,7 +24,7 @@ let parser;
 const F_GRAMMAR = './graph-parser.peg';
 const F_DATA = './graph-data.txt';
 const F_TEST = './graph-test.txt';
-const LOG = require('../_sys/prompts').makeTerminalOut(' PEGGY', 'TagPurple');
+const LOG = PR('Parse', 'TagPurple');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * This function takes a multi-line string and performs the following operations:
@@ -128,6 +133,7 @@ function TestDataExchange() {
   let text = normalizeForPEG(data);
   let result = ProcessGrammar(text);
   LOG('.. parsing input');
+  // todo: this is assuming there's a process listener
   process.send({ dataex: 'result', format: 'doc/dexf.graph', data: result });
 }
 
@@ -142,4 +148,7 @@ process.on('message', (controlMsg: any) => {
     TestDataExchange();
   }
 });
-LOG('*** TODO: message dataex enabled...can we receive messages?');
+TestDataExchange();
+LOG.warn('*** TODO: message dataex enabled...can we receive messages?');
+// hack: force process to exit
+process.exit();

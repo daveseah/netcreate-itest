@@ -1,12 +1,9 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  Server Database
+  (WIP) Server Database
 
-  A simple sqlite3 implementation of an authentication database.
-
-  To test the datbase, set `DBG` to `true`.  This will insert dummy
-  data and run assertion tests.  NOTE after running tests, the database
-  needs to be cleared of the dummy data.
+  A simple sqlite3 implementation of an authentication database. Ported
+  from bloh's prototype to test module system concepts.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -15,27 +12,27 @@
 
 import { strictEqual, deepEqual } from 'node:assert/strict';
 import sqlite3 from 'sqlite3';
-import { ReadFile } from '@ursys/netcreate';
+import { FILES, PR } from '@ursys/netcreate';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DB = new sqlite3.Database(':memory:'); // use 'auth.sqlite3' for file
-const TERM = require('../_sys/prompts').makeTerminalOut(' SQL', 'TagYellow');
+const TERM = PR('SQLite', 'TagYellow');
 const DBG = true; // Runs Tests if true
 
 /// INITIALIZE DATABASE ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 (async () => {
   // read SQL file
-  const filename = `_ur/sqlite/db-create-tables.sql`;
-  const sql = await ReadFile(filename);
+  const filename = `./db-create-tables.sql`;
+  TERM(`Reading ${filename}`);
+  const sql = await FILES.ReadFile(filename);
   const stms = sql.trim().split(';');
   DB.serialize(async () => {
     // convert file to statements because db.run() only works one statement
     // at a time
     stms.forEach(stm => {
       if (!stm) return;
-      console.log(stm);
       DB.run(stm, err => {
         if (err) throw err;
       });
@@ -44,6 +41,8 @@ const DBG = true; // Runs Tests if true
     if (DBG) testDB(DB); // assertion tests
     DB.close();
   });
+  TERM(`executed ${stms.length} SQL statements`);
+  TERM('test db completed!');
 })();
 
 /// NEW DATABASE METHODS //////////////////////////////////////////////////////
@@ -593,7 +592,5 @@ function testDB(db) {
     userGetPermissions(3, results =>
       deepEqual(results, ['graphView', 'graphEdit', 'templateView', 'templateEdit'])
     );
-
-    TERM('...testing db completed!');
   });
 }

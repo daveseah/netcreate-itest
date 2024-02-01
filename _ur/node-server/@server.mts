@@ -16,6 +16,7 @@ import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
 import * as PROC from './processes.mts';
+import TEXT from '../common/text.js';
 // cjs-style modules
 import PROMPTS from '../common/prompts.js';
 const { makeTerminalOut } = PROMPTS;
@@ -26,7 +27,7 @@ const { makeTerminalOut } = PROMPTS;
 /// RUNTIME API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** first time initialization */
-function Initialize(options: UR_InitOptions): void {
+function Initialize(options): void {
   const { rootDir } = options;
   ENV.SetRootPaths(rootDir);
 }
@@ -43,6 +44,8 @@ export {
   ENV, // environment utilities and constants
   FILES, // file utilities
   PROC, // interprocess communication utils
+  // JS
+  TEXT,
   // CLASSES
   UrModule, // ur module wrapper
   // COMMON UTILS
