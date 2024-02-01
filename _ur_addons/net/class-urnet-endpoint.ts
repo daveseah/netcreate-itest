@@ -87,7 +87,7 @@ type PktRoutingInfo = {
 /** utility to dump packet info to console */
 function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
   const { id, msg } = pkt;
-  let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '•');
+  let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '~');
   out += ` ${id.padEnd(12)} ${fn}`;
   return out;
 }

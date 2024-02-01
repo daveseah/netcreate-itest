@@ -2,7 +2,8 @@
 
   URNET UNIX DOMAIN SOCKET (UDS) SERVER
 
-  This is an URNET host that is spawned as a standalone process.
+  This is an URNET host that is spawned as a standalone process by 
+  cli-serve-control.mts.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 

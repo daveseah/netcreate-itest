@@ -72,6 +72,7 @@ async function RunLocalTests() {
 
     /* end tests */
   } catch (err) {
+    // format the error message to be nicer to read
     LOG.error(err.message);
     LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
   }
@@ -107,6 +108,7 @@ function RunPacketLoopbackTests() {
 
     /* end tests */
   } catch (err) {
+    // format the error message to be nicer to read
     LOG.error(err.message);
     LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
   }
@@ -194,6 +196,7 @@ function RunPacketTests() {
 
     /* end tests */
   } catch (err) {
+    // format the error message to be nicer to read
     LOG.error(err.message);
     LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
   }

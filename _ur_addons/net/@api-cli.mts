@@ -1,6 +1,7 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET standalone daemon
+  URSYS NET CLI
+  invoked by the _ur/ur command line module loader
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -36,7 +37,10 @@ function m_Sleep(ms, resolve?): Promise<void> {
   );
 }
 
-/// API: MESSAGER CLIENT //////////////////////////////////////////////////////
+/// API: UDS CLIENT ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// API: CLI MANAGEMENT ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** keep track of main api script running status in the process list */
 async function InitializeCLI() {
@@ -98,37 +102,44 @@ async function ShutdownCLI() {
 
 /// CLI: MAIN PARSER ///////////////////////////////////////////////////////////
 /// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Parse the command line arguments and execute the command */
 async function ParseCommandLine() {
-  // script check that this was invoked from the correct directory
-  const addon_dir = PATH.basename(PATH.join(fileURLToPath(import.meta.url), '..'));
-  if (addon_dir !== 'net') {
-    LOG(`invoked without 'net [mode]' command line args`);
-    process.exit(1);
-  }
-  // execute the command
-  const [, command] = ARGS;
-  switch (command) {
-    case 'hosts':
-      await CTRL.ManageHosts();
-      break;
-    case 'start':
-      await CTRL.StartServers();
-      break;
-    case 'stop':
-      await CTRL.TerminateServers();
-      break;
-    case 'send':
-      // replace with cli send command
-      break;
-    case 'test':
-      await TEST.RunTests();
-      break;
-    case undefined:
-      LOG.warn(`net command requires mode argument [start|stop|hosts|send]`);
-      LOG.info(`reminder: working on 'net send' right now`);
-      break;
-    default:
-      LOG.warn(`unknown net command '${command}'`);
+  try {
+    // script check that this was invoked from the correct directory
+    const addon_dir = PATH.basename(PATH.join(fileURLToPath(import.meta.url), '..'));
+    if (addon_dir !== 'net') {
+      LOG(`invoked without 'net [mode]' command line args`);
+      process.exit(1);
+    }
+    // execute the command
+    const [, command] = ARGS;
+    switch (command) {
+      case 'hosts':
+        await CTRL.ManageHosts();
+        break;
+      case 'start':
+        await CTRL.StartServers();
+        break;
+      case 'stop':
+        await CTRL.TerminateServers();
+        break;
+      case 'send':
+        // replace with cli send command
+        break;
+      case 'test':
+        await TEST.RunTests();
+        break;
+      case undefined:
+        LOG.warn(`net command requires mode argument [start|stop|hosts|send]`);
+        LOG.info(`reminder: working on 'net send' right now`);
+        break;
+      default:
+        LOG.warn(`unknown net command '${command}'`);
+    }
+  } catch (err) {
+    // format the error message to be nicer to read
+    LOG.error(err.message);
+    LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
   }
 }
 
