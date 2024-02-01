@@ -4,7 +4,6 @@
   "description": "research project for network graph analysis",
   "workspaces": [
     "_ur/",
-    "_ur_mods/",
     "_ur_addons/"
   ],
   "scripts": {
