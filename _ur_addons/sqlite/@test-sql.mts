@@ -12,7 +12,7 @@
 
 import { strictEqual, deepEqual } from 'node:assert/strict';
 import sqlite3 from 'sqlite3';
-import { FILES, PR } from '@ursys/netcreate';
+import { FILES, PR } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -19,7 +19,7 @@ const PR = makeStyleFormatter('UR', 'TagCyan');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function ClientTest(): void {
   console.log(...PR('System Integration of new URSYS module successful!'));
-  // console.log(...PR('@ursys/netcreate integration...works?'));
+  // console.log(...PR('@ursys/core integration...works?'));
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

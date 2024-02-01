@@ -1,5 +1,5 @@
 {
-  "name": "@ursys/netcreate",
+  "name": "@ursys/core",
   "version": "0.1",
   "description": "modular system for enhancing NetCreate 2.0 (ITEST)",
   "repository": {
@@ -8,7 +8,7 @@
   },
   "private": true,
   "scripts": {
-    "build-libs": "node ./npm-scripts/@build-lib.cjs",
+    "build-core": "node ./npm-scripts/@build-core.cjs",
     "lint": "eslint .",
     "clean": "rm -rf ./node_modules ./_dist"
   },

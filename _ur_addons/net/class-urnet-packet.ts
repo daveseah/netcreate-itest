@@ -20,7 +20,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR } from '@ursys/netcreate';
+import { PR } from '@ursys/core';
 import { I_NetMessage, NP_Address } from './urnet-types';
 import { NP_ID, NP_Type, NP_Dir } from './urnet-types';
 import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';

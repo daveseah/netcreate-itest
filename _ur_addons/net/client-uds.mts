@@ -4,7 +4,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILES } from '@ursys/netcreate';
+import { PR, FILES } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
 import ipc from '@achrinza/node-ipc';
 import EP_DEFAULT from './class-urnet-endpoint.ts';

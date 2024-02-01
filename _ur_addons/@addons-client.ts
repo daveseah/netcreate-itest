@@ -1,23 +1,22 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  mini app demo
-  this is the init file that's built by @midi-build.mts
+  entrypoint for client-side addons
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { ConsoleStyler } from '@ursys/core';
-import { InitMIDI } from './midi-test';
+import * as UR from '@ursys/core'; // this is a .js file
+const { ConsoleStyler } = UR;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = ConsoleStyler('MIDI', 'TagPurple');
+const PF = ConsoleStyler('UR/ADD', 'TagPink');
 
-
-/// RUNTIME METHODS ///////////////////////////////////////////////////////////
+/// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-console.log(...PR('Demo of mini appserver for tiny projects in UR'));
-InitMIDI();
+function AddonClientTest() {
+  console.log(...PF('System Integration of new URSYS addon successful!'));
+}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { InitMIDI };
+export { AddonClientTest };

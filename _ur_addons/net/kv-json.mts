@@ -6,7 +6,7 @@
 
 import Keyv from 'keyv';
 import { KeyvFile } from 'keyv-file';
-import { PR } from '@ursys/netcreate';
+import { PR } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

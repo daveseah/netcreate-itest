@@ -1,23 +1,27 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  mini app demo
-  this is the init file that's built by @midi-build.mts
+  entrypoint for modules
+
+  modules can import from ursys
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { ConsoleStyler } from '@ursys/core';
-import { InitMIDI } from './midi-test';
+/* added for pull request #81 so 'npm run lint' test appears clean */
+/* eslint-disable no-unused-vars */
+
+// cjs-style modules
+import * as UR from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = ConsoleStyler('MIDI', 'TagPurple');
+// const PR = PROMPT.makeStyleFormatter('UR', 'TagCyan');
 
-
-/// RUNTIME METHODS ///////////////////////////////////////////////////////////
+/// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-console.log(...PR('Demo of mini appserver for tiny projects in UR'));
-InitMIDI();
+function ModuleServerTest() {
+  console.log('modules.ts test');
+}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { InitMIDI };
+export { ModuleServerTest };

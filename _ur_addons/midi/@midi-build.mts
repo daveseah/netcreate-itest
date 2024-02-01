@@ -8,7 +8,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILES } from '@ursys/netcreate';
+import { PR, FILES } from '@ursys/core';
 import FSE from 'fs-extra';
 import { copy } from 'esbuild-plugin-copy';
 import esbuild from 'esbuild';

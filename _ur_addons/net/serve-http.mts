@@ -9,7 +9,7 @@ import https from 'node:https';
 import express from 'express';
 import serveIndex from 'serve-index';
 import chokidar from 'chokidar';
-import { PR, FILES } from '@ursys/netcreate';
+import { PR, FILES } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

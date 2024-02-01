@@ -9,7 +9,7 @@ import Loki from 'lokijs';
 import FSE from 'fs-extra';
 import PATH from 'path';
 // our library import
-import { PR } from '@ursys/netcreate';
+import { PR } from '@ursys/core';
 // import from local files require extensions
 import * as SESSION from '../_drafts/session.ts';
 

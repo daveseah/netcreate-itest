@@ -5,7 +5,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, PROC } from '@ursys/netcreate';
+import { PR, PROC } from '@ursys/core';
 // note: ts files imported by node contain { default }
 import EP_DEFAULT, { EP_Socket } from './class-urnet-endpoint.ts';
 import NP_DEFAULT from './class-urnet-packet.ts';

@@ -21,7 +21,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR } from '@ursys/netcreate';
+import { PR } from '@ursys/core';
 import NetPacket from './class-urnet-packet.ts';
 import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
 import { GetPacketHashString } from './urnet-types.ts';

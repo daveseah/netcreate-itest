@@ -53,15 +53,14 @@ TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode (disab
 case "$1" in
     build)
         # (1) always build library first
-        node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
+        node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
         # (2) add additional tasks here (eventually can be command args)
-        node $OPTS $CLI_BUILD/@build-mods.cjs 2>&1 | cat
+        node $OPTS $CLI_BUILD/@build-addons.cjs 2>&1 | cat
         exit 0;
         ;;
 
     test)
         echo "would be running tests..."
-        npx ts-node-esm $TSOPTS $TEST_BUILD/@test.mts 2>&1 | cat
         exit 0;
         ;;
 esac
@@ -70,6 +69,6 @@ esac
 # if we got this far, assuming that $1 is a directory and we are going
 # to pass arguments to a special script
 #
-node $OPTS $CLI_BUILD/@build-lib.cjs 2>&1 | cat
+node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
 # to debug the addon loader, remove the TSOPTS (--transpile-only)
 npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts "$@"

@@ -11,9 +11,9 @@
 const esbuild = require('esbuild');
 const { copy } = require('esbuild-plugin-copy');
 const PATH = require('node:path');
-const UR = require('@ursys/netcreate');
+const UR = require('@ursys/core');
 const { EnsureDir } = UR.FILES;
-// build-lib can not use URSYS library because it's BUILDING it!
+// build-web can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
 const PROMPTS = require('../common/prompts');
 
@@ -73,7 +73,10 @@ async function ESBuildWebApp() {
     ]
   });
   // done!
-  if (!DBG) LOG('built @ursys webapp from', _short(ENTRY_JS));
+  if (!DBG)
+    console.log(
+      `${LOG.DIM}info: built @ursys web from ${_short(ENTRY_JS)}${LOG.RST}`
+    );
 
   // enable watching
   if (DBG) LOG('watching', _short(DIR_PUBLIC));

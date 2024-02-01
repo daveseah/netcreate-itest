@@ -15,7 +15,7 @@ import { join } from 'node:path';
 // MTS
 import { DirExists, Files } from './files.mts';
 import UrModule from './class-urmodule.mts';
-import { DIR_URMODS, ShortPath as u_short } from './env-node.mts';
+import { DIR_UR_ADDS, ShortPath as u_short } from './env-node.mts';
 // JS imports are assumed to be CJS and cannot be destructured
 import ERROR from '../common/error-mgr.js';
 import PROMPT from '../common/prompts.js';
@@ -92,7 +92,7 @@ function m_ParseOptions(opt) {
     if (typeof cwd !== 'string')
       throw new Error(`${fn}: cwd must be string or undefined`);
   } else {
-    cwd = DIR_URMODS;
+    cwd = DIR_UR_ADDS;
   }
   return {
     input,

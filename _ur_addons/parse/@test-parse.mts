@@ -11,7 +11,7 @@
 /* eslint-disable no-unused-vars */
 
 import { readFileSync } from 'node:fs';
-import { PR } from '@ursys/netcreate';
+import { PR } from '@ursys/core';
 import PG_CJS from 'peggy';
 const { generate } = PG_CJS;
 

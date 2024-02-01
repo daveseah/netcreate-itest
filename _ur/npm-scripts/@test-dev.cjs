@@ -9,12 +9,12 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 const PATH = require('node:path');
-const UR = require('@ursys/netcreate');
+const UR = require('@ursys/core');
 
 /// CONSTANTS AND DECLARATIONS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const APP_PORT = 3000;
-const { ROOT, DIR_URMODS } = require('./env-build.cjs');
+const { ROOT, DIR_URADDS } = require('./env-build.cjs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 const LOG = console.log;
@@ -29,8 +29,8 @@ const LOG = console.log;
   UR.Initialize({
     rootDir: ROOT
   });
-  UR.MODMGR.ProcTest();
-  UR.MODMGR.UR_Fork('parse', { cwd: DIR_URMODS });
+  UR.ADDONMGR.ProcTest();
+  UR.ADDONMGR.UR_Fork('parse', { cwd: DIR_URADDS });
   // there is an error somewhere that is causing
   // process.exit(0);
 })();

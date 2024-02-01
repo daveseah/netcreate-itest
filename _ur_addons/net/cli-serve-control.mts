@@ -8,7 +8,7 @@
 import PATH from 'node:path';
 import * as KV from './kv-json.mts';
 import { SpawnOptions, spawn } from 'node:child_process';
-import { PR, PROC } from '@ursys/netcreate';
+import { PR, PROC } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

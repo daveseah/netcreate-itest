@@ -12,36 +12,34 @@
 const esbuild = require('esbuild');
 const { umdWrapper } = require('esbuild-plugin-umd-wrapper');
 const FSE = require('fs-extra');
-// build-lib can not use URSYS library because it's built it!
+// build-core can not use URSYS library because it's BUILDING it!
 // so we yoink the routines out of the source directly
 const PROMPTS = require('../common/prompts');
 
 /// CONSTANTS AND DECLARATIONS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const { ROOT, DIR_URMODS, DIR_URMODS_DIST } = require('./env_mods.cjs');
+const { ROOT, DIR_UR_DIST } = require('./env-build.cjs');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const LOG = PROMPTS.makeTerminalOut('BUILD-MOD', 'TagSystem');
+const LOG = PROMPTS.makeTerminalOut('BuildCore', 'TagSystem');
 
 /// ESBUILD API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function _short(path) {
-  if (path.startsWith(ROOT)) return path.slice(ROOT.length);
-  return path;
-}
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** build the UR libraries for server and client */
-async function ESBuildModules() {
-  //
+async function ESBuildLibrary() {
   // FSE.removeSync(DIR_UR_DIST); // don't do this because brunch watch will break
-  FSE.ensureDir(DIR_URMODS_DIST);
+  FSE.ensureDir(DIR_UR_DIST);
 
   /** SERVER CLIENT SHARED BUILD SETTINGS **/
   const nodeBuild = {
-    entryPoints: [`${DIR_URMODS}/@mod-server.mts`],
+    entryPoints: [`${ROOT}/_ur/node-server/@server.mts`],
     bundle: true,
     platform: 'node',
     target: ['node18', 'esnext'],
+    logOverride: {
+      'empty-import-meta': 'silent'
+    },
     sourcemap: true,
     packages: 'external'
   };
@@ -49,56 +47,55 @@ async function ESBuildModules() {
   /* build the server library for nodejs */
   await esbuild.build({
     ...nodeBuild,
-    outfile: `${DIR_URMODS_DIST}/mod-server-esm.mjs`,
+    outfile: `${DIR_UR_DIST}/server-esm.mjs`,
     format: 'esm'
   });
-  if (DBG) LOG('built ur_mods-server ESM');
+  if (DBG) LOG('built ur-server ESM');
 
   await esbuild.build({
     ...nodeBuild,
-    outfile: `${DIR_URMODS_DIST}/mod-server.cjs`,
+    outfile: `${DIR_UR_DIST}/server.cjs`,
     format: 'cjs'
   });
-  if (DBG) LOG('built ur_mods-server CJS');
+  if (DBG) LOG('built ur-server CJS');
 
   /** BROWSER CLIENT SHARED BUILD SETTINGS **/
   const browserBuild = {
-    entryPoints: [`${DIR_URMODS}/@mod-client.ts`],
+    entryPoints: [`${ROOT}/_ur/browser-client/@client.ts`],
     bundle: true,
     platform: 'browser',
     target: ['esnext'],
     sourcemap: true
   };
-
   await esbuild.build({
     ...browserBuild,
-    outfile: `${DIR_URMODS_DIST}/mod-client-esm.js`,
+    outfile: `${DIR_UR_DIST}/client-esm.js`,
     format: 'esm'
   });
-  if (DBG) LOG('built ur_mods-client ESM');
+  if (DBG) LOG('built ur-client ESM');
 
   await esbuild.build({
     ...browserBuild,
-    outfile: `${DIR_URMODS_DIST}/mod-client-cjs.js`,
+    outfile: `${DIR_UR_DIST}/client-cjs.js`,
     format: 'cjs'
   });
-  if (DBG) LOG('built ur_mods-client CJS');
+  if (DBG) LOG('built ur-client CJS');
 
   await esbuild.build({
     ...browserBuild,
     plugins: [umdWrapper()],
-    outfile: `${DIR_URMODS_DIST}/mod-client-umd.js`,
+    outfile: `${DIR_UR_DIST}/client-umd.js`,
     format: 'umd' // esbuild-plugin-umd-wrapper
   });
-  if (DBG) LOG('built ur_mods-client UMD');
+  if (DBG) LOG('built ur-client UMD');
 
-  // if !DBG, print simpler built message
-  if (!DBG) LOG('built @ursys modules');
+  // if !DBG just emit a simpler message
+  if (!DBG) console.log(`${LOG.DIM}info: built @ursys core${LOG.RST}`);
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** TEST **/
 (async () => {
-  await ESBuildModules();
+  await ESBuildLibrary();
 })();

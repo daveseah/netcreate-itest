@@ -7,8 +7,8 @@
     "_ur_addons/"
   ],
   "scripts": {
-    "dev": "node ./_ur/npm-scripts/@build-lib.cjs && node ./_ur/npm-scripts/@build-mods.cjs && brunch w -s",
-    "build-libs": "node ./_ur/npm-scripts/@build-lib.cjs",
+    "dev": "node ./_ur/npm-scripts/@build-core.cjs && node ./_ur/npm-scripts/@build-addons.cjs && brunch w -s",
+    "build-core": "node ./_ur/npm-scripts/@build-core.cjs",
     "lint": "npm exec --workspaces -- npm run lint && eslint app/",
     "dev:inspect": "node --inspect brunch-server.js",
     "classroom": "brunch build -e classroom",
@@ -61,8 +61,8 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "@json-editor/json-editor": "^2.10.1",
-    "@ursys/nc-modules": "file:./_ur_mods",
-    "@ursys/netcreate": "file:./_ur",
+    "@ursys/core": "file:./_ur",
+    "@ursys/addons": "file:./_ur_addons",
     "babel-polyfill": "^6.26.0",
     "bootstrap": "^4.6.2",
     "classnames": "^2.3.2",

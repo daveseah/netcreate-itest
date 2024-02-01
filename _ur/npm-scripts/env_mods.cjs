@@ -2,9 +2,6 @@
 
   A dependency-free environment detection for CJS codebases
 
-  Similar to _ur/env-ur.cjs, but for the _ur_mods directory. Relies only on
-  internal node modules
-
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 const { join, normalize } = require('node:path');
@@ -47,15 +44,15 @@ const u_short = path => {
 /// RUNTIME CALCULATIONS //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// NOTE: these are declared also in node-server/env-node.mts
-const DIR_URMODS = u_path('../_ur_mods');
-const DIR_URMODS_DIST = u_path('../_ur_mods/_dist');
+const DIR_URADDS = u_path('../_ur_addons');
+const DIR_URADDS_DIST = u_path('../_ur_addons/_dist');
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 module.exports = {
   ROOT, // root of the project
-  DIR_URMODS, // path to _ur_mod directory
-  DIR_URMODS_DIST, // path to _ur_mods/_dist directory for library out
+  DIR_URADDS, // path to _ur_addons directory
+  DIR_URADDS_DIST, // path to _ur_addons/_dist directory for library out
   //
   DirExists: u_exists,
   MakePath: u_path,

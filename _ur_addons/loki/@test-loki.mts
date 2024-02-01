@@ -8,7 +8,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES, PR } from '@ursys/netcreate';
+import { FILES, PR } from '@ursys/core';
 import { PromiseLoadDatabase, ListCollections } from './import-lokidb.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////

@@ -2,7 +2,7 @@
 
   A dependency-free environment detection for CJS codebases
 
-  The _ur directory has a build utility called @ur-build-lib.cjs that depends
+  The _ur directory has a build utility script that depends
   on various paths; this module can provide those paths and related utilities
   to any CJS node source file inside the _ur directory.
 
@@ -53,7 +53,7 @@ const DIR_UR = u_path('/_ur');
 const DIR_UR_DIST = u_path('/_ur/_dist');
 const DIR_BDL_BROWSER = u_path('/_ur/browser-client');
 const DIR_BDL_NODE = u_path('/_ur/node-server');
-const DIR_URMODS = u_path('/_ur_mods');
+const DIR_URADDS = u_path('/_ur_addons');
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -64,7 +64,7 @@ module.exports = {
   DIR_UR_DIST, // path to browser client code
   DIR_BDL_BROWSER, // path to node server code
   DIR_BDL_NODE, // path to _ur/dist directory for library out
-  DIR_URMODS, // path to _ur_mod directory
+  DIR_URADDS, // path to _ur_mod directory
   //
   DirExists: u_exists,
   MakePath: u_path,
