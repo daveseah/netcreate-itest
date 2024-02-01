@@ -86,7 +86,8 @@ type PktRoutingInfo = {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** utility to dump packet info to console */
 function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
-  const { id, msg } = pkt;
+  let { id, msg, msg_type } = pkt;
+  if (id === undefined && msg_type === '_reg') id = 'pkt[NEW0:0]';
   let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '~');
   out += ` ${id.padEnd(12)} ${fn}`;
   return out;
@@ -220,7 +221,10 @@ class NetEndpoint {
   removeClient(uaddr_obj: NP_Address | EP_Socket): NP_Address {
     const fn = 'removeClient:';
     let uaddr = typeof uaddr_obj === 'string' ? uaddr_obj : uaddr_obj.uaddr;
-    if (typeof uaddr !== 'string') throw Error(`${fn} invalid uaddr`);
+    if (typeof uaddr !== 'string') {
+      LOG.error(`${fn} invalid uaddr ${typeof uaddr}`);
+      return undefined;
+    }
     if (!this.srv_socks.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
     // srv_msgs is msg->set of uaddr, so iterate over all messages
     this._delRemoteMessages(uaddr);
@@ -406,6 +410,14 @@ class NetEndpoint {
     pkt.id = this.assignPacketId(pkt);
     return pkt;
   }
+  /** create a registration packet */
+  newRegistrationPacket(): NetPacket {
+    const fn = 'newRegistrationPacket:';
+    const pkt = new NetPacket('SRV:REQ_ADDR', {});
+    pkt.setMeta('_reg', { rsvp: true });
+    return pkt;
+  }
+
   /** clone a packet with new id */
   clonePacket(pkt: NetPacket): NetPacket {
     const clone = this.newPacket(pkt.msg, pkt.data);
@@ -572,54 +584,60 @@ class NetEndpoint {
    *  it to the source address in the packet with any data
    */
   async pktReceive(pkt: NetPacket) {
-    const fn = 'pktReceive:';
-    // is this a response to a transaction?
-    if (pkt.isResponse()) {
-      if (pkt.src_addr === this.urnet_addr) this.pktResolveRequest(pkt);
-      else this.pktSendResponse(pkt);
-      return;
-    }
-    // otherwise it's a request
-    if (!pkt.isRequest()) {
-      LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
-      return;
-    }
-    // if it's a ping, we just want to return number of
-    // messages this server knows about.
-    if (pkt.msg_type === 'ping') {
-      const addrs = this.getAddressesForMessage(pkt.msg);
-      const handlers = this.getHandlersForMessage(pkt.msg);
-      if (handlers.length > 0) addrs.push(this.urnet_addr);
-      pkt.setData(addrs);
+    try {
+      const fn = 'pktReceive:';
+      // is this a response to a transaction?
+      if (pkt.isResponse()) {
+        if (pkt.src_addr === this.urnet_addr) this.pktResolveRequest(pkt);
+        else this.pktSendResponse(pkt);
+        return;
+      }
+      // otherwise it's a request
+      if (!pkt.isRequest()) {
+        LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
+        return;
+      }
+      // if it's a ping, we just want to return number of
+      // messages this server knows about.
+      if (pkt.msg_type === 'ping') {
+        const addrs = this.getAddressesForMessage(pkt.msg);
+        const handlers = this.getHandlersForMessage(pkt.msg);
+        if (handlers.length > 0) addrs.push(this.urnet_addr);
+        pkt.setData(addrs);
+        this.pktSendResponse(pkt);
+        return;
+      }
+      // if it's a signal, this is not an rsvp, but log it
+      if (pkt.msg_type === 'signal') {
+        if (DBG) LOG(_PKT(this, fn, '-recv-sig-', pkt), pkt.data);
+        // will be handled normally and get routed
+      }
+      //
+      const { msg } = pkt;
+      let retData;
+      if (this.msg_handlers.has(msg)) {
+        retData = await this.pktAwaitHandlers(pkt);
+      } else if (this.srv_msgs.has(msg)) {
+        retData = await this.pktAwaitRequest(pkt);
+      } else {
+        LOG.error(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
+        retData = { error: `unknown message '${msg}'` };
+      }
+
+      if (!pkt.isRsvp()) return;
+
+      // if we got this far, then we have data to return
+      if (pkt.msg_type !== 'call') pkt.data = true;
+      else {
+        retData = NormalizeData(retData);
+        pkt.setData(retData);
+      }
       this.pktSendResponse(pkt);
-      return;
+    } catch (err) {
+      // format the error message to be nicer to read
+      LOG.error(err.message);
+      LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
     }
-    // if it's a signal, this is not an rsvp, but log it
-    if (pkt.msg_type === 'signal') {
-      if (DBG) LOG(_PKT(this, fn, '-recv-sig-', pkt), pkt.data);
-      // will be handled normally and get routed
-    }
-    //
-    const { msg } = pkt;
-    let retData;
-    if (this.msg_handlers.has(msg)) {
-      retData = await this.pktAwaitHandlers(pkt);
-    } else if (this.srv_msgs.has(msg)) {
-      retData = await this.pktAwaitRequest(pkt);
-    } else {
-      LOG.error(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
-      retData = { error: `unknown message '${msg}'` };
-    }
-
-    if (!pkt.isRsvp()) return;
-
-    // if we got this far, then we have data to return
-    if (pkt.msg_type !== 'call') pkt.data = true;
-    else {
-      retData = NormalizeData(retData);
-      pkt.setData(retData);
-    }
-    this.pktSendResponse(pkt);
   }
 
   /** Send a single packet on all available interfaces based on the

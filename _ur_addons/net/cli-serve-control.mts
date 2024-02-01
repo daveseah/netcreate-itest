@@ -19,7 +19,7 @@ const DBG_PROC = false;
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let DETACH_SERVERS = false; // disables child process detaching for debugging
-let UDS_ONLY = false; // set when only UDS server will be spawned
+let UDS_ONLY = true; // set when only UDS server will be spawned
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -83,7 +83,7 @@ async function StartServers() {
   LOG(`Starting Server Processes...`);
   const entries = await GetActiveHostList();
   if (entries.length > 0) {
-    LOG.error(`!! servers are already running`);
+    LOG.error(`!! server list is not empty...did you crash? use 'ur net stop'`);
     return;
   }
   if (m_args.find(a => a === '--detach')) DETACH_SERVERS = true;
@@ -98,6 +98,8 @@ async function StartServers() {
   if (!UDS_ONLY) {
     await SpawnServer('./serve-wss.mts', 'wss');
     await SpawnServer('./serve-http.mts', 'http');
+  } else {
+    LOG.warn(`UDS_ONLY flag is enabled, skipping other servers`);
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

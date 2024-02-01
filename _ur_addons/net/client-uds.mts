@@ -35,43 +35,58 @@ function m_CheckForUDSHost() {
   UDS_DETECTED = FILES.FileExists(sock_path);
   return UDS_DETECTED;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** register the connection for the first time */
+function m_Register(sock: ipc.IpcClient) {
+  const fn = 'm_Register';
+  const { uds_sysmsg } = UDS_INFO;
+  const regPkt = EP.newRegistrationPacket();
+  regPkt.hop_seq.push(`NEW${Date.now()}`);
+  sock.emit(uds_sysmsg, regPkt.serialize());
+  LOG(`${fn} sent registration packet`);
+}
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Connect() {
+  const fn = 'Connect';
   /// node-ipc baseline configuration
   ipc.config.unlink = true; // unlink sock file on exit
   ipc.config.retry = 1500;
   ipc.config.maxRetries = 1;
   ipc.config.silent = true;
+  const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
 
+  /// check that UDS host is running
   await new Promise<void>((resolve, reject) => {
-    const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
-    /// check that UDS host is running
     if (!m_CheckForUDSHost()) {
-      reject(`Connect: ${uds_id} pipe not found`); // reject promise
+      reject(`${fn} ${uds_id} pipe not found`); // reject promise
       return;
-    }
-    // if good connect to the sock file
-    ipc.connectTo(uds_id, sock_path, () => {
-      const client_sock = ipc.of[uds_id];
-      client_sock.on('connect', () => {
-        LOG(`${client_sock.id} connect: connected`);
-        client_sock.emit(uds_sysmsg, 'hello');
-        resolve(); // resolve promise
-      });
-      client_sock.on('disconnected', () => {
-        LOG(`${client_sock.id} disconnect: disconnected`);
-      });
-      client_sock.on('sock.disconnected', (sock, destroyedId) => {
-        let status = '';
-        if (sock) status += `sock:${sock.id || 'undefined'}`;
-        if (destroyedId) status += ` destroyedId:${destroyedId || 'undefined'}`;
-        LOG(`${client_sock.id} sock.disconnected: disconnected ${status}`);
-      });
+    } else resolve();
+  });
+
+  // if good connect to the sock file
+  ipc.connectTo(uds_id, sock_path, () => {
+    const client_sock = ipc.of[uds_id];
+
+    client_sock.on('connect', () => {
+      LOG(`${client_sock.id} connect: connected`);
+      m_Register(client_sock);
     });
-  }).catch(err => {
-    LOG.error(err);
+
+    client_sock.on(uds_sysmsg, data => {
+      LOG(`${client_sock.id} data:`, data);
+    });
+
+    client_sock.on('disconnected', () => {
+      LOG(`${client_sock.id} disconnect: disconnected`);
+    });
+    client_sock.on('sock.disconnected', (sock, destroyedId) => {
+      let status = '';
+      if (sock) status += `sock:${sock.id || 'undefined'}`;
+      if (destroyedId) status += ` destroyedId:${destroyedId || 'undefined'}`;
+      LOG(`${client_sock.id} sock.disconnected: disconnected ${status}`);
+    });
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

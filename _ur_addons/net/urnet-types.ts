@@ -35,9 +35,16 @@
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const VALID_MSG_CHANNELS = ['NET', 'UDS', 'LOCAL', ''] as const;
-export const VALID_PKT_TYPES = ['ping', 'signal', 'send', 'call'] as const;
-export const VALID_ADDR_PREFIX = ['UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
+export const VALID_MSG_CHANNELS = ['NET', 'SRV', 'LOCAL', ''] as const;
+export const VALID_PKT_TYPES = [
+  'ping',
+  'signal',
+  'send',
+  'call',
+  '_reg', // special packet
+  '_auth' // special packet
+] as const;
+export const VALID_ADDR_PREFIX = ['NEW', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
 
@@ -156,7 +163,8 @@ export function DecodeMessage(msg: NP_Msg): [NP_Chan, string] {
     chan = 'LOCAL';
   }
   if (chan === '') chan = 'LOCAL';
-  if (!IsValidChannel(chan)) throw Error(`invalid channel: ${chan}`);
+  if (!IsValidChannel(chan))
+    throw Error(`prefix must be ${VALID_MSG_CHANNELS.join(' ').trim()} not ${chan}`);
   return [chan as NP_Chan, name];
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -182,13 +190,13 @@ export function IsLocalMessage(msg: NP_Msg): boolean {
 /** return true if message is a network request */
 export function IsNetMessage(msg: NP_Msg): boolean {
   const [chan] = DecodeMessage(msg);
-  return chan === 'NET';
+  return chan === 'NET' || chan === 'SRV';
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return true if message is implemented by main URNET server */
 export function IsServerMessage(msg: NP_Msg): boolean {
   const [chan] = DecodeMessage(msg);
-  return chan === 'UDS';
+  return chan === 'SRV';
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** given a packet, return a unique hash string */

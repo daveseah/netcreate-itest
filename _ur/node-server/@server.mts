@@ -27,7 +27,7 @@ const { makeTerminalOut } = PROMPTS;
 /// RUNTIME API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** first time initialization */
-function Initialize(options): void {
+function Initialize(options: UR_InitOptions): void {
   const { rootDir } = options;
   ENV.SetRootPaths(rootDir);
 }

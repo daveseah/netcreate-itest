@@ -11,14 +11,12 @@ import { PR, PROC } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
-// note: ts files imported by node contain { default }
-import NetEndpoint from './class-urnet-endpoint.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 const DBG_CLI = false;
-const LOG = PR('API-URNET', 'TagCyan');
+const LOG = PR('UR-CLI', 'TagCyan');
 const ARGS = process.argv.slice(2);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
@@ -118,13 +116,16 @@ async function ParseCommandLine() {
         await CTRL.ManageHosts();
         break;
       case 'start':
-        await CTRL.StartServers();
+        LOG.warn('net start is currently disabled');
+        // await CTRL.StartServers();
         break;
       case 'stop':
-        await CTRL.TerminateServers();
+        LOG.warn('net stop is currently disabled');
+        // await CTRL.TerminateServers();
         break;
       case 'send':
-        // replace with cli send command
+        LOG.warn('net send is currently disabled');
+        // await CLIENT.Connect();
         break;
       case 'test':
         await TEST.RunTests();
