@@ -43,6 +43,7 @@ const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
+const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -52,10 +53,6 @@ const PR = 'NCNode';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const isAdmin = SETTINGS.IsAdmin();
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const VIEWMODE = {
-  EDIT: 'edit',
-  VIEW: 'view'
-};
 const TABS = {
   // Also used as labels
   ATTRIBUTES: 'ATTRIBUTES',
@@ -91,7 +88,7 @@ class NCNode extends UNISYS.Component {
     this.ClearSelection = this.ClearSelection.bind(this);
     this.UpdateSelection = this.UpdateSelection.bind(this);
     this.SelectEdgeAndEdit = this.SelectEdgeAndEdit.bind(this);
-    this.SeselectEdge = this.SeselectEdge.bind(this);
+    this.SelectEdge = this.SelectEdge.bind(this);
     // DATA LOADING
     this.LoadNode = this.LoadNode.bind(this);
     this.LoadEdges = this.LoadEdges.bind(this);
@@ -104,18 +101,21 @@ class NCNode extends UNISYS.Component {
     this.DeleteNode = this.DeleteNode.bind(this);
     // HELPER METHODS
     this.SetBackgroundColor = this.SetBackgroundColor.bind(this);
+    this.UpdateMatchingList = this.UpdateMatchingList.bind(this);
     // UI HANDLERS
     this.UISelectTab = this.UISelectTab.bind(this);
     this.UIRequestEditNode = this.UIRequestEditNode.bind(this);
     this.UIReplacementNodeIdUpdate = this.UIReplacementNodeIdUpdate.bind(this);
     this.UIAddEdge = this.UIAddEdge.bind(this);
-    this.EnableEditMode = this.EnableEditMode.bind(this);
+    this.UIEnableEditMode = this.UIEnableEditMode.bind(this);
     this.UICancelEditMode = this.UICancelEditMode.bind(this);
     this.UIDisableEditMode = this.UIDisableEditMode.bind(this);
     this.UIInputUpdate = this.UIInputUpdate.bind(this);
     this.UILabelInputUpdate = this.UILabelInputUpdate.bind(this);
     this.UIViewEdge = this.UIViewEdge.bind(this);
     this.UIEditEdge = this.UIEditEdge.bind(this);
+    this.UICitationShow = this.UICitationShow.bind(this);
+    this.UICitationClose = this.UICitationClose.bind(this);
     // RENDERERS -- Main
     this.RenderView = this.RenderView.bind(this);
     this.RenderEdit = this.RenderEdit.bind(this);
@@ -133,7 +133,7 @@ class NCNode extends UNISYS.Component {
     UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.HandleMessage('NODE_EDIT', this.UIRequestEditNode); // Node Table request
     UDATA.HandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
-    UDATA.HandleMessage('EDGE_DESELECT', this.SeselectEdge);
+    UDATA.HandleMessage('EDGE_DESELECT', this.SelectEdge);
   }
 
   componentDidMount() {
@@ -157,24 +157,6 @@ class NCNode extends UNISYS.Component {
   ResetState() {
     const TEMPLATE = this.AppState('TEMPLATE');
     this.setState({
-      // SYSTEM STATE
-      // isLoggedIn: false, // don't clear session state!
-      // isAdmin: false,
-      previousState: {},
-      // UI State
-      uEditBtnDisable: false,
-      uEditBtnHide: false,
-      uViewMode: VIEWMODE.VIEW,
-      uSelectedTab: TABS.ATTRIBUTES,
-      selectedEdgeId: null,
-      uBackgroundColor: 'transparent',
-      uIsLockedByDB: false, // shows db lock message next to Edit Node button
-      uIsLockedByTemplate: false,
-      uIsLockedByImport: false,
-      uEditLockMessage: '',
-      uHideDeleteNodeButton: TEMPLATE.hideDeleteNodeButton,
-      uReplacementNodeId: '',
-      uIsValidReplacementNodeID: true,
       // NODE DEFS
       id: null,
       label: '',
@@ -185,7 +167,27 @@ class NCNode extends UNISYS.Component {
       updated: undefined,
       revision: 0,
       // EDGES
-      edges: [] // selected nodes' edges not ALL edges
+      edges: [], // selected nodes' edges not ALL edges
+      // SYSTEM STATE
+      // isLoggedIn: false, // don't clear session state!
+      // isAdmin: false,
+      previousState: {},
+      // UI State
+      uEditBtnDisable: false,
+      uEditBtnHide: false,
+      uViewMode: NCUI.VIEWMODE.VIEW,
+      uSelectedTab: TABS.ATTRIBUTES,
+      selectedEdgeId: null,
+      uBackgroundColor: 'transparent',
+      uIsLockedByDB: false, // shows db lock message next to Edit Node button
+      uIsLockedByTemplate: false,
+      uIsLockedByImport: false,
+      uEditLockMessage: '',
+      uHideDeleteNodeButton: TEMPLATE.hideDeleteNodeButton,
+      uReplacementNodeId: '',
+      uIsValidReplacementNodeID: true,
+      uShowMatchlist: false,
+      uShowCitationDialog: false
     });
   }
 
@@ -194,7 +196,7 @@ class NCNode extends UNISYS.Component {
   ///
   CheckUnload(event) {
     event.preventDefault();
-    if (this.state.uViewMode === VIEWMODE.EDIT) {
+    if (this.state.uViewMode === NCUI.VIEWMODE.EDIT) {
       (event || window.event).returnValue = null;
     } else {
       Reflect.deleteProperty(event, 'returnValue');
@@ -202,7 +204,7 @@ class NCNode extends UNISYS.Component {
     return event;
   }
   DoUnload(event) {
-    if (this.state.uViewMode === VIEWMODE.EDIT) {
+    if (this.state.uViewMode === NCUI.VIEWMODE.EDIT) {
       UDATA.NetCall('SRV_DBUNLOCKNODE', { nodeID: this.state.id });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
     }
@@ -223,7 +225,10 @@ class NCNode extends UNISYS.Component {
   /*
       Called by NCDATA AppState updates
   */
-  UpdateNCData() {
+  UpdateNCData(data) {
+    // If NCDATA is updated, reload the node AND the edges b/c db has changed
+    const updatedNode = data.nodes.find(n => n.id === this.state.id);
+    this.LoadNode(updatedNode);
     this.LoadEdges(this.state.id);
   }
   SetPermissions(data) {
@@ -288,7 +293,7 @@ class NCNode extends UNISYS.Component {
       });
     });
   }
-  SeselectEdge() {
+  SelectEdge() {
     this.setState({ selectedEdgeId: null });
   }
 
@@ -299,7 +304,7 @@ class NCNode extends UNISYS.Component {
     const { id, uViewMode } = this.state;
 
     // If we're editing, ignore the select!
-    if (uViewMode === VIEWMODE.EDIT) return;
+    if (uViewMode === NCUI.VIEWMODE.EDIT) return;
 
     // If no node was selected, deselect
     if (!node) {
@@ -319,12 +324,13 @@ class NCNode extends UNISYS.Component {
         degrees: node.degrees,
         attributes: attributes,
         provenance: node.provenance,
-        created: node.created,
-        updated: node.updated,
-        revision: node.revision
+        created: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        updated: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        revision: node.meta ? node.meta.revision : ''
       },
       () => {
         this.SetBackgroundColor();
+        this.UpdateMatchingList(node.label);
         this.LoadEdges(node.id);
         this.IsNodeLocked(nodeIsLocked => {
           this.setState(
@@ -441,20 +447,32 @@ class NCNode extends UNISYS.Component {
     const { id, label, attributes, provenance, created, updated, revision } =
       this.state;
 
-    const node = { id, label, provenance, created, updated, revision };
+    const node = {
+      id,
+      label,
+      provenance
+    };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
 
+    // Exit Edit mode first, then send the update
+    // (This is necessary otherwise the db update will trigger a
+    // NCDATA update followed by LoadNode, which will skip loading because
+    // it's still in edit mode)
+    this.setState(
+      {
+        uViewMode: NCUI.VIEWMODE.VIEW
+      },
+      () => {
     // write data to database
     // setting dbWrite to true will distinguish this update
     // from a remote one
     this.AppCall('DB_UPDATE', { node }).then(() => {
       this.UnlockNode(() => {
-        this.setState({
-          uViewMode: VIEWMODE.VIEW,
-          uIsLockedByDB: false
-        });
+            this.setState({ uIsLockedByDB: false });
       });
     });
+  }
+    );
   }
   DeleteNode() {
     const { id, uReplacementNodeId } = this.state;
@@ -480,10 +498,18 @@ class NCNode extends UNISYS.Component {
    */
   SetBackgroundColor() {
     const { attributes } = this.state;
-    const type = attributes && attributes.type;
+    const type = (attributes && attributes.type) || ''; // COLORMAP uses "" for undefined
     const COLORMAP = UDATA.AppState('COLORMAP');
     const uBackgroundColor = COLORMAP.nodeColorMap[type] || '#555555';
     this.setState({ uBackgroundColor });
+  }
+
+  UpdateMatchingList(value) {
+    const { id } = this.state;
+    UDATA.LocalCall('FIND_MATCHING_NODES', { searchString: value }).then(data => {
+      const matchingNodes = data.nodes.filter(n => n.id !== id); // don't include self
+      this.setState({ matchingNodes });
+    });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -494,14 +520,17 @@ class NCNode extends UNISYS.Component {
     this.setState({ uSelectedTab });
     if (event.target.value !== TABS.EDGES) UDATA.LocalCall('EDGE_DESELECT');
   }
+
   /**
    * If `lockNode` is not successful, then that means the node was
    * already locked, so we can't edit.
    */
   UIRequestEditNode() {
+    const { isLoggedIn } = this.state;
+    if (!isLoggedIn) return;
     this.LockNode(lockSuccess => {
       this.setState({ uIsLockedByDB: !lockSuccess }, () => {
-        if (lockSuccess) this.EnableEditMode();
+        if (lockSuccess) this.UIEnableEditMode();
       });
     });
   }
@@ -532,7 +561,7 @@ class NCNode extends UNISYS.Component {
     });
   }
 
-  EnableEditMode() {
+  UIEnableEditMode() {
     const { uSelectedTab, label, attributes, provenance } = this.state;
     // If user was on Edges tab while requesting edit (e.g. from Node Table), then
     // switch to Attributes tab first.
@@ -543,14 +572,23 @@ class NCNode extends UNISYS.Component {
       // provenance: Object.assign({}, provenance) // uncomment after provenence is implemented
     };
     this.setState({
-      uViewMode: VIEWMODE.EDIT,
+      uViewMode: NCUI.VIEWMODE.EDIT,
       uSelectedTab: editableTab,
       previousState
     });
   }
 
   UICancelEditMode() {
-    const { previousState } = this.state;
+    const { revision, previousState } = this.state;
+
+    // if user is cancelling a newly created unsaved node, delete the node instead
+    // Initial Node creation is rev 0, saving it for the first time bumps it to rev 1
+    if (revision < 1) {
+      this.UIDisableEditMode();
+      this.DeleteNode();
+      return;
+    }
+
     // restore previous state
     this.setState(
       {
@@ -565,7 +603,7 @@ class NCNode extends UNISYS.Component {
   UIDisableEditMode() {
     this.UnlockNode(() => {
       this.setState({
-        uViewMode: VIEWMODE.VIEW,
+        uViewMode: NCUI.VIEWMODE.VIEW,
         uIsLockedByDB: false
       });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
@@ -587,13 +625,7 @@ class NCNode extends UNISYS.Component {
     data[key] = value;
     console.warn('Labelinput', key, value);
     this.setState(data);
-    UDATA.LocalCall('FIND_MATCHING_NODES', { searchString: value }).then(data => {
-      const foundLabels =
-        data.nodes && data.nodes.length > 0
-          ? data.nodes.map(d => d.label)
-          : undefined;
-      this.setState({ matchingNodeLabels: foundLabels });
-    });
+    this.UpdateMatchingList(value);
   }
 
   UIViewEdge(edgeId) {
@@ -612,6 +644,13 @@ class NCNode extends UNISYS.Component {
     );
   }
 
+  UICitationShow() {
+    this.setState({ uShowCitationDialog: true });
+  }
+  UICitationClose() {
+    this.setState({ uShowCitationDialog: false });
+  }
+
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// RENDER METHODS
   RenderView() {
@@ -624,11 +663,22 @@ class NCNode extends UNISYS.Component {
       uHideDeleteNodeButton,
       uReplacementNodeId,
       uIsValidReplacementNodeID,
+      uShowCitationDialog,
       id,
       label
     } = this.state;
-    const defs = UDATA.AppState('TEMPLATE').nodeDefs;
+    const TEMPLATE = UDATA.AppState('TEMPLATE');
+    const defs = TEMPLATE.nodeDefs;
+    const uShowCitationButton = TEMPLATE.citation && !TEMPLATE.citation.hidden;
     const bgcolor = uBackgroundColor + '44'; // hack opacity
+    const citation =
+      `NetCreate ${TEMPLATE.name} network, ` +
+      `Node: "${label}" (ID ${id}). ` +
+      (TEMPLATE.citation && TEMPLATE.citation.text
+        ? `${TEMPLATE.citation.text}. `
+        : '') +
+      `Last accessed at ${NCUI.DateFormatted()}.`;
+
     return (
       <div className="--NCNode_View nccomponent">
         <div className="view" style={{ background: bgcolor }}>
@@ -662,6 +712,16 @@ class NCNode extends UNISYS.Component {
             </div>
           )}
           <div className="--NCNode_View_Controls controlbar">
+            {uShowCitationButton && (
+              <button
+                id="citationbtn"
+                className="citationbutton"
+                onClick={this.UICitationShow}
+              >
+                Cite Node
+              </button>
+            )}
+            <div style={{ flexGrow: 1 }}></div>
             {!uEditBtnHide && uSelectedTab !== TABS.EDGES && (
               <button
                 id="editbtn"
@@ -695,19 +755,27 @@ class NCNode extends UNISYS.Component {
             </div>
           )}
         </div>
+        {uShowCitationDialog && (
+          <NCDialogCitation message={citation} onClose={this.UICitationClose} />
+        )}
       </div>
     );
   }
 
   RenderEdit() {
-    const { uSelectedTab, uBackgroundColor, matchingNodeLabels, label } = this.state;
+    const { uSelectedTab, uBackgroundColor, uShowMatchlist, matchingNodes, label } =
+      this.state;
     const defs = UDATA.AppState('TEMPLATE').nodeDefs;
     const bgcolor = uBackgroundColor + '66'; // hack opacity
-    const matchList = matchingNodeLabels
-      ? matchingNodeLabels.map(l => <div key={l}>{l}</div>)
+    const matchList = matchingNodes
+      ? matchingNodes.map(n => (
+          <div key={`${n.label}${n.id}`} value={n.id}>
+            {n.label} <span className="id">#{n.id}</span>
+          </div>
+        ))
       : undefined;
+    const isDuplicate = matchingNodes && matchingNodes.find(n => n.label === label);
     const duplicateWarning = UDATA.AppState('TEMPLATE').duplicateWarning;
-    const isDuplicate = matchingNodeLabels && matchingNodeLabels.includes(label);
     return (
       <div className="--NCNode_Edit">
         <div className="screen"></div>
@@ -721,17 +789,22 @@ class NCNode extends UNISYS.Component {
           >
             {/* BUILT-IN - - - - - - - - - - - - - - - - - */}
             <div className="nodelabel">
-              {NCUI.RenderStringInput('label', label, this.UILabelInputUpdate)}
+              {NCUI.RenderStringInput(
+                'label',
+                label,
+                this.UILabelInputUpdate,
+                '',
+                () => this.setState({ uShowMatchlist: true }),
+                () => this.setState({ uShowMatchlist: false })
+              )}
+              {uShowMatchlist && matchList && (
+                <div className="matchlist">
+                  {isDuplicate && <div className="warning">{duplicateWarning}</div>}
+                  {matchList}
+                </div>
+              )}
+              {isDuplicate && <div className="message">{duplicateWarning}</div>}
             </div>
-            {/* <div className="nodelabel">{this.renderLabelInput('label', label)}</div> */}
-            {matchList && (
-              <div className="matchlist">
-                {isDuplicate && (
-                  <div className="message warning">{duplicateWarning}</div>
-                )}
-                {matchList}
-              </div>
-            )}
             {/* TABS - - - - - - - - - - - - - - - - - - - */}
             <div className="tabcontainer">
               {NCUI.RenderTabSelectors(TABS, this.state, this.UISelectTab)}
@@ -821,7 +894,7 @@ class NCNode extends UNISYS.Component {
   render() {
     const { id, uViewMode } = this.state;
     if (!id) return ''; // nothing selected
-    if (uViewMode === VIEWMODE.VIEW) {
+    if (uViewMode === NCUI.VIEWMODE.VIEW) {
       return this.RenderView();
     } else {
       return this.RenderEdit();

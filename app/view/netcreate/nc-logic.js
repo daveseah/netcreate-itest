@@ -486,23 +486,30 @@ MOD.Hook('INITIALIZE', () => {
     // try updating existing nodes with this id?
     let updatedNodes = m_SetMatchingNodesByProp({ id: node.id }, node);
     if (DBG) console.log('SOURCE_UPDATE: updated', updatedNodes);
-    // if no nodes had matched, then add a new node!
     if (updatedNodes.length > 1) {
-      console.error('SOURCE_UPDATE: duplicate ids in', updatedNodes);
+      // if more than one matched, then there are duplicate ids
       throw Error('SOURCE_UPDATE: found duplicate IDs');
+    } else if (updatedNodes.length === 1) {
+      // if one matched, update NCDATA with the refreshed node from the db
+      const index = NCDATA.nodes.findIndex(n => n.id === node.id);
+      NCDATA.nodes.splice(index, 1, node);
+    } else if (updatedNodes.length === 0) {
+      // if no nodes had matched, then add a new node!
+      NCDATA.nodes.push(node);
     }
-    if (updatedNodes.length === 0) NCDATA.nodes.push(node);
     UDATA.SetAppState('NCDATA', NCDATA);
   });
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
   UDATA.HandleMessage('NODE_CREATE', data => {
     // provenance
     const session = UDATA.AppState('SESSION');
-    const timestamp = new Date().toLocaleDateString('en-US');
-    const provenance_str = `Added by ${session.token} on ${timestamp}`;
+    const timestamp = new Date().toLocaleString('en-US');
+    const provenance = `Added by ${session.token} on ${timestamp}`;
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
-      const node = { id: newNodeID, label: data.label, provenance: provenance_str };
+      const node = {
+        id: newNodeID, label: data.label, provenance
+      };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
         UDATA.SetAppState('NCDATA', NCDATA);
@@ -613,6 +620,11 @@ MOD.Hook('INITIALIZE', () => {
    *  @param {string} data.nodeId
    */
   UDATA.HandleMessage('EDGE_CREATE', data => {
+    // provenance
+    const session = UDATA.AppState('SESSION');
+    const timestamp = new Date().toLocaleString('en-US');
+    const provenance = `Added by ${session.token} on ${timestamp}`;
+
     // call server to retrieve an unused edge ID
     return DATASTORE.PromiseNewEdgeID().then(newEdgeID => {
       // Add it to local state for now
@@ -620,7 +632,8 @@ MOD.Hook('INITIALIZE', () => {
         id: newEdgeID,
         source: data.nodeId,
         target: undefined,
-        attributes: {}
+        attributes: {},
+        provenance
       };
       return UDATA.LocalCall('DB_UPDATE', { edge }).then(() => {
         console.log('...DB_UPDATE node is now', edge);
@@ -679,20 +692,20 @@ MOD.Hook('INITIALIZE', () => {
     let updatedEdges = m_SetMatchingEdgesByProp({ id: edge.id }, edge);
     if (DBG) console.log('nc-logic.EDGE_UPDATE: updated', updatedEdges);
 
-    // if no edges had matched, then add a new edge!
     if (updatedEdges.length === 0) {
+      // if no edges had matched, then add a new edge!
       if (DBG) console.log('nc-logic.EDGE_UPDATE: adding new edge', edge);
       // created edges should have a default size
       edge.size = 1;
       NCDATA.edges.push(edge);
-    }
-    // if there was one edge
-    if (updatedEdges.length === 1) {
+    } else if (updatedEdges.length === 1) {
+      // if there was one edge, update it
+      const index = NCDATA.edges.findIndex(e => e.id === edge.id);
+      NCDATA.edges.splice(index, 1, edge);
       if (DBG)
         console.log('nc-logic.EDGE_UPDATE: updating existing edge', updatedEdges);
-    }
+    } else if (updatedEdges.length > 1) {
     // if there were more edges than expected
-    if (updatedEdges.length > 1) {
       throw Error('EdgeUpdate found duplicate IDs');
     }
 

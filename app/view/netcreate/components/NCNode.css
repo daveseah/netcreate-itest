@@ -119,6 +119,14 @@
 .nccomponent .message {
   font-size: 12px;
 }
+.nccomponent .nodelabel .message {
+  font-size: 10px;
+  font-style: italic;
+  font-weight: normal;
+  line-height: 12px;
+  margin-top: -6px;
+  opacity: 0.7;
+}
 .nccomponent .warning {
   color: red;
 }
@@ -182,10 +190,12 @@
 }
 .nccomponent .formview label {
   font-size: 10px;
-  line-height: 18px;
+  line-height: 12px;
+  padding-top: 2px;
   opacity: 0.7;
   text-align: right;
 }
+
 .nccomponent .formview .viewvalue {
   padding-left: 10px;
   text-align: left;
@@ -194,7 +204,7 @@
   overflow-wrap: anywhere; /* prevents form extending into graph */
 }
 .nccomponent .formview .viewvalue img {
-  max-height: 100px;
+  max-width: 225px;
 }
 .nccomponent .formview div.targetarrow {
   margin-top: -5px;
@@ -259,7 +269,7 @@
 .nccomponent .controlbar {
   display: flex;
   justify-content: flex-end;
-  align-items: top;
+  align-items: baseline;
   padding: 10px 0 0 0;
 }
 
@@ -284,4 +294,11 @@
   font-size: 10px;
   background-color: transparent;
   margin-left: 0;
+}
+.nccomponent .citationbutton {
+  align-self: flex-start;
+  margin-left: 0;
+  border-color: #0002;
+  color: #0006;
+  background-color: transparent;
 }

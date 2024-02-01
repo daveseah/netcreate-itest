@@ -528,7 +528,7 @@ function m_NodefileLoadNodes(headers, lines) {
   let isValid = true;
   let messageJsx = '';
   const nodes = lines.map(l => {
-    const node = {};
+    const node = { meta: {} };
     const subcategories = new Map();
     const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
     importFields.forEach((f, index) => {
@@ -567,20 +567,29 @@ function m_NodefileLoadNodes(headers, lines) {
           // We don't want empty ids to be converted to id 0
           // so we explicitly replace it with NaN
           node[internalLabel] = field === '' ? NaN : field; // ids are numbers
-        } else if (['created', 'updated', 'revision'].includes(internalLabel)) {
-          // meta fields
-          if (node.meta === undefined) node.meta = {};
+        } else if (['created', 'updated'].includes(internalLabel)) {
+          // meta fields: date
+          node.meta[internalLabel] = new Date(field).getTime();
+        } else if (['revision'].includes(internalLabel)) {
+          // meta fields: revision
           node.meta[internalLabel] = field;
         } else {
           node[internalLabel] = m_decode(field); // convert double quotes
         }
       }
     });
+
     // DEPRECATED
     // collapse 'attributes' and 'meta' into objects
     // subcategories.forEach((val, key) => {
     //   node[key] = val
     // });
+
+
+    // Add meta data if missing
+    if (isNaN(node.meta.created)) node.meta.created = new Date().getTime();
+    if (isNaN(node.meta.revision)) node.meta.revision = 0;
+
     return node;
   });
   return { isValid, messageJsx, nodes };
@@ -774,7 +783,7 @@ function m_EdgefileLoadEdges(headers, lines) {
   let isValid = true;
   let messageJsx = '';
   const edges = lines.map(l => {
-    const edge = {};
+    const edge = { meta: {} };
     const subcategories = new Map();
     const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
     importFields.forEach((f, index) => {
@@ -814,20 +823,28 @@ function m_EdgefileLoadEdges(headers, lines) {
           // We don't want empty ids to be converted to id 0
           // so we explicitly replace it with NaN
           edge[internalLabel] = field === '' ? NaN : field; // ids are numbers
-        } else if (['created', 'updated', 'revision'].includes(internalLabel)) {
-          // meta fields
-          if (edge.meta === undefined) edge.meta = {};
+        } else if (['created', 'updated'].includes(internalLabel)) {
+          // meta fields: date
+          edge.meta[internalLabel] = new Date(field).getTime();
+        } else if (['revision'].includes(internalLabel)) {
+          // meta fields: revision
           edge.meta[internalLabel] = field;
         } else {
           edge[internalLabel] = m_decode(field); // convert double quotes
         }
       }
     });
+
     // DEPRECATED
     // collapse 'attributes' and 'meta' into objects
     // subcategories.forEach((val, key) => {
     //   node[key] = val
     // });
+
+    // Add meta data if missing
+    if (isNaN(edge.meta.created)) edge.meta.created = new Date().getTime();
+    if (isNaN(edge.meta.revision)) edge.meta.revision = 0;
+
     return edge;
   });
   return { isValid, messageJsx, edges };

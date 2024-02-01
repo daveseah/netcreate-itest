@@ -164,7 +164,7 @@ class EdgeTable extends UNISYS.Component {
       ) {
         edges = edges.filter(edge => {
           const filteredEdge = filteredEdges.find(n => n.id === edge.id);
-          return edge;
+          return filteredEdge; // keep if it's in the list of filtered edges
         });
       } else {
         edges = edges.map(edge => {
@@ -607,6 +607,16 @@ class EdgeTable extends UNISYS.Component {
                   </Button>
                 </th>
               ))}
+              <th width="10%" hidden={edgeDefs.provenance.hidden}>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    this.setSortKey('provenance', edgeDefs.provenance.type)
+                  }
+                >
+                  {edgeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
+                </Button>
+              </th>
               {/*
               <th width="7%" hidden={!isAdmin}>
                 <Button
@@ -633,7 +643,7 @@ class EdgeTable extends UNISYS.Component {
                 key={i}
                 style={{
                   color: edge.isFiltered ? 'red' : 'black',
-                  opacity: edge.isFiltered ? edge.filteredTransparency : 1
+                  opacity: edge.filteredTransparency
                 }}
               >
                 <td hidden={!DBG}>{edge.id}</td>
@@ -678,6 +688,7 @@ class EdgeTable extends UNISYS.Component {
                       : edge[a]}
                   </td>
                 ))}
+                <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>
                   {this.displayUpdated(edge)}

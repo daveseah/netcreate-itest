@@ -35,8 +35,9 @@ const UDATA = UNISYS.NewDataLink(MOD);
 function DateFormatted() {
   var today = new Date();
   var year = String(today.getFullYear());
-  var date = today.getMonth() + 1 + '/' + today.getDate() + '/' + year.substr(2, 4);
-  var time = today.toTimeString().substr(0, 5);
+  var date =
+    today.getMonth() + 1 + '/' + today.getDate() + '/' + year.substring(2, 4);
+  var time = today.toTimeString().substring(0, 5);
   var dateTime = time + ' on ' + date;
   return dateTime;
 }
@@ -64,7 +65,9 @@ function Markdownify(str = '') {
  *  @param {function} cb Callback function
  */
 function m_UIMarkdownInputUpdate(event, cb) {
-  console.warn("WARNNIG: Markdown text is not being error checked!  Use with caution!")
+  console.warn(
+    'WARNNIG: Markdown text is not being error checked!  Use with caution!'
+  );
   const key = event.target.id;
   const value = event.target.value;
   if (typeof cb === 'function') cb(key, value);
@@ -121,11 +124,12 @@ function m_UIInsertImageURL(url, parentId, cb) {
   const event = {
     target: {
       id: parentId,
-      value: currentValue.substring(0, selectionStart)
-        + `![image](${url})`
-        + currentValue.substring(selectionStart)
+      value:
+        currentValue.substring(0, selectionStart) +
+        `![image](${url})` +
+        currentValue.substring(selectionStart)
     }
-  }
+  };
   m_UIMarkdownInputUpdate(event, cb);
 }
 function m_UICancelInsertImageURL() {
@@ -204,10 +208,10 @@ function RenderAttributesTabEdit(state, defs, onchange) {
         items.push(RenderStringInput(k, value, onchange, helpText));
         break;
       case 'number':
-        items.push(m_RenderNumberInput(k, value, onchange));
+        items.push(m_RenderNumberInput(k, value, onchange, helpText));
         break;
       case 'select':
-        items.push(m_RenderOptionsInput(k, value, defs, onchange));
+        items.push(m_RenderOptionsInput(k, value, defs, onchange, helpText));
         break;
       default:
         items.push(RenderStringValue(k, value, onchange)); // display unsupported type
@@ -303,8 +307,10 @@ function RenderMarkdownInput(key, value, cb, helpText) {
       <div className="help">{helpText}</div>
       <button
         className="stylebutton"
-        onClick={() => UDATA.LocalCall("IMAGE_URL_DIALOG_OPEN", { id: key })}
-      >Insert Image URL...</button>
+        onClick={() => UDATA.LocalCall('IMAGE_URL_DIALOG_OPEN', { id: key })}
+      >
+        Insert Image URL...
+      </button>
       <textarea
         id={key}
         key={`${key}input`}
@@ -334,9 +340,12 @@ function RenderMarkdownInput(key, value, cb, helpText) {
  * @param {string} key
  * @param {string} value
  * @param {function} cb
+ * @param {string} helpText
+ * @param {function} onFocus Handles showing autosuggest matchlist
+ * @param {function} onBlur Handles hiding autosuggest matchlist
  * @returns
  */
-function RenderStringInput(key, value, cb, helpText) {
+function RenderStringInput(key, value, cb, helpText, onFocus, onBlur) {
   const rows = String(value).length > 35 ? 3 : 1;
   return (
     <div key={`${key}div`}>
@@ -347,6 +356,8 @@ function RenderStringInput(key, value, cb, helpText) {
         type="string"
         value={value}
         onChange={event => m_UIStringInputUpdate(event, cb)}
+        onFocus={() => typeof onFocus === 'function' && onFocus()}
+        onBlur={() => typeof onBlur === 'function' && onBlur()}
         autoComplete="off" // turn off Chrome's default autocomplete, which conflicts
         className={rows > 1 ? `long` : ''}
         rows={rows}
@@ -370,7 +381,7 @@ function m_RenderNumberInput(key, value, cb, helpText) {
       <input
         id={key}
         key={`${key}input`}
-        value={value}
+        value={value ? value : 0}
         type="number"
         onChange={event => m_UINumberInputUpdate(event, cb)}
       />

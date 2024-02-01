@@ -107,7 +107,7 @@ class SelectFilter extends React.Component {
       key,
       keylabel,
       operator: this.state.operator,
-      value: this.state.value,
+      value: this.state.operator === FILTER.OPERATORS.NO_OP.key ? '' : this.state.value,
       options
     };
     if (UDATA)
@@ -143,14 +143,8 @@ class SelectFilter extends React.Component {
           <Label
             size="sm"
             className="small text-muted"
-            style={{
-              fontSize: '0.75em',
-              lineHeight: '1em',
-              width: `6em`,
-              justifyContent: 'flex-end'
-            }}
           >
-            {keylabel}&nbsp;
+            {keylabel}
           </Label>
           <Input
             type="select"
@@ -175,10 +169,10 @@ class SelectFilter extends React.Component {
           >
             {operator !== FILTER.OPERATORS.NO_OP.key
               ? options.map(op => (
-                  <option value={op} key={`${id}${op}`} size="sm">
-                    {op}
-                  </option>
-                ))
+                <option value={op} key={`${id}${op}`} size="sm">
+                  {op}
+                </option>
+              ))
               : ''}
           </Input>
         </FormGroup>
