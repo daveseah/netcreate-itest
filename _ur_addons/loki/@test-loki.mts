@@ -19,6 +19,6 @@ const LOG = PR('LOKI', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('run starting...reading database');
 const datadir = FILES.AbsLocalPath('_ur_addons/loki/_data_nocommit');
-await PromiseLoadDatabase(`${datadir}/lokidb-example.loki`);
+await PromiseLoadDatabase(`${datadir}/netcreate-graph.loki`);
 ListCollections();
 LOG('run complete');
