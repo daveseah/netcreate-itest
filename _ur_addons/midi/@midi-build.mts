@@ -51,9 +51,9 @@ async function ESBuildApp() {
   // The return value tells us where esbuild's local server is
   let { host, port } = await context.serve({
     servedir: DST,
-    port: 3000
+    port: 8888
   });
-  if (host = '0.0.0.0') host = 'localhost';
+  if (host === '0.0.0.0') host = 'localhost';
   LOG('appserver is listening at', `http://${host}:${port}`);
 }
 
