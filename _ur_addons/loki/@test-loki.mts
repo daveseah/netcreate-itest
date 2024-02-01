@@ -18,7 +18,7 @@ const LOG = PR('LOKI', 'TagBlue');
 /// RUNTIME TESTS /////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 LOG('run starting...reading database');
-const datadir = FILES.AbsLocalPath('_ur/_data_nocommit/lokijs-team-ex');
-await PromiseLoadDatabase(`${datadir}/team.loki`);
+const datadir = FILES.AbsLocalPath('_ur_addons/loki/_data_nocommit');
+await PromiseLoadDatabase(`${datadir}/lokidb-example.loki`);
 ListCollections();
 LOG('run complete');
