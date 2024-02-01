@@ -1,0 +1,65 @@
+.commentThread {
+  background-color: gold;
+  padding: 5px;
+}
+
+.commentIndented {
+  margin-left: 20px;
+}
+
+.comment {
+  display: grid;
+  grid-template-columns: 5em auto;
+  background-color: #fff5;
+  margin-bottom: 5px;
+  padding: 5px;
+}
+.comment:hover {
+  background-color: #fff8;
+}
+
+.comment .date {
+  color: #0006;
+  font-size: 0.6em;
+}
+
+.comment .commenter,
+.comment .label,
+.comment .help /* .help uses nccomponent */ {
+  color: #0008;
+  font-size: 0.8em;
+}
+.comment .feedback {
+  /* emulate nccomponent help */
+  color: #0007;
+  opacity: 0.8;
+  font-size: 10px;
+}
+.comment .commenttext {
+  background-color: #fff5;
+}
+
+.comment .commentbar,
+.comment .editbar {
+  padding-top: 3px;
+}
+
+.comment .commentbar button,
+.comment .editbar button {
+  margin-left: 0; /* override nccomponent */
+}
+.comment .commentbar button {
+  /* visibility: hidden; */
+  display: none;
+}
+.comment:hover .commentbar button {
+  /* visibility: visible; */
+  display: block;
+}
+
+.commentbar,
+.editbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-content: space-between;
+}

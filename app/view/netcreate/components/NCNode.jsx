@@ -43,6 +43,7 @@ const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
+const NCCommentThread = require('./NCCommentThread');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
 
@@ -463,15 +464,15 @@ class NCNode extends UNISYS.Component {
         uViewMode: NCUI.VIEWMODE.VIEW
       },
       () => {
-    // write data to database
-    // setting dbWrite to true will distinguish this update
-    // from a remote one
-    this.AppCall('DB_UPDATE', { node }).then(() => {
-      this.UnlockNode(() => {
+        // write data to database
+        // setting dbWrite to true will distinguish this update
+        // from a remote one
+        this.AppCall('DB_UPDATE', { node }).then(() => {
+          this.UnlockNode(() => {
             this.setState({ uIsLockedByDB: false });
-      });
-    });
-  }
+          });
+        });
+      }
     );
   }
   DeleteNode() {
@@ -754,6 +755,7 @@ class NCNode extends UNISYS.Component {
               <button onClick={this.DeleteNode}>Delete</button>
             </div>
           )}
+          <NCCommentThread />
         </div>
         {uShowCitationDialog && (
           <NCDialogCitation message={citation} onClose={this.UICitationClose} />
