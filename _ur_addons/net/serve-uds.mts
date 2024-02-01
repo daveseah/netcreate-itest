@@ -8,6 +8,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import ipc, { Socket } from '@achrinza/node-ipc';
+import PATH from 'node:path';
 import { PR } from '@ursys/netcreate';
 import { UDS_INFO } from './urnet-constants.mts';
 import CLASS_EP, { EP_Socket } from './class-urnet-endpoint.ts';
@@ -64,35 +65,38 @@ function m_AddServerHandlers() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_Listen() {
-  const { uds_sysmsg } = UDS_INFO;
-  // note: 'connect' doesn't provide useful data
-  ipc.server.on('connect', () => {
-    LOG(`${ipc.config.id} connect: connected`);
-  });
-  // configure node-ipc incoming connection server
-  ipc.server.on(uds_sysmsg, (data, socket) => {
-    // first time we're seeing this socket? save it
-    if (EP.isNewSocket(socket)) {
-      const uaddr = EP.addClient(socket);
-      LOG('.. new client socket', uaddr);
-    }
-    // now handle the message
-    const pkt = EP.newPacket().deserialize(data);
-    if (pkt.msg_type === '_reg') {
-      pkt.setDir('res');
-      const { uaddr } = socket;
-      LOG(`.. registration packet received, assigned ${uaddr}`);
-      pkt.data = { uaddr };
-      LOG('.. sending registration response');
-      ipc.server.emit(uds_sysmsg, pkt.serialize());
-      return;
-    }
-    EP.pktReceive(pkt);
-  });
-  // client socket disconnected
-  ipc.server.on('socket.disconnected', (socket, destroyedSocketID) => {
-    const uaddr = EP.removeClient(socket);
-    LOG('.. client socket disconnected', uaddr, destroyedSocketID);
+  const { uds_sysmsg, uds_id, sock_path } = UDS_INFO;
+  ipc.config.ud = uds_id;
+  ipc.serve(sock_path, () => {
+    // note: 'connect' doesn't provide useful data
+    ipc.server.on('connect', () => {
+      LOG(`${ipc.config.id} connect: connected`);
+    });
+    // configure node-ipc incoming connection server
+    ipc.server.on(uds_sysmsg, (data, socket) => {
+      // first time we're seeing this socket? save it
+      if (EP.isNewSocket(socket)) {
+        const uaddr = EP.addClient(socket);
+        LOG('.. new client socket', uaddr);
+      }
+      // now handle the message
+      const pkt = EP.newPacket().deserialize(data);
+      if (pkt.msg_type === '_reg') {
+        pkt.setDir('res');
+        const { uaddr } = socket;
+        LOG(`.. registration packet received, assigned ${uaddr}`);
+        pkt.data = { uaddr };
+        LOG('.. sending registration response');
+        ipc.server.emit(socket, uds_sysmsg, pkt.serialize());
+        return;
+      }
+      EP.pktReceive(pkt);
+    });
+    // client socket disconnected
+    ipc.server.on('socket.disconnected', (socket, destroyedSocketID) => {
+      const uaddr = EP.removeClient(socket);
+      LOG('.. client socket disconnected', uaddr, destroyedSocketID);
+    });
   });
   ipc.server.start();
 }
@@ -105,12 +109,15 @@ function Start() {
   // Start Unix Domain Socket Server
   const { uds_id, sock_path } = UDS_INFO;
   ipc.config.id = uds_id;
-  ipc.serve(sock_path, () => m_Listen());
-  LOG(`.. UDS Server listening on '${ipc.server.path}'`);
+  m_Listen();
+  const shortPath = PATH.relative(process.cwd(), sock_path);
+  LOG(`.. UDS Server listening on '${shortPath}'`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  LOG(`.. stopping UDS Server on ${ipc.server.path}`);
+  const { sock_path } = UDS_INFO;
+  const shortPath = PATH.relative(process.cwd(), sock_path);
+  LOG(`.. stopping UDS Server on ${shortPath}`);
   await ipc.server.stop(); // should also unlink socket file automatically
   LOG.info(`.. should process all pending transactions`);
   LOG.info(`.. should delete all registered messages`);

@@ -13,8 +13,8 @@ import { PR, PROC } from '@ursys/netcreate';
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
-const LOG = PR('-PROCCESS', 'TagCyan');
-const DBG_PROC = false;
+const LOG = PR('Process', 'TagCyan');
+const DBG_PROC = true;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -71,7 +71,7 @@ async function SpawnServer(scriptName: string, id: string) {
     ['--transpile-only', scriptName, ...m_args],
     options
   );
-  if (DBG_PROC) LOG(`.. spawning ${identifier} with pid:${proc.pid}`);
+  if (DBG_PROC) LOG.info(`.. spawning ${identifier} with pid:${proc.pid}`);
 
   const pid = proc.pid.toString();
   await KV.SaveKey(pid, `${identifier}`);
@@ -105,7 +105,7 @@ async function StartServers() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** shutdown all communication servers */
 async function TerminateServers() {
-  LOG(`Terminating Server Processes...`);
+  LOG(`Terminating Child Processes...`);
   const entries = await GetActiveHostList();
   if (entries.length === 0) {
     LOG.warn(`!! no running server processes`);
@@ -118,7 +118,7 @@ async function TerminateServers() {
     try {
       process.kill(pid, 'SIGTERM');
       const identifier = await KV.DeleteKey(e.key);
-      if (DBG_PROC) LOG(`.. sending SIGTERM to pid:${pid} ${identifier}`);
+      if (DBG_PROC) LOG.info(`.. sending SIGTERM to pid:${pid} ${identifier}`);
     } catch (err) {
       if (err.code === 'ESRCH') {
         LOG(`.. '${e.key}' (pid ${pid}) has already exited`);

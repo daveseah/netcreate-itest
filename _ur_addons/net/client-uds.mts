@@ -74,8 +74,11 @@ async function Connect() {
       m_Register(client_sock);
     });
 
-    client_sock.on(uds_sysmsg, data => {
-      LOG(`${client_sock.id} data:`, data);
+    client_sock.on(uds_sysmsg, json => {
+      const pkt = EP.packetFromJSON(json);
+      const { msg, data } = pkt;
+      LOG(`${fn} got message: ${msg} w/ data`, data);
+      LOG.warn(`would finish processing`);
     });
 
     client_sock.on('disconnected', () => {

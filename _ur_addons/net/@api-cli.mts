@@ -11,6 +11,7 @@ import { PR, PROC } from '@ursys/netcreate';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
+import * as CLIENT from './client-uds.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -100,6 +101,29 @@ async function ShutdownCLI() {
 
 /// CLI: MAIN PARSER ///////////////////////////////////////////////////////////
 /// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const COMMAND_DICT = {
+  start: async () => {
+    await CTRL.StartServers();
+  },
+  restart: async () => {
+    await CTRL.TerminateServers();
+    await CTRL.StartServers();
+  },
+  stop: async () => {
+    await CTRL.TerminateServers();
+  },
+  hosts: async () => {
+    await CTRL.ManageHosts();
+  },
+  send: async () => {
+    await CLIENT.Connect();
+    m_Sleep(1000, CLIENT.Disconnect);
+  },
+  test: async () => {
+    await TEST.RunTests();
+  }
+};
+/// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Parse the command line arguments and execute the command */
 async function ParseCommandLine() {
   try {
@@ -111,32 +135,14 @@ async function ParseCommandLine() {
     }
     // execute the command
     const [, command] = ARGS;
-    switch (command) {
-      case 'hosts':
-        await CTRL.ManageHosts();
-        break;
-      case 'start':
-        LOG.warn('net start is currently disabled');
-        // await CTRL.StartServers();
-        break;
-      case 'stop':
-        LOG.warn('net stop is currently disabled');
-        // await CTRL.TerminateServers();
-        break;
-      case 'send':
-        LOG.warn('net send is currently disabled');
-        // await CLIENT.Connect();
-        break;
-      case 'test':
-        await TEST.RunTests();
-        break;
-      case undefined:
-        LOG.warn(`net command requires mode argument [start|stop|hosts|send]`);
-        LOG.info(`reminder: working on 'net send' right now`);
-        break;
-      default:
-        LOG.warn(`unknown net command '${command}'`);
+    if (command === undefined) {
+      const commands = Object.keys(COMMAND_DICT).join('|');
+      LOG.warn(`syntax: ur net [${commands}]`);
+      return;
     }
+    const exec = COMMAND_DICT[command];
+    if (exec) await exec();
+    else LOG.warn(`unknown net command '${command}'`);
   } catch (err) {
     // format the error message to be nicer to read
     LOG.error(err.message);

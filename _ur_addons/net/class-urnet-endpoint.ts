@@ -401,6 +401,13 @@ class NetEndpoint {
     pkt.id = `pkt[${pkt.src_addr}:${count}]`;
     return pkt.id;
   }
+
+  /** convert JSON to packet and return */
+  packetFromJSON(json: string): NetPacket {
+    const pkt = new NetPacket();
+    pkt.setFromJSON(json);
+    return pkt;
+  }
   /** create a new packet with proper address */
   newPacket(msg?: NP_Msg, data?: NP_Data): NetPacket {
     const fn = 'newPacket:';
