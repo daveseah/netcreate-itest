@@ -34,8 +34,8 @@
 /// UNISYS INITIALIZE REQUIRES for REACT ROOT /////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const UNISYS = require('unisys/client');
-const UR = require('@ursys/netcreate/');
-const URMOD = require('@ursys/nc-modules');
+const UR = require('@ursys/core');
+const URADD = require('@ursys/addons');
 const SessionShell = require('unisys/component/SessionShell');
 
 /// DEBUG SWITCHES ////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ class NetCreate extends UNISYS.Component {
     super();
     UNISYS.ForceReloadOnNavigation();
     UR.ClientTest();
-    URMOD.ModuleClientTest();
+    URADD.AddonClientTest();
     this.state = {
       isConnected: true,
       isLoggedIn: false,

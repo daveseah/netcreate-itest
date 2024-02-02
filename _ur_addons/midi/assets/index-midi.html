@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI TEST</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        #keyboard {
+            font-family: monospace;
+            display: flex;
+            flex-direction: row;
+            gap: 0.25em;
+        }
+
+        .key {
+            /* center text */
+            display: flex;
+            flex-direction: column;
+            min-width: 2em;
+            gap: 5em;
+            align-items: center;
+        }
+
+        .key>div:first-child {
+            padding-top: 1em;
+            font-size: 0.5em;
+        }
+
+
+        .key.white {
+            height: 10em;
+            color: black;
+            background-color: white;
+            border: 1px dotted gray;
+        }
+
+        .key.black {
+            height: 8em;
+            color: white;
+            background-color: #444;
+            border: 1px dotted gray;
+        }
+
+        .key.playing {
+            background-color: rgba(0, 127, 127, 0.5) !important;
+        }
+
+        .output-select {
+            padding-bottom: 2em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>MIDI TEST!</h1>
+    <script src="scripts/midi-bundle.js"></script>
+</body>
+
+</html>

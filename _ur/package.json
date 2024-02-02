@@ -1,5 +1,5 @@
 {
-  "name": "@ursys/netcreate",
+  "name": "@ursys/core",
   "version": "0.1",
   "description": "modular system for enhancing NetCreate 2.0 (ITEST)",
   "repository": {
@@ -8,7 +8,7 @@
   },
   "private": true,
   "scripts": {
-    "build-libs": "node ../_ur_cli/@cli-build-lib.cjs",
+    "build-core": "node ./npm-scripts/@build-core.cjs",
     "lint": "eslint .",
     "clean": "rm -rf ./node_modules ./_dist"
   },
@@ -28,11 +28,16 @@
   "devDependencies": {
     "esbuild": "^0.19.2",
     "esbuild-plugin-copy": "^2.1.1",
-    "esbuild-plugin-umd-wrapper": "^1.0.7"
+    "esbuild-plugin-umd-wrapper": "^1.0.7",
+    "ts-node": "^10.9.1"
   },
   "dependencies": {
+    "@achrinza/node-ipc": "^10.1.10",
     "fs-extra": "^11.1.1",
+    "keyv": "^4.5.4",
+    "keyv-file": "^0.2.0",
+    "lokijs": "^1.5.12",
     "node-dir": "^0.1.17",
-    "lokijs": "^1.5.12"
+    "ws": "^8.14.2"
   }
 }

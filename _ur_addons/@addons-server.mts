@@ -1,30 +1,27 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  entrypoint for client
+  entrypoint for modules
 
-  when making live changes, make sure that the ur builder is also running and
-  users of this library are watching for changes to the ur library
+  modules can import from ursys
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-// note: cjs-style modules in 'common' can not be destructured on import
-import PROMPTS from '../common/prompts.js';
-const { makeStyleFormatter } = PROMPTS;
+/* added for pull request #81 so 'npm run lint' test appears clean */
+/* eslint-disable no-unused-vars */
+
+// cjs-style modules
+import * as UR from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = makeStyleFormatter('UR', 'TagCyan');
+// const PR = PROMPT.makeStyleFormatter('UR', 'TagCyan');
 
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function ClientTest(): void {
-  console.log(...PR('System Integration of new URSYS module successful!'));
-  // console.log(...PR('@ursys/core integration...works?'));
+function ModuleServerTest() {
+  console.log('modules.ts test');
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export {
-  makeStyleFormatter as ConsoleStyler, // style formatter for browser
-  ClientTest
-};
+export { ModuleServerTest };

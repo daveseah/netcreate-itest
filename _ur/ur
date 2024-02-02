@@ -2,33 +2,73 @@
 # URTEST is a CLI development task runner that invokes the URSYS CLI build library
 # it lives inside of the _ur directory
 
+# PATH SETTINGS
+UR_BUILD="./"
+CLI_BUILD="./npm-scripts"
+ADDONS_LIB="../_ur_addons"
+TEST_BUILD="../_ur_addons/loki"
+
+usage() {
+    COMMANDS="build test"
+    ADDONS=""
+    a_dirs=$(find "$ADDONS_LIB" -mindepth 1 -maxdepth 1 -type d -name "[!_]*" -exec basename {} \;)
+    a_dirs=$(echo "$a_dirs" | tr '\n' ' ')
+    for dir in $a_dirs; do
+      if [ "$dir" != "node_modules" ]; then
+        ADDONS="$ADDONS $dir"
+      fi
+    done
+    ADDONS=$(echo $ADDONS)
+    
+    dim=$(tput dim)
+    yellow=$(tput setaf 3)
+    reset=$(tput sgr0)
+    echo "usage:     ${yellow}ur [command | addon]${reset}${dim}"
+    echo "commands   $COMMANDS"
+    echo "addons     $ADDONS"
+    echo "${reset}"
+    exit 1
+}
+
 # Make sure NodeJS is installed
 if ! command -v node > /dev/null 2>&1; then
     echo "Node.js not found. Please ensure it's installed."
     exit 1
 fi
 
-# PATHS
-UR_BUILD="./"
-CLI_BUILD="../_ur_cli"
-MODS_BUILD="../_ur_mods"
-TEST_BUILD="../_ur_addons"
+#
+# If no arguments provided or unknown option, display usage
+#
+if [ $# -eq 0 ]; then
+  usage
+fi
 
-# Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
+#
+# handle built-in commands
+# note: Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
+#
 DEBUG="--inspect-brk" # use --inspect-brk to break on first line
 OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
+TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode (disables typecheck)
+case "$1" in
+    build)
+        # (1) always build library first
+        node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+        # (2) add additional tasks here (eventually can be command args)
+        node $OPTS $CLI_BUILD/@build-addons.cjs 2>&1 | cat
+        exit 0;
+        ;;
 
-# (1) always build library first
-node $OPTS $CLI_BUILD/@cli-build-lib.cjs 2>&1 | cat
+    test)
+        echo "would be running tests..."
+        exit 0;
+        ;;
+esac
 
-# (2) add additional tasks here (eventually can be command args)
-node $OPTS $MODS_BUILD/@ur-build-mods.cjs 2>&1 | cat
-
-# (3) test 'addons' (replacing ur_mods)
-# npx ts-node-esm $TEST_BUILD/@test.mts 2>&1 | cat
-
-# (X) BROKEN TASKS
-# node $OPTS $CLI_BUILD/@cli-build-app.cjs 2>&1 | cat 
-# node $OPTS $CLI_BUILD/@cli-dev-test.cjs 2>&1 | cat
-
-
+#
+# if we got this far, assuming that $1 is a directory and we are going
+# to pass arguments to a special script
+#
+node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+# to debug the addon loader, remove the TSOPTS (--transpile-only)
+npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts "$@"
