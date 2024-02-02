@@ -192,7 +192,7 @@ module.exports = (config, callback) => {
       }
     });
     // running inside of visual studio code workspace
-    if (!process.env.VSCODE_PROFILE) {
+    if (!process.env.VSCODE_TERM) {
       console.log(PR, YL('NOTICE: CODE-WORKSPACE NOT LOADED'));
       console.log(PR, YL('.. skipped version environment checks'));
     } else {

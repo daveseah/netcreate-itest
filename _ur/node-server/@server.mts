@@ -11,10 +11,12 @@
 /* eslint-disable no-unused-vars */
 
 import UrModule from './class-urmodule.mts';
-import * as MODMGR from './urmod-mgr.mts';
+import * as ADDONMGR from './ur-addon-mgr.mts';
 import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
+import * as PROC from './processes.mts';
+import TEXT from '../common/text.js';
 // cjs-style modules
 import PROMPTS from '../common/prompts.js';
 const { makeTerminalOut } = PROMPTS;
@@ -38,11 +40,14 @@ export {
   Initialize,
   // MAIN MODULES
   APPSERV, // application server
-  MODMGR, // ur module manager
+  ADDONMGR, // ur module manager
   ENV, // environment utilities and constants
   FILES, // file utilities
+  PROC, // interprocess communication utils
+  // JS
+  TEXT,
   // CLASSES
   UrModule, // ur module wrapper
   // COMMON UTILS
-  makeTerminalOut as TerminalFormatter // prompt style formatter
+  makeTerminalOut as PR // prompt style formatter
 };

@@ -18,16 +18,48 @@ import NDIR from 'node-dir';
 import FSE from 'fs-extra';
 import PATH from 'node:path';
 import PROMPT from '../common/prompts.js';
+import * as url from 'url';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_Dirname() {
+  if (import.meta) return url.fileURLToPath(new URL('.', import.meta.url));
+  return __dirname;
+}
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PROMPT.makeTerminalOut(' FILES', 'TagGreen');
 const ERR_UR = 444;
 const DBG = false;
 
+/// ADDON MODULE SUPPORT //////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** given a root directory, return an object that has
+ *  - path: return a normalized path relative to base path with no trailing /
+ *  - short: return path without the root directory portion
+ */
+function NormalPathUtility(rootRelDir?: string) {
+  const dirname = m_Dirname();
+  // calculate the root dit
+  if (rootRelDir === undefined) rootRelDir = PATH.normalize(PATH.join(dirname, '..'));
+  const u_path = path => {
+    if (path.length === 0) return rootRelDir;
+    path = PATH.normalize(PATH.join(rootRelDir, path));
+    if (path.endsWith('/')) path = path.slice(0, -1);
+    return path;
+  };
+  const u_short = path => {
+    if (path.startsWith(rootRelDir)) return path.slice(rootRelDir.length);
+    return path;
+  };
+  return {
+    path: u_path,
+    short: u_short
+  };
+}
+
 /// SYNCHRONOUS FILE METHODS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function FileExists(filepath) {
+function FileExists(filepath): boolean {
   try {
     // accessSync only throws an error; doesn't return a value
     FSE.accessSync(filepath);
@@ -37,7 +69,7 @@ function FileExists(filepath) {
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function DirExists(dirpath) {
+function DirExists(dirpath): boolean {
   try {
     const stat = FSE.statSync(dirpath);
     if (stat.isFile()) {
@@ -50,7 +82,7 @@ function DirExists(dirpath) {
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function IsDir(dirpath) {
+function IsDir(dirpath): boolean {
   try {
     const stat = FSE.statSync(dirpath);
     if (stat.isDirectory()) return true;
@@ -61,7 +93,7 @@ function IsDir(dirpath) {
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function IsFile(filepath) {
+function IsFile(filepath): boolean {
   try {
     const stat = FSE.statSync(filepath);
     if (stat.isFile()) return true;
@@ -82,7 +114,7 @@ function EnsureDir(dirpath) {
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RemoveDir(dirpath) {
+function RemoveDir(dirpath): boolean {
   try {
     if (IsDir(dirpath)) FSE.removeSync(dirpath);
     return true;
@@ -91,13 +123,44 @@ function RemoveDir(dirpath) {
     throw new Error(err);
   }
 }
+//
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** scan for parent directory that contains a file that uniquely appears in the
+ *  root directory of the project. It defaults to `.nvmrc`
+ */
+function DetectedRootDir(rootfile: string = '.nvmrc'): string {
+  let currentDir = m_Dirname();
+  const check_dir = dir => FSE.existsSync(PATH.join(dir, rootfile));
+  while (currentDir !== PATH.parse(currentDir).root) {
+    if (check_dir(currentDir)) return currentDir;
+    currentDir = PATH.resolve(currentDir, '..');
+  }
+  // If reached root and file not found
+  return undefined;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Make a string relative to the project root, returning a normalized path */
+function AbsLocalPath(subdir: string): string {
+  const root = DetectedRootDir();
+  if (!root) throw Error('AbsLocalPath: could not find project root');
+  return PATH.normalize(PATH.join(root, subdir));
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Make a string that removes the DetectedRootDir() portion of the path */
+function RelLocalPath(subdir: string): string {
+  const root = DetectedRootDir();
+  if (!root) throw Error('AbsLocalPath: could not find project root');
+  const path = PATH.normalize(PATH.join(root, subdir));
+  return path.slice(root.length);
+}
 
 /// ASYNC DIRECTORY METHODS ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return array of filenames */
 function GetDirContent(dirpath) {
   if (!DirExists(dirpath)) {
-    console.warn(`${dirpath} is not a directory`);
+    const err = `${dirpath} is not a directory`;
+    console.warn(err);
     return undefined;
   }
   const filenames = FSE.readdirSync(dirpath);
@@ -114,23 +177,28 @@ function GetDirContent(dirpath) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** given a dirpath, return all files. optional match extension */
-function Files(dirpath, opt = {}) {
+function Files(dirpath, opt = {}): string[] {
   const result = GetDirContent(dirpath);
-  if (DBG) {
-    if (result.files.length && result.files.length > 0) LOG('Files: success');
-    else LOG('Files: fail');
-  }
+  if (!result) return undefined;
   const basenames = result.files.map(p => PATH.basename(p));
   if (DBG) LOG(`found ${basenames.length} files in ${dirpath}`);
   return basenames;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Subdirs(dirpath) {
+function Subdirs(dirpath): string[] {
   const result = GetDirContent(dirpath);
+  if (!result) return undefined;
   return result.dirs;
 }
 
 /// FILE READING //////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function ReadFile(filepath, opt?) {
+  opt = opt || {};
+  opt.encoding = opt.encoding || 'utf8';
+  return FSE.readFileSync(filepath, opt);
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function AsyncReadFile(filepath, opt?) {
   opt = opt || {};
@@ -178,9 +246,13 @@ export {
   IsFile,
   EnsureDir,
   RemoveDir,
+  DetectedRootDir,
+  AbsLocalPath,
+  RelLocalPath,
   Files,
   Subdirs,
   //
+  ReadFile,
   AsyncReadFile,
   UnsafeWriteFile,
   AsyncReadJSON,

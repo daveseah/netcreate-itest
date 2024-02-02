@@ -1,30 +1,22 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  entrypoint for client
-
-  when making live changes, make sure that the ur builder is also running and
-  users of this library are watching for changes to the ur library
+  entrypoint for client-side addons
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-// note: cjs-style modules in 'common' can not be destructured on import
-import PROMPTS from '../common/prompts.js';
-const { makeStyleFormatter } = PROMPTS;
+import * as UR from '@ursys/core'; // this is a .js file
+const { ConsoleStyler } = UR;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const PR = makeStyleFormatter('UR', 'TagCyan');
+const PF = ConsoleStyler('UR/ADD', 'TagPink');
 
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function ClientTest(): void {
-  console.log(...PR('System Integration of new URSYS module successful!'));
-  // console.log(...PR('@ursys/core integration...works?'));
+function AddonClientTest() {
+  console.log(...PF('System Integration of new URSYS addon successful!'));
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export {
-  makeStyleFormatter as ConsoleStyler, // style formatter for browser
-  ClientTest
-};
+export { AddonClientTest };

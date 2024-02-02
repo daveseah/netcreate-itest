@@ -4,11 +4,11 @@
   "description": "research project for network graph analysis",
   "workspaces": [
     "_ur/",
-    "_ur_mods/"
+    "_ur_addons/"
   ],
   "scripts": {
-    "dev": "node ./_ur_cli/@cli-build-lib.cjs && node ./_ur_mods/@ur-build-mods.cjs && brunch w -s",
-    "build-libs": "node ./_ur_cli/@cli-build-lib.cjs",
+    "dev": "node ./_ur/npm-scripts/@build-core.cjs && node ./_ur/npm-scripts/@build-addons.cjs && brunch w -s",
+    "build-core": "node ./_ur/npm-scripts/@build-core.cjs",
     "lint": "npm exec --workspaces -- npm run lint && eslint app/",
     "dev:inspect": "node --inspect brunch-server.js",
     "classroom": "brunch build -e classroom",
@@ -56,14 +56,13 @@
     "path": "^0.12.7",
     "prettier": "^2.5.1",
     "terser-brunch": "^4.0.0",
-    "tracer": "^1.1.5",
-    "ts-node": "^10.9.1"
+    "tracer": "^1.1.5"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "@json-editor/json-editor": "^2.10.1",
-    "@ursys/nc-modules": "file:./_ur_mods",
-    "@ursys/netcreate": "file:./_ur",
+    "@ursys/core": "file:./_ur",
+    "@ursys/addons": "file:./_ur_addons",
     "babel-polyfill": "^6.26.0",
     "bootstrap": "^4.6.2",
     "classnames": "^2.3.2",
@@ -93,6 +92,7 @@
     "stacktrace-js": "^2.0.2",
     "superstruct": "^1.0.3",
     "type-detect": "^4.0.8",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "ws": "~1.1.5"
   }
 }

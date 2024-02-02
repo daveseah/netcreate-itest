@@ -18,7 +18,7 @@ let DIR_UR: string; // path to _ur directory
 let DIR_UR_DIST: string; // path to browser client code
 let DIR_BDL_BROWSER: string; // path to node server code
 let DIR_BDL_NODE: string; // path to _ur/dist directory for library out
-let DIR_URMODS: string; // path to _ur_mod directory
+let DIR_UR_ADDS: string; // path to _ur_mod directory
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return an absolute path string from root-relative path */
 const u_path = (path = '') => {
@@ -50,14 +50,14 @@ function SetRootPaths(path: string) {
     DIR_UR_DIST = u_path('/_ur/_dist');
     DIR_BDL_BROWSER = u_path('/_ur/browser-client');
     DIR_BDL_NODE = u_path('/_ur/node-server');
-    DIR_URMODS = u_path('/_ur_mods');
+    DIR_UR_ADDS = u_path('/_ur_addons');
     if (DBG) {
       console.log(DIR_PUBLIC);
       console.log(DIR_UR);
       console.log(DIR_UR_DIST);
       console.log(DIR_BDL_BROWSER);
       console.log(DIR_BDL_NODE);
-      console.log(DIR_URMODS);
+      console.log(DIR_UR_ADDS);
     }
     return GetPaths();
   }
@@ -74,7 +74,7 @@ function GetPaths() {
     DIR_BDL_BROWSER,
     DIR_BDL_NODE,
     DIR_UR_DIST,
-    DIR_URMODS
+    DIR_UR_ADDS
   };
 }
 
@@ -95,5 +95,5 @@ export {
   DIR_BDL_BROWSER,
   DIR_BDL_NODE,
   DIR_UR_DIST,
-  DIR_URMODS
+  DIR_UR_ADDS
 };

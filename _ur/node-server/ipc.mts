@@ -1,6 +1,7 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
   UR IPC
+
   there are integer codes assigned to each of the dictionary property names,
   but in use we don't use the integer codes when hooking into lifecycle
   methods.
@@ -30,14 +31,9 @@
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 import { makeTerminalOut } from '../common/prompts.js';
-const TERM = makeTerminalOut(' URPC', 'TagGreen');
+const LOG = makeTerminalOut('IPC', 'TagGreen');
 import * as UR_EVENTS from '../common/declare-async.js';
-
-/// METHODS ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
-  ...UR_EVENTS
-};
+export default { ...UR_EVENTS };
