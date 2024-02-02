@@ -56,5 +56,14 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
 else
   nvm use $NODE_PREFERRED > /dev/null 2>&1
   nvm alias default $NODE_PREFERRED > /dev/null 2>&1
-  echo "zshrc: setting default node $NODE_PREFERRED"
+  echo "vsenv: setting default node $NODE_PREFERRED"
 fi
+
+# for bash and zsh shells: if ./ is not in PATH, add it to end of PATH
+if [[ $PATH != *":./"* ]]; then
+  export PATH=$PATH:./
+  echo ""
+  echo "vsenv: adding './' to end of PATH for easier CLI execution in _ur directory!"
+  echo "       (applies only to this shell)"
+fi
+
