@@ -264,7 +264,7 @@ const REPLY_ROOTS = new Map; // Map<comment_id_parent, comment_id> Root comment_
 const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id that follows the requested comment_id
 
 MOD.DeriveValues = () => {
-  DB_Comments.forEach(c => {
+  COMMENTS.forEach(c => {
     if (c.comment_id_parent === '' && c.comment_id_previous === '')
       ROOTS.set(c.collection_ref, c.comment_id);
     if (c.comment_id_parent !== '' && c.comment_id_previous === '')
@@ -313,6 +313,7 @@ MOD.GetThreadedViewIds = cref => {
   const all_comments_ids = [];
   // 1. Start with Roots
   const rootId = ROOTS.get(cref);
+  if (rootId === undefined) return [];
   anchor_comment_ids.push(rootId);
   // 2. Find Next
   // recursively add next
@@ -351,8 +352,93 @@ MOD.GetThreadedViewData = cref => {
 }
 
 
+/// PUBLIC METHODS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.GetUserName = id => {
+  const u = USERS.get(id);
+  return u !== undefined ? u : 'Not found';
+}
 
-/// COMMENT VIEW OBJECT METHODS ///////////////////////////////////////////////
+MOD.GetCurrentUser = () => {
+  // TODO Placeholder
+  return 'Ben32'
+}
+
+MOD.GetComments = () => {
+  return COMMENTS;
+}
+
+MOD.GetComment = cid => {
+  return COMMENTS.get(cid);
+}
+
+MOD.DeleteComment = cid => {
+  // Remove parent references
+  // Remove previous references
+  COMMENTS.delete(cid);
+  MOD.DeriveValues();
+  // TODO: Add DB Call round trip
+}
+
+MOD.GetCommentTypes = () => {
+  return COMMENTTYPES;
+}
+
+
+/**
+ *
+ * @param {Object} data
+ * @param {Object} data.cref // collection_ref
+ * @param {Object} data.comment_id_parent
+ * @param {Object} data.comment_id_previous
+ */
+MOD.AddComment = data => {
+  if (data.cref === undefined) throw new Error('Comments must have a collection ref!');
+
+  const comment_id_parent = data.comment_id_parent || '';
+  const comment_id_previous = data.comment_id_previous || '';
+
+  const comment = {
+    collection_ref: data.cref,
+    comment_id: UTILS.GenerateUUID(), // thread
+    comment_id_parent,
+    comment_id_previous,
+    comment_type: 'cmt', // default type, no prompts
+    comment_createtime: new Date(),
+    comment_modifytime: '',
+
+    commenter_id: MOD.GetCurrentUser(),
+    commenter_text: []
+  }
+  COMMENTS.set(comment.comment_id, comment);
+  MOD.DeriveValues();
+  UDATA.SetAppState('COMMENTS', COMMENTS);
+  return comment;
+}
+
+/**
+ *
+ * @param {Object} cobj commentObject
+ */
+MOD.SaveComment = cobj => {
+  COMMENTS.set(cobj.comment_id, cobj);
+  UDATA.SetAppState('COMMENTS', COMMENTS);
+}
+
+
+
+
+/*/////////////////////////////// APPCORE \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
+
+  COMMENT APPCORE
+  Move this to a new module?
+
+\*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
+
+const COMMENTVOBJS = new Map();
+
+
+/// COMMENT APPCORE VIEW OBJECT METHODS ///////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /**
@@ -360,11 +446,12 @@ MOD.GetThreadedViewData = cref => {
  * @param {string} cref collection_ref id
  * @returns commentVOjb[]
  */
-MOD.GetThreadedViewObjects = cref => {
+MOD.DeriveThreadedViewObjects = cref => {
   const commentVObjs = []
   const threadIds = MOD.GetThreadedViewIds(cref);
   threadIds.forEach(cid => {
     const comment = MOD.GetComment(cid);
+    if (comment === undefined) console.error('GetThreadedViewObjects for cid not found', cid, 'in', threadIds)
     const level = comment.comment_id_parent === '' ? 0 : 1;
     commentVObjs.push({
       comment_id: cid,
@@ -389,38 +476,16 @@ MOD.GetThreadedViewObjects = cref => {
     prevLevel = cvobj.level;
   })
 
-  return commentReplyVObj.reverse();
+  COMMENTVOBJS.set(cref, commentReplyVObj.reverse());
+  return commentReplyVObj;
 }
 
-
-/// PUBLIC METHODS ////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-MOD.GetUserName = id => {
-  const u = USERS.get(id);
-  return u !== undefined ? u : 'Not found';
+MOD.GetThreadedViewObjects = cref => {
+  const commentVObjs = COMMENTVOBJS.get(cref);
+  return commentVObjs === undefined
+    ? MOD.DeriveThreadedViewObjects(cref)
+    : commentVObjs
 }
-
-MOD.GetComments = () => {
-  return COMMENTS;
-}
-
-MOD.GetComment = cid => {
-  return COMMENTS.get(cid);
-}
-
-MOD.DeleteComment = cid => {
-  COMMENTS.delete(cid);
-  MOD.DeriveValues();
-  // TODO: Add DB Call round trip
-}
-
-MOD.GetCommentTypes = () => {
-  return COMMENTTYPES;
-}
-
-MOD.AddComment = () => {
-}
-
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

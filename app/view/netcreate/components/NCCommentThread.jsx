@@ -28,6 +28,8 @@ class NCCommentThread extends React.Component {
   constructor(props) {
     super(props);
 
+    const { cref } = this.props;
+
     // EVENT HANDLERS
     this.UpdateComments = this.UpdateComments.bind(this);
     // UI HANDLERS
@@ -42,17 +44,34 @@ class NCCommentThread extends React.Component {
     UDATA.OnAppStateChange('COMMENTS', this.UpdateComments);
   }
 
-  UpdateComments(data) {}
+  UpdateComments(commentVObjs) {
+    this.forceUpdate();
+  }
 
-  UiOnReply(event) {
-    CMTMGR.AddComment();
-    this.render();
+  UIOnReply(event) {
+    const { cref } = this.props;
+    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
+
+    const numComments = commentVObjs.length;
+    if (numComments < 1) {
+      // Add first root comment
+      CMTMGR.AddComment({ cref, comment_id_parent: '', comment_id_previous: '' });
+    } else {
+      // Add reply to last comment in thread
+      const lastComment = commentVObjs[numComments - 1];
+      CMTMGR.AddComment({
+        cref,
+        comment_id_parent: '',
+        comment_id_previous: lastComment.comment_id
+      });
+    }
   }
 
   UIOnClose(event) {}
 
   render() {
-    const commentVObjs = CMTMGR.GetThreadedViewObjects('1'); // HARD CODE first ref!!! HACK!!!
+    const { cref } = this.props;
+    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
 
     return (
       <div className="commentThread">

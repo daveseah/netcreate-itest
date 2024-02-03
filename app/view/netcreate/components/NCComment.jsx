@@ -31,11 +31,14 @@ class NCComment extends React.Component {
 
     this.state = {
       // Data
+      cref: comment.collection_ref,
+      cid: comment.comment_id,
+      comment_id_parent: comment.comment_id_parent,
       commenter: CMTMGR.GetUserName(comment.commenter_id),
-      selectedType: comment.comment_type,
+      comment_type: comment.comment_type,
+      commenter_text: [...comment.commenter_text],
       createtime_string: cvobj.createtime_string,
       modifytime_string: cvobj.modifytime_string,
-      commenter_text: comment.commenter_text,
       // UI State
       uViewMode: NCUI.VIEWMODE.VIEW,
       uIsSelected: cvobj.isSelected,
@@ -63,25 +66,46 @@ class NCComment extends React.Component {
     // pass isBeingEdited to true?
   }
 
-  uiOnSelect(event) {
-    this.setState({ selectedType: event.target.value });
+  UIOnSave(event) {
+    const { comment_type, commenter_text } = this.state;
+    const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
+    comment.comment_type = comment_type;
+    comment.commenter_text = commenter_text;
+    CMTMGR.SaveComment(comment);
+    this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
 
-  uiOnSave(event) {}
-
   UIOnReply(event) {
+    const { cref, cid, comment_id_parent } = this.state;
+    if (comment_id_parent === '') {
+      // Reply to a root comment
+      CMTMGR.AddComment({ cref, comment_id_parent: cid, comment_id_previous: '' });
+    } else {
+      // Reply to a threaded comment
+      CMTMGR.AddComment({ cref, comment_id_parent, comment_id_previous: cid });
+    }
+  }
 
   UIOnDelete(event) {
     CMTMGR.DeleteComment(this.props.cvobj.comment_id);
   }
 
   UIOnCancel(event) {
+    const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
+    this.setState({
+      commenter_text: comment.commenter_text,
+      uViewMode: NCUI.VIEWMODE.VIEW
+    });
+  }
+
+  UIOnEditMenuSelect(event) {
 
   render() {
     const {
       commenter,
       modifytime_string,
-      selectedType,
+      cid,
+      comment_type,
       commenter_text,
       uViewMode,
       allowReply
@@ -93,14 +117,19 @@ class NCComment extends React.Component {
 
     const DeleteBtn = <button onClick={this.uiOnDelete}>Delete</button>;
     const SaveBtn = <button onClick={this.uiOnSave}>Comment</button>;
+    const SaveBtn = <button onClick={this.UIOnSave}>Save</button>;
     const ReplyBtn = allowReply ? (
-      <button onClick={this.uiOnReply}>Reply</button>
+      <button onClick={this.UIOnReply}>Reply</button>
     ) : (
       ''
     );
-    const CancelBtn = <button onClick={this.uiOnCancel}>Cancel</button>;
+    const CancelBtn = (
+      <button className="secondary" onClick={this.UIOnCancel}>
+        Cancel
+      </button>
+    );
     const TypeSelector = (
-      <select value={selectedType} onChange={this.uiOnSelect}>
+      <select value={comment_type} onChange={this.UIOnSelect}>
         {[...commentTypes.entries()].map(type => {
           return (
             <option key={type[0]} value={type[0]}>
@@ -122,16 +151,18 @@ class NCComment extends React.Component {
           </div>
           <div>
             <div>{TypeSelector}</div>
-            {commentTypes.get(selectedType).prompts.map((type, index) => (
+            {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
                 <div className="label">{type.prompt}</div>
                 <div className="help">{type.help}</div>
-                <textarea value={commenter_text[index]} />
+                <textarea
+                  onChange={event => this.UIOnInputUpdate(index, event)}
+                  value={commenter_text[index]}
+                />
                 <div className="feedback">{type.feedback}</div>
               </div>
             ))}
             <div className="editbar">
-              {DeleteBtn}
               {CancelBtn}
               {SaveBtn}
             </div>
@@ -145,9 +176,11 @@ class NCComment extends React.Component {
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string}</div>
+            {EditMenu}
           </div>
           <div>
-            {commentTypes.get(selectedType).prompts.map((type, index) => (
+            <div className="commentId">{cid}</div>
+            {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
                 <div className="label">{type.prompt}</div>
                 <div className="help">{type.help}</div>
@@ -155,11 +188,7 @@ class NCComment extends React.Component {
                 <div className="feedback">{type.feedback}</div>
               </div>
             ))}
-            <div className="commentbar">
-              {DeleteBtn}
-              {EditBtn}
-              {ReplyBtn}
-            </div>
+            <div className="commentbar">{ReplyBtn}</div>
           </div>
         </div>
       );
