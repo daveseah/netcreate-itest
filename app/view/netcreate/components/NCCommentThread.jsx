@@ -28,10 +28,8 @@ class NCCommentThread extends React.Component {
   constructor(props) {
     super(props);
 
-    const { cref } = this.props;
-
     // EVENT HANDLERS
-    this.UpdateComments = this.UpdateComments.bind(this);
+    this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     // UI HANDLERS
     this.UIOnReply = this.UIOnReply.bind(this);
     this.UIOnClose = this.UIOnClose.bind(this);
@@ -41,10 +39,10 @@ class NCCommentThread extends React.Component {
 
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
-    UDATA.OnAppStateChange('COMMENTS', this.UpdateComments);
+    UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
-  UpdateComments(commentVObjs) {
+  UpdateCommentVObjs(COMMENTVOBJS) {
     this.forceUpdate();
   }
 
@@ -55,7 +53,11 @@ class NCCommentThread extends React.Component {
     const numComments = commentVObjs.length;
     if (numComments < 1) {
       // Add first root comment
-      CMTMGR.AddComment({ cref, comment_id_parent: '', comment_id_previous: '' });
+      CMTMGR.AddComment({
+        cref,
+        comment_id_parent: '',
+        comment_id_previous: ''
+      });
     } else {
       // Add reply to last comment in thread
       const lastComment = commentVObjs[numComments - 1];

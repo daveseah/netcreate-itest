@@ -40,7 +40,7 @@ class NCComment extends React.Component {
       createtime_string: cvobj.createtime_string,
       modifytime_string: cvobj.modifytime_string,
       // UI State
-      uViewMode: NCUI.VIEWMODE.VIEW,
+      uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
       uIsSelected: cvobj.isSelected,
       uIsBeingEdited: cvobj.isBeingEdited,
       uIsEditable: cvobj.isEditable,
