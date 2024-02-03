@@ -31,6 +31,7 @@ function GetDateString(ms) {
 let DB_Users;
 let DB_CommentTypes;
 let DB_Comments;
+let LASTID = -1;
 
 DB_Users = [
   { id: 'Ben32', name: 'BenL' },
@@ -135,7 +136,7 @@ Is there any contradictory evidence that says the model doesn't work this way?
 DB_Comments = [
   {
     collection_ref: 1,
-    comment_id: 't_abc', // thread
+    comment_id: '1', // thread
     comment_id_parent: '',
     comment_id_previous: '',
     comment_type: 'cmt', // no prompts
@@ -149,8 +150,8 @@ DB_Comments = [
   },
   {
     collection_ref: 1,
-    comment_id: 'r_def', // reply 1
-    comment_id_parent: 't_abc',
+    comment_id: '2', // reply 1
+    comment_id_parent: '1',
     comment_id_previous: '',
     comment_type: 'changereason',
     comment_createtime: new Date(),
@@ -164,9 +165,9 @@ DB_Comments = [
   },
   {
     collection_ref: 1,
-    comment_id: 'r_ghi', // reply 2
-    comment_id_parent: 't_abc',
-    comment_id_previous: 'r_def',
+    comment_id: '3', // reply 2
+    comment_id_parent: '1',
+    comment_id_previous: '2',
     comment_type: 'understandable', // no prompts
     comment_createtime: new Date(),
     comment_modifytime: new Date(),
@@ -178,9 +179,9 @@ DB_Comments = [
   },
   {
     collection_ref: 1,
-    comment_id: 't_jkl', // thread
+    comment_id: '4', // thread
     comment_id_parent: '',
-    comment_id_previous: 't_abc',
+    comment_id_previous: '1',
     comment_type: 'cmt', // no prompts
     comment_createtime: new Date(),
     comment_modifytime: new Date(),
@@ -192,8 +193,8 @@ DB_Comments = [
   },
   {
     collection_ref: 1,
-    comment_id: 'r_mno', // reply 1
-    comment_id_parent: 't_jkl',
+    comment_id: '5', // reply 1
+    comment_id_parent: '4',
     comment_id_previous: '',
     comment_type: 'three',
     comment_createtime: new Date(),
@@ -208,9 +209,9 @@ DB_Comments = [
   },
   {
     collection_ref: 1,
-    comment_id: 't_pqr', // thread
+    comment_id: '6', // thread
     comment_id_parent: '',
-    comment_id_previous: 't_jkl',
+    comment_id_previous: '4',
     comment_type: 'cmt', // no prompts
     comment_createtime: new Date(),
     comment_modifytime: new Date(),
@@ -222,7 +223,7 @@ DB_Comments = [
   },
   {
     collection_ref: 2,
-    comment_id: 't_xyz', // thread
+    comment_id: '7', // thread
     comment_id_parent: '',
     comment_id_previous: '',
     comment_type: 'cmt', // no prompts
@@ -252,7 +253,12 @@ MOD.LoadCommentTypes = commentTypes => {
   commentTypes.forEach(t => COMMENTTYPES.set(t.id, t));
 }
 MOD.LoadComments = comments => {
-  comments.forEach(c => COMMENTS.set(c.comment_id, c));
+  let lastid = -1;
+  comments.forEach(c => {
+    COMMENTS.set(c.comment_id, c);
+    if (c.comment_id > lastid) lastid = c.comment_id;
+  });
+  LASTID = lastid;
 }
 
 
@@ -302,6 +308,10 @@ MOD.Initialize(); // INITIALIZE IT
 
 /// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+MOD.GetNextCommentId = () => {
+  return ++LASTID;
+}
 
 /**
  * Get all the comment ids related to a particular collection_ref
@@ -375,7 +385,7 @@ MOD.DCAddComment = data => {
 
   const comment = {
     collection_ref: data.cref,
-    comment_id: UTILS.GenerateUUID(), // thread
+    comment_id: MOD.GetNextCommentId(), // thread
     comment_id_parent,
     comment_id_previous,
     comment_type: 'cmt', // default type, no prompts
