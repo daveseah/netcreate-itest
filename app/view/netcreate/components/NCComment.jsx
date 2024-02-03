@@ -44,15 +44,17 @@ class NCComment extends React.Component {
       allowReply: cvobj.allowReply
     };
 
-    this.uiOnEdit = this.uiOnEdit.bind(this);
-    this.uiOnSelect = this.uiOnSelect.bind(this);
-    this.uiOnSave = this.uiOnSave.bind(this);
-    this.uiOnReply = this.uiOnReply.bind(this);
-    this.uiOnDelete = this.uiOnDelete.bind(this);
-    this.uiOnCancel = this.uiOnCancel.bind(this);
+    this.UIOnEdit = this.UIOnEdit.bind(this);
+    this.UIOnSave = this.UIOnSave.bind(this);
+    this.UIOnReply = this.UIOnReply.bind(this);
+    this.UIOnDelete = this.UIOnDelete.bind(this);
+    this.UIOnCancel = this.UIOnCancel.bind(this);
+    this.UIOnEditMenuSelect = this.UIOnEditMenuSelect.bind(this);
+    this.UIOnSelect = this.UIOnSelect.bind(this);
+    this.UIOnInputUpdate = this.UIOnInputUpdate.bind(this);
   }
 
-  uiOnEdit(event) {
+  UIOnEdit(event) {
     const uViewMode =
       this.state.uViewMode === NCUI.VIEWMODE.EDIT
         ? NCUI.VIEWMODE.VIEW
@@ -67,13 +69,13 @@ class NCComment extends React.Component {
 
   uiOnSave(event) {}
 
-  uiOnReply(event) {}
+  UIOnReply(event) {
 
-  uiOnDelete(event) {
+  UIOnDelete(event) {
     CMTMGR.DeleteComment(this.props.cvobj.comment_id);
   }
 
-  uiOnCancel(event) {}
+  UIOnCancel(event) {
 
   render() {
     const {

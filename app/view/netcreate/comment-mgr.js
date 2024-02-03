@@ -134,7 +134,7 @@ Is there any contradictory evidence that says the model doesn't work this way?
 
 DB_Comments = [
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 't_abc', // thread
     comment_id_parent: '',
     comment_id_previous: '',
@@ -148,7 +148,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 'r_def', // reply 1
     comment_id_parent: 't_abc',
     comment_id_previous: '',
@@ -163,7 +163,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 'r_ghi', // reply 2
     comment_id_parent: 't_abc',
     comment_id_previous: 'r_def',
@@ -177,7 +177,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 't_jkl', // thread
     comment_id_parent: '',
     comment_id_previous: 't_abc',
@@ -191,7 +191,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 'r_mno', // reply 1
     comment_id_parent: 't_jkl',
     comment_id_previous: '',
@@ -207,7 +207,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '1',
+    collection_ref: 1,
     comment_id: 't_pqr', // thread
     comment_id_parent: '',
     comment_id_previous: 't_jkl',
@@ -221,7 +221,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: '2',
+    collection_ref: 2,
     comment_id: 't_xyz', // thread
     comment_id_parent: '',
     comment_id_previous: '',
@@ -271,6 +271,8 @@ MOD.DeriveValues = () => {
       REPLY_ROOTS.set(c.comment_id_parent, c.comment_id);
     NEXT.set(c.comment_id_previous, c.comment_id);
   })
+  if (DBG) console.log('ROOTS', ROOTS);
+  if (DBG) console.log('NEXT', NEXT);
 }
 
 MOD.Initialize = () => {
@@ -283,8 +285,6 @@ MOD.Initialize = () => {
   if (DBG) console.log('COMMENTS', COMMENTS)
 
   MOD.DeriveValues(); // execute it
-  if (DBG) console.log('ROOTS', ROOTS);
-  if (DBG) console.log('NEXT', NEXT);
 }
 MOD.Initialize(); // INITIALIZE IT
 

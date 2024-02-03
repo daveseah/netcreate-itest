@@ -31,8 +31,8 @@ class NCCommentThread extends React.Component {
     // EVENT HANDLERS
     this.UpdateComments = this.UpdateComments.bind(this);
     // UI HANDLERS
-    this.UiOnReply = this.UiOnReply.bind(this);
-    this.UiOnClose = this.UiOnClose.bind(this);
+    this.UIOnReply = this.UIOnReply.bind(this);
+    this.UIOnClose = this.UIOnClose.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -49,12 +49,9 @@ class NCCommentThread extends React.Component {
     this.render();
   }
 
-  UiOnClose(event) {}
+  UIOnClose(event) {}
 
   render() {
-    const ReplyBtn = <button onClick={this.uiOneReply}>Reply</button>;
-    const CloseBtn = <button onClick={this.UiOnClose}>Close</button>;
-
     const commentVObjs = CMTMGR.GetThreadedViewObjects('1'); // HARD CODE first ref!!! HACK!!!
 
     return (
@@ -64,13 +61,8 @@ class NCCommentThread extends React.Component {
         ))}
         <textarea
           placeholder="Click to add a Comment..."
-          onClick={this.UiOnReply}
+          onClick={this.UIOnReply}
         ></textarea>
-        {/* <div className="commentbar">
-          {CloseBtn}
-          <div></div>
-          {ReplyBtn}
-        </div> */}
       </div>
     );
   }
