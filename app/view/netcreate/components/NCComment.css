@@ -1,4 +1,5 @@
 .commentThread {
+  margin-top: 1em;
   background-color: gold;
   padding: 5px;
 }
@@ -25,13 +26,13 @@
 
 .comment .commenter,
 .comment .label,
-.comment .help /* .help uses nccomponent */ {
+.comment .help /* .help uses nccomponent */,
+.comment .commentId {
   color: #0008;
   font-size: 0.8em;
 }
 .comment .feedback {
-  /* emulate nccomponent help */
-  color: #0007;
+  color: #0007; /* emulate nccomponent help */
   opacity: 0.8;
   font-size: 10px;
 }
@@ -39,14 +40,38 @@
   background-color: #fff5;
 }
 
+.comment .commentId {
+  float: right;
+}
+
+.comment .editmenu {
+  visibility: hidden;
+  border: none;
+  font-size: 0.8em;
+}
+.comment:hover .editmenu {
+  visibility: visible;
+}
+
 .comment .commentbar,
 .comment .editbar {
-  padding-top: 3px;
+  padding-top: 5px;
 }
 
 .comment .commentbar button,
 .comment .editbar button {
+  color: white;
+  background-color: #f60;
   margin-left: 0; /* override nccomponent */
+}
+.comment .commentbar button:hover,
+.comment .editbar button:hover {
+  color: white;
+  background-color: rgb(255, 141, 65);
+}
+.comment .commentbar button.secondary,
+.comment .editbar button.secondary {
+  color: #333;
 }
 .comment .commentbar button {
   /* visibility: hidden; */
@@ -59,7 +84,7 @@
 
 .commentbar,
 .editbar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-content: space-between;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
 }

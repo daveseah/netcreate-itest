@@ -755,7 +755,7 @@ class NCNode extends UNISYS.Component {
               <button onClick={this.DeleteNode}>Delete</button>
             </div>
           )}
-          <NCCommentThread />
+          <NCCommentThread cref={id} />
         </div>
         {uShowCitationDialog && (
           <NCDialogCitation message={citation} onClose={this.UICitationClose} />

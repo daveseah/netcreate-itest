@@ -99,6 +99,27 @@ class NCComment extends React.Component {
   }
 
   UIOnEditMenuSelect(event) {
+    switch (event.target.value) {
+      case 'edit':
+        this.UIOnEdit();
+        break;
+      case 'delete':
+        this.UIOnDelete();
+        break;
+      default:
+        break;
+    }
+  }
+
+  UIOnSelect(event) {
+    this.setState({ comment_type: event.target.value });
+  }
+
+  UIOnInputUpdate(index, event) {
+    const { commenter_text } = this.state;
+    commenter_text[index] = event.target.value;
+    this.setState({ commenter_text });
+  }
 
   render() {
     const {
@@ -113,10 +134,25 @@ class NCComment extends React.Component {
     const { cvobj } = this.props;
 
     const commentTypes = CMTMGR.GetCommentTypes();
-    const EditBtn = <button onClick={this.uiOnEdit}>Edit</button>;
 
-    const DeleteBtn = <button onClick={this.uiOnDelete}>Delete</button>;
-    const SaveBtn = <button onClick={this.uiOnSave}>Comment</button>;
+    const EditBtn = (
+      <button className="outline small" onClick={this.UIOnEdit}>
+        Edit
+      </button>
+    );
+    const DeleteBtn = (
+      <button className="outline small" onClick={this.UIOnDelete}>
+        Delete
+      </button>
+    );
+    const EditMenu = (
+      <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
+        <option>...</option>
+        <option value="edit">EDIT</option>
+        <option value="delete">DELETE</option>
+      </select>
+    );
+
     const SaveBtn = <button onClick={this.UIOnSave}>Save</button>;
     const ReplyBtn = allowReply ? (
       <button onClick={this.UIOnReply}>Reply</button>
