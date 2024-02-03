@@ -192,6 +192,7 @@ class NCComment extends React.Component {
                 <div className="label">{type.prompt}</div>
                 <div className="help">{type.help}</div>
                 <textarea
+                  autoFocus
                   onChange={event => this.UIOnInputUpdate(index, event)}
                   value={commenter_text[index]}
                 />
