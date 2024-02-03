@@ -4,11 +4,8 @@
 
   USE:
 
-    <NCDialog
-      statekey={key}
-      value={value}
-      onChange={this.handleInputUpdate}
-      onSelect={this.handleSelection}
+    <NCComentThread
+      cref={collection_ref}
     />
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
