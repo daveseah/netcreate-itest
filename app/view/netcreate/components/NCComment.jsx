@@ -124,6 +124,7 @@ class NCComment extends React.Component {
   render() {
     const {
       commenter,
+      createtime_string,
       modifytime_string,
       cid,
       comment_type,
@@ -183,7 +184,7 @@ class NCComment extends React.Component {
         <div className="comment">
           <div>
             <div className="commenter">{commenter}</div>
-            <div className="date">{modifytime_string}</div>
+            <div className="date">{modifytime_string || createtime_string}</div>
           </div>
           <div>
             <div>{TypeSelector}</div>
@@ -212,7 +213,7 @@ class NCComment extends React.Component {
         <div className="comment">
           <div>
             <div className="commenter">{commenter}</div>
-            <div className="date">{modifytime_string}</div>
+            <div className="date">{modifytime_string || createtime_string}</div>
             {EditMenu}
           </div>
           <div>

@@ -460,7 +460,7 @@ MOD.DeriveThreadedViewObjects = cref => {
     commentVObjs.push({
       comment_id: cid,
       createtime_string: GetDateString(comment.comment_createtime),
-      modifytime_string: GetDateString(comment.comment_modifytime),
+      modifytime_string: comment.comment_modifytime ? GetDateString(comment.comment_modifytime) : '',
       level,
       isSelected: false,
       isBeingEdited: false,
