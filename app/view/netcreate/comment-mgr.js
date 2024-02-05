@@ -424,9 +424,19 @@ MOD.GetCommentTypes = () => {
  * @param {Object} cobj commentObject
  */
 MOD.SaveComment = cobj => {
-  COMMENTS.set(cobj.comment_id, cobj);
-  UDATA.SetAppState('COMMENTS', COMMENTS);
   // TODO: Add DB Call round trip
+  // Fake modify date until we get DB roundtrip
+  cobj.comment_modifytime = new Date();
+  COMMENTS.set(cobj.comment_id, cobj);
+
+  // Disable edtiable
+  let commentVObjs = MOD.GetThreadedViewObjects(cobj.collection_ref);
+  const cvobj = MOD.GetCommentVObj(cobj.collection_ref, cobj.comment_id);
+  cvobj.isBeingEdited = false;
+  commentVObjs = commentVObjs.map(c => c.comment_id === cvobj.comment_id ? cvobj : c)
+  COMMENTVOBJS.set(cobj.collection_ref, commentVObjs);
+
+  UDATA.SetAppState('COMMENTS', COMMENTS);
 }
 
 
