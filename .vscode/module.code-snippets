@@ -12,21 +12,23 @@
   // 	],
   // 	"description": "Log output to console"
   // }
-  "ursanode bare module": {
+  "ursys bare module": {
     "prefix": "ur-module-elements",
     "description": "a bare module ",
     "body": [
       "/*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\\",
       "",
-      "  description$1",
+      "  $1description",
       "",
       "\\*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/",
+      "",
+      "/* import or require */",
       "",
       "/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////",
       "/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
       "",
       "",
-      "/// HELPER FUNCTIONS //////////////////////////////////////////////////////////",
+      "/// HELPER METHODS ////////////////////////////////////////////////////////////",
       "/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -",
       "",
       "",
@@ -38,7 +40,7 @@
       "/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
     ]
   },
-  "ursanode header comment block": {
+  "ursys header comment block": {
     "prefix": "ur-comment-block-header",
     "description": "a comment block with header",
     "body": [
@@ -49,7 +51,7 @@
       ":*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/\n"
     ]
   },
-  "ursanode function header": {
+  "ursys function header": {
     "prefix": "ur-jsdoc-function-block",
     "description": "JSDOC header for functions",
     "body": [
@@ -62,7 +64,7 @@
       " */"
     ]
   },
-  "ursanode callout comment block": {
+  "ursys callout comment block": {
     "prefix": "ur-comment-block",
     "description": "comment block",
     "body": [
@@ -72,7 +74,7 @@
       ":*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/\n"
     ]
   },
-  "ursanode module example": {
+  "ursys module example": {
     "prefix": "ur-module-example",
     "description": "an example module using ES6 syntax (webpack, parcel)",
     "body": [

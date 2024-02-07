@@ -63,7 +63,7 @@
           "${env:SHELL}",
           "-i",
           "-c",
-          "export VSCODE_TERM='force x86_64';source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='x86 shell';source ${workspaceFolder}/.vscode/vs_env; exec ${env:SHELL}"
         ]
       },
       "arm64 macos": {
@@ -74,7 +74,7 @@
           "${env:SHELL}",
           "-i",
           "-c",
-          "export VSCODE_TERM='force arm64'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='arm64 shell'; cd ${workspaceFolder}; source .vscode/vs_env; exec ${env:SHELL}"
         ]
       },
       "generic macos": {
@@ -82,7 +82,7 @@
         "args": [
           "-i",
           "-c",
-          "export VSCODE_TERM='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='generic bash'; cd ${workspaceFolder}; source .vscode/vs_env; exec ${env:SHELL}"
         ]
       }
     },
@@ -92,13 +92,11 @@
         "args": [
           "-i",
           "-c",
-          "export VSCODE_TERM='generic bash'; source .vscode/check_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='generic bash'; cd ${workspaceFolder}; source .vscode/vs_env; exec ${env:SHELL}"
         ]
       }
     },
-    // this line will force use of the selected profile
-    // it's only needed when running pre-v14 versions of NodeJS
-    // to force Intel386 on Apple Silicon processors
+    // use 'x86 macos' profile to force i386 compatibility on ARM64 Macs
     "terminal.integrated.defaultProfile.osx": "x86 macos",
     "terminal.integrated.defaultProfile.linux": "generic linux"
   }
