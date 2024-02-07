@@ -1,6 +1,16 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  description
+  addon loader module
+
+  invoked from the '_ur/ur' shell script expecting the name of a subdirectory
+  in the _ur_addons directory with option @entryfile name (no extension).
+  If the optional @entryfile is not provided, the first one found will be used.
+  This entryfile will be forked as a child process with complete arguments.
+
+  example:
+
+  $ ur my-addon args...
+  $ ur my-addon@my-entry args...
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -29,7 +39,8 @@ async function ForkAddon(addonSelector: string) {
   const cwd = FILES.AbsLocalPath(`_ur_addons/${addonName}`);
   const child_pid = fork(entryFile, ARGS, { cwd });
   const { pid } = child_pid;
-  if (DBG) LOG(`.. forking '${addonName}${entryName}' (pid ${pid}`);
+  if (DBG) LOG(`.. forking '${addonName}${entryName}' (pid ${pid})`);
+  else LOG.info(`loading '${addonName}${entryName}' (pid ${pid})`);
 }
 
 /// RUNTIME ///////////////////////////////////////////////////////////////////
