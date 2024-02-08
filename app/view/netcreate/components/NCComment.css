@@ -2,6 +2,14 @@
   margin-top: 1em;
   background-color: gold;
   padding: 5px;
+  /* floating */
+  position: fixed;
+  top: 120px;
+  left: 380px;
+  width: 400px;
+  max-height: 80%;
+  overflow-y: auto;
+  /* end floating */
 }
 .nccomponent .commentThread textarea {
   margin-bottom: 0;
@@ -56,6 +64,10 @@
   visibility: visible;
 }
 
+.commentThread .topbar {
+  display: flex;
+  justify-content: flex-end;
+}
 .comment .commentbar,
 .comment .editbar {
   padding-top: 5px;

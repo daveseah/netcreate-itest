@@ -11,6 +11,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
+const Draggable = require('react-draggable');
 const UNISYS = require('unisys/client');
 const CMTMGR = require('../comment-mgr');
 const NCComment = require('./NCComment');
@@ -74,9 +75,12 @@ class NCCommentThread extends React.Component {
   render() {
     const { cref } = this.props;
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
+    const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
 
     return (
+      <Draggable>
       <div className="commentThread">
+          <div className="topbar">X</div>
         {commentVObjs.map(cvobj => (
           <NCComment key={cvobj.comment_id} cvobj={cvobj} />
         ))}
@@ -85,7 +89,9 @@ class NCCommentThread extends React.Component {
           readOnly
           onClick={this.UIOnReply}
         ></textarea>
+          <div className="commentbar">{CloseBtn}</div>
       </div>
+      </Draggable>
     );
   }
 }
