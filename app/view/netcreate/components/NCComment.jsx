@@ -12,6 +12,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
+const UNISYS = require('unisys/client');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
 
@@ -19,6 +20,8 @@ const CMTMGR = require('../comment-mgr');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
 const PR = 'NCComment';
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let UDATA;
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -47,6 +50,10 @@ class NCComment extends React.Component {
       allowReply: cvobj.allowReply
     };
 
+    // EVENT HANDLERS
+    this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
+    this.LoadCommentVObj = this.LoadCommentVObj.bind(this);
+    // UI HANDLERS
     this.UIOnEdit = this.UIOnEdit.bind(this);
     this.UIOnSave = this.UIOnSave.bind(this);
     this.UIOnReply = this.UIOnReply.bind(this);
@@ -55,6 +62,40 @@ class NCComment extends React.Component {
     this.UIOnEditMenuSelect = this.UIOnEditMenuSelect.bind(this);
     this.UIOnSelect = this.UIOnSelect.bind(this);
     this.UIOnInputUpdate = this.UIOnInputUpdate.bind(this);
+
+    /// Initialize UNISYS DATA LINK for REACT
+    UDATA = UNISYS.NewDataLink(this);
+
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// REGISTER LISTENERS
+    UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+  }
+
+  UpdateCommentVObjs(COMMENTVOBJS) {
+    this.LoadCommentVObj();
+  }
+  LoadCommentVObj() {
+    const { cref, cid } = this.state;
+    const cvobj = CMTMGR.GetCommentVObj(cref, cid);
+    const comment = CMTMGR.GetComment(cid);
+
+    this.setState({
+      // Data
+      cref: comment.collection_ref,
+      cid: comment.comment_id,
+      comment_id_parent: comment.comment_id_parent,
+      commenter: CMTMGR.GetUserName(comment.commenter_id),
+      comment_type: comment.comment_type,
+      commenter_text: [...comment.commenter_text],
+      createtime_string: cvobj.createtime_string,
+      modifytime_string: cvobj.modifytime_string,
+      // UI State
+      uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
+      uIsSelected: cvobj.isSelected,
+      uIsBeingEdited: cvobj.isBeingEdited,
+      uIsEditable: cvobj.isEditable,
+      allowReply: cvobj.allowReply
+    });
   }
 
   UIOnEdit(event) {
@@ -71,7 +112,7 @@ class NCComment extends React.Component {
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
     comment.comment_type = comment_type;
     comment.commenter_text = commenter_text;
-    CMTMGR.SaveComment(comment);
+    CMTMGR.UpdateComment(comment);
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
 
@@ -87,7 +128,7 @@ class NCComment extends React.Component {
   }
 
   UIOnDelete(event) {
-    CMTMGR.DeleteComment(this.props.cvobj.comment_id);
+    CMTMGR.RemoveComment(this.props.cvobj.comment_id);
   }
 
   UIOnCancel(event) {
@@ -134,6 +175,7 @@ class NCComment extends React.Component {
     } = this.state;
     const { cvobj } = this.props;
 
+    const comment = CMTMGR.GetComment(cvobj.comment_id);
     const commentTypes = CMTMGR.GetCommentTypes();
 
     const EditBtn = (
