@@ -5,6 +5,8 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import * as UR from '@ursys/core'; // this is a .js file
+import * as COMMENT from './comment/ac-comment.ts';
+
 const { ConsoleStyler } = UR;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -19,4 +21,4 @@ function AddonClientTest() {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export { AddonClientTest };
+export { AddonClientTest, COMMENT };
