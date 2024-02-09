@@ -38,7 +38,7 @@ const UR = require('@ursys/core');
 const URADD = require('@ursys/addons');
 const SessionShell = require('unisys/component/SessionShell');
 
-/// DEBUG SWITCHES ////////////////////////////////////////////////////////////
+/// SWITCHES //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var DBG = false;
 const PROMPTS = require('system/util/prompts');
@@ -67,8 +67,15 @@ class NetCreate extends UNISYS.Component {
   constructor() {
     super();
     UNISYS.ForceReloadOnNavigation();
+
+    /** _ur core and _ur_addons reachability tests **/
     UR.ClientTest();
     URADD.AddonClientTest();
+    const SM = new UR.StateMgr('NETCREATE');
+    SM._initializeState({ prop_1: 1 });
+    console.log('SM:StateMgr contains:', SM.State());
+    /** end of _ur core and _ur_addons tests **/
+
     this.state = {
       isConnected: true,
       isLoggedIn: false,

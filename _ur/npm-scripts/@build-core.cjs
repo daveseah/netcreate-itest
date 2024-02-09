@@ -64,7 +64,7 @@ async function ESBuildLibrary() {
     entryPoints: [`${ROOT}/_ur/browser-client/@client.ts`],
     bundle: true,
     platform: 'browser',
-    target: ['esnext'],
+    target: ['es2018'], // brunch can't handle features beyond this date
     sourcemap: true
   };
   await esbuild.build({

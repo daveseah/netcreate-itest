@@ -10,6 +10,7 @@
 // note: cjs-style modules in 'common' can not be destructured on import
 import PROMPTS from '../common/prompts.js';
 const { makeStyleFormatter } = PROMPTS;
+import StateMgr from '../common/class-statemgr.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -25,6 +26,10 @@ function ClientTest(): void {
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
+  // classes
+  StateMgr,
+  // formatting
   makeStyleFormatter as ConsoleStyler, // style formatter for browser
+  // test
   ClientTest
 };

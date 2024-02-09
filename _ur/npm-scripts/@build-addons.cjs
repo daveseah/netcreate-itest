@@ -66,7 +66,7 @@ async function ESBuildModules() {
     entryPoints: [`${DIR_URADDS}/@addons-client.ts`],
     bundle: true,
     platform: 'browser',
-    target: ['esnext'],
+    target: ['es2018'], // brunch can't handle features beyond this date
     sourcemap: true
   };
 

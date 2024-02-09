@@ -115,9 +115,9 @@ function m_RenderApp() {
         resolve();
       });
     } catch (e) {
-      console.error(
-        'm_RenderApp() Lifecycle Error. Check phase execution order effect on data validity.\n',
-        e
+      // eslint-disable-next-line no-alert
+      alert(
+        `m_RenderApp() Lifecycle Error.\nOpen Javascript Console, then press "OK" for for debugging details.`
       );
       debugger;
     }
