@@ -114,6 +114,7 @@ class StateMgr {
   /// CONSTRUCTOR /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   constructor(groupName: TGroupName) {
+    if (typeof groupName !== 'string') throw Error('groupName must be a string');
     groupName = groupName.trim().toUpperCase();
     // return an existing instance if it exists
     if (GROUPS.has(groupName)) {
