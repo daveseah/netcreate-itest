@@ -15,6 +15,9 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const FSE = require('fs-extra');
+const PATH = require('path');
+const CHOKIDAR = require('chokidar');
+const { execSync } = require('child_process');
 
 /// UTILITIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -108,6 +111,30 @@ module.exports = {
       if (FIRST_RUN) {
         u_hack_mapfiles(); // sneakily copy dist directory to public scripts
         console.log(`\n--- compilation complete - appserver is online ---\n`);
+        // setup CHOKIDAR to watch for changes in the _ur_addons subdirectories except _dist
+        // since brunch can't be configured to watch them
+        const DIR_A = PATH.join(__dirname, '_ur_addons');
+        CHOKIDAR.watch(DIR_A, {
+          ignored: /_dist/,
+          ignoreInitial: true
+        }).on('all', (event, path) => {
+          console.log(`\n--- rebuilding _ur_addons ---`);
+          // build the addons
+          console.log(`    building core...`);
+          execSync('node ./_ur/npm-scripts/@build-core.cjs');
+          console.log(`    building addons...`);
+          execSync('node ./_ur/npm-scripts/@build-addons.cjs');
+          console.log(`    triggering recompile...\n`);
+          // touch the brunch-config.js file to trigger a recompile
+          const time = new Date();
+          const touchFile = './brunch-config.js';
+          try {
+            FSE.utimesSync(touchFile, time, time);
+          } catch (e) {
+            let fd = fs.openSync(touchFile, 'a');
+            FSE.closeSync(fd);
+          }
+        });
         FIRST_RUN = false;
         return;
       }
