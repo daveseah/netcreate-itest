@@ -27,13 +27,40 @@ COMMENT.Init();
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-function m_UpdateCommentVObjs() {
+function m_UpdateCommentCollectionsState() {
+  const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
+  UDATA.SetAppState('COMMENTCOLLECTION', COMMENTCOLLECTION);
+}
+
+function m_UpdateCommentVObjsState() {
   const COMMENTVOBJS = COMMENT.GetThreadedViewObjects();
   UDATA.SetAppState('COMMENTVOBJS', COMMENTVOBJS);
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+MOD.GetCommentCollection = (cref) => {
+  return COMMENT.GetCommentCollection(cref);
+}
+
+/**
+ *
+ * @param {Object} ccol CommentCollection
+ */
+MOD.UpdateCommentCollection = (ccol) => {
+  COMMENT.UpdateCommentCollection(ccol);
+  m_UpdateCommentCollectionsState();
+}
+
+/**
+ * Marks a comment as read, and closes the component.
+ * @param {Object} cref collection_ref
+ */
+MOD.CloseCommentCollection = (cref, uid) => {
+  COMMENT.CloseCommentCollection(cref, uid);
+  m_UpdateCommentCollectionsState();
+}
 
 MOD.GetUserName = (uid) => {
   return COMMENT.GetUserName(uid);
@@ -47,8 +74,8 @@ MOD.GetComment = (cid) => {
   return COMMENT.GetComment(cid);
 }
 
-MOD.GetThreadedViewObjects = (cref) => {
-  return COMMENT.GetThreadedViewObjects(cref);
+MOD.GetThreadedViewObjects = (cref, uid) => {
+  return COMMENT.GetThreadedViewObjects(cref, uid);
 }
 
 MOD.GetCommentVObj = (cref, cid) => {
@@ -57,17 +84,17 @@ MOD.GetCommentVObj = (cref, cid) => {
 
 MOD.AddComment = (cobj) => {
   COMMENT.AddComment(cobj);
-  m_UpdateCommentVObjs();
+  m_UpdateCommentVObjsState();
 }
 
 MOD.RemoveComment = (cid) => {
   COMMENT.RemoveComment(cid);
-  m_UpdateCommentVObjs();
+  m_UpdateCommentVObjsState();
 }
 
 MOD.UpdateComment = (cobj) => {
   COMMENT.UpdateComment(cobj);
-  m_UpdateCommentVObjs();
+  m_UpdateCommentVObjsState();
 }
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////

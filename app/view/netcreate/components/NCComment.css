@@ -1,3 +1,24 @@
+.nccomponent button.commentbtn {
+  border: 2px solid gold;
+  background-color: gold;
+  line-height: 1.2em;
+  padding: 2px;
+}
+.nccomponent button.commentbtn:hover {
+  background-color: #ffd70088;
+}
+.nccomponent button.commentbtn.hasReadComments {
+  color: inherit;
+}
+.nccomponent button.commentbtn.hasUnreadComments {
+  color: inherit;
+  background-color: red;
+}
+.nccomponent button.commentbtn.isOpen {
+  color: gold;
+  border: 2px solid gold;
+}
+
 .commentThread {
   margin-top: 1em;
   background-color: gold;
@@ -35,6 +56,7 @@
   font-size: 0.6em;
 }
 
+.commentThread .label,
 .comment .commenter,
 .comment .label,
 .comment .help /* .help uses nccomponent */,
@@ -53,6 +75,14 @@
 
 .comment .commentId {
   float: right;
+}
+.comment .commentId.markedUnRead {
+  border-radius: 6px;
+  color: white;
+  height: 1.1em;
+  padding: 3px;
+  line-height: 0.6em;
+  background-color: red;
 }
 
 .comment .editmenu {

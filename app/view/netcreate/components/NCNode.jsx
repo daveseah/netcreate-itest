@@ -43,7 +43,7 @@ const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
-const NCCommentThread = require('./NCCommentThread');
+const NCCommentBtn = require('./NCCommentBtn');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
 
@@ -624,7 +624,6 @@ class NCNode extends UNISYS.Component {
   UILabelInputUpdate(key, value) {
     const data = {};
     data[key] = value;
-    console.warn('Labelinput', key, value);
     this.setState(data);
     this.UpdateMatchingList(value);
   }
@@ -679,7 +678,6 @@ class NCNode extends UNISYS.Component {
         ? `${TEMPLATE.citation.text}. `
         : '') +
       `Last accessed at ${NCUI.DateFormatted()}.`;
-
     return (
       <div className="--NCNode_View nccomponent">
         <div className="view" style={{ background: bgcolor }}>
@@ -687,6 +685,7 @@ class NCNode extends UNISYS.Component {
           <div className="titlebar">
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
             <div className="nodenumber">#{id}</div>
+            <NCCommentBtn cref={id} />
           </div>
           {/* TABS - - - - - - - - - - - - - - - - - - - */}
           <div className="--NCNode_View_Tabs tabcontainer">
@@ -755,7 +754,6 @@ class NCNode extends UNISYS.Component {
               <button onClick={this.DeleteNode}>Delete</button>
             </div>
           )}
-          <NCCommentThread cref={id} />
         </div>
         {uShowCitationDialog && (
           <NCDialogCitation message={citation} onClose={this.UICitationClose} />

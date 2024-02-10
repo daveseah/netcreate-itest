@@ -2,10 +2,47 @@
 
   ac-comments
   
-  App Core
+  App Core Comments
   
-  Methods
+  DATA
   
+    COMMENTCOLLECTION
+    -----------------
+    A COMENTCOLLECTION is the main data source for the CommentBtn.
+    It primarily shows summary information for the three states of the button:
+    * has no comments
+    * has unread comments
+    * has read comments
+    It passes on the collection_ref to the CommentThread components.
+    
+      interface CommentCollection {
+        collection_ref: any;
+        hasUnreadComments: boolean;
+        hasReadComments: boolean;
+        isOpen: boolean;
+      }
+    
+    COMMENTVOBJS
+    ------------
+    COMMENTVOBJS are a flat array of data sources for CommentThread ojects.
+    It handles the UI view state of the each comment in the thread.
+    
+      interface CommentVObj {
+        comment_id: any;
+        
+        createtime_string: string;
+        modifytime_string: string;
+        
+        level: number;
+        
+        isSelected: boolean;
+        isBeingEdited: boolean;
+        isEditable: boolean;
+        isMarkedRead: boolean;
+        allowReply: boolean;
+        
+        markedRead: boolean;
+      }
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -15,6 +52,7 @@ import DCCOMMENTS from './dc-comment.ts';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 
+const COMMENTCOLLECTION = new Map();
 const COMMENTVOBJS = new Map();
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
@@ -24,7 +62,7 @@ const COMMENTVOBJS = new Map();
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 function Init() {
-  console.log('ac-comments Init');
+  if (DBG) console.log('ac-comments Init');
   DCCOMMENTS.Init();
 }
 
@@ -36,12 +74,44 @@ function GetDateString(ms) {
   return new Date(ms).toLocaleString();
 }
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// COMMENT COLLECTIONS
+
+function GetCommentCollections() {
+  return COMMENTCOLLECTION;
+}
+
+function GetCommentCollection(cref) {
+  const collection = COMMENTCOLLECTION.get(cref);
+  return collection;
+}
+
+function UpdateCommentCollection(updatedCCol) {
+  const ccol = COMMENTCOLLECTION.get(updatedCCol.cref);
+  ccol.isOpen = updatedCCol.isOpen;
+  COMMENTCOLLECTION.set(ccol.cref, ccol);
+}
+
+function CloseCommentCollection(cref, uid) {
+  const ccol = COMMENTCOLLECTION.get(cref);
+  ccol.isOpen = false;
+  COMMENTCOLLECTION.set(ccol.cref, ccol);
+  // Mark Read
+  const commentVObjs = COMMENTVOBJS.get(cref);
+  commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+  // Update Derived Lists to update Marked status
+  m_DeriveThreadedViewObjects(cref, uid);
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// COMMENT THREAD VIEW OBJECTS
+
 /**
  * Returns flat array of comment view objects
  * @param {string} cref collection_ref id
  * @returns commentVOjb[]
  */
-function m_DeriveThreadedViewObjects(cref) {
+function m_DeriveThreadedViewObjects(cref, uid) {
   const commentVObjs = [];
   const threadIds = DCCOMMENTS.GetThreadedCommentIds(cref);
   threadIds.forEach(cid => {
@@ -59,14 +129,9 @@ function m_DeriveThreadedViewObjects(cref) {
       isSelected: false,
       isBeingEdited: false,
       isEditable: false,
+      isMarkedRead: DCCOMMENTS.IsMarkedRead(cid, uid),
       allowReply: undefined // will be defined next
     });
-
-    const meta = {
-      isVisible: false,
-      hasUnreadComments: false,
-      hasReadComments: true
-    };
   });
 
   // Figure out which comment can add a reply
@@ -79,15 +144,32 @@ function m_DeriveThreadedViewObjects(cref) {
     commentReplyVObj.push(cvobj);
     prevLevel = cvobj.level;
   });
-
   COMMENTVOBJS.set(cref, commentReplyVObj.reverse());
+
+  // Derive COMMENTCOLLECTION
+  const hasReadComments = commentReplyVObj.length > 0;
+  let hasUnreadComments = false;
+  commentReplyVObj.forEach(c => {
+    if (!c.isMarkedRead) hasUnreadComments = true;
+  });
+  const ccol = {
+    collection_ref: cref,
+    hasUnreadComments,
+    hasReadComments,
+    isOpen: false
+  };
+  COMMENTCOLLECTION.set(cref, ccol);
   return commentReplyVObj;
 }
 
-function GetThreadedViewObjects(cref) {
+/**
+ *  @param {string} cref
+ *  @param {string} uid -- User ID is needed to determine read/unread status
+ */
+function GetThreadedViewObjects(cref, uid) {
   const commentVObjs = COMMENTVOBJS.get(cref);
   return commentVObjs === undefined
-    ? m_DeriveThreadedViewObjects(cref)
+    ? m_DeriveThreadedViewObjects(cref, uid)
     : commentVObjs;
 }
 
@@ -104,6 +186,7 @@ function GetCommentVObj(cref, cid) {
  * @param {Object} data.cref // collection_ref
  * @param {Object} data.comment_id_parent
  * @param {Object} data.comment_id_previous
+ * @param {Object} data.commenter_id
  * @returns commentObject
  */
 function AddComment(data) {
@@ -111,10 +194,10 @@ function AddComment(data) {
     throw new Error('Comments must have a collection ref!');
 
   const comment = DCCOMMENTS.AddComment(data);
-  m_DeriveThreadedViewObjects(data.cref);
+  m_DeriveThreadedViewObjects(data.cref, data.commenter_id);
 
   // Make it editable
-  let commentVObjs = GetThreadedViewObjects(data.cref);
+  let commentVObjs = GetThreadedViewObjects(data.cref, data.commenter_id);
   const cvobj = GetCommentVObj(comment.collection_ref, comment.comment_id);
   cvobj.isBeingEdited = true;
   commentVObjs = commentVObjs.map(c =>
@@ -137,7 +220,7 @@ function UpdateComment(cobj) {
   DCCOMMENTS.UpdateComment(cobj);
 
   // Disable editable and update modify time
-  let commentVObjs = GetThreadedViewObjects(cobj.collection_ref);
+  let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, cobj.commenter_id);
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
   cvobj.isBeingEdited = false;
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
@@ -166,6 +249,12 @@ function GetComment(cid) {
 export {
   Init,
   GetDateString,
+  // Comment Collection
+  GetCommentCollections,
+  GetCommentCollection,
+  UpdateCommentCollection,
+  CloseCommentCollection,
+  // Comment Thread View Object
   GetThreadedViewObjects,
   GetCommentVObj,
   AddComment,

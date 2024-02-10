@@ -2,8 +2,37 @@
 
   dc-comments
   
-  Methods
+  Data Care Comments
+      
+  DATA
   
+    COMMENTS
+    --------
+    COMMENTS are a flat array of the raw comment data.
+    Used by the Comment component to render the text in each comment.
+    
+      interface Comment {
+        collection_ref: any;
+        comment_id: any;
+        comment_id_parent: any;
+        comment_id_previous: any;
+        comment_type: string;
+        comment_createtime: number;
+        comment_modifytime: number;
+
+        commenter_id: any;
+        commenter_text: string[];
+      };
+
+    READBY
+    ------
+    READBY keeps track of which user id has "read" which comment id.
+    This can get rather long over time.
+  
+      interface ReadBy {
+        comment_id: any;
+        commenter_ids: any[];
+      }
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -15,6 +44,7 @@ const DBG = true;
 const USERS = new Map(); // Map<uid, name>
 const COMMENTTYPES = new Map(); // Map<typeId, commentTypeObject>
 const COMMENTS = new Map(); // Map<cid, commentObject>
+const READBY = new Map();
 /// DERIVED DATA
 const ROOTS = new Map(); // Map<cref, comment_id> Root comment for a given collection_ref
 const REPLY_ROOTS = new Map(); // Map<comment_id_parent, comment_id> Root comment_id for any given comment. (thread roots)
@@ -353,6 +383,21 @@ function UpdateComment(cobj) {
 }
 
 /**
+ * `uid` can be undefined if user is not logged in
+ */
+function MarkCommentRead(cid, uid) {
+  // Mark the comment read
+  const readby = READBY.get(cid) || [];
+  if (!readby.includes(uid)) readby.push(uid);
+  READBY.set(cid, readby);
+}
+
+function IsMarkedRead(cid, uid) {
+  const readby = READBY.get(cid) || [];
+  return readby.includes(uid);
+}
+
+/**
  * Get all the comment ids related to a particular collection_ref
  * based on ROOTS.
  * DeriveValues needs to be called before this method can be used.
@@ -420,6 +465,8 @@ export default {
   AddComment,
   RemoveComment,
   UpdateComment,
+  MarkCommentRead,
+  IsMarkedRead,
   GetThreadedCommentIds,
   GetThreadedCommentData
 };

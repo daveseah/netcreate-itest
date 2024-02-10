@@ -76,6 +76,7 @@ class NCComment extends React.Component {
   }
   LoadCommentVObj() {
     const { cref, cid } = this.state;
+
     const cvobj = CMTMGR.GetCommentVObj(cref, cid);
     const comment = CMTMGR.GetComment(cid);
 
@@ -104,26 +105,40 @@ class NCComment extends React.Component {
         ? NCUI.VIEWMODE.VIEW
         : NCUI.VIEWMODE.EDIT;
     this.setState({ uViewMode });
-    // pass isBeingEdited to true?
   }
 
   UIOnSave(event) {
+    const { uid } = this.props;
     const { comment_type, commenter_text } = this.state;
+
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
     comment.comment_type = comment_type;
     comment.commenter_text = commenter_text;
+    comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
 
   UIOnReply(event) {
+    const { uid } = this.props;
     const { cref, cid, comment_id_parent } = this.state;
+
     if (comment_id_parent === '') {
       // Reply to a root comment
-      CMTMGR.AddComment({ cref, comment_id_parent: cid, comment_id_previous: '' });
+      CMTMGR.AddComment({
+        cref,
+        comment_id_parent: cid,
+        comment_id_previous: '',
+        commenter_id: uid
+      });
     } else {
       // Reply to a threaded comment
-      CMTMGR.AddComment({ cref, comment_id_parent, comment_id_previous: cid });
+      CMTMGR.AddComment({
+        cref,
+        comment_id_parent,
+        comment_id_previous: cid,
+        commenter_id: uid
+      });
     }
   }
 
@@ -163,6 +178,7 @@ class NCComment extends React.Component {
   }
 
   render() {
+    const { cvobj, uid } = this.props;
     const {
       commenter,
       createtime_string,
@@ -173,13 +189,12 @@ class NCComment extends React.Component {
       uViewMode,
       allowReply
     } = this.state;
-    const { cvobj } = this.props;
 
     const comment = CMTMGR.GetComment(cvobj.comment_id);
     const commentTypes = CMTMGR.GetCommentTypes();
 
-    const session = UDATA.AppState('SESSION');
-    const uid = session.token;
+    // TODO Allow admins
+    const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
     const EditBtn = (
       <button className="outline small" onClick={this.UIOnEdit}>
@@ -254,15 +269,16 @@ class NCComment extends React.Component {
       );
     } else {
       // VIEW mode
+      const markedUnRead = cvobj.isMarkedRead ? '' : 'markedUnRead';
       CommentComponent = (
         <div className="comment">
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>
-            {uid && EditMenu}
+            {isAllowedToEditOwnComment && EditMenu}
           </div>
           <div>
-            <div className="commentId">{cid}</div>
+            <div className={`commentId ${markedUnRead}`}>{cid}</div>
             {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
                 <div className="label">{type.prompt}</div>

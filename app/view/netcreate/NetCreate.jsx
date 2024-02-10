@@ -69,6 +69,7 @@ class NetCreate extends UNISYS.Component {
     UNISYS.ForceReloadOnNavigation();
     UR.ClientTest();
     URADD.AddonClientTest();
+    URADD.COMMENT.Init();
     this.state = {
       isConnected: true,
       isLoggedIn: false,

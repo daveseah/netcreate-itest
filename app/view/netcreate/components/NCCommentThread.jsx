@@ -48,8 +48,9 @@ class NCCommentThread extends React.Component {
   }
 
   UIOnReply(event) {
-    const { cref } = this.props;
-    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
+    const { cref, uid } = this.props;
+
+    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
 
     const numComments = commentVObjs.length;
     if (numComments < 1) {
@@ -57,7 +58,8 @@ class NCCommentThread extends React.Component {
       CMTMGR.AddComment({
         cref,
         comment_id_parent: '',
-        comment_id_previous: ''
+        comment_id_previous: '',
+        commenter_id: uid
       });
     } else {
       // Add reply to last comment in thread
@@ -65,33 +67,36 @@ class NCCommentThread extends React.Component {
       CMTMGR.AddComment({
         cref,
         comment_id_parent: '',
-        comment_id_previous: lastComment.comment_id
+        comment_id_previous: lastComment.comment_id,
+        commenter_id: uid
       });
     }
   }
 
-  UIOnClose(event) {}
+  UIOnClose(event) {
+    const { cref, uid } = this.props;
+    CMTMGR.CloseCommentCollection(cref, uid);
+  }
 
   render() {
-    const { cref } = this.props;
-    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
-    const session = UDATA.AppState('SESSION');
-    const uid = session.token;
+    const { cref, uid } = this.props;
+
+    const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
 
     return (
       <Draggable>
-      <div className="commentThread">
+        <div className="commentThread">
           <div className="topbar">X</div>
-        {commentVObjs.map(cvobj => (
-          <NCComment key={cvobj.comment_id} cvobj={cvobj} />
-        ))}
+          {commentVObjs.map(cvobj => (
+            <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
+          ))}
           {uid && (
-        <textarea
-          placeholder="Click to add a Comment..."
-          readOnly
-          onClick={this.UIOnReply}
-        ></textarea>
+            <textarea
+              placeholder="Click to add a Comment..."
+              readOnly
+              onClick={this.UIOnReply}
+            ></textarea>
           )}
           {!uid && commentVObjs.length < 1 && (
             <div className="label" style={{ textAlign: 'center' }}>
@@ -99,7 +104,7 @@ class NCCommentThread extends React.Component {
             </div>
           )}
           <div className="commentbar">{CloseBtn}</div>
-      </div>
+        </div>
       </Draggable>
     );
   }
