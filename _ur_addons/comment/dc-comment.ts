@@ -272,7 +272,7 @@ function GetUser(uid) {
 }
 function GetUserName(uid) {
   const u = USERS.get(uid);
-  return u !== undefined ? u : 'Not found';
+  return u !== undefined ? u : uid; // fallback to using `uid` if there's no record
 }
 function GetCurrentUser() {
   // TODO Placeholder
@@ -322,7 +322,7 @@ function AddComment(data) {
     comment_createtime: new Date(),
     comment_modifytime: '',
 
-    commenter_id: GetCurrentUser(),
+    commenter_id: data.commenter_id,
     commenter_text: []
   };
   COMMENTS.set(comment.comment_id, comment);
