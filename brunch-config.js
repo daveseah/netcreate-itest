@@ -28,11 +28,18 @@ const yl = s => `\x1b[1;33m${s}\x1b[0m`;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** utility to correct problems with sourcemaps:true overwriting ursys map */
 const u_hack_mapfiles = () => {
-  const src = `${__dirname}/_ur/_dist/client-cjs.js.map`;
-  const dst = `${__dirname}/public/scripts/ursys-lib.js.map`;
-  FSE.copySync(src, dst);
-  console.log(`MAP HACK - replaced 'ursys-lib.js.map' with 'client-cjs.js.map' to`);
-  console.log(`           fix incorrect sourcemap attribution by brunch`);
+  FSE.copySync(
+    `${__dirname}/_ur/_dist/client-cjs.js.map`,
+    `${__dirname}/public/scripts/ursys-core.js.map`
+  );
+  console.log(`MAP HACK - replaced 'ursys-core.js.map' with 'client-cjs.js.map'`);
+  FSE.copySync(
+    `${__dirname}/_ur_addons/_dist/addons-client-cjs.js.map`,
+    `${__dirname}/public/scripts/ursys-addons.js.map`
+  );
+  console.log(
+    `MAP HACK - replaced 'ursys-addons.js.map' with 'addons-client-cjs.js.map'`
+  );
 };
 
 /// CHECK FOR NC_CONFIG ///////////////////////////////////////////////////////
@@ -69,7 +76,8 @@ module.exports = {
     javascripts: {
       joinTo: {
         'scripts/netc-app.js': /^app/,
-        'scripts/ursys-lib.js': /^node_modules\/@ursys/,
+        'scripts/ursys-core.js': /^node_modules\/@ursys\/core/,
+        'scripts/ursys-addons.js': /^node_modules\/@ursys\/addons/,
         'scripts/netc-lib.js': /^(?!app)(?!node_modules\/@ursys)/
       }
     },
@@ -79,7 +87,7 @@ module.exports = {
       }
     }
   },
-  sourceMaps: true,
+  sourceMaps: true, // other options are 'inline' or 'absolute'
   plugins: {
     babel: {
       ignore: [/^node_modules\/@ursys/],
