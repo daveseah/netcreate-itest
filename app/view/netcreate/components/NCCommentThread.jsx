@@ -75,6 +75,8 @@ class NCCommentThread extends React.Component {
   render() {
     const { cref } = this.props;
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref);
+    const session = UDATA.AppState('SESSION');
+    const uid = session.token;
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
 
     return (
@@ -84,11 +86,18 @@ class NCCommentThread extends React.Component {
         {commentVObjs.map(cvobj => (
           <NCComment key={cvobj.comment_id} cvobj={cvobj} />
         ))}
+          {uid && (
         <textarea
           placeholder="Click to add a Comment..."
           readOnly
           onClick={this.UIOnReply}
         ></textarea>
+          )}
+          {!uid && commentVObjs.length < 1 && (
+            <div className="label" style={{ textAlign: 'center' }}>
+              No comments
+            </div>
+          )}
           <div className="commentbar">{CloseBtn}</div>
       </div>
       </Draggable>

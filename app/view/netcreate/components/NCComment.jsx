@@ -178,6 +178,9 @@ class NCComment extends React.Component {
     const comment = CMTMGR.GetComment(cvobj.comment_id);
     const commentTypes = CMTMGR.GetCommentTypes();
 
+    const session = UDATA.AppState('SESSION');
+    const uid = session.token;
+
     const EditBtn = (
       <button className="outline small" onClick={this.UIOnEdit}>
         Edit
@@ -256,7 +259,7 @@ class NCComment extends React.Component {
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>
-            {EditMenu}
+            {uid && EditMenu}
           </div>
           <div>
             <div className="commentId">{cid}</div>
@@ -268,7 +271,7 @@ class NCComment extends React.Component {
                 <div className="feedback">{type.feedback}</div>
               </div>
             ))}
-            <div className="commentbar">{ReplyBtn}</div>
+            {uid && <div className="commentbar">{ReplyBtn}</div>}
           </div>
         </div>
       );
