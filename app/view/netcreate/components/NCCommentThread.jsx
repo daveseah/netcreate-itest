@@ -87,7 +87,11 @@ class NCCommentThread extends React.Component {
     return (
       <Draggable>
         <div className="commentThread">
-          <div className="topbar">X</div>
+          <div className="topbar">
+            <div className="closeBtn" onClick={this.UIOnClose}>
+              X
+            </div>
+          </div>
           {commentVObjs.map(cvobj => (
             <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
           ))}

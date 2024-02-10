@@ -1,8 +1,8 @@
 .nccomponent button.commentbtn {
-  border: 2px solid gold;
+  border: 2px solid white;
   background-color: gold;
   line-height: 1.2em;
-  padding: 2px;
+  padding: 3px;
 }
 .nccomponent button.commentbtn:hover {
   background-color: #ffd70088;
@@ -97,7 +97,18 @@
 .commentThread .topbar {
   display: flex;
   justify-content: flex-end;
+  padding-bottom: 2px;
 }
+.commentThread .topbar .closeBtn {
+  /* content: 'X'; */
+  transform: scaleX(1.35);
+  margin: 0 3px;
+  padding: 0 3px;
+  color: #0006;
+  background-color: #fff2;
+  cursor: pointer;
+}
+
 .comment .commentbar,
 .comment .editbar {
   padding-top: 5px;
