@@ -684,7 +684,7 @@ class NCNode extends UNISYS.Component {
           {/* BUILT-IN - - - - - - - - - - - - - - - - - */}
           <div className="titlebar">
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <div className="nodenumber">#{id}</div>
+            <div className="nodenumber">{id} </div>
             <NCCommentBtn cref={id} />
           </div>
           {/* TABS - - - - - - - - - - - - - - - - - - - */}

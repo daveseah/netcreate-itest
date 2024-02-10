@@ -2,6 +2,7 @@
   border: 2px solid white;
   background-color: gold;
   line-height: 1.2em;
+  margin-left: 0px;
   padding: 3px;
 }
 .nccomponent button.commentbtn:hover {

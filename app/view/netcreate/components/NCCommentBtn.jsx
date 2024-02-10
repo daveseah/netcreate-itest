@@ -74,6 +74,8 @@ class NCCommentBtn extends React.Component {
   }
 
   UIOnClick(event) {
+    event.stopPropagation();
+    event.preventDefault();
     const updatedIsOpen = !this.state.isOpen;
     this.setState({ isOpen: updatedIsOpen }, () => {
       CMTMGR.UpdateCommentCollection({
