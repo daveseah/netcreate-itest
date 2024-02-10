@@ -61,6 +61,11 @@ class NCCommentBtn extends React.Component {
     this.setState({ uid });
   }
 
+  componentWillUnmount() {
+    UDATA.AppStateChangeOff('COMMENTCOLLECTION', this.UpdateCommentCollection);
+    UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+  }
+
   UpdateCommentCollection(COMMENTCOLLECTION) {
     const { cref } = this.props;
     const ccol = COMMENTCOLLECTION.get(cref);
