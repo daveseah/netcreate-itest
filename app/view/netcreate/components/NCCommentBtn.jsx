@@ -94,8 +94,9 @@ class NCCommentBtn extends React.Component {
     const { cref } = this.props;
     const { uid, isOpen } = this.state;
 
-    const ccol = CMTMGR.GetCommentCollection(cref) || {};
+    CMTMGR.GetThreadedViewObjects(cref, uid); // needed to seed the collection
 
+    const ccol = CMTMGR.GetCommentCollection(cref) || {};
     let css = 'commentbtn ';
     if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
     else if (ccol.hasReadComments) css += 'hasReadComments ';
