@@ -124,8 +124,10 @@ module.exports = {
         console.log(`\n--- compilation complete - appserver is online ---\n`);
         // setup CHOKIDAR to watch for changes in the _ur_addons subdirectories except _dist
         // since brunch can't be configured to watch them
-        const DIR_A = PATH.join(__dirname, '_ur_addons');
-        CHOKIDAR.watch(DIR_A, {
+        const DIR_A = PATH.join(__dirname, '_ur');
+        const DIR_B = PATH.join(__dirname, '_ur_addons');
+        // chokidar will watch DIR_A and DIR_B, ignoring any changes in _dist subdirectories
+        CHOKIDAR.watch([DIR_A, DIR_B], {
           ignored: /_dist/,
           ignoreInitial: true
         }).on('all', (event, path) => {
