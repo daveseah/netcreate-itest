@@ -196,16 +196,17 @@ class NCComment extends React.Component {
     // TODO Allow admins
     const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
-    const EditBtn = (
-      <button className="outline small" onClick={this.UIOnEdit}>
-        Edit
-      </button>
-    );
-    const DeleteBtn = (
-      <button className="outline small" onClick={this.UIOnDelete}>
-        Delete
-      </button>
-    );
+    // OLD BUTTON STYLE -- replced by EditMenu.  Revert?
+    // const EditBtn = (
+    //   <button className="outline small" onClick={this.UIOnEdit}>
+    //     Edit
+    //   </button>
+    // );
+    // const DeleteBtn = (
+    //   <button className="outline small" onClick={this.UIOnDelete}>
+    //     Delete
+    //   </button>
+    // );
     const EditMenu = (
       <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
         <option>...</option>
