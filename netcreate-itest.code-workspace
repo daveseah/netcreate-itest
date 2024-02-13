@@ -63,7 +63,7 @@
           "${env:SHELL}",
           "-i",
           "-c",
-          "export VSCODE_TERM='x86 shell';source ${workspaceFolder}/.vscode/vs_env; exec ${env:SHELL}"
+          "export VSCODE_TERM='x86 shell';cd ${workspaceFolder}; source .vscode/vs_env; exec ${env:SHELL}"
         ]
       },
       "arm64 macos": {
