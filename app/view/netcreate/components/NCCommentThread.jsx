@@ -97,6 +97,7 @@ class NCCommentThread extends React.Component {
           ))}
           {uid && (
             <textarea
+              className="add"
               placeholder="Click to add a Comment..."
               readOnly
               onClick={this.UIOnReply}
