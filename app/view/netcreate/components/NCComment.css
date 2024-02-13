@@ -1,28 +1,52 @@
-.nccomponent button.commentbtn {
-  border: 2px solid white;
-  background-color: gold;
-  line-height: 1.2em;
-  margin-left: 0px;
-  padding: 3px;
+/* Comment Icon */
+svg#comment-icon {
+  min-width: inherit;
+  transform: scale(0.9);
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  stroke-width: 2;
+  fill: #ffd700;
+  stroke: white;
 }
-.nccomponent button.commentbtn:hover {
-  background-color: #ffd70088;
+.hasReadComments svg#comment-icon {
+  fill: #0003;
 }
-.nccomponent button.commentbtn.hasReadComments {
-  color: inherit;
+.isOpen svg#comment-icon {
+  stroke: #d84a00;
 }
-.nccomponent button.commentbtn.hasUnreadComments {
-  color: inherit;
-  background-color: red;
+.comment-icon-inline {
+  display: inline-block;
 }
-.nccomponent button.commentbtn.isOpen {
-  color: gold;
-  border: 2px solid gold;
+.comment-icon-inline svg#comment-icon {
+  width: 11px;
+  height: 11px;
+  margin-top: -3px;
+  margin-right: 3px;
+  position: inherit;
+  fill: #d84a00;
+}
+.comment-count {
+  color: #d84a00;
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 30px;
+  position: relative;
+  text-align: center;
+}
+.hasReadComments .comment-count {
+  color: white;
+}
+.commentbtn {
+  cursor: pointer;
 }
 
+/* Comment Thread */
 .commentThread {
   margin-top: 1em;
-  background-color: gold;
+  background-color: #ffd700;
   padding: 5px;
   /* floating */
   position: fixed;
@@ -36,11 +60,19 @@
 .nccomponent .commentThread textarea {
   margin-bottom: 0;
 }
+.nccomponent .commentThread textarea.add {
+  border: inset #0003 1px;
+  background-color: #fff7;
+}
+.nccomponent .commentThread textarea::placeholder {
+  color: #0003;
+}
 
 .commentIndented {
   margin-left: 20px;
 }
 
+/* Comment */
 .comment {
   display: grid;
   grid-template-columns: 5em auto;
@@ -75,15 +107,8 @@
 }
 
 .comment .commentId {
+  color: #0004;
   float: right;
-}
-.comment .commentId.markedUnRead {
-  border-radius: 6px;
-  color: white;
-  height: 1.1em;
-  padding: 3px;
-  line-height: 0.6em;
-  background-color: red;
 }
 
 .comment .editmenu {
@@ -110,9 +135,12 @@
   cursor: pointer;
 }
 
-.comment .commentbar,
-.comment .editbar {
+.commentbar,
+.editbar {
   padding-top: 5px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
 
 .comment .commentbar button,
@@ -136,11 +164,4 @@
 .comment:hover .commentbar button {
   /* visibility: visible; */
   display: block;
-}
-
-.commentbar,
-.editbar {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
 }

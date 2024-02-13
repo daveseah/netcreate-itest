@@ -11,9 +11,9 @@
   STATES:
 
     * Empty -- No comments.  Empty chat bubble.
-    * HasUnreadComments -- Red dot to indicate new comments
-    * HasReadComments -- Chat bubble with text lines.
-    * IsOpen -- Corresponding comment window is open.  Chat bubble with outline?
+    * HasUnreadComments -- Gold comment icon with count of comments in red
+    * HasReadComments -- Gray comment icon with count of comments in white
+    * IsOpen -- Corresponding comment window is open.  Comment icon outlined.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -94,19 +94,24 @@ class NCCommentBtn extends React.Component {
     const { cref } = this.props;
     const { uid, isOpen } = this.state;
 
-    CMTMGR.GetThreadedViewObjects(cref, uid); // needed to seed the collection
-
+    const cvobjs = CMTMGR.GetThreadedViewObjects(cref, uid); // needed to seed the collection
     const ccol = CMTMGR.GetCommentCollection(cref) || {};
+
+    const count = cvobjs.length;
+
     let css = 'commentbtn ';
     if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
     else if (ccol.hasReadComments) css += 'hasReadComments ';
     css += ccol.isOpen ? 'isOpen ' : '';
-    const label = ccol.hasReadComments || ccol.hasUnreadComments ? `💬` : `💭`;
+
+    const label = count > 0 ? count : '';
+
     return (
       <div>
-        <button className={css} onClick={this.UIOnClick}>
-          {label}
-        </button>
+        <div className={css} onClick={this.UIOnClick}>
+          {CMTMGR.COMMENTICON}
+          <div className="comment-count">{label}</div>
+        </div>
         {isOpen && <NCCommentThread cref={cref} uid={uid} />}
       </div>
     );
