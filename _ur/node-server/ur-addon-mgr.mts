@@ -17,8 +17,8 @@ import { DirExists, Files } from './files.mts';
 import UrModule from './class-urmodule.mts';
 import { DIR_UR_ADDS, ShortPath as u_short } from './env-node.mts';
 // JS imports are assumed to be CJS and cannot be destructured
-import ERROR from '../common/error-mgr.js';
-import PROMPT from '../common/prompts.js';
+import ERROR from '../common/util-error-mgr.js';
+import PROMPT from '../common/util-prompts.js';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

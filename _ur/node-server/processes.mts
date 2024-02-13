@@ -8,7 +8,7 @@
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import { makeTerminalOut } from '../common/prompts.js';
+import { makeTerminalOut } from '../common/util-prompts.js';
 import process from 'node:process';
 import PATH from 'node:path';
 const LOG = makeTerminalOut('PROCESS', 'TagGreen');
