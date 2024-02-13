@@ -678,14 +678,15 @@ class NCNode extends UNISYS.Component {
         ? `${TEMPLATE.citation.text}. `
         : '') +
       `Last accessed at ${NCUI.DateFormatted()}.`;
+    const collection_ref = `n${id}`;
     return (
       <div className="--NCNode_View nccomponent">
         <div className="view" style={{ background: bgcolor }}>
           {/* BUILT-IN - - - - - - - - - - - - - - - - - */}
           <div className="titlebar">
-            <div className="nodenumber">#{id}</div>
+            <div className="nodenumber">NODE {id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <NCCommentBtn cref={id} />
+            <NCCommentBtn cref={collection_ref} />
           </div>
           {/* TABS - - - - - - - - - - - - - - - - - - - */}
           <div className="--NCNode_View_Tabs tabcontainer">

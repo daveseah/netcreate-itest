@@ -28,7 +28,7 @@
     ------
     READBY keeps track of which user id has "read" which comment id.
     This can get rather long over time.
-  
+    
       interface ReadBy {
         comment_id: any;
         commenter_ids: any[];
@@ -166,7 +166,7 @@ Is there any contradictory evidence that says the model doesn't work this way?
 
 DB_Comments = [
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '1', // thread
     comment_id_parent: '',
     comment_id_previous: '',
@@ -178,7 +178,7 @@ DB_Comments = [
     commenter_text: ["You're missing a citation."]
   },
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '2', // reply 1
     comment_id_parent: '1',
     comment_id_previous: '',
@@ -193,7 +193,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '3', // reply 2
     comment_id_parent: '1',
     comment_id_previous: '2',
@@ -205,7 +205,7 @@ DB_Comments = [
     commenter_text: ['OK nvm.']
   },
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '4', // thread
     comment_id_parent: '',
     comment_id_previous: '1',
@@ -217,7 +217,7 @@ DB_Comments = [
     commenter_text: ["I don't think that's a good reason."]
   },
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '5', // reply 1
     comment_id_parent: '4',
     comment_id_previous: '',
@@ -233,7 +233,7 @@ DB_Comments = [
     ]
   },
   {
-    collection_ref: 1,
+    collection_ref: 'n1',
     comment_id: '6', // thread
     comment_id_parent: '',
     comment_id_previous: '4',
@@ -245,7 +245,7 @@ DB_Comments = [
     commenter_text: ['The last word.']
   },
   {
-    collection_ref: 2,
+    collection_ref: 'n2',
     comment_id: '7', // thread
     comment_id_parent: '',
     comment_id_previous: '',
@@ -255,6 +255,18 @@ DB_Comments = [
 
     commenter_id: 'Joshua11',
     commenter_text: ['A different object.']
+  },
+  {
+    collection_ref: 'e1',
+    comment_id: '8', // thread
+    comment_id_parent: '',
+    comment_id_previous: '',
+    comment_type: 'cmt', // no prompts
+    comment_createtime: new Date(),
+    comment_modifytime: new Date(),
+
+    commenter_id: 'BenL',
+    commenter_text: ['An edge comment.']
   }
 ];
 

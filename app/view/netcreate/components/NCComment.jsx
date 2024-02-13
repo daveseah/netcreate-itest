@@ -281,7 +281,7 @@ class NCComment extends React.Component {
           <div>
             <div className="commentId">#{cid}</div>
             {commentTypes.get(comment_type).prompts.map((type, index) => (
-              <div key={index}>
+              <div key={index} className="comment-item">
                 <div className="label">
                   <div className="comment-icon-inline">
                     {!cvobj.isMarkedRead && CMTMGR.COMMENTICON}

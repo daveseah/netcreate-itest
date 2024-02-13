@@ -270,15 +270,15 @@
 
 .nccomponent .titlebar {
   display: grid;
-  grid-template-columns: 2em auto 30px;
+  grid-template-columns: 4em auto 30px;
   align-items: top;
   /* display: flex;
   justify-content: space-between;
   align-items: baseline; */
 }
 .nccomponent .titlebar .nodenumber {
-  font-size: 12px;
-  line-height: 30px; /* match CommmentBtn */
+  font-size: 10px;
+  line-height: 26px; /* match CommmentBtn */
   color: #0004;
   padding-right: 0.4em;
 }

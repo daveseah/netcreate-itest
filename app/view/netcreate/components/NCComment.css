@@ -58,9 +58,9 @@ svg#comment-icon {
   /* end floating */
 }
 .nccomponent .commentThread textarea {
-  margin-bottom: 0;
 }
 .nccomponent .commentThread textarea.add {
+  margin-bottom: 0;
   border: inset #0003 1px;
   background-color: #fff7;
 }
@@ -97,6 +97,9 @@ svg#comment-icon {
   color: #0008;
   font-size: 0.8em;
 }
+.comment .comment-item {
+  margin-bottom: 5px;
+}
 .comment .feedback {
   color: #0007; /* emulate nccomponent help */
   opacity: 0.8;
@@ -104,6 +107,7 @@ svg#comment-icon {
 }
 .comment .commenttext {
   background-color: #fff5;
+  padding-left: 3px;
 }
 
 .comment .commentId {
