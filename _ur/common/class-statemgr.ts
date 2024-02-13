@@ -41,9 +41,9 @@
 
   State: groupName => TStateObj;
   SendState: TStateObj => void;
-  SubscribeState: TStateChangeFunc => void;
-  UnsubscribeState: TStateChangeFunc => void;
-  QueueEffect: TEffectFunc => void;
+  subscribeState: TStateChangeFunc => void;
+  unsubscribeState: TStateChangeFunc => void;
+  queueEffect: TEffectFunc => void;
 
   INTERNAL API for APPCORE MANAGERS ONLY
 
@@ -80,9 +80,9 @@ type TQueuedAction = { stateEvent: TStateObj; callback: Function };
 interface IStateMgr {
   State: (key: string) => TStateObj;
   SendState: (vmStateEvent: TStateObj, callback: Function) => void;
-  SubscribeState: (subFunc: TStateChangeFunc) => void;
-  UnsubscribeState: (subFunc: TStateChangeFunc) => void;
-  QueueEffect: (effectFunc: TEffectFunc) => void;
+  subscribeState: (subFunc: TStateChangeFunc) => void;
+  unsubscribeState: (subFunc: TStateChangeFunc) => void;
+  queueEffect: (effectFunc: TEffectFunc) => void;
   _initializeState: (stateObj: TStateObj) => void;
   _setState: (vmState: TStateObj) => void;
   _interceptState: (tapFunc: TTapFunc) => void;
@@ -133,11 +133,11 @@ class StateMgr {
     VM_STATE[this.name] = {};
     // bind 'this' for use with async code
     // if you don't do this, events will probably not have instance context
-    this.State = this.State.bind(this);
-    this.SendState = this.SendState.bind(this);
-    this.SubscribeState = this.SubscribeState.bind(this);
-    this.UnsubscribeState = this.UnsubscribeState.bind(this);
-    this.QueueEffect = this.QueueEffect.bind(this);
+    this.state = this.state.bind(this);
+    this.sendState = this.sendState.bind(this);
+    this.subscribeState = this.subscribeState.bind(this);
+    this.unsubscribeState = this.unsubscribeState.bind(this);
+    this.queueEffect = this.queueEffect.bind(this);
     this._initializeState = this._initializeState.bind(this);
     this._setState = this._setState.bind(this);
     this._insertStateEvent = this._insertStateEvent.bind(this);
@@ -155,7 +155,7 @@ class StateMgr {
   /// MAIN CLASS METHODS //////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Return a COPY of the current clonedEvent */
-  State(key: string): TStateObj {
+  state(key: string): TStateObj {
     // const state = { ...VM_STATE[this.name] };
     const state = this._derefProps({ ...VM_STATE[this.name] });
     if (typeof key === 'string' && key.length > 0) return state[key];
@@ -168,7 +168,7 @@ class StateMgr {
    *  the incoming state event.
    *  @param {object} vmStateEvent - object with group-specific props
    */
-  SendState(vmStateEvent: TStateObj, callback: Function) {
+  sendState(vmStateEvent: TStateObj, callback: Function) {
     if (this._isValidState(vmStateEvent)) {
       const clonedEvent = this._cloneStateObject(vmStateEvent);
       this.taps.forEach(tap => tap(clonedEvent));
@@ -181,14 +181,14 @@ class StateMgr {
   /** Subscribe to state. The subscriber function looks like:
    *  ( vmStateEvent, currentState ) => void
    */
-  SubscribeState(subFunc: TStateChangeFunc) {
+  subscribeState(subFunc: TStateChangeFunc) {
     if (typeof subFunc !== 'function') throw Error('subscriber must be function');
     if (this.subs.has(subFunc)) console.warn('duplicate subscriber function');
     this.subs.add(subFunc);
   }
 
   /** Unsubscribe state */
-  UnsubscribeState(subFunc: TStateChangeFunc) {
+  unsubscribeState(subFunc: TStateChangeFunc) {
     if (!this.subs.delete(subFunc))
       console.warn('function not subscribed for', this.name);
   }
@@ -197,7 +197,7 @@ class StateMgr {
    *  hold it until after all state updates have completed, so the DOM
    *  is stable
    */
-  QueueEffect(effectFunc: TEffectFunc) {
+  queueEffect(effectFunc: TEffectFunc) {
     if (typeof effectFunc !== 'function') throw Error('effect must be a function');
     this.effects.push(effectFunc);
     this._doEffect();
