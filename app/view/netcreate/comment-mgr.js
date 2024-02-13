@@ -9,6 +9,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
+const React = require('react');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 
@@ -26,6 +27,14 @@ COMMENT.Init();
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+MOD.COMMENTICON = (
+  <svg id="comment-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42 42">
+    <path
+      d="M21,0C9.4,0,0,9.4,0,21c0,4.12,1.21,7.96,3.26,11.2l-2.26,9.8,11.56-1.78c2.58,1.14,5.44,1.78,8.44,1.78,11.6,0,21-9.4,21-21S32.6,0,21,0Z"
+    />
+  </svg>
+);
 
 function m_UpdateCommentCollectionsState() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
