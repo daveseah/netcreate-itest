@@ -683,8 +683,8 @@ class NCNode extends UNISYS.Component {
         <div className="view" style={{ background: bgcolor }}>
           {/* BUILT-IN - - - - - - - - - - - - - - - - - */}
           <div className="titlebar">
+            <div className="nodenumber">#{id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <div className="nodenumber">{id} </div>
             <NCCommentBtn cref={id} />
           </div>
           {/* TABS - - - - - - - - - - - - - - - - - - - */}
