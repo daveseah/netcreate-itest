@@ -279,10 +279,15 @@ class NCComment extends React.Component {
             {isAllowedToEditOwnComment && EditMenu}
           </div>
           <div>
-            <div className={`commentId ${markedUnRead}`}>{cid}</div>
+            <div className="commentId">#{cid}</div>
             {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
-                <div className="label">{type.prompt}</div>
+                <div className="label">
+                  <div className="comment-icon-inline">
+                    {!cvobj.isMarkedRead && CMTMGR.COMMENTICON}
+                  </div>
+                  {type.prompt}
+                </div>
                 <div className="help">{type.help}</div>
                 <div className="commenttext">{commenter_text[index]}</div>
                 <div className="feedback">{type.feedback}</div>
