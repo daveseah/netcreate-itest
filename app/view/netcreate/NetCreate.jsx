@@ -73,7 +73,7 @@ class NetCreate extends UNISYS.Component {
     URADD.AddonClientTest();
     const SM = new UR.StateMgr('NETCREATE');
     SM._initializeState({ prop_1: 1 });
-    console.log('SM:StateMgr contains:', SM.State());
+    console.log('SM:StateMgr contains:', SM.state());
     /** end of _ur core and _ur_addons tests **/
 
     this.state = {
