@@ -242,7 +242,10 @@ class NCComment extends React.Component {
     if (uViewMode === NCUI.VIEWMODE.EDIT) {
       // EDIT mode
       CommentComponent = (
-        <div className="comment">
+        <div
+          className="comment"
+          onMouseDown={e => e.stopPropagation()} // allow text drag, stops Draggable
+        >
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>

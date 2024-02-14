@@ -55,6 +55,7 @@ svg#comment-icon {
   width: 400px;
   max-height: 80%;
   overflow-y: auto;
+  cursor: move;
   /* end floating */
 }
 .nccomponent .commentThread textarea {
@@ -79,6 +80,7 @@ svg#comment-icon {
   background-color: #fff5;
   margin-bottom: 5px;
   padding: 5px;
+  cursor: default;
 }
 .comment:hover {
   background-color: #fff8;
