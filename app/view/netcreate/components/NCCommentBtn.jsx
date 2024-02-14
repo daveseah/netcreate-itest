@@ -79,8 +79,7 @@ class NCCommentBtn extends React.Component {
   }
 
   UIOnClick(event) {
-    event.stopPropagation();
-    event.preventDefault();
+    event.stopPropagation(); // prevent Edge deselect
     const updatedIsOpen = !this.state.isOpen;
     this.setState({ isOpen: updatedIsOpen }, () => {
       CMTMGR.UpdateCommentCollection({

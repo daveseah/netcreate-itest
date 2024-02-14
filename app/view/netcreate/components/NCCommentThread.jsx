@@ -86,7 +86,10 @@ class NCCommentThread extends React.Component {
 
     return (
       <Draggable>
-        <div className="commentThread">
+        <div
+          className="commentThread"
+          onClick={e => e.stopPropagation()} // prevent edge deselect
+        >
           <div className="topbar">
             <div className="closeBtn" onClick={this.UIOnClose}>
               X
