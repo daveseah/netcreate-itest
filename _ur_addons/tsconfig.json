@@ -5,9 +5,9 @@
     "baseUrl": "./",
     "paths": {},
     "typeRoots": [
-      "./_types",
+      "_types",
+      "node_modules/@types",
       "../_ur/_types",
-      "./node_modules/@types",
       "../node_modules/@types"
     ],
     // esbuild needs: see esbuild.github.io/content-types/#typescript-caveats

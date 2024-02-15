@@ -30,7 +30,7 @@
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import { makeTerminalOut } from '../common/prompts.js';
+import { makeTerminalOut } from '../common/util-prompts.js';
 const LOG = makeTerminalOut('IPC', 'TagGreen');
 import * as UR_EVENTS from '../common/declare-async.js';
 

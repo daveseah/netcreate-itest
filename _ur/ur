@@ -8,6 +8,14 @@ CLI_BUILD="./npm-scripts"
 ADDONS_LIB="../_ur_addons"
 TEST_BUILD="../_ur_addons/loki"
 
+# TERMINAL COLORS
+DIM=$(tput dim)
+YELLOW=$(tput setaf 3)
+RESET=$(tput sgr0)
+BGBLUE=$(tput setab 4)$(tput setaf 7)
+BRITE=$(tput bold)
+
+
 usage() {
     COMMANDS="build test"
     ADDONS=""
@@ -19,14 +27,10 @@ usage() {
       fi
     done
     ADDONS=$(echo $ADDONS)
-    
-    dim=$(tput dim)
-    yellow=$(tput setaf 3)
-    reset=$(tput sgr0)
-    echo "usage:     ${yellow}ur [command | addon]${reset}${dim}"
+    echo "usage:     ${yellow}ur [command | addon]${RESET}${DIM}"
     echo "commands   $COMMANDS"
     echo "addons     $ADDONS"
-    echo "${reset}"
+    echo "${RESET}"
     exit 1
 }
 
@@ -60,7 +64,22 @@ case "$1" in
         ;;
 
     test)
-        echo "would be running tests..."
+        # get additional argument after 'test' into $option
+        node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+        PROMPT="${BGBLUE} UR TEST ${RESET}"
+        if [ "$2" = "core" ]; then
+            echo "${PROMPT} running ${BRITE}ursys core tests${RESET}"
+            npx vitest --config ./test-config/vitest.core.config.mts
+        elif [ "$2" = "addons" ]; then
+            echo "${PROMPT} running ${BRITE}ursys addons tests${RESET}"
+            npx vitest --config ./test-config/vitest.addons.config.mts
+        elif [ -z "$2" ]; then
+            echo "${PROMPT} running ${BRITE}ursys core and addon tests${RESET}"
+            npx vitest --config ./test-config/vitest.all.config.mts
+        else
+            echo "${YELLOW}unknown test option: '$2'${RESET}"
+            exit 1;
+        fi
         exit 0;
         ;;
 esac

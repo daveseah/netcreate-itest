@@ -16,9 +16,9 @@ import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
 import * as PROC from './processes.mts';
-import TEXT from '../common/text.js';
+import TEXT from '../common/util-text.js';
 // cjs-style modules
-import PROMPTS from '../common/prompts.js';
+import PROMPTS from '../common/util-prompts.js';
 const { makeTerminalOut } = PROMPTS;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////

@@ -8,7 +8,7 @@
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const { EXIT_CODES } = require('./declare-errors');
 const { ERR_UR } = EXIT_CODES;
-const PROMPTS = require('./prompts');
+const PROMPTS = require('./util-prompts');
 const { makeTerminalOut } = PROMPTS;
 const ERROUT = makeTerminalOut('ERR', 'TagRed');
 
