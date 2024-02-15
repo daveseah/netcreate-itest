@@ -679,7 +679,10 @@ class EdgeTable extends UNISYS.Component {
                 key={i}
                 style={{
                   color: edge.isFiltered ? 'red' : 'black',
-                  opacity: edge.filteredTransparency
+                  // edge default transparency is 0.7
+                  // but for tables, we want to show opaque unless the edge has been Faded via filter
+                  opacity:
+                    edge.filteredTransparency > 0.5 ? 1 : edge.filteredTransparency
                 }}
               >
                 <td hidden={!DBG}>{edge.id}</td>
