@@ -10,19 +10,27 @@
 /* added for pull request #81 so 'npm run lint' test appears clean */
 /* eslint-disable no-unused-vars */
 
-import UrModule from './class-urmodule.mts';
 import * as ADDONMGR from './ur-addon-mgr.mts';
 import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILES from './files.mts';
 import * as PROC from './processes.mts';
-import TEXT from '../common/util-text.js';
 // cjs-style modules
+import TEXT from '../common/util-text.js';
 import PROMPTS from '../common/util-prompts.js';
+// typescript classes
+import UrModule from './class-urmodule.mts';
+import OpSeq from '../common/class-op-seq.ts';
+import StateMgr from '../common/class-state-mgr.ts';
 const { makeTerminalOut } = PROMPTS;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const CLASS = {
+  OpSeq,
+  StateMgr,
+  UrModule
+};
 
 /// RUNTIME API ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -41,13 +49,12 @@ export {
   // MAIN MODULES
   APPSERV, // application server
   ADDONMGR, // ur module manager
+  CLASS,
   ENV, // environment utilities and constants
   FILES, // file utilities
   PROC, // interprocess communication utils
-  // JS
+  // UTILITIES
   TEXT,
-  // CLASSES
-  UrModule, // ur module wrapper
   // COMMON UTILS
   makeTerminalOut as PR // prompt style formatter
 };

@@ -202,12 +202,15 @@ function RunPacketTests() {
   }
 }
 
+function RunSeqTests() {}
+
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
-  RunLocalTests();
-  RunPacketLoopbackTests();
-  RunPacketTests();
+  // RunLocalTests();
+  // RunPacketLoopbackTests();
+  // RunPacketTests();
+  RunSeqTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////

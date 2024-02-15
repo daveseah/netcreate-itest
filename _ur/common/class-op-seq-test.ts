@@ -28,7 +28,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { expect, test } from 'vitest';
-import OpSequencer, { TOpNode, TOpChangeFunc } from './class-op-sequencer.ts';
+import OpSequencer, { TOpNode, TOpChangeFunc } from './class-op-seq.ts';
 
 /// TESTS /////////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
