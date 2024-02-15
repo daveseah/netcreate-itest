@@ -42,6 +42,12 @@ svg#comment-icon {
 .commentbtn {
   cursor: pointer;
 }
+.comment-intable svg#comment-icon {
+  width: 20px;
+  height: 20px;
+  fill: gray;
+  cursor: pointer;
+}
 
 /* Comment Thread */
 .commentThread {
@@ -55,22 +61,39 @@ svg#comment-icon {
   width: 400px;
   max-height: 80%;
   overflow-y: auto;
+  font-size: 14px;
+
   cursor: move;
   /* end floating */
 }
-.nccomponent .commentThread textarea {
-}
-.nccomponent .commentThread textarea.add {
+.commentThread textarea.add {
+  width: 100%;
+  border-radius: 2px;
   margin-bottom: 0;
+  padding: 0 5px;
+  resize: none;
   border: inset #0003 1px;
   background-color: #fff7;
 }
-.nccomponent .commentThread textarea::placeholder {
+/* .nccomponent .commentThread textarea::placeholder { */
+.commentThread textarea::placeholder {
   color: #0003;
 }
 
 .commentIndented {
   margin-left: 20px;
+}
+
+.commentThread button {
+  /* emulates nccomponent */
+  color: #333;
+  background-color: #fff6;
+  border-radius: 5px;
+  border-color: #0006;
+  border-width: 1px;
+  border-style: solid;
+  text-transform: uppercase;
+  font-size: 0.9em;
 }
 
 /* Comment */
@@ -126,6 +149,7 @@ svg#comment-icon {
   visibility: visible;
 }
 
+/* control bars */
 .commentThread .topbar {
   display: flex;
   justify-content: flex-end;

@@ -30,6 +30,8 @@
 const React = require('react');
 const ReactStrap = require('reactstrap');
 const NCUI = require('../nc-ui');
+const CMTMGR = require('../comment-mgr');
+const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_EDGE } = require('system/util/enum');
@@ -359,6 +361,30 @@ class EdgeTable extends UNISYS.Component {
     return undefined;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   */
+  sortByComment(edges) {
+    // stuff the count into edges for calculation
+    const uid = CMTMGR.GetCurrentUserId();
+    const countededges = edges.map(e => {
+      const cref = CMTMGR.GetEdgeCREF(e.id);
+      e.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+      return e;
+    });
+    if (countededges) {
+      return countededges.sort((a, b) => {
+        let akey = a.commentcount || 0,
+          bkey = b.commentcount || 0;
+        // sort descending
+        if (akey > bkey) return 1 * Number(this.sortDirection);
+        if (akey < bkey) return -1 * Number(this.sortDirection);
+        return 0;
+      });
+    }
+    return 0;
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** If no `sortkey` is passed, the sort will use the existing state.sortkey
    */
   sortTable(sortkey = this.state.sortkey, edges, type) {
@@ -369,6 +395,8 @@ class EdgeTable extends UNISYS.Component {
         return this.sortBySourceLabel(edges);
       case 'target':
         return this.sortByTargetLabel(edges);
+      case 'commentbtn':
+        return this.sortByComment(edges);
       // case 'Updated':
       //   return this.sortByUpdated(edges);
       default:
@@ -617,6 +645,14 @@ class EdgeTable extends UNISYS.Component {
                   {edgeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
                 </Button>
               </th>
+              <th>
+                <div
+                  className="comment-icon-inline comment-intable"
+                  onClick={() => this.setSortKey('commentbtn')}
+                >
+                  {CMTMGR.COMMENTICON}
+                </div>
+              </th>
               {/*
               <th width="7%" hidden={!isAdmin}>
                 <Button
@@ -689,6 +725,9 @@ class EdgeTable extends UNISYS.Component {
                   </td>
                 ))}
                 <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
+                <td>
+                  <NCCommentBtn cref={`e${edge.id}`} />
+                </td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>
                   {this.displayUpdated(edge)}

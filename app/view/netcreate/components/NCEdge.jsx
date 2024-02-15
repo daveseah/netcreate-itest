@@ -31,6 +31,7 @@ const {
   ARROW_UPDOWN
 } = require('system/util/constant');
 const NCUI = require('../nc-ui');
+const CMTMGR = require('../comment-mgr');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
 const NCCommentBtn = require('./NCCommentBtn');
