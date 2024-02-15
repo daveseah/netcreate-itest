@@ -42,6 +42,21 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
   else
     echo "       architecture is ${INFO}$ARCH${NRML}"
   fi  
+
+  # check if node binary is in the path
+  if ! command -v node &> /dev/null; then
+    echo ""
+    echo "vsenv: ${ALRT}The node binary can not be found! That is weird!${NRML}"
+    echo "       This is a possible incompatibility with your shell environment."
+    echo "       Contact your friendly neighborhood developer for help."
+    echo "       your shell:   $SHELL"
+    echo "       your path:    $PATH"
+    echo "       your nvm dir: $NVM_DIR"
+    return
+  else
+    echo "vsenv: node binary found at ${INFO}$(command -v node)${NRML}"
+  fi
+
   CURRENT_VERSION=$(node --version)
   if [ "$CURRENT_VERSION" != "$NODE_VERSION" ] && [ -n "$str_alias" ]; then
     echo "vsenv: ${BOLD}kill/restart VSCODE for nvm alias default to take effect!${NRML}"
