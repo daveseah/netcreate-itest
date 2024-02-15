@@ -3,7 +3,7 @@
   Operation Sequencer
 
   A simple sequencer that is initialized with TOpNode objects:
-  { name, data? } one after the other with addNode(). 
+  { name, data? } one after the other with addOp(). 
 
   The sequencer can be started, stopped, and moved forward and backward, 
   and can notify subscribers when the current operation changes.
@@ -11,11 +11,11 @@
   usage:
 
   const sequencer = new OpSequencer('MY SEQUENCER'); // unique UC name
-  sequencer.addNode({ name: 'op1', data: { ... } });
-  sequencer.addNode({ name: 'op2', data: { ... } });
+  sequencer.addOp('op1', { ... });
+  sequencer.addOp('op2', { ... });
   sequencer.subscribe('op1', (newOp, oldOp) => { ... });
-  const firstOp = sequencer.start();
-  while (let seqOp = sequencer.next()) { ... }
+  const op = sequencer.start();
+  while (op) op = sequencer.next();
   sequencer.dispose();
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
@@ -23,12 +23,16 @@
 /// TYPES /////////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type TOpSeqMap = Map<string, OpSequencer>;
-type TOpChangeFunc = (newOp: TOpNode, oldOp: TOpNode) => void;
+type TOpChangeFunc = (newOp: TOpNode, oldOp: TOpNode, ops?: OpSequencer) => void;
+type TDataObj = { [key: string]: any };
 type TOpNode = {
-  name: string;
-  data?: { [key: string]: any };
-  _index?: number;
+  data: TDataObj;
   _seqName?: string;
+  _opName?: string;
+  _opIndex?: number;
+};
+type TNodeOptions = {
+  mutable?: boolean; // data is frozen by default
 };
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -46,6 +50,14 @@ function m_ValidateSeqName(sn: string) {
   if (sn !== sn[0].toUpperCase() + sn.slice(1)) throw Error(`${fn}: ${pcErr}`);
   if (sn.trim() !== sn)
     throw Error(`${fn}: name must not have leading/trailing spaces`);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_ValidateActiveSeq(seq: OpSequencer) {
+  if (seq instanceof OpSequencer) {
+    if (seq._disposed) throw Error(`sequencer ${seq.seqName} is disposed`);
+    else return;
+  }
+  throw Error('not a sequence instance or undefined');
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_ValidateNodeName(nn: string) {
@@ -68,6 +80,7 @@ class OpSequencer {
   opIndex: number; // current operation index
   opsMap: Map<string, number>; // map opname to index in ops array
   subs: Map<string, Set<TOpChangeFunc>>; // map opname to set of subscribers
+  _disposed: boolean; // true if disposed
 
   constructor(seqName: string) {
     m_ValidateSeqName(seqName);
@@ -87,34 +100,64 @@ class OpSequencer {
     this.currentOp = null;
     this.lastOp = null;
     this.subs = new Map();
+    this._disposed = false;
     OPSEQS.set(seqName, this);
   }
 
   /* --- add nodes --- */
 
-  addNode(node: TOpNode): TOpNode {
-    const fn = 'addNode';
-    const { name } = node;
+  /** given nodeName and a source TOpNode, add a clone of the source node to the sequencer */
+  addOp(name: string, data: TDataObj, opt: TNodeOptions): TOpNode {
+    const fn = 'addOp';
+    //
+    if (data === undefined) throw Error(`${fn}: arg2 must be TOpNode`);
+    if (typeof name !== 'string') throw Error(`${fn}: arg1 must be name:string`);
+    if (typeof data._name === 'string') throw Error(`${fn}: node ${name} reused`);
+    if (data._index !== undefined) throw Error(`${fn}: node ${name} reused`);
+    //
+    m_ValidateActiveSeq(this);
     m_ValidateNodeName(name);
+    //
     if (this.opIndex !== -1) throw Error(`${fn}: sequencer already started`);
-    if (this.hasNode(name)) throw Error(`${fn}: node '${name}' already exists`);
+    if (this.hasOp(name)) throw Error(`${fn}: node '${name}' already exists`);
+    //
     const index = this.ops.length;
-    if (node._index !== undefined) throw Error(`${fn}: node ${name} reused`);
-    node._index = index;
-    this.opsMap.set(name, index); // lookup index by name
-    this.ops.push(node);
-    return node;
+    this.opsMap.set(name, index); // save lookup index by name
+    const newData = { ...data }; // copy of user data
+    if (opt?.mutable) Object.freeze(newData); // default is frozen
+    const newNode: TOpNode = {
+      _opIndex: index,
+      _seqName: this.seqName,
+      _opName: name,
+      data: newData
+    };
+    this.ops.push(newNode);
+    return newNode;
   }
 
-  deleteNode(name: string): void {
-    const fn = 'deleteNode';
+  deleteOp(name: string): void {
+    const fn = 'deleteOp';
     console.error(`${fn}: not implemented by design`);
   }
 
-  /* --- node operations --- */
+  /* --- access operations --- */
+
+  data(key?: string): TDataObj {
+    m_ValidateActiveSeq(this);
+    if (typeof key === 'string') return this.currentOp.data[key];
+    return this.currentOp.data;
+  }
+
+  length(): number {
+    m_ValidateActiveSeq(this);
+    return this.ops.length;
+  }
+
+  /* --- sequencer operations --- */
 
   start(): TOpNode {
     const fn = 'start';
+    m_ValidateActiveSeq(this);
     if (this.opIndex !== -1) throw Error(`${fn}: sequencer already started`);
     if (this.ops.length === 0) throw Error(`${fn}: no operations to run`);
     this.opIndex = 0;
@@ -125,6 +168,7 @@ class OpSequencer {
 
   current(): TOpNode {
     const fn = 'current';
+    m_ValidateActiveSeq(this);
     if (this.opIndex === -1) throw Error(`${fn}: sequencer not started`);
     this._update();
     this._notifyChange();
@@ -132,6 +176,9 @@ class OpSequencer {
   }
 
   stop(): TOpNode {
+    const fn = 'stop';
+    m_ValidateActiveSeq(this);
+    if (this.opIndex === -1) throw Error('stop: sequencer not started');
     this.opIndex = -1;
     this._update();
     this._notifyChange();
@@ -140,70 +187,79 @@ class OpSequencer {
 
   next(): TOpNode {
     const fn = 'next';
-    if (this.opIndex === -1) throw Error(`${fn}: sequencer not started`);
-    if (this.opIndex === this.ops.length - 1) throw Error(`${fn}: already at end`);
+    if (this.opIndex === -1) return this.start();
+    m_ValidateActiveSeq(this);
+    if (this.opIndex === this.ops.length - 1) return undefined;
+    ++this.opIndex;
     this._update();
     this._notifyChange();
-    return this.ops[++this.opIndex];
+    return this.ops[this.opIndex];
   }
 
   previous(): TOpNode {
     const fn = 'previous';
+    m_ValidateActiveSeq(this);
     if (this.opIndex === -1) throw Error(`${fn}: sequencer not started`);
-    if (this.opIndex === 0) throw Error(`${fn}: already at start`);
+    if (this.opIndex === 0) return undefined;
+    --this.opIndex;
     this._update();
     this._notifyChange();
-    return this.ops[--this.opIndex];
+    return this.ops[this.opIndex];
   }
 
   /* --- node events --- */
 
-  subscribe(name: string, subf: TOpChangeFunc): void {
+  subscribe(opName: string, subf: TOpChangeFunc): void {
     const fn = 'onEnter';
-    m_ValidateNodeName(name);
-    if (!this.hasNode(name)) throw Error(`${fn}: node '${name}' does not exist`);
-    if (!this.subs.has(name)) this.subs.set(name, new Set());
-    this.subs.get(name).add(subf);
+    m_ValidateActiveSeq(this);
+    m_ValidateNodeName(opName);
+    if (!this.hasOp(opName)) throw Error(`${fn}: node '${opName}' does not exist`);
+    if (!this.subs.has(opName)) this.subs.set(opName, new Set());
+    this.subs.get(opName).add(subf);
   }
 
   unsubscribe(name: string, subf: TOpChangeFunc): void {
     const fn = 'onEnter';
+    m_ValidateActiveSeq(this);
     m_ValidateNodeName(name);
-    if (!this.hasNode(name)) throw Error(`${fn}: node '${name}' does not exist`);
+    if (!this.hasOp(name)) throw Error(`${fn}: node '${name}' does not exist`);
     const subs = this.subs.get(name);
     if (subs.has(subf)) subs.delete(subf);
   }
 
   _update() {
     const fn = '_update';
+    m_ValidateActiveSeq(this);
     this.lastOp = this.currentOp;
     this.currentOp = this.ops[this.opIndex];
   }
 
   _notifyChange(): void {
     const fn = '_notifyChange';
-    const subs = this.subs.get(this.currentOp.name);
-    if (subs) subs.forEach(subf => subf(this.currentOp, this.lastOp));
+    m_ValidateActiveSeq(this);
+    const subs = this.subs.get(this.currentOp._opName);
+    if (subs) subs.forEach(subf => subf(this.currentOp, this.lastOp, this));
   }
 
   /* --- node utilities --- */
 
-  hasNode(opName: string): boolean {
+  hasOp(opName: string): boolean {
+    m_ValidateActiveSeq(this);
     m_ValidateNodeName(opName);
-    return this.ops.some(op => op.name === opName);
+    return this.ops.some(op => op._opName === opName);
   }
 
-  isNode(opName: string): boolean {
-    const fn = 'isNode';
+  matchOp(opName: string): boolean {
+    const fn = 'matchOp';
+    m_ValidateActiveSeq(this);
     m_ValidateNodeName(opName);
-    if (!this.hasNode(opName)) throw Error(`${fn}: node '${opName}' does not exist`);
-    return opName === this.ops[this.opIndex].name;
+    if (!this.hasOp(opName)) throw Error(`${fn}: node '${opName}' does not exist`);
+    return opName === this.ops[this.opIndex]._opName;
   }
 
+  /** remove all nodes and subscribers */
   dispose(): void {
-    this.opsMap.clear();
-    this.subs.forEach(subs => subs.clear());
-    OPSEQS.delete(this.seqName);
+    OpSequencer.DeleteSequencer(this.seqName);
   }
 
   /* --- static utilities --- */
@@ -217,6 +273,8 @@ class OpSequencer {
     const seq = OpSequencer.GetSequencer(seqName);
     seq.opsMap.clear();
     seq.subs.forEach(subs => subs.clear());
+    seq.ops.length = 0;
+    seq._disposed = true;
     OPSEQS.delete(seqName);
   }
 }

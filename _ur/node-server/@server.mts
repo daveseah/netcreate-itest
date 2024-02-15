@@ -20,14 +20,14 @@ import TEXT from '../common/util-text.js';
 import PROMPTS from '../common/util-prompts.js';
 // typescript classes
 import UrModule from './class-urmodule.mts';
-import OpSeq from '../common/class-op-seq.ts';
+import OpSequencer from '../common/class-op-seq.ts';
 import StateMgr from '../common/class-state-mgr.ts';
 const { makeTerminalOut } = PROMPTS;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const CLASS = {
-  OpSeq,
+  OpSequencer,
   StateMgr,
   UrModule
 };

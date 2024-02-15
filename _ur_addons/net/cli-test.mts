@@ -5,7 +5,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, CLASS } from '@ursys/core';
 // note: ts files imported by node contain { default }
 import EP_DEFAULT, { EP_Socket } from './class-urnet-endpoint.ts';
 import NP_DEFAULT from './class-urnet-packet.ts';
@@ -202,7 +202,39 @@ function RunPacketTests() {
   }
 }
 
-function RunSeqTests() {}
+/// RUNTIME OPERATION SEQUENCER TEST ////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RunSeqTests() {
+  const ops = new CLASS.OpSequencer('URNET_Handshake');
+  const f_connecting = ops => console.log('connecting');
+  const f_authenticating = ops => console.log('authenticating');
+  const f_registering = ops => console.log('registering');
+  const f_listening = ops => console.log('listening');
+
+  ops.addOp('wait', { func: f_connecting });
+  ops.addOp('auth', { func: f_authenticating });
+  ops.addOp('reg', { func: f_registering });
+  ops.addOp('listen', { func: f_listening });
+
+  const f_change = (newOp, oldOp, ops) =>
+    console.log('* change *', oldOp._opName, '->', newOp._opName);
+  ops.subscribe('listen', f_change);
+
+  let op = ops.next();
+  while (op) {
+    op.data.func(ops);
+    if (ops.matchOp('auth')) console.log('* auth matched in loop *');
+    op = ops.next();
+  }
+
+  console.log('total ops staged', ops.length);
+  ops.dispose();
+  try {
+    console.log('disposed', ops.length());
+  } catch (err) {
+    console.log('disposed success');
+  }
+}
 
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
