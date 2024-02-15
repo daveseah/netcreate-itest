@@ -678,7 +678,7 @@ class NCNode extends UNISYS.Component {
         ? `${TEMPLATE.citation.text}. `
         : '') +
       `Last accessed at ${NCUI.DateFormatted()}.`;
-    const collection_ref = `n${id}`;
+    const collection_ref = CMTMGR.GetNodeCREF(id);
     return (
       <div className="--NCNode_View nccomponent">
         <div className="view" style={{ background: bgcolor }}>

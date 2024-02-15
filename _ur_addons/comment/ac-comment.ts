@@ -173,6 +173,14 @@ function GetThreadedViewObjects(cref, uid) {
     : commentVObjs;
 }
 
+/**
+ *  @param {string} cref
+ *  @param {string} uid -- User ID is needed to determine read/unread status
+ */
+function GetThreadedViewObjectsCount(cref, uid) {
+  return GetThreadedViewObjects(cref, uid).length;
+}
+
 function GetCommentVObj(cref, cid) {
   console.log('COMMENTVOBJS', cref, cid, JSON.stringify(COMMENTVOBJS));
   const thread = COMMENTVOBJS.get(cref);
@@ -261,6 +269,7 @@ export {
   CloseCommentCollection,
   // Comment Thread View Object
   GetThreadedViewObjects,
+  GetThreadedViewObjectsCount,
   GetCommentVObj,
   AddComment,
   RemoveComment,

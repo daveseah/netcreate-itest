@@ -847,7 +847,7 @@ class NCEdge extends UNISYS.Component {
         ? `${TEMPLATE.citation.text}. `
         : '') +
       `Last accessed at ${NCUI.DateFormatted()}.`;
-    const collection_ref = `e${id}`;
+    const collection_ref = CMTMGR.GetEdgeCREF(id);
 
     return (
       <div className={`nccomponent ncedge ${animateHeight}`}>

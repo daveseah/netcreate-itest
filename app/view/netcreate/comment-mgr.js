@@ -49,6 +49,22 @@ function m_UpdateCommentVObjsState() {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+/// Collection Reference Generators
+MOD.GetNodeCREF = nodeId => `n${nodeId}`;
+MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
+MOD.GetProjectCREF = projectId => `p${projectId}`;
+
+MOD.GetCurrentUserId = () => {
+  const session = UDATA.AppState('SESSION');
+  const uid = session.token;
+  return uid;
+}
+
+MOD.GetUserName = (uid) => {
+  return COMMENT.GetUserName(uid);
+}
+
+
 MOD.GetCommentCollection = (cref) => {
   return COMMENT.GetCommentCollection(cref);
 }
@@ -71,10 +87,6 @@ MOD.CloseCommentCollection = (cref, uid) => {
   m_UpdateCommentCollectionsState();
 }
 
-MOD.GetUserName = (uid) => {
-  return COMMENT.GetUserName(uid);
-}
-
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
 }
@@ -85,6 +97,10 @@ MOD.GetComment = (cid) => {
 
 MOD.GetThreadedViewObjects = (cref, uid) => {
   return COMMENT.GetThreadedViewObjects(cref, uid);
+}
+
+MOD.GetThreadedViewObjectsCount = (cref, uid) => {
+  return COMMENT.GetThreadedViewObjectsCount(cref, uid);
 }
 
 MOD.GetCommentVObj = (cref, cid) => {

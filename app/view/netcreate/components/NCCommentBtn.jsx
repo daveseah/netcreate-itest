@@ -56,8 +56,7 @@ class NCCommentBtn extends React.Component {
   }
 
   componentDidMount() {
-    const session = UDATA.AppState('SESSION');
-    const uid = session.token;
+    const uid = CMTMGR.GetCurrentUserId();
     this.setState({ uid });
   }
 
@@ -93,10 +92,8 @@ class NCCommentBtn extends React.Component {
     const { cref } = this.props;
     const { uid, isOpen } = this.state;
 
-    const cvobjs = CMTMGR.GetThreadedViewObjects(cref, uid); // needed to seed the collection
+    const count = CMTMGR.GetThreadedViewObjectsCount(cref, uid); // also used to seed the collection
     const ccol = CMTMGR.GetCommentCollection(cref) || {};
-
-    const count = cvobjs.length;
 
     let css = 'commentbtn ';
     if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
