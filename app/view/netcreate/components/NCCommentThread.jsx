@@ -79,7 +79,7 @@ class NCCommentThread extends React.Component {
   }
 
   render() {
-    const { cref, uid } = this.props;
+    const { cref, uid, x, y } = this.props;
 
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
@@ -88,6 +88,7 @@ class NCCommentThread extends React.Component {
       <Draggable>
         <div
           className="commentThread"
+          style={{ left: x, top: y }}
           onClick={e => e.stopPropagation()} // prevent edge deselect
         >
           <div className="topbar">

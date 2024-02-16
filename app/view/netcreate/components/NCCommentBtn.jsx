@@ -37,7 +37,9 @@ class NCCommentBtn extends React.Component {
 
     this.state = {
       uid: '', // allow '' for first render
-      isOpen: false
+      isOpen: false,
+      x: '300px',
+      y: '120px'
     };
 
     // EVENT HANDLERS
@@ -56,8 +58,21 @@ class NCCommentBtn extends React.Component {
   }
 
   componentDidMount() {
+    const { cref } = this.props;
+
     const uid = CMTMGR.GetCurrentUserId();
-    this.setState({ uid });
+
+    // figure out comment thread position based on comment button
+    const btn = document.getElementById(`comment-button-${cref}`);
+    const cmtbtnx = btn.getBoundingClientRect().left;
+    let x;
+    if (window.screen.width - cmtbtnx - 400 < 500) {
+      x = cmtbtnx - 405;
+    } else {
+      x = cmtbtnx + 35;
+    }
+    const y = btn.getBoundingClientRect().top;
+    this.setState({ uid, x: `${x}px`, y });
   }
 
   componentWillUnmount() {
@@ -79,6 +94,7 @@ class NCCommentBtn extends React.Component {
 
   UIOnClick(event) {
     event.stopPropagation(); // prevent Edge deselect
+
     const updatedIsOpen = !this.state.isOpen;
     this.setState({ isOpen: updatedIsOpen }, () => {
       CMTMGR.UpdateCommentCollection({
@@ -90,7 +106,7 @@ class NCCommentBtn extends React.Component {
 
   render() {
     const { cref } = this.props;
-    const { uid, isOpen } = this.state;
+    const { uid, isOpen, x, y } = this.state;
 
     const count = CMTMGR.GetThreadedViewObjectsCount(cref, uid); // also used to seed the collection
     const ccol = CMTMGR.GetCommentCollection(cref) || {};
@@ -103,12 +119,12 @@ class NCCommentBtn extends React.Component {
     const label = count > 0 ? count : '';
 
     return (
-      <div>
+      <div id={`comment-button-${cref}`}>
         <div className={css} onClick={this.UIOnClick}>
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{label}</div>
         </div>
-        {isOpen && <NCCommentThread cref={cref} uid={uid} />}
+        {isOpen && <NCCommentThread cref={cref} uid={uid} x={x} y={y} />}
       </div>
     );
   }

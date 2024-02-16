@@ -62,8 +62,8 @@ svg#comment-icon {
   max-height: 80%;
   overflow-y: auto;
   font-size: 14px;
-
   cursor: move;
+  z-index: 100;
   /* end floating */
 }
 .commentThread textarea.add {
