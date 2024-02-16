@@ -21,7 +21,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR } from '@ursys/core';
+import { PR, CLASS } from '@ursys/core';
 import NetPacket from './class-urnet-packet.ts';
 import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
 import { GetPacketHashString } from './urnet-types.ts';
@@ -33,6 +33,7 @@ import {
   NormalizeMessage,
   NormalizeData
 } from './urnet-types.ts';
+const OpSeq = CLASS.OpSequencer;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -51,6 +52,7 @@ export type EP_Socket = {
   // set by addClient()
   uaddr?: NP_Address; // assigned uaddr for this socket-ish object
   auth?: any; // whatever authentication is needed for this socket
+  msglist?: NP_Msg[]; // messages queued for this socket
   age?: number; // number of seconds since this socket was used
   label?: string; // name of the socket-ish object
 };
@@ -194,6 +196,43 @@ class NetEndpoint {
 
   /** endpoint client management  - - - - - - - - - - - - - - - - - - - - - **/
 
+  /** client management all-in-one method */
+  handleClient(data, socket: EP_Socket): NetPacket {
+    // 0. first time we're seeing this socket? save it
+    if (this.isNewSocket(socket)) this.addClient(socket);
+    const pkt = this.newPacket().deserialize(data);
+    // 1. is socket authenticated
+    if (socket.auth === undefined) {
+      if (pkt.msg_type === '_auth') {
+        LOG('would authenticate client pkt.auth');
+        LOG('would set socket.auth key if passed');
+        LOG('would return authentication packet');
+        pkt.setDir('res');
+        pkt.data = { uaddr: socket.uaddr };
+        return pkt;
+      }
+      LOG('would reject packet w/ err');
+      return;
+    }
+    // 2. is socket registered
+    if (socket.msglist === undefined) {
+      if (pkt.msg_type === '_reg') {
+        LOG('would register messages');
+        LOG('would set socket.msglist');
+        LOG('would return registration packet');
+      }
+      LOG('would reject packet w/ err');
+      return;
+    }
+    // 3. handle packets with authentication token
+    if (pkt.auth) {
+      LOG('would authenticate client pkt.auth');
+      this.pktReceive(pkt);
+    }
+    // 4. reject packets without authentication token
+    LOG('would reject packet w/ err');
+  }
+
   /** when a client connects to this endpoint, register it as a socket and
    *  allocate a uaddr for it */
   addClient(socket: EP_Socket): NP_Address {
@@ -203,7 +242,8 @@ class NetEndpoint {
     const new_uaddr = AllocateAddress({ prefix: 'UR_' });
     socket.uaddr = new_uaddr;
     socket.age = 0;
-    socket.auth = undefined;
+    socket.auth = undefined; // filled-in by socket authorization
+    socket.msglist = undefined; // filled-in by message registration
     this.srv_socks.set(new_uaddr, socket);
     // if (DBG) LOG(this.urnet_addr, `socket ${new_uaddr} registered`);
     return new_uaddr;

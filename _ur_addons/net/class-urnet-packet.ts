@@ -36,6 +36,7 @@ class NetPacket implements I_NetMessage {
   msg_type: NP_Type; // ping, signal, send, call
   msg: NP_Msg; // name of the URNET message
   data: any; // payload of the URNET message
+  auth: string; // authentication token
   src_addr: NP_Address; // URNET address of the sender
   hop_seq: NP_Address[]; // URNET addresses that have seen this packet
   hop_log: string[]; // log of debug messages by hop
@@ -50,6 +51,7 @@ class NetPacket implements I_NetMessage {
     this.hop_rsvp = false;
     this.hop_seq = [];
     this.hop_log = [];
+    this.auth = undefined;
     this.err = undefined;
     //
     if (data !== undefined) this.data = data;

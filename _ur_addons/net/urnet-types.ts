@@ -41,8 +41,8 @@ export const VALID_PKT_TYPES = [
   'signal',
   'send',
   'call',
-  '_reg', // special packet
-  '_auth' // special packet
+  '_auth', // special packet
+  '_reg' // special packet
 ] as const;
 export const VALID_ADDR_PREFIX = ['NEW', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -53,7 +53,7 @@ export const USED_ADDRS = new Set<NP_Address>();
 export type NP_ID = `pkt[${NP_Address}:${number}]`;
 export type NP_Chan = (typeof VALID_MSG_CHANNELS)[number];
 export type NP_Type = (typeof VALID_PKT_TYPES)[number];
-export type NP_Msg = `${NP_Chan}${string}`;
+export type NP_Msg = `${NP_Chan}${string}`; // e.g. 'NET:HELLO' or 'HELLO'
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
 export type NP_AddrPre = (typeof VALID_ADDR_PREFIX)[number];

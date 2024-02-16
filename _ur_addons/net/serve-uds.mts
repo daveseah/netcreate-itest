@@ -9,10 +9,11 @@
 
 import ipc, { Socket } from '@achrinza/node-ipc';
 import PATH from 'node:path';
-import { PR } from '@ursys/core';
+import { PR, CLASS } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
 import CLASS_EP, { EP_Socket } from './class-urnet-endpoint.ts';
 const Endpoint = CLASS_EP.default;
+const OpSeq = CLASS.OpSequencer;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -52,7 +53,7 @@ ipc.config.retry = 1500;
 ipc.config.silent = true;
 ipc.config.unlink = true; // unlink socket file on exit
 //
-const EP = new Endpoint();
+const EP = new Endpoint(); // server endpoint
 EP.configAsServer('SRV01'); // hardcode arbitrary server address
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
@@ -74,23 +75,8 @@ function m_Listen() {
     });
     // configure node-ipc incoming connection server
     ipc.server.on(uds_sysmsg, (data, socket) => {
-      // first time we're seeing this socket? save it
-      if (EP.isNewSocket(socket)) {
-        const uaddr = EP.addClient(socket);
-        LOG('.. new client socket', uaddr);
-      }
-      // now handle the message
-      const pkt = EP.newPacket().deserialize(data);
-      if (pkt.msg_type === '_reg') {
-        pkt.setDir('res');
-        const { uaddr } = socket;
-        LOG(`.. registration packet received, assigned ${uaddr}`);
-        pkt.data = { uaddr };
-        LOG('.. sending registration response');
-        ipc.server.emit(socket, uds_sysmsg, pkt.serialize());
-        return;
-      }
-      EP.pktReceive(pkt);
+      const pkt = EP.handleClient(data, socket);
+      if (pkt) ipc.server.emit(socket, uds_sysmsg, pkt.serialize());
     });
     // client socket disconnected
     ipc.server.on('socket.disconnected', (socket, destroyedSocketID) => {
