@@ -71,6 +71,10 @@ class NCComment extends React.Component {
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
+  componentWillUnmount() {
+    UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+  }
+
   UpdateCommentVObjs(COMMENTVOBJS) {
     this.LoadCommentVObj();
   }
