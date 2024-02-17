@@ -14,7 +14,7 @@ const { umdWrapper } = require('esbuild-plugin-umd-wrapper');
 const FSE = require('fs-extra');
 // build-addons can not use URSYS library because it's built it!
 // so we yoink the routines out of the source directly
-const PROMPTS = require('../common/prompts');
+const PROMPTS = require('../common/util-prompts');
 
 /// CONSTANTS AND DECLARATIONS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -66,7 +66,7 @@ async function ESBuildModules() {
     entryPoints: [`${DIR_URADDS}/@addons-client.ts`],
     bundle: true,
     platform: 'browser',
-    target: ['esnext'],
+    target: ['es2018'], // brunch can't handle features beyond this date
     sourcemap: true
   };
 

@@ -23,8 +23,23 @@ const OP_TYPES = {
   call_pubsub: ['subscribe', 'publish', 'post', 'unsubscribe', 'notify'],
   events: ['emit', 'on', 'off', 'listen', 'trigger', 'dispatch'],
 
+  list: [],
   queue: ['queue', 'enqueue', 'dequeue', 'push', 'pop', 'shift', 'unshift'],
   stack: ['stack', 'push', 'pop', 'shift', 'unshift'],
+
+  pattern_generator: [],
+  pattern_matcher: [],
+
+  processor: [],
+  filter: [],
+  muxers: [],
+  demuxers: [],
+  reorderer: [],
+  factory: [],
+
+  tokenizers: [],
+  decoders: [],
+  encoders: [],
 
   sequence: ['sequence', 'series', 'chain', 'pipe', 'compose', 'flow'],
   stream: ['open', 'close', 'read', 'write'],

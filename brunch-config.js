@@ -15,6 +15,10 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const FSE = require('fs-extra');
+const PATH = require('path');
+const CHOKIDAR = require('chokidar');
+const { execSync } = require('child_process');
+const SMAP = require('source-map');
 
 /// UTILITIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -24,12 +28,21 @@ const bl = s => `\x1b[1;34m${s}\x1b[0m`;
 const yl = s => `\x1b[1;33m${s}\x1b[0m`;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** utility to correct problems with sourcemaps:true overwriting ursys map */
-const u_hack_mapfiles = () => {
-  const src = `${__dirname}/_ur/_dist/client-cjs.js.map`;
-  const dst = `${__dirname}/public/scripts/ursys-lib.js.map`;
-  FSE.copySync(src, dst);
-  console.log(`MAP HACK - replaced 'ursys-lib.js.map' with 'client-cjs.js.map' to`);
-  console.log(`           fix incorrect sourcemap attribution by brunch`);
+const u_hack_mapfiles = async () => {
+  const { SourceMapConsumer, SourceMapGenerator } = SMAP;
+  // see https://stackoverflow.com/questions/68973905 on how to use
+  FSE.copySync(
+    `${__dirname}/_ur/_dist/client-cjs.js.map`,
+    `${__dirname}/public/scripts/ursys-core.js.map`
+  );
+  console.log(`MAP HACK - replaced 'ursys-core.js.map' with 'client-cjs.js.map'`);
+  FSE.copySync(
+    `${__dirname}/_ur_addons/_dist/addons-client-cjs.js.map`,
+    `${__dirname}/public/scripts/ursys-addons.js.map`
+  );
+  console.log(
+    `MAP HACK - replaced 'ursys-addons.js.map' with 'addons-client-cjs.js.map'`
+  );
 };
 
 /// CHECK FOR NC_CONFIG ///////////////////////////////////////////////////////
@@ -66,7 +79,8 @@ module.exports = {
     javascripts: {
       joinTo: {
         'scripts/netc-app.js': /^app/,
-        'scripts/ursys-lib.js': /^node_modules\/@ursys/,
+        'scripts/ursys-core.js': /^node_modules\/@ursys\/core/,
+        'scripts/ursys-addons.js': /^node_modules\/@ursys\/addons/,
         'scripts/netc-lib.js': /^(?!app)(?!node_modules\/@ursys)/
       }
     },
@@ -76,7 +90,7 @@ module.exports = {
       }
     }
   },
-  sourceMaps: true,
+  sourceMaps: true, // other options are 'inline' or 'absolute'
   plugins: {
     babel: {
       ignore: [/^node_modules\/@ursys/],
@@ -106,8 +120,34 @@ module.exports = {
   hooks: {
     onCompile(generatedFiles, changedAssets) {
       if (FIRST_RUN) {
-        u_hack_mapfiles(); // sneakily copy dist directory to public scripts
+        // u_hack_mapfiles(); // try to override map files (doesn't work really)
         console.log(`\n--- compilation complete - appserver is online ---\n`);
+        // setup CHOKIDAR to watch for changes in the _ur_addons subdirectories except _dist
+        // since brunch can't be configured to watch them
+        const DIR_A = PATH.join(__dirname, '_ur');
+        const DIR_B = PATH.join(__dirname, '_ur_addons');
+        // chokidar will watch DIR_A and DIR_B, ignoring any changes in _dist subdirectories
+        CHOKIDAR.watch([DIR_A, DIR_B], {
+          ignored: /_dist/,
+          ignoreInitial: true
+        }).on('all', (event, path) => {
+          console.log(`\n--- rebuilding _ur_addons ---`);
+          // build the addons
+          console.log(`    building core...`);
+          execSync('node ./_ur/npm-scripts/@build-core.cjs');
+          console.log(`    building addons...`);
+          execSync('node ./_ur/npm-scripts/@build-addons.cjs');
+          console.log(`    triggering recompile...\n`);
+          // touch the brunch-config.js file to trigger a recompile
+          const time = new Date();
+          const touchFile = './brunch-config.js';
+          try {
+            FSE.utimesSync(touchFile, time, time);
+          } catch (e) {
+            let fd = fs.openSync(touchFile, 'a');
+            FSE.closeSync(fd);
+          }
+        });
         FIRST_RUN = false;
         return;
       }

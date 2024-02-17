@@ -55,6 +55,7 @@
     "node-dir": "^0.1.17",
     "path": "^0.12.7",
     "prettier": "^2.5.1",
+    "source-map": "^0.7.4",
     "terser-brunch": "^4.0.0",
     "tracer": "^1.1.5"
   },
