@@ -66,6 +66,10 @@ function Init() {
   DCCOMMENTS.Init();
 }
 
+function LoadDB(data) {
+  DCCOMMENTS.LoadDB(data);
+}
+
 /**
  *  @param {number} ms
  *  @returns string "MM/DD/YY, HH:MM:SS: PM"
@@ -261,6 +265,8 @@ function GetComment(cid) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
   Init,
+  // DB
+  LoadDB,
   GetDateString,
   // Comment Collection
   GetCommentCollections,

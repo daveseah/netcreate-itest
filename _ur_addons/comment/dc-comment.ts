@@ -50,22 +50,11 @@ const ROOTS = new Map(); // Map<cref, comment_id> Root comment for a given colle
 const REPLY_ROOTS = new Map(); // Map<comment_id_parent, comment_id> Root comment_id for any given comment. (thread roots)
 const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id that follows the requested comment_id
 
-/// FAKE DATABASE CALLS ///////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// "Load" database data, which are simple arrays
-
-let DB_Users;
-let DB_CommentTypes;
-let DB_Comments;
 let LASTID = -1;
 
-DB_Users = [
-  { id: 'Ben32', name: 'BenL' },
-  { id: 'Sri64', name: 'SriS' },
-  { id: 'Joshua11', name: 'JoshuaD' }
-];
-
-DB_CommentTypes = [
+/// DEFAULTS //////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const DEFAULT_CommentTypes = [
   {
     id: 'cmt',
     label: 'COMMENT', // comment type label
@@ -164,112 +153,6 @@ Is there any contradictory evidence that says the model doesn't work this way?
   }
 ];
 
-DB_Comments = [
-  {
-    collection_ref: 'n1',
-    comment_id: '1', // thread
-    comment_id_parent: '',
-    comment_id_previous: '',
-    comment_type: 'cmt', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Ben32',
-    commenter_text: ["You're missing a citation."]
-  },
-  {
-    collection_ref: 'n1',
-    comment_id: '2', // reply 1
-    comment_id_parent: '1',
-    comment_id_previous: '',
-    comment_type: 'changereason',
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Joshua11',
-    commenter_text: [
-      'I switched this to be fish die',
-      "Because that's what the graph shows, thanks!"
-    ]
-  },
-  {
-    collection_ref: 'n1',
-    comment_id: '3', // reply 2
-    comment_id_parent: '1',
-    comment_id_previous: '2',
-    comment_type: 'understandable', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Ben32',
-    commenter_text: ['OK nvm.']
-  },
-  {
-    collection_ref: 'n1',
-    comment_id: '4', // thread
-    comment_id_parent: '',
-    comment_id_previous: '1',
-    comment_type: 'cmt', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Sri64',
-    commenter_text: ["I don't think that's a good reason."]
-  },
-  {
-    collection_ref: 'n1',
-    comment_id: '5', // reply 1
-    comment_id_parent: '4',
-    comment_id_previous: '',
-    comment_type: 'three',
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Ben32',
-    commenter_text: [
-      'I switched this to be fish die',
-      "Because that's what the graph shows, thanks!",
-      ''
-    ]
-  },
-  {
-    collection_ref: 'n1',
-    comment_id: '6', // thread
-    comment_id_parent: '',
-    comment_id_previous: '4',
-    comment_type: 'cmt', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Ben32',
-    commenter_text: ['The last word.']
-  },
-  {
-    collection_ref: 'n2',
-    comment_id: '7', // thread
-    comment_id_parent: '',
-    comment_id_previous: '',
-    comment_type: 'cmt', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'Joshua11',
-    commenter_text: ['A different object.']
-  },
-  {
-    collection_ref: 'e1',
-    comment_id: '8', // thread
-    comment_id_parent: '',
-    comment_id_previous: '',
-    comment_type: 'cmt', // no prompts
-    comment_createtime: new Date(),
-    comment_modifytime: new Date(),
-
-    commenter_id: 'BenL',
-    commenter_text: ['An edge comment.']
-  }
-];
-
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_LoadUsers(dbUsers) {
@@ -295,10 +178,22 @@ function m_GetNextCommentId() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Init() {
   console.log('dc-comments Init');
+  // Load Defaults
+  m_LoadCommentTypes(DEFAULT_CommentTypes);
+}
+
+/**
+ * @param {Object} data
+ * @param {Object} data.users
+ * @param {Object} data.commenttypes
+ * @param {Object} data.comments
+ */
+function LoadDB(data) {
+  console.error('dc-comments.LoadDB', data);
   // Load Data!
-  m_LoadCommentTypes(DB_CommentTypes);
-  m_LoadUsers(DB_Users);
-  m_LoadComments(DB_Comments);
+  if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
+  if (data.users) m_LoadUsers(data.users);
+  if (data.comments) m_LoadComments(data.comments);
   if (DBG) console.log('USERS', USERS);
   if (DBG) console.log('COMMENTTYPES', COMMENTTYPES);
   if (DBG) console.log('COMMENTS', COMMENTS);
@@ -463,6 +358,8 @@ function GetThreadedCommentData(cref) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export default {
   Init,
+  // DB
+  LoadDB,
   // USERS
   GetUsers,
   GetUser,

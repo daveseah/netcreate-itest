@@ -23,7 +23,25 @@ const PR = 'comment-mgr: ';
 let MOD = UNISYS.NewModule(module.id);
 let UDATA = UNISYS.NewDataLink(MOD);
 
-COMMENT.Init();
+/// UNISYS HANDLERS ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** lifecycle INITIALIZE handler
+ */
+MOD.Hook('INITIALIZE', () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
+  /** LOAD_COMMENT_DATACORE
+   *  Called by nc-logic.m_PromiseLoadDB
+   *  Primarily after LOADASSETS
+   *  Loads comments from the database into dc-comments
+   *  @param {Object} data
+   *  @param {Object} data.users
+   *  @param {Object} data.commenttypes
+   *  @param {Object} data.comments
+   */
+  UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => {
+    COMMENT.LoadDB(data);
+  });
+});
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -118,8 +136,29 @@ MOD.RemoveComment = (cid) => {
 }
 
 MOD.UpdateComment = (cobj) => {
+  m_DBUpdateComment(cobj);
   COMMENT.UpdateComment(cobj);
   m_UpdateCommentVObjsState();
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// DB Calls
+
+function m_DBUpdateComment(cobj) {
+  const comment = {
+    collection_ref: cobj.collection_ref,
+    comment_id: cobj.comment_id,
+    comment_id_parent: cobj.comment_id_parent,
+    comment_id_previous: cobj.comment_id_previous,
+    comment_type: cobj.comment_type,
+    comment_createtime: cobj.comment_createtime,
+    comment_modifytime: cobj.comment_modifytime,
+    commenter_id: cobj.commenter_id,
+    commenter_text: cobj.commenter_text
+  }
+  UDATA.LocalCall('DB_UPDATE', { comment }).then(() => {
+    if (DBG) console.log('m_DBUpdateComment DB_UPDATE callback');
+  });
 }
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////

@@ -191,6 +191,7 @@ function m_PromiseLoadDB() {
     UTILS.RecalculateAllNodeDegrees(data.d3data);
     UDATA.SetAppState('NCDATA', data.d3data);
     UDATA.SetAppState('TEMPLATE', data.template);
+    UDATA.LocalCall('LOAD_COMMENT_DATACORE', data);
     // Save off local reference because we don't have NCDATA AppStateChange handler
     NCDATA = data.d3data;
     TEMPLATE = data.template;

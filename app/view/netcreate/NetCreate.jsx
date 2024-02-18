@@ -75,7 +75,7 @@ class NetCreate extends UNISYS.Component {
     SM._initializeState({ prop_1: 1 });
     console.log('SM:StateMgr contains:', SM.state());
     /** end of _ur core and _ur_addons tests **/
-	URADD.COMMENT.Init();
+    URADD.COMMENT.Init();
 
     this.state = {
       isConnected: true,
