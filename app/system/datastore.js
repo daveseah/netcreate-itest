@@ -204,6 +204,29 @@ DSTOR.PromiseNewEdgeIDs = function (count) {
     });
   });
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** get a unique CommentID
+ */
+DSTOR.PromiseNewCommentID = function () {
+  return new Promise((resolve, reject) => {
+    UDATA.NetCall('SRV_DBGETCOMMENTID').then(data => {
+      if (data.comment_id) {
+        if (DBG) console.log(PR, 'server allocated comment_id', data.comment_id);
+        resolve(data.comment_id);
+      } else {
+        if (UNISYS.IsStandaloneMode()) {
+          reject(
+            new Error(
+              'STANDALONE MODE: UI should prevent PromiseNewCommentID() from running!'
+            )
+          );
+        } else {
+          reject(new Error('unknown error' + JSON.stringify(data)));
+        }
+      }
+    });
+  });
+};
 
 /// DATABASE LOADER ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

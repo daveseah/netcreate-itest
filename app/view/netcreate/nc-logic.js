@@ -706,7 +706,7 @@ MOD.Hook('INITIALIZE', () => {
       if (DBG)
         console.log('nc-logic.EDGE_UPDATE: updating existing edge', updatedEdges);
     } else if (updatedEdges.length > 1) {
-    // if there were more edges than expected
+      // if there were more edges than expected
       throw Error('EdgeUpdate found duplicate IDs');
     }
 

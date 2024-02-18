@@ -182,7 +182,7 @@ DB.InitializeDatabase = function (options = {}) {
         obj => {
           // side-effect: make sure ids are numbers
           m_CleanObjID('comment.id', obj);
-          return obj.id;
+          return obj.comment_id;
         },
         arr => {
           return Math.max(...arr);
@@ -796,12 +796,16 @@ function m_GetNewCommentID() {
   m_max_commentID += 1;
   return m_max_commentID;
 }
+DB.PKT_GetNewCommentID = function (pkt) {
+  if (DBG) console.log(PR, `PKT_GetNewCommentID ${pkt.Info()} commentID ${m_max_commentID}`);
+  return { comment_id: m_GetNewCommentID() };
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Side Effect: Changes `m_max_nodeID`
 function m_CalculateMaxCommentID() {
   if (COMMENTS.count() > 0) {
     m_max_commentID = COMMENTS.mapReduce(
-      obj => obj.id,
+      obj => obj.comment_id,
       arr => Math.max(...arr)
     );
   } else {

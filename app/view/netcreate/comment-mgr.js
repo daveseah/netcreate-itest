@@ -12,6 +12,7 @@
 const React = require('react');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
+const DATASTORE = require('system/datastore');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -126,8 +127,12 @@ MOD.GetCommentVObj = (cref, cid) => {
 }
 
 MOD.AddComment = (cobj) => {
+  DATASTORE.PromiseNewCommentID().then(newCommentID => {
+    cobj.comment_id = newCommentID;
   COMMENT.AddComment(cobj);
   m_UpdateCommentVObjsState();
+  });
+
 }
 
 MOD.RemoveComment = (cid) => {
@@ -156,7 +161,7 @@ function m_DBUpdateComment(cobj) {
     commenter_id: cobj.commenter_id,
     commenter_text: cobj.commenter_text
   }
-  UDATA.LocalCall('DB_UPDATE', { comment }).then(() => {
+  UDATA.LocalCall('DB_UPDATE', { comment }).then(data => {
     if (DBG) console.log('m_DBUpdateComment DB_UPDATE callback');
   });
 }

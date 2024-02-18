@@ -50,8 +50,6 @@ const ROOTS = new Map(); // Map<cref, comment_id> Root comment for a given colle
 const REPLY_ROOTS = new Map(); // Map<comment_id_parent, comment_id> Root comment_id for any given comment. (thread roots)
 const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id that follows the requested comment_id
 
-let LASTID = -1;
-
 /// DEFAULTS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DEFAULT_CommentTypes = [
@@ -162,16 +160,7 @@ function m_LoadCommentTypes(commentTypes) {
   commentTypes.forEach(t => COMMENTTYPES.set(t.id, t));
 }
 function m_LoadComments(comments) {
-  let lastid = -1;
-  comments.forEach(c => {
-    COMMENTS.set(c.comment_id, c);
-    if (c.comment_id > lastid) lastid = c.comment_id;
-  });
-  LASTID = lastid;
-}
-
-function m_GetNextCommentId() {
-  return ++LASTID;
+  comments.forEach(c => COMMENTS.set(c.comment_id, c));
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
@@ -252,7 +241,7 @@ function AddComment(data) {
 
   const comment = {
     collection_ref: data.cref,
-    comment_id: m_GetNextCommentId(), // thread
+    comment_id: data.comment_id, // thread
     comment_id_parent,
     comment_id_previous,
     comment_type: 'cmt', // default type, no prompts
