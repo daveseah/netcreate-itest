@@ -102,24 +102,31 @@ async function ShutdownCLI() {
 /// CLI: MAIN PARSER ///////////////////////////////////////////////////////////
 /// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const COMMAND_DICT = {
-  start: async () => {
+  'start': async () => {
     await CTRL.StartServers();
   },
-  restart: async () => {
+  'restart': async () => {
     await CTRL.TerminateServers();
     await CTRL.StartServers();
   },
-  stop: async () => {
+  'stop': async () => {
     await CTRL.TerminateServers();
   },
-  hosts: async () => {
+  'hosts': async () => {
     await CTRL.ManageHosts();
   },
-  send: async () => {
-    await CLIENT.Connect();
-    m_Sleep(1000, CLIENT.Disconnect);
+  'send': async () => {
+    if (await CLIENT.Connect()) m_Sleep(1000, CLIENT.Disconnect);
   },
-  test: async () => {
+  'client': async () => {
+    if (await CLIENT.Connect()) {
+      const dur = ARGS[2] || 15; // 15 min default
+      LOG(`client: sleeping for ${dur} minutes`);
+      const ms = 1000 * 60 * Number(dur);
+      m_Sleep(ms, CLIENT.Disconnect);
+    }
+  },
+  'test': async () => {
     await TEST.RunTests();
   }
 };

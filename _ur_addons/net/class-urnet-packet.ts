@@ -124,13 +124,15 @@ class NetPacket implements I_NetMessage {
 
   /** make a packet from existing JSON */
   setFromJSON(json: string): NetPacket {
-    if (typeof json !== 'string') throw Error(`invalid json: ${json}`);
+    if (typeof json !== 'string')
+      throw Error(`invalid json: ${json}, is ${typeof json}`);
     return this.deserialize(json);
   }
   /** make a packet from existing object */
   setFromObject(pktObj) {
     const fn = 'setFromObject';
-    if (typeof pktObj !== 'object') throw Error(`invalid pktObj: ${pktObj}`);
+    if (typeof pktObj !== 'object')
+      throw Error(`invalid pktObj: ${pktObj}, is ${typeof pktObj}`);
     this.id = pktObj.id;
     this.msg = pktObj.msg;
     if (pktObj.data === undefined)

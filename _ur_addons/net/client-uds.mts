@@ -48,7 +48,7 @@ function m_Register(sock: ipc.IpcClient) {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Connect() {
+async function Connect(): Promise<boolean> {
   const fn = 'Connect';
   /// node-ipc baseline configuration
   ipc.config.unlink = true; // unlink sock file on exit
@@ -58,19 +58,22 @@ async function Connect() {
   const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
 
   /// check that UDS host is running
-  await new Promise<void>((resolve, reject) => {
+  const pipeExists = await new Promise<boolean>((resolve, reject) => {
     if (!m_CheckForUDSHost()) {
-      reject(`${fn} ${uds_id} pipe not found`); // reject promise
+      reject(`${fn}: server pipe ${uds_id} not found. Is server running?`); // reject promise
       return;
-    } else resolve();
+    } else resolve(true);
+  }).catch(err => {
+    LOG.error(err);
   });
+  if (!pipeExists) return false;
 
   // if good connect to the sock file
   ipc.connectTo(uds_id, sock_path, () => {
     const client_sock = ipc.of[uds_id];
 
     client_sock.on('connect', () => {
-      LOG(`${client_sock.id} connect: connected`);
+      LOG(`.. connected to server ${client_sock.id}`);
       m_Register(client_sock);
     });
 
@@ -84,13 +87,18 @@ async function Connect() {
     client_sock.on('disconnected', () => {
       LOG(`${client_sock.id} disconnect: disconnected`);
     });
-    client_sock.on('sock.disconnected', (sock, destroyedId) => {
+    client_sock.on('socket.disconnected', (sock, destroyedId) => {
       let status = '';
       if (sock) status += `sock:${sock.id || 'undefined'}`;
       if (destroyedId) status += ` destroyedId:${destroyedId || 'undefined'}`;
       LOG(`${client_sock.id} sock.disconnected: disconnected ${status}`);
     });
+    client_sock.on('destroy', () => {
+      LOG(`${client_sock.id} destroy: disconnected`);
+    });
   });
+  // got this far, then success!
+  return true;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Disconnect() {

@@ -35,6 +35,7 @@ function m_Sleep(ms, resolve?): Promise<void> {
 process.on('SIGTERM', () => {
   (async () => {
     // LOG(`SIGTERM received ${process.pid}`);
+    ipc.server.broadcast('disconnect', 'Server is disconnecting');
     await Stop();
   })();
 });
@@ -42,6 +43,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   (async () => {
     // LOG(`SIGINT received ${process.pid}`);
+    ipc.server.broadcast('disconnect', 'Server is disconnecting');
     await Stop();
   })();
 });
@@ -67,21 +69,28 @@ function m_AddServerHandlers() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_Listen() {
   const { uds_sysmsg, uds_id, sock_path } = UDS_INFO;
-  ipc.config.ud = uds_id;
+  ipc.config.id = uds_id;
   ipc.serve(sock_path, () => {
+    // Before disconnecting, notify clients
     // note: 'connect' doesn't provide useful data
     ipc.server.on('connect', () => {
-      LOG(`${ipc.config.id} connect: connected`);
+      LOG(`${ipc.config.id} client connect`);
     });
     // configure node-ipc incoming connection server
     ipc.server.on(uds_sysmsg, (data, socket) => {
-      const pkt = EP.handleClient(data, socket);
+      let uaddr = socket.uaddr;
+      let pkt = EP.handleClient(data, socket);
+      if (socket.uaddr && socket.uaddr !== uaddr) {
+        uaddr = socket.uaddr;
+        LOG(`.. ${uaddr} new client`);
+        ipc.server.broadcast('disconnect', 'Server is disconnecting');
+      }
       if (pkt) ipc.server.emit(socket, uds_sysmsg, pkt.serialize());
     });
     // client socket disconnected
-    ipc.server.on('socket.disconnected', (socket, destroyedSocketID) => {
+    ipc.server.on('socket.disconnected', socket => {
       const uaddr = EP.removeClient(socket);
-      LOG('.. client socket disconnected', uaddr, destroyedSocketID);
+      LOG(`.. ${uaddr} socket disconnected`);
     });
   });
   ipc.server.start();
@@ -101,19 +110,21 @@ function Start() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  const { sock_path } = UDS_INFO;
+  const { sock_path, uds_id } = UDS_INFO;
   const shortPath = PATH.relative(process.cwd(), sock_path);
   LOG(`.. stopping UDS Server on ${shortPath}`);
-  await ipc.server.stop(); // should also unlink socket file automatically
   LOG.info(`.. should process all pending transactions`);
   LOG.info(`.. should delete all registered messages`);
-  LOG.info(`.. should nuke all connected sockets`);
+  LOG.info(`.. should nuke all connected sockets (${ipc.server.sockets.length})`);
   // disconnect all connected sockets
   const sockList = ipc.server.sockets;
-  for (const sock of sockList) {
-    LOG(`.. disconnecting socket ${sock.id}`);
-    ipc.disconnect(sock.id);
+  for (const socket of sockList) {
+    LOG(`.. disconnecting socket`, socket.id);
+    ipc.server.emit(socket, 'disconnect', 'server is disconnecting');
   }
+  await m_Sleep(1000);
+  LOG(`.. stopping server`);
+  await ipc.server.stop(); // should also unlink socket file automatically
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
