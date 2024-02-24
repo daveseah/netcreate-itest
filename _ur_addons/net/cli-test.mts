@@ -7,12 +7,13 @@
 
 import { PR, PROC, CLASS } from '@ursys/core';
 // note: ts files imported by node contain { default }
-import EP_DEFAULT, { EP_Socket } from './class-urnet-endpoint.ts';
+import EP_DEFAULT from './class-urnet-endpoint.ts';
+import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
 import NP_DEFAULT from './class-urnet-packet.ts';
 import RT_DEFAULT from './urnet-types.ts';
-// destructure defaults
-const NetEndpoint = EP_DEFAULT.default;
-const NetPacket = NP_DEFAULT.default;
+// destructure defaults; these will get moved to ursys core at some point
+const { NetEndpoint } = EP_DEFAULT;
+const { NetPacket } = NP_DEFAULT;
 const { AllocateAddress } = RT_DEFAULT;
 
 /// TYPE DECLARATIONS /////////////////////////////////////////////////////////
@@ -146,7 +147,7 @@ function RunPacketTests() {
     return host;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function PT_AddClient(name, host: T_Endpoint, gateway: EP_Socket) {
+  function PT_AddClient(name, host: T_Endpoint, gateway: I_NetSocket) {
     const client: T_Endpoint = new NetEndpoint();
     const sock = {
       send: (pkt: T_Packet) => client.pktReceive(pkt)

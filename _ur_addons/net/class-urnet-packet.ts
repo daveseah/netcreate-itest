@@ -173,8 +173,12 @@ class NetPacket implements I_NetMessage {
     return JSON.stringify(this);
   }
   deserialize(data: string): NetPacket {
-    let obj = JSON.parse(data);
-    return this.setFromObject(obj);
+    try {
+      let obj = JSON.parse(data);
+      return this.setFromObject(obj);
+    } catch (err) {
+      console.error('NetPacket.deserialize failed', data);
+    }
   }
 
   /** information utilities - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -213,4 +217,4 @@ class NetPacket implements I_NetMessage {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default NetPacket;
+export { NetPacket };

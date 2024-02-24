@@ -222,7 +222,8 @@ async function UnlinkFile(filepath) {
     FSE.unlinkSync(filepath);
     return true;
   } catch (err) {
-    return false;
+    if (err.code === 'ENOENT') return false;
+    console.log(err.code);
   }
 }
 

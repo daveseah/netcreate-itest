@@ -7,7 +7,7 @@
 
 import PATH from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, FILE } from '@ursys/core';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
@@ -105,26 +105,24 @@ const COMMAND_DICT = {
   'start': async () => {
     await CTRL.StartServers();
   },
+  'client': async () => {
+    if (await CLIENT.UDS_Connect()) {
+      const dur = ARGS[2] || 15; // 15 min default
+      LOG(`client: sleeping for ${dur} minutes`);
+      const ms = 1000 * 60 * Number(dur);
+      m_Sleep(ms, CLIENT.UDS_Disconnect);
+    }
+  },
+  'stop': async () => {
+    await CTRL.TerminateServers();
+    await CTRL.UnlinkSockets();
+  },
   'restart': async () => {
     await CTRL.TerminateServers();
     await CTRL.StartServers();
   },
-  'stop': async () => {
-    await CTRL.TerminateServers();
-  },
   'hosts': async () => {
     await CTRL.ManageHosts();
-  },
-  'send': async () => {
-    if (await CLIENT.Connect()) m_Sleep(1000, CLIENT.Disconnect);
-  },
-  'client': async () => {
-    if (await CLIENT.Connect()) {
-      const dur = ARGS[2] || 15; // 15 min default
-      LOG(`client: sleeping for ${dur} minutes`);
-      const ms = 1000 * 60 * Number(dur);
-      m_Sleep(ms, CLIENT.Disconnect);
-    }
   },
   'test': async () => {
     await TEST.RunTests();

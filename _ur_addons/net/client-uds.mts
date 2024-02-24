@@ -4,17 +4,22 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILE } from '@ursys/core';
+import { PR, FILE, PROC } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
+import NET from 'node:net';
 import ipc from '@achrinza/node-ipc';
+import PATH from 'node:path';
 import EP_DEFAULT from './class-urnet-endpoint.ts';
-const NetEndpoint = EP_DEFAULT.default;
+import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
+const { NetEndpoint } = EP_DEFAULT;
+const { NetSocket } = NS_DEFAULT;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDSClient', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDS_DETECTED = false;
+const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const EP = new NetEndpoint();
 
@@ -39,73 +44,63 @@ function m_CheckForUDSHost() {
 /** register the connection for the first time */
 function m_Register(sock: ipc.IpcClient) {
   const fn = 'm_Register';
-  const { uds_sysmsg } = UDS_INFO;
   const regPkt = EP.newRegistrationPacket();
   regPkt.hop_seq.push(`NEW${Date.now()}`);
-  sock.emit(uds_sysmsg, regPkt.serialize());
+  sock.send(regPkt);
+  LOG(`${fn} sent registration packet`);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** register the connection for the first time */
+function UDS_Register(sock: I_NetSocket) {
+  const fn = 'm_Register';
+  const regPkt = EP.newRegistrationPacket();
+  regPkt.hop_seq.push(`NEW${Date.now()}`);
+  sock.send(regPkt);
   LOG(`${fn} sent registration packet`);
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Connect(): Promise<boolean> {
-  const fn = 'Connect';
-  /// node-ipc baseline configuration
-  ipc.config.unlink = true; // unlink sock file on exit
-  ipc.config.retry = 1500;
-  ipc.config.maxRetries = 1;
-  ipc.config.silent = true;
-  const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
-
-  /// check that UDS host is running
+async function UDS_Connect(): Promise<boolean> {
+  const fn = 'UDS_Connect';
+  const { sock_path, sock_file } = UDS_INFO;
   const pipeExists = await new Promise<boolean>((resolve, reject) => {
     if (!m_CheckForUDSHost()) {
-      reject(`${fn}: server pipe ${uds_id} not found. Is server running?`); // reject promise
+      reject(`${fn}: server pipe ${sock_path} not found. Is server running?`); // reject promise
       return;
     } else resolve(true);
   }).catch(err => {
     LOG.error(err);
   });
   if (!pipeExists) return false;
+  // got this far, the UDS pipe file exists so server is running
+  const connection = NET.createConnection({ path: sock_path }, () => {
+    LOG(`Connected to server '${sock_file}'`);
+    const client_sock = new NetSocket(connection, pkt =>
+      connection.write(pkt.serialize())
+    );
+    UDS_Register(client_sock);
 
-  // if good connect to the sock file
-  ipc.connectTo(uds_id, sock_path, () => {
-    const client_sock = ipc.of[uds_id];
-
-    client_sock.on('connect', () => {
-      LOG(`.. connected to server ${client_sock.id}`);
-      m_Register(client_sock);
+    connection.on('data', data => {
+      console.log(data.toString());
     });
-
-    client_sock.on(uds_sysmsg, json => {
-      const pkt = EP.packetFromJSON(json);
-      const { msg, data } = pkt;
-      LOG(`${fn} got message: ${msg} w/ data`, data);
-      LOG.warn(`would finish processing`);
+    connection.on('end', () => {
+      console.log('data services ending');
+      connection.end();
     });
-
-    client_sock.on('disconnected', () => {
-      LOG(`${client_sock.id} disconnect: disconnected`);
-    });
-    client_sock.on('socket.disconnected', (sock, destroyedId) => {
-      let status = '';
-      if (sock) status += `sock:${sock.id || 'undefined'}`;
-      if (destroyedId) status += ` destroyedId:${destroyedId || 'undefined'}`;
-      LOG(`${client_sock.id} sock.disconnected: disconnected ${status}`);
-    });
-    client_sock.on('destroy', () => {
-      LOG(`${client_sock.id} destroy: disconnected`);
+    connection.on('close', () => {
+      console.log('server closed connection');
+      process.exit(0);
     });
   });
-  // got this far, then success!
   return true;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Disconnect() {
-  const { uds_id, uds_sysmsg, sock_path } = UDS_INFO;
+async function UDS_Disconnect() {
+  const { sock_path } = UDS_INFO;
   await new Promise((resolve, reject) => {
     try {
-      ipc.disconnect(uds_id);
+      // ipc.disconnect(uds_id);
       resolve(true);
     } catch (err) {
       reject(err);
@@ -121,6 +116,6 @@ async function Disconnect() {
 /// used by direct module import
 export {
   // client interfaces (experimental wip, nonfunctional)
-  Connect,
-  Disconnect
+  UDS_Connect,
+  UDS_Disconnect
 };

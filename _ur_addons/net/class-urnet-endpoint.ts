@@ -4,6 +4,8 @@
   independent object. It provides the API for sending and receiving messages
   in conjunction with the NetPacket class.
 
+  NetEndpoint makes use of NetSockets, an abstraction of a "socketish" object
+
   CROSS PLATFORM USAGE --------------------------------------------------------
 
   When using from nodejs mts file, you can only import 'default', which is the
@@ -15,15 +17,16 @@
 
   You can import the types as usual, though:
 
-    import EP_DEFAULT, { EP_Socket } from './urnet-types.ts';
+    import EP_DEFAULT, { I_NetSocket } from './urnet-types.ts';
 
   This is not required when importing from another .ts typescript file.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { PR, CLASS } from '@ursys/core';
-import NetPacket from './class-urnet-packet.ts';
+import { NetPacket } from './class-urnet-packet.ts';
 import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
+import type { I_NetSocket } from './class-urnet-socket.ts';
 import { GetPacketHashString } from './urnet-types.ts';
 import {
   IsLocalMessage,
@@ -45,24 +48,12 @@ let AGE_MAX = 60 * 30; // 30 minutes
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export type EP_SendFunc = (pkt: NetPacket) => void;
-/** this is the socket-ish object that we use to send data to the wire */
-export type EP_Socket = {
-  send: EP_SendFunc;
-  // set by addClient()
-  uaddr?: NP_Address; // assigned uaddr for this socket-ish object
-  auth?: any; // whatever authentication is needed for this socket
-  msglist?: NP_Msg[]; // messages queued for this socket
-  age?: number; // number of seconds since this socket was used
-  label?: string; // name of the socket-ish object
-};
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerFunc = (data: NP_Data) => NP_Data | void;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerSet = Set<HandlerFunc>; // set(handler1, handler2, ...)
 type AddressSet = Set<NP_Address>; // ['UA001', 'UA002', ...]
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type SocketMap = Map<NP_Address, EP_Socket>; //
+type SocketMap = Map<NP_Address, I_NetSocket>; //
 type ForwardMap = Map<NP_Msg, AddressSet>; // msg->set of uaddr
 type HandlerMap = Map<NP_Msg, HandlerSet>; // msg->handler functions
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -80,8 +71,8 @@ type PktRoutingInfo = {
   msg: NP_Msg;
   src_addr: NP_Address;
   self_addr: NP_Address;
-  gateway: EP_Socket;
-  clients: EP_Socket[];
+  gateway: I_NetSocket;
+  clients: I_NetSocket[];
 };
 
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
@@ -100,8 +91,8 @@ function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
 class NetEndpoint {
   urnet_addr: NP_Address; // the address for this endpoint
   //
-  cli_gateway: EP_Socket; // gateway to server
-  srv_socks: SocketMap; // uaddr->EP_Socket
+  cli_gateway: I_NetSocket; // gateway to server
+  srv_socks: SocketMap; // uaddr->I_NetSocket
   srv_msgs: ForwardMap; // msg->uaddr[]
   msg_handlers: HandlerMap; // msg->handlers[]
   transactions: TransactionMap; // hash->resolver
@@ -134,7 +125,7 @@ class NetEndpoint {
 
   /** client endpoints need to have an "address" assigned to them, otherwise
    *  the endpoint will not work */
-  configAsClient(urnet_addr: NP_Address, gateway: EP_Socket) {
+  configAsClient(urnet_addr: NP_Address, gateway: I_NetSocket) {
     const fn = 'configAsClient:';
     if (IsValidAddress(urnet_addr)) this.urnet_addr = urnet_addr;
     else throw Error(`${fn} invalid urnet_addr`);
@@ -156,7 +147,7 @@ class NetEndpoint {
     // make sure we don't nuke
     if (this.srv_socks !== undefined)
       LOG(this.urnet_addr, `already configured`, [...this.srv_socks.keys()]);
-    this.srv_socks = new Map<NP_Address, EP_Socket>();
+    this.srv_socks = new Map<NP_Address, I_NetSocket>();
     if (this.srv_msgs !== undefined)
       LOG(this.urnet_addr, `already configured`, [...this.srv_msgs.keys()]);
     this.srv_msgs = new Map<NP_Msg, AddressSet>();
@@ -170,7 +161,7 @@ class NetEndpoint {
   /** socket utilities  - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
   /** given a socket, see if it's already registered */
-  isNewSocket(socket: EP_Socket): boolean {
+  isNewSocket(socket: I_NetSocket): boolean {
     const fn = 'isNewSocket:';
     if (typeof socket !== 'object') return false;
     return socket.uaddr === undefined;
@@ -186,7 +177,7 @@ class NetEndpoint {
   }
 
   /** return true if this socket passes authentication status */
-  isAuthorizedSocket(socket: EP_Socket): boolean {
+  isAuthorizedSocket(socket: I_NetSocket): boolean {
     const fn = 'authorizeSocket:';
     LOG.warn(fn, 'would check JWT in socket.auth');
     LOG.warn(this.urnet_addr, 'would check JWT in socket.auth');
@@ -196,10 +187,11 @@ class NetEndpoint {
 
   /** endpoint client management  - - - - - - - - - - - - - - - - - - - - - **/
 
-  /** client management all-in-one method */
-  handleClient(data, socket: EP_Socket): NetPacket {
+  /** client management all-in-one method. Returns packet if a response is
+   *  to be sent.
+   */
+  handleClient(data, socket: I_NetSocket): NetPacket {
     // 0. first time we're seeing this socket? save it
-    if (this.isNewSocket(socket)) this.addClient(socket);
     const pkt = this.newPacket().deserialize(data);
     // 1. is socket authenticated
     if (socket.auth === undefined) {
@@ -211,7 +203,7 @@ class NetEndpoint {
         pkt.data = { uaddr: socket.uaddr };
         return pkt;
       }
-      LOG('would reject packet w/ err');
+      LOG('would reject packet w/ auth err');
       return;
     }
     // 2. is socket registered
@@ -221,7 +213,7 @@ class NetEndpoint {
         LOG('would set socket.msglist');
         LOG('would return registration packet');
       }
-      LOG('would reject packet w/ err');
+      LOG('would reject packet w/ reg err');
       return;
     }
     // 3. handle packets with authentication token
@@ -235,7 +227,7 @@ class NetEndpoint {
 
   /** when a client connects to this endpoint, register it as a socket and
    *  allocate a uaddr for it */
-  addClient(socket: EP_Socket): NP_Address {
+  addClient(socket: I_NetSocket): NP_Address {
     const fn = 'addClient:';
     if (typeof socket !== 'object') throw Error(`${fn} invalid socket`);
     if (socket.uaddr !== undefined) throw Error(`${fn} socket already added`);
@@ -250,7 +242,7 @@ class NetEndpoint {
   }
 
   /** given a uaddr, return the socket */
-  getClient(uaddr: NP_Address): EP_Socket {
+  getClient(uaddr: NP_Address): I_NetSocket {
     const fn = 'getClient:';
     if (this.srv_socks === undefined) return undefined;
     return this.srv_socks.get(uaddr);
@@ -258,7 +250,7 @@ class NetEndpoint {
 
   /** when a client disconnects from this endpoint, delete its socket and
    *  remove all message forwarding */
-  removeClient(uaddr_obj: NP_Address | EP_Socket): NP_Address {
+  removeClient(uaddr_obj: NP_Address | I_NetSocket): NP_Address {
     const fn = 'removeClient:';
     let uaddr = typeof uaddr_obj === 'string' ? uaddr_obj : uaddr_obj.uaddr;
     if (typeof uaddr !== 'string') {
@@ -715,7 +707,7 @@ class NetEndpoint {
    *  is used by server endpoints as a utility to send a clone
    *  packet on a particular socket to a particular address.
    */
-  pktQueueRequest(pkt: NetPacket, sock: EP_Socket): Promise<any> {
+  pktQueueRequest(pkt: NetPacket, sock: I_NetSocket): Promise<any> {
     const fn = 'pktQueueRequest:';
     const clone = this.clonePacket(pkt);
     clone.id = this.assignPacketId(clone);
@@ -869,4 +861,4 @@ class NetEndpoint {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default NetEndpoint;
+export { NetEndpoint };

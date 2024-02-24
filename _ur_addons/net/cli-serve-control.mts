@@ -8,7 +8,8 @@
 import PATH from 'node:path';
 import * as KV from './kv-json.mts';
 import { SpawnOptions, spawn } from 'node:child_process';
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, FILE } from '@ursys/core';
+import { UDS_INFO } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -128,6 +129,13 @@ async function TerminateServers() {
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** unlink the UDS socket file */
+async function UnlinkSockets() {
+  const { sock_path } = UDS_INFO;
+  const res = await FILE.UnlinkFile(sock_path);
+  if (res) LOG(`.. unlinked ${FILE.ShortPath(sock_path)}`, res);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** handle 'net hosts' command */
 async function ManageHosts() {
   // kill
@@ -159,5 +167,6 @@ export {
   //
   GetActiveHostList,
   //
-  RemoveProcessKey
+  RemoveProcessKey,
+  UnlinkSockets
 };

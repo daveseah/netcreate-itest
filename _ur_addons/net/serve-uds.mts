@@ -7,17 +7,19 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import ipc, { Socket } from '@achrinza/node-ipc';
+import NET from 'node:net';
 import PATH from 'node:path';
-import { PR, CLASS, FILE } from '@ursys/core';
+import { PR, PROC, FILE } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
-import CLASS_EP, { EP_Socket } from './class-urnet-endpoint.ts';
-const Endpoint = CLASS_EP.default;
-const OpSeq = CLASS.OpSequencer;
+import CLASS_EP from './class-urnet-endpoint.ts';
+import CLASS_NS from './class-urnet-socket.ts';
+const { NetEndpoint } = CLASS_EP;
+const { NetSocket } = CLASS_NS;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('UDSHost', 'TagBlue');
+const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,28 +36,21 @@ function m_Sleep(ms, resolve?): Promise<void> {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
-    // LOG(`SIGTERM received ${process.pid}`);
-    ipc.server.broadcast('disconnect', 'Server is disconnecting');
+    LOG(`SIGTERM received by '${m_script}' (pid ${process.pid})`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
-    // LOG(`SIGINT received ${process.pid}`);
-    ipc.server.broadcast('disconnect', 'Server is disconnecting');
+    LOG(`SIGINT received by '${m_script}' (pid ${process.pid})`);
     await Stop();
   })();
 });
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// node-ipc baseline configuration
-ipc.config.retry = 1500;
-ipc.config.silent = true;
-ipc.config.unlink = true; // unlink socket file on exit
-//
-const EP = new Endpoint(); // server endpoint
+const EP = new NetEndpoint(); // server endpoint
 EP.configAsServer('SRV01'); // hardcode arbitrary server address
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
@@ -67,33 +62,39 @@ function m_AddServerHandlers() {
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_Listen() {
-  const { uds_sysmsg, uds_id, sock_path } = UDS_INFO;
-  ipc.config.id = uds_id;
-  ipc.serve(sock_path, () => {
-    // Before disconnecting, notify clients
-    // note: 'connect' doesn't provide useful data
-    ipc.server.on('connect', () => {
-      LOG(`${ipc.config.id} client connect`);
+function UDS_Listen() {
+  const { sock_path } = UDS_INFO;
+
+  const server = NET.createServer(connection => {
+    // socket housekeeping
+    const socket = new NetSocket(connection, pkt =>
+      connection.write(pkt.serialize())
+    );
+    if (EP.isNewSocket(socket)) {
+      EP.addClient(socket);
+      const uaddr = socket.uaddr;
+      LOG(`.. ${uaddr} new client`);
+    }
+    // handle incoming data and return on wire
+    connection.on('data', data => {
+      const returnPkt = EP.handleClient(data, socket);
+      if (returnPkt) connection.write(returnPkt.serialize());
     });
-    // configure node-ipc incoming connection server
-    ipc.server.on(uds_sysmsg, (data, socket) => {
-      let uaddr = socket.uaddr;
-      let pkt = EP.handleClient(data, socket);
-      if (socket.uaddr && socket.uaddr !== uaddr) {
-        uaddr = socket.uaddr;
-        LOG(`.. ${uaddr} new client`);
-        ipc.server.broadcast('disconnect', 'Server is disconnecting');
-      }
-      if (pkt) ipc.server.emit(socket, uds_sysmsg, pkt.serialize());
-    });
-    // client socket disconnected
-    ipc.server.on('socket.disconnected', socket => {
+
+    connection.on('end', () => {
       const uaddr = EP.removeClient(socket);
       LOG(`.. ${uaddr} socket disconnected`);
     });
+
+    connection.on('error', err => {
+      LOG.error(`.. socket error: ${err}`);
+    });
   });
-  ipc.server.start();
+
+  server.listen(sock_path, () => {
+    const shortPath = PATH.relative(process.cwd(), sock_path);
+    LOG.info(`.. UDS Server listening on '${shortPath}'`);
+  });
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
@@ -102,29 +103,18 @@ function Start() {
   // Register Server Handlers
   m_AddServerHandlers();
   // Start Unix Domain Socket Server
-  const { uds_id, sock_path } = UDS_INFO;
-  ipc.config.id = uds_id;
-  m_Listen();
-  const shortPath = PATH.relative(process.cwd(), sock_path);
-  LOG(`.. UDS Server listening on '${shortPath}'`);
+  UDS_Listen();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Stop() {
-  const { sock_path, uds_id } = UDS_INFO;
-  const shortPath = PATH.relative(process.cwd(), sock_path);
+  const { sock_path } = UDS_INFO;
+  const shortPath = FILE.ShortPath(sock_path);
   LOG(`.. stopping UDS Server on ${shortPath}`);
   LOG.info(`.. should process all pending transactions`);
   LOG.info(`.. should delete all registered messages`);
-  LOG.info(`.. should nuke all connected sockets (${ipc.server.sockets.length})`);
-  // disconnect all connected sockets
-  const sockList = ipc.server.sockets;
-  for (const socket of sockList) {
-    LOG(`.. disconnecting socket`, socket.id);
-    ipc.server.emit(socket, 'disconnect', 'server is disconnecting');
-  }
+  LOG.info(`.. should nuke all connected sockets`);
+  if (FILE.UnlinkFile(sock_path)) LOG(`.. unlinked ${shortPath}`);
   await m_Sleep(1000);
-  LOG(`.. stopping server`);
-  await ipc.server.stop(); // should also unlink socket file automatically
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////
