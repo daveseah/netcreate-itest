@@ -9,7 +9,7 @@
 
 import ipc, { Socket } from '@achrinza/node-ipc';
 import PATH from 'node:path';
-import { PR, CLASS } from '@ursys/core';
+import { PR, CLASS, FILE } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
 import CLASS_EP, { EP_Socket } from './class-urnet-endpoint.ts';
 const Endpoint = CLASS_EP.default;

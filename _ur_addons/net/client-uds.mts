@@ -4,7 +4,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILES } from '@ursys/core';
+import { PR, FILE } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
 import ipc from '@achrinza/node-ipc';
 import EP_DEFAULT from './class-urnet-endpoint.ts';
@@ -32,7 +32,7 @@ function m_Sleep(ms, resolve?): Promise<void> {
 /** check for UDS host sock file, meaning UDS server is running */
 function m_CheckForUDSHost() {
   const { sock_path } = UDS_INFO;
-  UDS_DETECTED = FILES.FileExists(sock_path);
+  UDS_DETECTED = FILE.FileExists(sock_path);
   return UDS_DETECTED;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -13,7 +13,7 @@
 import * as ADDONMGR from './ur-addon-mgr.mts';
 import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
-import * as FILES from './files.mts';
+import * as FILE from './files.mts';
 import * as PROC from './processes.mts';
 // cjs-style modules
 import TEXT from '../common/util-text.js';
@@ -51,7 +51,7 @@ export {
   ADDONMGR, // ur module manager
   CLASS,
   ENV, // environment utilities and constants
-  FILES, // file utilities
+  FILE, // file utilities
   PROC, // interprocess communication utils
   // UTILITIES
   TEXT,

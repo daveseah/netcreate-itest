@@ -9,7 +9,7 @@ import https from 'node:https';
 import express from 'express';
 import serveIndex from 'serve-index';
 import chokidar from 'chokidar';
-import { PR, FILES } from '@ursys/core';
+import { PR, FILE } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,8 +46,8 @@ process.on('SIGINT', () => {
 function m_AddDefaultRoutes() {
   // make sure public dir exists
   const localdir = '_ur_addons/_dist/_public';
-  const htdocs = FILES.AbsLocalPath(localdir);
-  FILES.EnsureDir(htdocs);
+  const htdocs = FILE.AbsLocalPath(localdir);
+  FILE.EnsureDir(htdocs);
   //
   if (!APP) throw Error(`Can't add routes because APP not initialized`);
   APP.get('/', (req, res) => res.send(`<pre>hello world</pre>`));

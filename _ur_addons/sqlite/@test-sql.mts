@@ -12,7 +12,7 @@
 
 import { strictEqual, deepEqual } from 'node:assert/strict';
 import sqlite3 from 'sqlite3';
-import { FILES, PR } from '@ursys/core';
+import { FILE, PR } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -26,7 +26,7 @@ const DBG = true; // Runs Tests if true
   // read SQL file
   const filename = `./db-create-tables.sql`;
   TERM(`Reading ${filename}`);
-  const sql = await FILES.ReadFile(filename);
+  const sql = await FILE.ReadFile(filename);
   const stms = sql.trim().split(';');
   DB.serialize(async () => {
     // convert file to statements because db.run() only works one statement

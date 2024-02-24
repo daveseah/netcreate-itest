@@ -4,11 +4,11 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES } from '@ursys/core';
+import { FILE } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const ADIR_NET = FILES.AbsLocalPath('_ur_addons/net');
+const ADIR_NET = FILE.AbsLocalPath('_ur_addons/net');
 const SOCKET_FILE = 'UDSHOST_nocommit.sock';
 const UDS_INFO = {
   uds_id: 'UDSHOST-URNET', // used for ipc.config.id and ipc.on('id')
