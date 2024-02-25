@@ -107,7 +107,7 @@ class OpSequencer {
   /* --- add nodes --- */
 
   /** given nodeName and a source TOpNode, add a clone of the source node to the sequencer */
-  addOp(name: string, data: TDataObj, opt: TNodeOptions): TOpNode {
+  addOp(name: string, data: TDataObj, opt?: TNodeOptions): TOpNode {
     const fn = 'addOp';
     //
     if (data === undefined) throw Error(`${fn}: arg2 must be TOpNode`);
