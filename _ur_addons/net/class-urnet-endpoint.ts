@@ -13,7 +13,7 @@
   destructure the .default prop; to access the NetPacket class do this:
 
     import EP_DEFAULT from './class-urnet-endpoint.ts';
-    const NetEndpoint = UR_TYPES.default; // note .default
+    const NetEndpoint = EP_DEFAULT.default; // note .default
 
   You can import the types as usual, though:
 
