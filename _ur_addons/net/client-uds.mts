@@ -103,7 +103,26 @@ async function UDS_RegisterMessages() {
     LOG('NET:CLIENT_TEST got', data);
     return { 'NET:CLIENT_TEST': 'received' };
   });
-  await EP.declareMessages();
+  const resdata = await EP.clientDeclare();
+  LOG('EP.clientDeclare returned', resdata);
+  let count = 0;
+  let foo = setInterval(() => {
+    if (count > 9) {
+      clearInterval(foo);
+      LOG('interval stopped');
+      return;
+    }
+    if (count % 2) {
+      EP.netCall('SRV:REFLECT', { foo: 'bar' }).then(res => {
+        LOG('SRV:REFLECT returned', res);
+      });
+    } else {
+      EP.netCall('SRV:MYSERVER', { hello: 'world' }).then(res => {
+        LOG('SRV:MYSERVER returned', res);
+      });
+    }
+    count++;
+  }, 1000);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

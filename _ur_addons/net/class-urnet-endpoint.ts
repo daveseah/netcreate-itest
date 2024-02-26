@@ -174,7 +174,9 @@ class NetEndpoint {
       LOG(this.urnet_addr, `already configured`, [...this.srv_msgs.keys()]);
     this.srv_msgs = new Map<NP_Msg, AddressSet>();
     // add default service message handlers here
-    this.registerMessage('SRV:REFLECT', data => data);
+    this.registerMessage('SRV:REFLECT', data => {
+      return { memo: 'defaults defined in Endpoint.configAsServer' };
+    });
   }
 
   /** return true if this endpoint is managing connections */
@@ -521,14 +523,14 @@ class NetEndpoint {
   }
 
   /** declare client messages */
-  async declareMessages() {
+  async clientDeclare() {
     const msg_list = this.listNetMessages();
-    return await this.declareServices({ msg_list });
+    return await this.clientDeclareServices({ msg_list });
   }
 
   /** declare client attributes */
-  async declareServices(def: TClientDeclare): Promise<NP_Data> {
-    const fn = 'declareServices:';
+  async clientDeclareServices(def: TClientDeclare): Promise<NP_Data> {
+    const fn = 'clientDeclareServices:';
     if (!this.cli_gateway) throw Error(`${fn} no gateway`);
     const pkt = this.newDeclPacket();
     pkt.data = { ...def };
@@ -571,7 +573,7 @@ class NetEndpoint {
     if (pkt.msg_type !== '_decl') return false;
     if (pkt.hop_dir !== 'res') return false;
     if (pkt.src_addr !== this.urnet_addr) throw Error(`${fn} misaddressed packet???`);
-    // resuming from declareServices() await requestReg
+    // resuming from clientDeclareServices() await requestReg
     this.pktResolveRequest(pkt);
     return true;
   }

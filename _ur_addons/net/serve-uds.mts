@@ -44,6 +44,14 @@ EP.configAsServer('SRV01'); // hardcode arbitrary server address
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function UDS_RegisterServices() {
+  EP.registerMessage('SRV:MYSERVER', data => {
+    return { memo: 'defined in serve-uds.UDS_RegisterServices' };
+  });
+  // note that default services are also registered in Endpoint
+  // configAsServer() method
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function UDS_Listen() {
   const { sock_path } = UDS_INFO;
 
@@ -81,6 +89,7 @@ function UDS_Listen() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
   // Start Unix Domain Socket Server
+  UDS_RegisterServices();
   UDS_Listen();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
