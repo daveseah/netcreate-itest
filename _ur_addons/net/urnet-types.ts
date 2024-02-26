@@ -97,6 +97,12 @@ export function IsValidType(msg_type: string): boolean {
   return VALID_PKT_TYPES.includes(msg_type as NP_Type);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of protocol-related NP_Type */
+export function IsProtocolType(msg_type: string): boolean {
+  if (!IsValidType(msg_type)) return false;
+  return msg_type.startsWith('_');
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Chan */
 export function IsValidChannel(msg_chan: string): boolean {
   return VALID_MSG_CHANNELS.includes(msg_chan as NP_Chan);

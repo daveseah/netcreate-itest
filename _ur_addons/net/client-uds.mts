@@ -49,49 +49,59 @@ function m_CheckForUDSHost() {
 async function UDS_Connect(): Promise<boolean> {
   const fn = 'UDS_Connect';
   const { sock_path, sock_file } = UDS_INFO;
-  const pipeExists = await new Promise<boolean>((resolve, reject) => {
+  const promiseConnect = new Promise<boolean>(resolve => {
     if (!m_CheckForUDSHost()) {
-      reject(`${fn}: server pipe ${sock_file} not found. Is server running?`); // reject promise
+      resolve(false);
       return;
-    } else resolve(true);
-  }).catch(err => {
-    LOG.error(err);
+    }
+    // got this far, the UDS pipe file exists so server is running
+    const connection = NET.createConnection({ path: sock_path }, async () => {
+      // 1. wire-up connection to the endpoint via our netsocket wrapper
+      LOG(`Connected to server '${sock_file}'`);
+      const send = pkt => connection.write(pkt.serialize());
+      const onData = data => EP._onData(data, client_sock);
+      const client_sock = new NetSocket(connection, { send, onData });
+      connection.on('data', onData);
+      connection.on('end', () => {
+        LOG('server ended connection');
+        EP.disconnectAsClient();
+      });
+      connection.on('close', () => {
+        LOG('server closed connection...exiting process');
+        process.exit(0);
+      });
+      // 2. start client; EP handles the rest
+      const identity = 'my_voice_is_my_passport';
+      const resdata = await EP.connectAsClient(client_sock, identity);
+      LOG('EP.connectAsClient returned', resdata);
+      if (resdata.error) {
+        LOG.error(resdata.error);
+        resolve(false);
+        return;
+      }
+      // 3. register client with server
+      const info = { name: 'UDSClient', type: 'client' };
+      const regdata = await EP.registerClient(info);
+      if (regdata.error) {
+        LOG.error(regdata.error);
+        resolve(false);
+        return;
+      }
+      LOG('EP.registerClient returned', regdata);
+      resolve(true);
+    }); // end createConnection
   });
-  if (!pipeExists) return false;
-  // got this far, the UDS pipe file exists so server is running
-  const connection = NET.createConnection({ path: sock_path }, async () => {
-    // 1. wire-up connection to the endpoint via our netsocket wrapper
-    LOG(`Connected to server '${sock_file}'`);
-    const send = pkt => connection.write(pkt.serialize());
-    const onData = data => EP._onData(data, client_sock);
-    const client_sock = new NetSocket(connection, { send, onData });
-    connection.on('data', onData);
-    connection.on('end', () => {
-      LOG('server ended connection');
-      EP.disconnectAsClient();
-    });
-    connection.on('close', () => {
-      LOG('server closed connection...exiting process');
-      process.exit(0);
-    });
-    // 2. start client; EP handles the rest
-    const identity = 'my_voice_is_my_passport';
-    const resdata = await EP.connectAsClient(client_sock, identity);
-    LOG('EP.connectAsClient returned', resdata);
-  }); // end createConnection
-  return true;
+  return promiseConnect;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** define message handlers and register after authentation to be added to
  *  URNET message network
  */
-function UDS_Register() {
+async function UDS_RegisterMessages() {
   // register some message handlers
   EP.registerMessage('NET:CLIENT_TEST', data => {
     console.log('NET:CLIENT_TEST got', data);
   });
-  // register client with server
-  EP.registerClient();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function UDS_Disconnect() {
@@ -114,6 +124,6 @@ async function UDS_Disconnect() {
 export {
   // client interfaces (experimental wip, nonfunctional)
   UDS_Connect,
-  UDS_Register,
+  UDS_RegisterMessages,
   UDS_Disconnect
 };

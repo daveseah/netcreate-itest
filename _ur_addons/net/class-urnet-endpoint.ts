@@ -206,27 +206,35 @@ class NetEndpoint {
         pkt.setDir('res');
         return pkt;
       }
-      LOG('would reject packet w/ auth err');
-      return;
+      pkt.data = { error: 'authentication failed' };
+      return pkt;
     }
-    // 2. is socket registered
-    if (socket.msglist === undefined) {
-      if (pkt.msg_type === '_reg') {
-        LOG('pkt._reg');
-        LOG('.. would register messages');
-        LOG('.. would set socket.msglist');
-        LOG('.. would return registration packet');
+    // 2. is socket activated
+    if (pkt.msg_type === '_reg') {
+      pkt.setDir('res');
+      if (pkt.src_addr !== socket.uaddr) {
+        LOG('src address mismatch', pkt.src_addr, '!= sock', socket.uaddr);
+        pkt.data = { error: 'address mismatch' };
+        return pkt;
       }
-      LOG('would reject packet w/ reg err');
-      return;
+      const { name, type } = pkt.data;
+      if (name) {
+        const { uaddr } = socket;
+        pkt.data = { ok: true, status: `registered name:${name} type:${type}` };
+        return pkt;
+      }
+      pkt.data = { error: 'registration failed' };
+      return pkt;
     }
     // 3. handle packets with authentication token
     if (pkt.auth) {
-      LOG('would authenticate client pkt.auth');
+      LOG('.. would check authentication token');
       this.pktReceive(pkt);
+      return;
     }
     // 4. reject packets without authentication token
-    LOG('would reject packet w/ err');
+    pkt.setDir('res');
+    pkt.data = { error: 'unauthorized packet rejected' };
   }
 
   /** when a client connects to this endpoint, register it as a socket and
@@ -348,7 +356,8 @@ class NetEndpoint {
       this.cli_auth = cli_auth;
       LOG('** AUTHENTICATED **', uaddr, cli_auth);
       return authData;
-    } else throw Error(`${fn} arg must be identity`);
+    }
+    throw Error(`${fn} arg must be identity`);
   }
 
   /** create a authentication packet, which is the first packet that must be sent
@@ -356,7 +365,7 @@ class NetEndpoint {
   newAuthPacket(identity?: any): NetPacket {
     const fn = 'newAuthPacket:';
     const secret = 'antispoof-data';
-    const pkt = new NetPacket('SRV:AUTH', { identity, secret });
+    const pkt = this.newPacket('SRV:AUTH', { identity, secret });
     pkt.setMeta('_auth', { rsvp: true });
     pkt.setSrcAddr(UADDR_NONE); // provide null address
     this.assignPacketId(pkt);
@@ -369,26 +378,49 @@ class NetEndpoint {
     const fn = 'handleAuthResponse:';
     if (pkt.msg_type !== '_auth') return false;
     if (pkt.hop_dir !== 'res') return false;
-    // resuming from connectAsClient() await p
+    // resuming from connectAsClient() await requestAuth
     this.pktResolveRequest(pkt);
     return true;
   }
 
-  /** register client messages */
-  registerClient() {
+  /** register client with client endpoint info */
+  async registerClient(info: any): Promise<NP_Data> {
     const fn = 'registerClient:';
     if (!this.cli_gateway) throw Error(`${fn} no gateway`);
     const pkt = this.newRegPacket();
-    pkt.data = { net_msgs: this.listNetMessages() };
-    // this will be intercepted by _onData and not go through
-    // the normal netcall interface
-    this.cli_gateway.send(pkt);
+    pkt.data = { ...info };
+    const { msg } = pkt;
+    const requestReg = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
+      try {
+        this.cli_gateway.send(pkt);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    /** suspend through transaction **/
+    let regData: NP_Data = await requestReg;
+    /** resumes when handleAuthResponse() resolves the transaction **/
+    const { ok, status, error } = regData;
+    if (error) {
+      LOG(`${fn} error:`, error);
+      return regData;
+    }
+    if (ok) {
+      LOG('** REGISTERED **', status);
+      this.cli_reg = true;
+      return regData;
+    }
+    throw Error(`${fn} unexpected response`, regData);
   }
 
   /** create a registration packet */
   newRegPacket(): NetPacket {
     const fn = 'newRegPacket:';
-    const pkt = new NetPacket('SRV:REG', { net_msgs: this.listNetMessages() });
+    const pkt = this.newPacket('SRV:REG', { net_msgs: this.listNetMessages() });
     pkt.setMeta('_reg', { rsvp: true });
     return pkt;
   }
@@ -400,18 +432,9 @@ class NetEndpoint {
     if (pkt.msg_type !== '_reg') return false;
     if (pkt.hop_dir !== 'res') return false;
     if (pkt.src_addr !== this.urnet_addr) throw Error(`${fn} misaddressed packet???`);
-    // got this far, must be a real reg packet for us
-    const { net_msgs, error } = pkt.data;
-    if (error) {
-      LOG(`${fn} error:`, error);
-      return false;
-    }
-    if (net_msgs) {
-      LOG('** REGISTERED **', net_msgs);
-      this.cli_reg = true;
-      return true;
-    }
-    return false;
+    // resuming from registerClient() await requestReg
+    this.pktResolveRequest(pkt);
+    return true;
   }
 
   /** disables down the gateway */
@@ -577,9 +600,7 @@ class NetEndpoint {
   newPacket(msg?: NP_Msg, data?: NP_Data): NetPacket {
     const fn = 'newPacket:';
     const pkt = new NetPacket(msg, data);
-    if (this.urnet_addr === undefined) {
-      this.urnet_addr = UADDR_NONE; // unroutable address
-    }
+    pkt.setSrcAddr(this.urnet_addr || UADDR_NONE);
     pkt.id = this.assignPacketId(pkt);
     return pkt;
   }

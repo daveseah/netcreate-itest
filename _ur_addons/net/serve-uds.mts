@@ -21,17 +21,6 @@ const { NetSocket } = CLASS_NS;
 const LOG = PR('UDSHost', 'TagBlue');
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
-/// HELPERS ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_Sleep(ms, resolve?): Promise<void> {
-  return new Promise(localResolve =>
-    setTimeout(() => {
-      if (typeof resolve === 'function') resolve();
-      localResolve();
-    }, ms)
-  );
-}
-
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
@@ -67,7 +56,6 @@ function UDS_Listen() {
 
   const server = NET.createServer(connection => {
     // socket housekeeping
-
     const send = pkt => connection.write(pkt.serialize());
     const onData = data => {
       const returnPkt = EP.handleClient(data, socket);
@@ -78,22 +66,21 @@ function UDS_Listen() {
     if (EP.isNewSocket(socket)) {
       EP.addClient(socket);
       const uaddr = socket.uaddr;
-      LOG(`.. ${uaddr} new client`);
+      LOG(`${uaddr} client connected`);
     }
     // handle incoming data and return on wire
     connection.on('data', onData);
     connection.on('end', () => {
       const uaddr = EP.removeClient(socket);
-      LOG(`.. ${uaddr} socket disconnected`);
+      LOG(`${uaddr} client disconnected`);
     });
     connection.on('error', err => {
       LOG.error(`.. socket error: ${err}`);
     });
   });
-
   server.listen(sock_path, () => {
     const shortPath = PATH.relative(process.cwd(), sock_path);
-    LOG.info(`.. UDS Server listening on '${shortPath}'`);
+    LOG.info(`UDS Server listening on '${shortPath}'`);
   });
 }
 
