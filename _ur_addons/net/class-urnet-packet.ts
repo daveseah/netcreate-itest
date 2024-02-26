@@ -27,7 +27,8 @@ import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options } from './urnet-types';
 
-const LOG = PR('Packet', 'TagOrange');
+const PR = typeof process !== 'undefined' ? 'Packet'.padEnd(13) : 'Packet:';
+const LOG = (...args) => console.log(PR, ...args);
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -177,7 +178,7 @@ class NetPacket implements I_NetMessage {
       let obj = JSON.parse(data);
       return this.setFromObject(obj);
     } catch (err) {
-      console.error('NetPacket.deserialize failed', data);
+      LOG('NetPacket.deserialize failed', data);
     }
   }
 

@@ -29,8 +29,9 @@ import { NP_Address, NP_Msg } from './urnet-types.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('Socket', 'TagBlue');
 const DBG = true;
+const PR = typeof process !== 'undefined' ? 'Socket'.padEnd(13) : 'Socket:';
+const LOG = (...args) => DBG && console.log(PR, ...args);
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
