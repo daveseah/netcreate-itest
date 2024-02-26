@@ -20,6 +20,8 @@ const LOG = PR('UDSClient', 'TagBlue');
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDS_DETECTED = false;
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
+
+/// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const EP = new NetEndpoint();
 
@@ -42,25 +44,24 @@ function m_CheckForUDSHost() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** register the connection for the first time */
-function m_Register(sock: ipc.IpcClient) {
+function UDS_Register(sock: I_NetSocket) {
   const fn = 'm_Register';
-  const regPkt = EP.newRegistrationPacket();
-  regPkt.hop_seq.push(`NEW${Date.now()}`);
+  const regPkt = EP.newRegPacket();
   sock.send(regPkt);
   LOG(`${fn} sent registration packet`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** register the connection for the first time */
-function UDS_Register(sock: I_NetSocket) {
-  const fn = 'm_Register';
-  const regPkt = EP.newRegistrationPacket();
-  regPkt.hop_seq.push(`NEW${Date.now()}`);
-  sock.send(regPkt);
-  LOG(`${fn} sent registration packet`);
+/** authenticate the connection */
+function UDS_Authenticate(sock: I_NetSocket) {
+  const fn = 'UDS_Authenticate';
+  const authPkt = EP.newAuthPacket();
+  sock.send(authPkt);
+  LOG(`${fn} sent auth packet`);
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** create a connection to the UDS server */
 async function UDS_Connect(): Promise<boolean> {
   const fn = 'UDS_Connect';
   const { sock_path, sock_file } = UDS_INFO;
@@ -75,24 +76,24 @@ async function UDS_Connect(): Promise<boolean> {
   if (!pipeExists) return false;
   // got this far, the UDS pipe file exists so server is running
   const connection = NET.createConnection({ path: sock_path }, () => {
+    // 1. wire-up connection to the endpoint via our netsocket wrapper
     LOG(`Connected to server '${sock_file}'`);
-    const client_sock = new NetSocket(connection, pkt =>
-      connection.write(pkt.serialize())
-    );
-    UDS_Register(client_sock);
-
-    connection.on('data', data => {
-      console.log(data.toString());
-    });
+    const send = pkt => connection.write(pkt.serialize());
+    const onData = data => EP._onData(data, client_sock);
+    const client_sock = new NetSocket(connection, { send, onData });
+    connection.on('data', onData);
     connection.on('end', () => {
-      console.log('data services ending');
-      connection.end();
+      LOG('server ended connection');
+      EP.disconnectAsClient();
     });
     connection.on('close', () => {
       console.log('server closed connection');
       process.exit(0);
     });
-  });
+    // 2. start client; EP handles the rest
+    const identity = 'my_voice_is_my_passport';
+    EP.connectAsClient(client_sock, identity);
+  }); // end createConnection
   return true;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

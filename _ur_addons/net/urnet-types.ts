@@ -44,9 +44,10 @@ export const VALID_PKT_TYPES = [
   '_auth', // special packet
   '_reg' // special packet
 ] as const;
-export const VALID_ADDR_PREFIX = ['NEW', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
+export const VALID_ADDR_PREFIX = ['???', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
+export const UADDR_NONE = '???000' as NP_Address; // unroutable address
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

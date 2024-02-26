@@ -25,7 +25,14 @@
 
 import { PR, CLASS } from '@ursys/core';
 import { NetPacket } from './class-urnet-packet.ts';
-import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
+import {
+  NP_ID,
+  NP_Address,
+  NP_Msg,
+  NP_Data,
+  NP_Hash,
+  UADDR_NONE
+} from './urnet-types.ts';
 import type { I_NetSocket } from './class-urnet-socket.ts';
 import { GetPacketHashString } from './urnet-types.ts';
 import {
@@ -80,7 +87,7 @@ type PktRoutingInfo = {
 /** utility to dump packet info to console */
 function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
   let { id, msg, msg_type } = pkt;
-  if (id === undefined && msg_type === '_reg') id = 'pkt[NEW0:0]';
+  if (id === undefined && msg_type === '_reg') id = `pkt[${UADDR_NONE}:0]`;
   let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '~');
   out += ` ${id.padEnd(12)} ${fn}`;
   return out;
@@ -101,14 +108,16 @@ class NetEndpoint {
   pkt_counter: number; // counter for generating packet ids
   //
   cli_sck_timer: any; // timer for checking socket age
-  cli_auth: any; // jtw for authenticating socket
+  cli_ident: any; // client credentials to request authentication
+  cli_auth: any; // client access token for
 
   constructor() {
     //
     this.urnet_addr = undefined; // assigned address
     // endpoint as client
-    this.cli_auth = undefined; // jwt
-    this.cli_gateway = undefined;
+    this.cli_ident = undefined; // client identity
+    this.cli_auth = undefined; // client access token
+    this.cli_gateway = undefined; // client gateway
     // endpoint as server
     this.srv_socks = undefined;
     this.srv_msgs = undefined;
@@ -122,17 +131,6 @@ class NetEndpoint {
   }
 
   /** client connection management  - - - - - - - - - - - - - - - - - - - - **/
-
-  /** client endpoints need to have an "address" assigned to them, otherwise
-   *  the endpoint will not work */
-  configAsClient(urnet_addr: NP_Address, gateway: I_NetSocket) {
-    const fn = 'configAsClient:';
-    if (IsValidAddress(urnet_addr)) this.urnet_addr = urnet_addr;
-    else throw Error(`${fn} invalid urnet_addr`);
-    if (gateway && typeof gateway.send === 'function') {
-      this.cli_gateway = gateway;
-    } else throw Error(`${fn} invalid gateway`);
-  }
 
   /** return true if this endpoint is managing connections */
   configAsServer(srv_addr: NP_Address) {
@@ -173,7 +171,6 @@ class NetEndpoint {
   authorizeSocket(auth: any) {
     const fn = 'authorizeSocket:';
     LOG(this.urnet_addr, 'would check auth token');
-    this.cli_auth = auth;
   }
 
   /** return true if this socket passes authentication status */
@@ -196,24 +193,26 @@ class NetEndpoint {
     // 1. is socket authenticated
     if (socket.auth === undefined) {
       if (pkt.msg_type === '_auth') {
-        LOG('would authenticate client pkt.auth');
-        LOG('would set socket.auth key if passed');
-        LOG('would return authentication packet');
+        LOG('pkt._auth');
+        LOG('.. would authenticate client pkt.auth');
+        LOG('.. would set socket.auth key if passed');
+        LOG('.. would return authentication packet');
         pkt.setDir('res');
         pkt.data = { uaddr: socket.uaddr };
         return pkt;
       }
-      LOG('would reject packet w/ auth err');
+      LOG.error('would reject packet w/ auth err');
       return;
     }
     // 2. is socket registered
     if (socket.msglist === undefined) {
       if (pkt.msg_type === '_reg') {
-        LOG('would register messages');
-        LOG('would set socket.msglist');
-        LOG('would return registration packet');
+        LOG('pkt._reg');
+        LOG('.. would register messages');
+        LOG('.. would set socket.msglist');
+        LOG('.. would return registration packet');
       }
-      LOG('would reject packet w/ reg err');
+      LOG.error('would reject packet w/ reg err');
       return;
     }
     // 3. handle packets with authentication token
@@ -285,6 +284,94 @@ class NetEndpoint {
     if (this.cli_sck_timer) clearInterval(this.cli_sck_timer);
     this.cli_sck_timer = null;
     if (DBG) LOG(this.urnet_addr, `timer stopped`);
+  }
+
+  /** client connection handshaking - - - - - - - - - - - - - - - - - - - - **/
+
+  /** data event handler for raw incoming data from the original connection
+   *  object, which may be a websocket, uds socket, or who knows. This assumes
+   *  that the data is json-encoded NetPacket */
+  _onData(jsonData: any, socket: I_NetSocket): void {
+    const fn = '_onData:';
+    const pkt = this.newPacket().deserialize(jsonData);
+    // 1. is this connection handshaking for clients?
+    if (this.cli_gateway) {
+      console.log(fn, 'gateway', pkt.msg, pkt.msg_type, pkt.data);
+      // these types of packets are never dispatched through the net message
+      // API, and are handled directly by the client endpoint to connect
+      if (this.handleAuthResponse(pkt)) return;
+      if (this.handleRegResponse(pkt)) return;
+    }
+    // 2. otherwise handle the netcall interface normally
+    this.pktReceive(pkt);
+  }
+
+  /** client endpoints need to have an "address" assigned to them, otherwise
+   *  the endpoint will not work */
+  connectAsClient(gateway: I_NetSocket, identity?: any) {
+    const fn = 'connectAsClient:';
+    if (gateway && typeof gateway.send === 'function') {
+      this.cli_gateway = gateway;
+    } else throw Error(`${fn} invalid gateway`);
+    if (identity) {
+      const pkt = this.newAuthPacket(identity);
+      this.cli_gateway.send(pkt);
+    }
+  }
+
+  /** create a authentication packet */
+  newAuthPacket(identity?: any): NetPacket {
+    const fn = 'newAuthPacket:';
+    const secret = 'antispoof-data';
+    const pkt = new NetPacket('SRV:AUTH', { identity, secret });
+    pkt.setMeta('_auth', { rsvp: true });
+    pkt.setSrcAddr(UADDR_NONE);
+    return pkt;
+  }
+
+  /** handle authentication response packet directly rather than through
+   *  the netcall interface in receivePacket() */
+  handleAuthResponse(pkt: NetPacket): boolean {
+    const fn = 'handleAuthResponse:';
+    if (pkt.msg_type !== '_auth') return false;
+    if (pkt.hop_dir !== 'res') return false;
+    // got this far, must be a real packet
+    const { uaddr, cli_auth } = pkt.data;
+    if (!IsValidAddress(uaddr)) throw Error(`${fn} invalid uaddr ${uaddr}`);
+    this.urnet_addr = uaddr;
+    if (cli_auth === undefined) throw Error(`${fn} invalid cli_auth`);
+    this.cli_auth = cli_auth;
+    console.log('** AUTHENTICATED **', uaddr, cli_auth);
+    return true;
+  }
+
+  /** create a registration packet */
+  newRegPacket(): NetPacket {
+    const fn = 'newRegPacket:';
+    const pkt = new NetPacket('SRV:REG', {});
+    pkt.setMeta('_reg', { rsvp: true });
+    return pkt;
+  }
+
+  /** handle registration response packet directly rather than through
+   *  the netcall interface in receivePacket() */
+  handleRegResponse(pkt: NetPacket): boolean {
+    const fn = 'handleRegResponse:';
+    if (pkt.msg_type !== '_reg') return false;
+    if (pkt.hop_dir !== 'res') return false;
+    // got this far, must be a real packet
+    const { uaddr, msglist } = pkt.data;
+    if (!IsValidAddress(uaddr)) throw Error(`${fn} invalid uaddr ${uaddr}`);
+    if (!Array.isArray(msglist)) throw Error(`${fn} invalid msglist`);
+    this.urnet_addr = uaddr;
+    this.cli_gateway.msglist = msglist;
+    console.log('** REGISTERED **', uaddr, msglist);
+    return true;
+  }
+
+  /** shuts down the gateway */
+  disconnectAsClient() {
+    this.cli_gateway = undefined;
   }
 
   /** endpoint lookup tables - - - - - - - - - - - - - - - - - - - -  - - - **/
@@ -440,20 +527,15 @@ class NetEndpoint {
     pkt.setFromJSON(json);
     return pkt;
   }
+
   /** create a new packet with proper address */
   newPacket(msg?: NP_Msg, data?: NP_Data): NetPacket {
     const fn = 'newPacket:';
     const pkt = new NetPacket(msg, data);
-    if (this.urnet_addr === undefined)
-      throw Error(`${fn} endpoint address was not assigned`);
+    if (this.urnet_addr === undefined) {
+      this.urnet_addr = UADDR_NONE; // unroutable address
+    }
     pkt.id = this.assignPacketId(pkt);
-    return pkt;
-  }
-  /** create a registration packet */
-  newRegistrationPacket(): NetPacket {
-    const fn = 'newRegistrationPacket:';
-    const pkt = new NetPacket('SRV:REQ_ADDR', {});
-    pkt.setMeta('_reg', { rsvp: true });
     return pkt;
   }
 
@@ -622,7 +704,7 @@ class NetEndpoint {
    *  If the packet has the rsvp flag set, we need to return
    *  it to the source address in the packet with any data
    */
-  async pktReceive(pkt: NetPacket) {
+  async pktReceive(pkt: NetPacket): Promise<void> {
     try {
       const fn = 'pktReceive:';
       // is this a response to a transaction?
@@ -631,7 +713,7 @@ class NetEndpoint {
         else this.pktSendResponse(pkt);
         return;
       }
-      // otherwise it's a request
+      // make sure if it's not a response, then it's a request
       if (!pkt.isRequest()) {
         LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
         return;

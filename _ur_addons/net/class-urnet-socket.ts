@@ -35,11 +35,13 @@ const DBG = true;
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** the function that sends a packet to the wire */
-type EP_SendFunc = (pkt: NetPacket) => void;
+type NS_SendFunc = (pkt: NetPacket) => void;
+type NS_DataFunc = (data: any) => void;
+type NS_Options = { send: NS_SendFunc; onData: NS_DataFunc };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** this is the socket-ish object that we use to send data to the wire */
 interface I_NetSocket {
-  send: EP_SendFunc;
+  send: NS_SendFunc;
   uaddr?: NP_Address; // assigned uaddr for this socket-ish object
   auth?: any; // whatever authentication is needed for this socket
   msglist?: NP_Msg[]; // messages queued for this socket
@@ -49,10 +51,11 @@ interface I_NetSocket {
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** wrapper class for */
+/** wrapper class a socket connection */
 class NetSocket implements I_NetSocket {
   connector: any; // the original connection object
-  sendFunc: EP_SendFunc; // the send function for this socket
+  sendFunc: NS_SendFunc; // the outgoing send function for this socket
+  onDataFunc: NS_DataFunc; // the incoming data function for this socket
   //
   uaddr?: NP_Address; // assigned uaddr for this socket-ish object
   auth?: any; // whatever authentication is needed for this socket
@@ -60,9 +63,11 @@ class NetSocket implements I_NetSocket {
   age?: number; // number of seconds since this socket was used
   label?: string; // name of the socket-ish object
 
-  constructor(connectObj: any, sendFunc: EP_SendFunc) {
+  constructor(connectObj: any, io: NS_Options) {
     this.connector = connectObj;
-    this.sendFunc = sendFunc.bind(connectObj);
+    const { send, onData } = io;
+    this.sendFunc = send.bind(connectObj);
+    this.onDataFunc = onData.bind(connectObj);
   }
 
   send(pkt: NetPacket) {
@@ -77,4 +82,4 @@ class NetSocket implements I_NetSocket {
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export { NetSocket };
-export type { I_NetSocket, EP_SendFunc };
+export type { I_NetSocket, NS_SendFunc, NS_DataFunc, NS_Options };

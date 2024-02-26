@@ -67,25 +67,25 @@ function UDS_Listen() {
 
   const server = NET.createServer(connection => {
     // socket housekeeping
-    const socket = new NetSocket(connection, pkt =>
-      connection.write(pkt.serialize())
-    );
+
+    const send = pkt => connection.write(pkt.serialize());
+    const onData = data => {
+      const returnPkt = EP.handleClient(data, socket);
+      if (returnPkt) connection.write(returnPkt.serialize());
+    };
+    const io = { send, onData };
+    const socket = new NetSocket(connection, io);
     if (EP.isNewSocket(socket)) {
       EP.addClient(socket);
       const uaddr = socket.uaddr;
       LOG(`.. ${uaddr} new client`);
     }
     // handle incoming data and return on wire
-    connection.on('data', data => {
-      const returnPkt = EP.handleClient(data, socket);
-      if (returnPkt) connection.write(returnPkt.serialize());
-    });
-
+    connection.on('data', onData);
     connection.on('end', () => {
       const uaddr = EP.removeClient(socket);
       LOG(`.. ${uaddr} socket disconnected`);
     });
-
     connection.on('error', err => {
       LOG.error(`.. socket error: ${err}`);
     });

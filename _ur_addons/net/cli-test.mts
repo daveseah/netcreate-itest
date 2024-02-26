@@ -153,7 +153,15 @@ function RunPacketTests() {
       send: (pkt: T_Packet) => client.pktReceive(pkt)
     };
     const addr = host.addClient(sock);
-    client.configAsClient(addr, gateway);
+    const io = {
+      send: pkt => gateway.send(pkt),
+      onData: data => {
+        const pkt = client.newPacket(data);
+        client.pktReceive(pkt);
+      }
+    };
+    client.urnet_addr = addr; // hack to set the address
+    client.connectAsClient(gateway, io);
     PT_Register(name, client);
     host.registerRemoteMessages(addr, client.listNetMessages());
     return client;
@@ -242,8 +250,8 @@ function RunSeqTests() {
 function RunTests() {
   // RunLocalTests();
   // RunPacketLoopbackTests();
-  // RunPacketTests();
-  RunSeqTests();
+  RunPacketTests();
+  // RunSeqTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
