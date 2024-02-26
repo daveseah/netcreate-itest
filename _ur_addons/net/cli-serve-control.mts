@@ -130,7 +130,7 @@ async function TerminateServers() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** unlink the UDS socket file */
-async function UnlinkSockets() {
+async function UnlinkSocketFiles() {
   const { sock_path } = UDS_INFO;
   const res = await FILE.UnlinkFile(sock_path);
   if (res) LOG(`.. unlinked ${FILE.ShortPath(sock_path)}`, res);
@@ -168,5 +168,5 @@ export {
   GetActiveHostList,
   //
   RemoveProcessKey,
-  UnlinkSockets
+  UnlinkSocketFiles
 };

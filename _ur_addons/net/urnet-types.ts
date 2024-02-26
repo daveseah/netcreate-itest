@@ -33,8 +33,6 @@
 
 /// RUNTIME UTILITIES /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_MSG_CHANNELS = ['NET', 'SRV', 'LOCAL', ''] as const;
 export const VALID_PKT_TYPES = [
   'ping',
@@ -45,6 +43,8 @@ export const VALID_PKT_TYPES = [
   '_reg' // special packet
 ] as const;
 export const VALID_ADDR_PREFIX = ['???', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
 export const UADDR_NONE = '???000' as NP_Address; // unroutable address

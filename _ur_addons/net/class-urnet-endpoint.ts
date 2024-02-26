@@ -47,8 +47,9 @@ const OpSeq = CLASS.OpSequencer;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('Endpoint', 'TagBlue');
 const DBG = true;
+const PR = typeof process !== 'undefined' ? 'EndPoint'.padEnd(13) : 'EndPoint:';
+const LOG = (...args) => DBG && console.log(PR, ...args);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let AGE_INTERVAL = 1000; // milliseconds
 let AGE_MAX = 60 * 30; // 30 minutes
@@ -110,6 +111,7 @@ class NetEndpoint {
   cli_sck_timer: any; // timer for checking socket age
   cli_ident: any; // client credentials to request authentication
   cli_auth: any; // client access token for
+  cli_reg: boolean; // client registration status
 
   constructor() {
     //
@@ -117,6 +119,7 @@ class NetEndpoint {
     // endpoint as client
     this.cli_ident = undefined; // client identity
     this.cli_auth = undefined; // client access token
+    this.cli_reg = false; // client registration status
     this.cli_gateway = undefined; // client gateway
     // endpoint as server
     this.srv_socks = undefined;
@@ -176,32 +179,34 @@ class NetEndpoint {
   /** return true if this socket passes authentication status */
   isAuthorizedSocket(socket: I_NetSocket): boolean {
     const fn = 'authorizeSocket:';
-    LOG.warn(fn, 'would check JWT in socket.auth');
-    LOG.warn(this.urnet_addr, 'would check JWT in socket.auth');
+    LOG(fn, 'would check JWT in socket.auth');
+    LOG(this.urnet_addr, 'would check JWT in socket.auth');
     if (!socket.auth) return false;
     return true;
   }
 
   /** endpoint client management  - - - - - - - - - - - - - - - - - - - - - **/
 
-  /** client management all-in-one method. Returns packet if a response is
-   *  to be sent.
-   */
-  handleClient(data, socket: I_NetSocket): NetPacket {
+  /** Server data event handler for incoming data from a client connection.
+   *  This is the mirror to _onData() function used by client endpoints.
+   * This is the entry point for incoming data from clients */
+  handleClient(jsonData, socket: I_NetSocket): NetPacket {
     // 0. first time we're seeing this socket? save it
-    const pkt = this.newPacket().deserialize(data);
+    const pkt = this.newPacket().deserialize(jsonData);
     // 1. is socket authenticated
     if (socket.auth === undefined) {
       if (pkt.msg_type === '_auth') {
-        LOG('pkt._auth');
-        LOG('.. would authenticate client pkt.auth');
-        LOG('.. would set socket.auth key if passed');
-        LOG('.. would return authentication packet');
+        const { identity } = pkt.data;
+        if (identity) {
+          socket.auth = identity;
+          pkt.data = { uaddr: socket.uaddr, cli_auth: 'AnAuthToken' };
+        } else {
+          pkt.data = { error: 'invalid identity' };
+        }
         pkt.setDir('res');
-        pkt.data = { uaddr: socket.uaddr };
         return pkt;
       }
-      LOG.error('would reject packet w/ auth err');
+      LOG('would reject packet w/ auth err');
       return;
     }
     // 2. is socket registered
@@ -212,7 +217,7 @@ class NetEndpoint {
         LOG('.. would set socket.msglist');
         LOG('.. would return registration packet');
       }
-      LOG.error('would reject packet w/ reg err');
+      LOG('would reject packet w/ reg err');
       return;
     }
     // 3. handle packets with authentication token
@@ -253,7 +258,7 @@ class NetEndpoint {
     const fn = 'removeClient:';
     let uaddr = typeof uaddr_obj === 'string' ? uaddr_obj : uaddr_obj.uaddr;
     if (typeof uaddr !== 'string') {
-      LOG.error(`${fn} invalid uaddr ${typeof uaddr}`);
+      LOG(`${fn} invalid uaddr ${typeof uaddr}`);
       return undefined;
     }
     if (!this.srv_socks.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
@@ -261,7 +266,7 @@ class NetEndpoint {
     this._delRemoteMessages(uaddr);
     // delete the socket
     this.srv_socks.delete(uaddr);
-    if (DBG) LOG(this.urnet_addr, `socket ${uaddr} deleted`);
+    // if (DBG) LOG(this.urnet_addr, `socket ${uaddr} deleted`);
     return uaddr;
   }
 
@@ -288,15 +293,15 @@ class NetEndpoint {
 
   /** client connection handshaking - - - - - - - - - - - - - - - - - - - - **/
 
-  /** data event handler for raw incoming data from the original connection
-   *  object, which may be a websocket, uds socket, or who knows. This assumes
-   *  that the data is json-encoded NetPacket */
+  /** Client data event handler for incoming data from the gateway.
+   *  This is the mirror to handleClient() function that is used by servers.
+   *  This is entry point for incoming data from server */
   _onData(jsonData: any, socket: I_NetSocket): void {
     const fn = '_onData:';
     const pkt = this.newPacket().deserialize(jsonData);
     // 1. is this connection handshaking for clients?
     if (this.cli_gateway) {
-      console.log(fn, 'gateway', pkt.msg, pkt.msg_type, pkt.data);
+      LOG(fn, 'gateway', pkt.msg, pkt.msg_type, pkt.data);
       // these types of packets are never dispatched through the net message
       // API, and are handled directly by the client endpoint to connect
       if (this.handleAuthResponse(pkt)) return;
@@ -330,18 +335,22 @@ class NetEndpoint {
   }
 
   /** handle authentication response packet directly rather than through
-   *  the netcall interface in receivePacket() */
+   *  the netcall interface in pktReceive() */
   handleAuthResponse(pkt: NetPacket): boolean {
     const fn = 'handleAuthResponse:';
     if (pkt.msg_type !== '_auth') return false;
     if (pkt.hop_dir !== 'res') return false;
     // got this far, must be a real packet
-    const { uaddr, cli_auth } = pkt.data;
+    const { uaddr, cli_auth, error } = pkt.data;
+    if (error) {
+      LOG(`${fn} error:`, error);
+      return false;
+    }
     if (!IsValidAddress(uaddr)) throw Error(`${fn} invalid uaddr ${uaddr}`);
     this.urnet_addr = uaddr;
     if (cli_auth === undefined) throw Error(`${fn} invalid cli_auth`);
     this.cli_auth = cli_auth;
-    console.log('** AUTHENTICATED **', uaddr, cli_auth);
+    LOG('** AUTHENTICATED **', uaddr, cli_auth);
     return true;
   }
 
@@ -354,7 +363,7 @@ class NetEndpoint {
   }
 
   /** handle registration response packet directly rather than through
-   *  the netcall interface in receivePacket() */
+   *  the netcall interface in pktReceive() */
   handleRegResponse(pkt: NetPacket): boolean {
     const fn = 'handleRegResponse:';
     if (pkt.msg_type !== '_reg') return false;
@@ -365,7 +374,7 @@ class NetEndpoint {
     if (!Array.isArray(msglist)) throw Error(`${fn} invalid msglist`);
     this.urnet_addr = uaddr;
     this.cli_gateway.msglist = msglist;
-    console.log('** REGISTERED **', uaddr, msglist);
+    LOG('** REGISTERED **', uaddr, msglist);
     return true;
   }
 
@@ -715,7 +724,7 @@ class NetEndpoint {
       }
       // make sure if it's not a response, then it's a request
       if (!pkt.isRequest()) {
-        LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
+        LOG(this.urnet_addr, fn, `invalid packet`, pkt);
         return;
       }
       // if it's a ping, we just want to return number of
@@ -741,7 +750,7 @@ class NetEndpoint {
       } else if (this.srv_msgs.has(msg)) {
         retData = await this.pktAwaitRequest(pkt);
       } else {
-        LOG.error(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
+        LOG(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
         retData = { error: `unknown message '${msg}'` };
       }
 
@@ -756,8 +765,8 @@ class NetEndpoint {
       this.pktSendResponse(pkt);
     } catch (err) {
       // format the error message to be nicer to read
-      LOG.error(err.message);
-      LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
+      LOG(err.message);
+      LOG(err.stack.split('\n').slice(1).join('\n').trim());
     }
   }
 
@@ -768,6 +777,7 @@ class NetEndpoint {
   pktSendRequest(pkt: NetPacket) {
     const fn = 'pktSendRequest:';
     // sanity checks
+    if (this.cli_reg === false) throw Error(`${fn} endpoint not registered`);
     if (pkt.src_addr === undefined) throw Error(`${fn}src_addr undefined`);
     if (this.urnet_addr === undefined) throw Error(`${fn} urnet_addr undefined`);
     if (pkt.hop_seq.length !== 0) throw Error(`${fn} pkt must have no hops yet`);

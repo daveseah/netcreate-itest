@@ -67,7 +67,7 @@ async function UDS_Connect(): Promise<boolean> {
   const { sock_path, sock_file } = UDS_INFO;
   const pipeExists = await new Promise<boolean>((resolve, reject) => {
     if (!m_CheckForUDSHost()) {
-      reject(`${fn}: server pipe ${sock_path} not found. Is server running?`); // reject promise
+      reject(`${fn}: server pipe ${sock_file} not found. Is server running?`); // reject promise
       return;
     } else resolve(true);
   }).catch(err => {
@@ -87,7 +87,7 @@ async function UDS_Connect(): Promise<boolean> {
       EP.disconnectAsClient();
     });
     connection.on('close', () => {
-      console.log('server closed connection');
+      LOG('server closed connection...exiting process');
       process.exit(0);
     });
     // 2. start client; EP handles the rest
@@ -101,7 +101,6 @@ async function UDS_Disconnect() {
   const { sock_path } = UDS_INFO;
   await new Promise((resolve, reject) => {
     try {
-      // ipc.disconnect(uds_id);
       resolve(true);
     } catch (err) {
       reject(err);

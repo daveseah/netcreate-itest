@@ -115,7 +115,7 @@ const COMMAND_DICT = {
   },
   'stop': async () => {
     await CTRL.TerminateServers();
-    await CTRL.UnlinkSockets();
+    await CTRL.UnlinkSocketFiles();
   },
   'restart': async () => {
     await CTRL.TerminateServers();

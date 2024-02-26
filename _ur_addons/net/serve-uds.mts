@@ -110,11 +110,9 @@ async function Stop() {
   const { sock_path } = UDS_INFO;
   const shortPath = FILE.ShortPath(sock_path);
   LOG(`.. stopping UDS Server on ${shortPath}`);
-  LOG.info(`.. should process all pending transactions`);
-  LOG.info(`.. should delete all registered messages`);
-  LOG.info(`.. should nuke all connected sockets`);
+  // request end all socket connections
+  EP.srv_socks.forEach(sock => sock.connector.end());
   if (FILE.UnlinkFile(sock_path)) LOG(`.. unlinked ${shortPath}`);
-  await m_Sleep(1000);
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////

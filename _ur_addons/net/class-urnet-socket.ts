@@ -41,6 +41,7 @@ type NS_Options = { send: NS_SendFunc; onData: NS_DataFunc };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** this is the socket-ish object that we use to send data to the wire */
 interface I_NetSocket {
+  connector: any; // the original connection object
   send: NS_SendFunc;
   uaddr?: NP_Address; // assigned uaddr for this socket-ish object
   auth?: any; // whatever authentication is needed for this socket
