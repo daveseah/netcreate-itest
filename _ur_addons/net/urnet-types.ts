@@ -40,7 +40,8 @@ export const VALID_PKT_TYPES = [
   'send',
   'call',
   '_auth', // special packet
-  '_reg' // special packet
+  '_reg', // special packet
+  '_decl' // special packet
 ] as const;
 export const VALID_ADDR_PREFIX = ['???', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

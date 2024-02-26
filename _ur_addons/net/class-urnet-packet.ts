@@ -99,6 +99,16 @@ class NetPacket implements I_NetMessage {
     return this;
   }
 
+  /** set the authorization token */
+  setAuth(auth: string): NetPacket {
+    if (typeof auth !== 'string') {
+      LOG('setAuth: invalid auth', auth);
+      throw Error(`invalid auth: ${auth}`);
+    }
+    this.auth = auth;
+    return this;
+  }
+
   /** set message and data */
   setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
     this.setMsg(msg);
@@ -146,6 +156,7 @@ class NetPacket implements I_NetMessage {
     this.hop_dir = pktObj.hop_dir;
     this.hop_rsvp = pktObj.hop_rsvp;
     this.err = pktObj.err;
+    this.auth = pktObj.auth;
     return this;
   }
 

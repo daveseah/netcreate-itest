@@ -153,15 +153,12 @@ function RunPacketTests() {
       send: (pkt: T_Packet) => client.pktReceive(pkt)
     };
     const addr = host.addClient(sock);
-    const io = {
-      send: pkt => gateway.send(pkt),
-      onData: data => {
-        const pkt = client.newPacket(data);
-        client.pktReceive(pkt);
-      }
+    const auth = {
+      identity: 'my_voice_is_my_passport',
+      secret: 'crypty'
     };
     client.urnet_addr = addr; // hack to set the address
-    client.connectAsClient(gateway, io);
+    client.connectAsClient(gateway, auth);
     PT_Register(name, client);
     host.registerRemoteMessages(addr, client.listNetMessages());
     return client;

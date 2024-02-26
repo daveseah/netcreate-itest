@@ -44,13 +44,6 @@ EP.configAsServer('SRV01'); // hardcode arbitrary server address
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_AddServerHandlers() {
-  EP.registerMessage('SRV:REQ_ADDR', data => {
-    LOG(`'SRV:REQ_ADDR' got`, data);
-    return data;
-  });
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function UDS_Listen() {
   const { sock_path } = UDS_INFO;
 
@@ -87,8 +80,6 @@ function UDS_Listen() {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  // Register Server Handlers
-  m_AddServerHandlers();
   // Start Unix Domain Socket Server
   UDS_Listen();
 }

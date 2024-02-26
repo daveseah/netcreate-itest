@@ -71,8 +71,8 @@ async function UDS_Connect(): Promise<boolean> {
         process.exit(0);
       });
       // 2. start client; EP handles the rest
-      const identity = 'my_voice_is_my_passport';
-      const resdata = await EP.connectAsClient(client_sock, identity);
+      const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
+      const resdata = await EP.connectAsClient(client_sock, auth);
       LOG('EP.connectAsClient returned', resdata);
       if (resdata.error) {
         LOG.error(resdata.error);
@@ -100,9 +100,12 @@ async function UDS_Connect(): Promise<boolean> {
 async function UDS_RegisterMessages() {
   // register some message handlers
   EP.registerMessage('NET:CLIENT_TEST', data => {
-    console.log('NET:CLIENT_TEST got', data);
+    LOG('NET:CLIENT_TEST got', data);
+    return { 'NET:CLIENT_TEST': 'received' };
   });
+  await EP.declareMessages();
 }
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function UDS_Disconnect() {
   const { sock_path } = UDS_INFO;

@@ -111,6 +111,8 @@ const COMMAND_DICT = {
       LOG(`client: sleeping for ${dur} minutes`);
       const ms = 1000 * 60 * Number(dur);
       m_Sleep(ms, CLIENT.UDS_Disconnect);
+      // extra
+      await CLIENT.UDS_RegisterMessages();
     }
   },
   'stop': async () => {
