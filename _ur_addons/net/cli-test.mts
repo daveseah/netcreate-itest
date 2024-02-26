@@ -117,7 +117,7 @@ function RunPacketLoopbackTests() {
 
 /// PACKET TESTS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RunPacketTests() {
+async function RunPacketTests() {
   LOG.info('Running Packet Tests');
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function PT_Register(name: string, ep: T_Endpoint) {
@@ -147,7 +147,7 @@ function RunPacketTests() {
     return host;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function PT_AddClient(name, host: T_Endpoint, gateway: I_NetSocket) {
+  async function PT_AddClient(name, host: T_Endpoint, gateway: I_NetSocket) {
     const client: T_Endpoint = new NetEndpoint();
     const sock = {
       send: (pkt: T_Packet) => client.pktReceive(pkt)
@@ -158,7 +158,9 @@ function RunPacketTests() {
       secret: 'crypty'
     };
     client.urnet_addr = addr; // hack to set the address
-    client.connectAsClient(gateway, auth);
+    const authData = await client.connectAsClient(gateway, auth);
+    const info = { name: 'UDSClient', type: 'client' };
+    const regdata = await client.registerClient(info);
     PT_Register(name, client);
     host.registerRemoteMessages(addr, client.listNetMessages());
     return client;
@@ -173,9 +175,9 @@ function RunPacketTests() {
       send: (pkt: T_Packet) => host.pktReceive(pkt)
     };
 
-    const alice = PT_AddClient('alice', host, client_gateway);
-    const bob = PT_AddClient('bob', host, client_gateway);
-    const bob2 = PT_AddClient('bob', host, client_gateway);
+    const alice = await PT_AddClient('alice', host, client_gateway);
+    const bob = await PT_AddClient('bob', host, client_gateway);
+    const bob2 = await PT_AddClient('bob', host, client_gateway);
 
     // test test local calls
     host.call('ALICE', { caller: 'host' }).then(data => {
@@ -245,10 +247,10 @@ function RunSeqTests() {
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
-  // RunLocalTests();
-  // RunPacketLoopbackTests();
+  RunLocalTests();
+  RunPacketLoopbackTests();
   RunPacketTests();
-  // RunSeqTests();
+  RunSeqTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
