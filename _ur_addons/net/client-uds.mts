@@ -7,8 +7,6 @@
 import { PR, FILE, PROC } from '@ursys/core';
 import { UDS_INFO } from './urnet-constants.mts';
 import NET from 'node:net';
-import ipc from '@achrinza/node-ipc';
-import PATH from 'node:path';
 import EP_DEFAULT from './class-urnet-endpoint.ts';
 import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
 const { NetEndpoint } = EP_DEFAULT;
