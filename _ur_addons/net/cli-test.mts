@@ -37,12 +37,12 @@ async function RunLocalTests() {
 
     const ep = new NetEndpoint();
 
-    ep.registerHandler('FOO', async data => {
+    ep.registerMessage('FOO', async data => {
       LOG('FOO handler called, returned data: ', data);
       data.one = 1;
       return data;
     });
-    ep.registerHandler('FOO', async data => {
+    ep.registerMessage('FOO', async data => {
       LOG('FOO handler 2 called, returned data: ', data);
       data.two = 2;
       return data;
@@ -88,13 +88,13 @@ function RunPacketLoopbackTests() {
 
     const ep = new NetEndpoint();
 
-    ep.registerHandler('BAR', async data => {
+    ep.registerMessage('BAR', async data => {
       data.result = data.result || [];
       data.result.push('one');
       LOG('BAR handler called, returned data: ', data);
       return data;
     });
-    ep.registerHandler('BAR', async data => {
+    ep.registerMessage('BAR', async data => {
       data.result = data.result || [];
       data.result.push('two');
       LOG('BAR handler called, returned data: ', data);
@@ -126,12 +126,12 @@ function RunPacketTests() {
     const netMsg = `NET:${name}`;
     const msg = name;
     //
-    ep.registerHandler(netMsg, data => {
+    ep.registerMessage(netMsg, data => {
       data[name] = `'${netMsg}' succeeded`;
       LOG.info(`'${netMsg}' handler called, returned data: `, data);
       return data;
     });
-    ep.registerHandler(msg, data => {
+    ep.registerMessage(msg, data => {
       data[name] = `'${msg}' succeeded`;
       LOG.info(`'${msg}' handler called, returned data: `, data);
       return data;

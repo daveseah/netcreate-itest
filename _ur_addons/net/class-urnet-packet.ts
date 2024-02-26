@@ -160,6 +160,11 @@ class NetPacket implements I_NetMessage {
     return this.hop_seq[this.hop_seq.length - 1];
   }
 
+  /** types that begin with _ are protocol messages that bypass pktReceive() */
+  isProtocol() {
+    return this.msg_type.startsWith('_');
+  }
+
   isRequest() {
     return this.hop_dir === 'req';
   }

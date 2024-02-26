@@ -42,22 +42,6 @@ function m_CheckForUDSHost() {
   UDS_DETECTED = FILE.FileExists(sock_path);
   return UDS_DETECTED;
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** register the connection for the first time */
-function UDS_Register(sock: I_NetSocket) {
-  const fn = 'm_Register';
-  const regPkt = EP.newRegPacket();
-  sock.send(regPkt);
-  LOG(`${fn} sent registration packet`);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** authenticate the connection */
-function UDS_Authenticate(sock: I_NetSocket) {
-  const fn = 'UDS_Authenticate';
-  const authPkt = EP.newAuthPacket();
-  sock.send(authPkt);
-  LOG(`${fn} sent auth packet`);
-}
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -75,7 +59,7 @@ async function UDS_Connect(): Promise<boolean> {
   });
   if (!pipeExists) return false;
   // got this far, the UDS pipe file exists so server is running
-  const connection = NET.createConnection({ path: sock_path }, () => {
+  const connection = NET.createConnection({ path: sock_path }, async () => {
     // 1. wire-up connection to the endpoint via our netsocket wrapper
     LOG(`Connected to server '${sock_file}'`);
     const send = pkt => connection.write(pkt.serialize());
@@ -92,9 +76,22 @@ async function UDS_Connect(): Promise<boolean> {
     });
     // 2. start client; EP handles the rest
     const identity = 'my_voice_is_my_passport';
-    EP.connectAsClient(client_sock, identity);
+    const resdata = await EP.connectAsClient(client_sock, identity);
+    LOG('EP.connectAsClient returned', resdata);
   }); // end createConnection
   return true;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** define message handlers and register after authentation to be added to
+ *  URNET message network
+ */
+function UDS_Register() {
+  // register some message handlers
+  EP.registerMessage('NET:CLIENT_TEST', data => {
+    console.log('NET:CLIENT_TEST got', data);
+  });
+  // register client with server
+  EP.registerClient();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function UDS_Disconnect() {
@@ -117,5 +114,6 @@ async function UDS_Disconnect() {
 export {
   // client interfaces (experimental wip, nonfunctional)
   UDS_Connect,
+  UDS_Register,
   UDS_Disconnect
 };

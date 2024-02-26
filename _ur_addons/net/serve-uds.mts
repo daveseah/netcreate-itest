@@ -56,7 +56,7 @@ EP.configAsServer('SRV01'); // hardcode arbitrary server address
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_AddServerHandlers() {
-  EP.registerHandler('SRV:REQ_ADDR', data => {
+  EP.registerMessage('SRV:REQ_ADDR', data => {
     LOG(`'SRV:REQ_ADDR' got`, data);
     return data;
   });

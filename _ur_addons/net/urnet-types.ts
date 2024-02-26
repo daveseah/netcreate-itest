@@ -47,7 +47,9 @@ export const VALID_ADDR_PREFIX = ['???', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as c
 export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
-export const UADDR_NONE = '???000' as NP_Address; // unroutable address
+// make string foo with a number of zeros equal to UADDR_DIGITS length
+const zeroPad = `0`.padStart(UADDR_DIGITS, '0');
+export const UADDR_NONE = `???${zeroPad}` as NP_Address; // unroutable address
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
