@@ -192,26 +192,61 @@ class NetEndpoint {
    * This is the entry point for incoming data from clients */
   handleClient(jsonData, socket: I_NetSocket): NetPacket {
     // 0. first time we're seeing this socket? save it
-    const pkt = this.newPacket().deserialize(jsonData);
-    // 1. is socket authenticated
+    let pkt = this.newPacket().deserialize(jsonData);
+    let retPkt;
+
+    // 1. protocol: is socket authenticated
+    retPkt = this.handleClientAuth(pkt, socket);
+    if (retPkt) return retPkt;
+
+    // 2. protocol: is socket registered
+    retPkt = this.handleClientReg(pkt, socket);
+    if (retPkt) return retPkt;
+
+    // 3. normal: handle packets with authentication token
+    if (pkt.auth) {
+      LOG('.. would check authentication token');
+      this.pktReceive(pkt);
+      return;
+    }
+    // 4. reject packets without authentication token
+    pkt.setDir('res');
+    pkt.data = { error: 'unauthorized packet rejected' };
+  }
+
+  /** handle auth packet */
+  handleClientAuth(pkt: NetPacket, socket: I_NetSocket): NetPacket {
+    // only handle auth once to enforce one socket per login session
+    // for purposes of data consistency?
     if (socket.auth === undefined) {
+      pkt.setDir('res');
       if (pkt.msg_type === '_auth') {
-        const { identity } = pkt.data;
-        if (identity) {
-          socket.auth = identity;
-          pkt.data = { uaddr: socket.uaddr, cli_auth: 'AnAuthToken' };
-        } else {
-          pkt.data = { error: 'invalid identity' };
+        if (pkt.msg !== 'SRV:AUTH') {
+          pkt.data = { error: `invalid auth packet ${pkt.msg}` };
+          return pkt;
         }
-        pkt.setDir('res');
-        return pkt;
       }
-      pkt.data = { error: 'authentication failed' };
+      // got this far
+      const { identity } = pkt.data;
+      if (identity) {
+        socket.auth = identity;
+        pkt.data = { uaddr: socket.uaddr, cli_auth: 'AnAuthToken' };
+      } else {
+        pkt.data = { error: 'invalid identity' };
+      }
       return pkt;
     }
-    // 2. is socket activated
+    return undefined;
+  }
+
+  /** handle registration packet */
+  handleClientReg(pkt: NetPacket, socket: I_NetSocket): NetPacket {
     if (pkt.msg_type === '_reg') {
       pkt.setDir('res');
+      if (pkt.msg !== 'SRV:REG') {
+        pkt.data = { error: `invalid reg packet ${pkt.msg}` };
+        return pkt;
+      }
       if (pkt.src_addr !== socket.uaddr) {
         LOG('src address mismatch', pkt.src_addr, '!= sock', socket.uaddr);
         pkt.data = { error: 'address mismatch' };
@@ -226,15 +261,7 @@ class NetEndpoint {
       pkt.data = { error: 'registration failed' };
       return pkt;
     }
-    // 3. handle packets with authentication token
-    if (pkt.auth) {
-      LOG('.. would check authentication token');
-      this.pktReceive(pkt);
-      return;
-    }
-    // 4. reject packets without authentication token
-    pkt.setDir('res');
-    pkt.data = { error: 'unauthorized packet rejected' };
+    return undefined;
   }
 
   /** when a client connects to this endpoint, register it as a socket and
