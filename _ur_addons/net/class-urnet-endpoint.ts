@@ -143,15 +143,6 @@ class NetEndpoint {
     this.pkt_counter = 0;
     this.cli_counter = 0;
     this.cli_sck_timer = null; // socket aging placeholder
-
-    // bind async methods that use transactions
-    // this.connectAsClient = this.connectAsClient.bind(this);
-    // this.netCall = this.netCall.bind(this);
-    // this.netPing = this.netPing.bind(this);
-    // this.netSend = this.netSend.bind(this);
-    // this.netSignal = this.netSignal.bind(this);
-    // bind asynchronous handlers
-    // this.SRV_DeclareMessages = this.SRV_DeclareMessages.bind(this);
   }
 
   /** client connection management  - - - - - - - - - - - - - - - - - - - - **/
@@ -216,19 +207,18 @@ class NetEndpoint {
    *  This is the mirror to _serverDataIngest() function used by client endpoints.
    * This is the entry point for incoming data from clients */
   _clientDataIngest(jsonData, socket: I_NetSocket): NetPacket {
-    // 0. first time we're seeing this socket? save it
     let pkt = this.newPacket().deserialize(jsonData);
-    let retPkt;
+    let retPkt: NetPacket;
 
-    // 1. protocol: is socket authenticated
+    // 1. protocol: authentication packet (once)
     retPkt = this.handleClientAuth(pkt, socket);
     if (retPkt) return retPkt;
 
-    // 2. protocol: is socket registered
+    // 2. protocol: registration packet (once)
     retPkt = this.handleClientReg(pkt, socket);
     if (retPkt) return retPkt;
 
-    // 3. protocol: is definition packet?
+    // 3. protocol: is definition packet (anytime)
     retPkt = this.handleClientDeclare(pkt, socket);
     if (retPkt) return retPkt;
 
@@ -1150,9 +1140,7 @@ class NetEndpoint {
       clients
     };
   }
-
-  // end class
-}
+} // end NetEndpoint class
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
