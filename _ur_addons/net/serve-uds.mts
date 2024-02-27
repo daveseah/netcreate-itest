@@ -56,30 +56,31 @@ function UDS_RegisterServices() {
 function UDS_Listen() {
   const { sock_path } = UDS_INFO;
 
-  UDS = NET.createServer(connection => {
+  UDS = NET.createServer(client_link => {
     // socket housekeeping
-    const send = pkt => connection.write(pkt.serialize());
+    const send = pkt => client_link.write(pkt.serialize());
     const onData = data => {
-      const returnPkt = EP._clientData(data, socket);
-      if (returnPkt) connection.write(returnPkt.serialize());
+      const returnPkt = EP._clientDataIngest(data, socket);
+      if (returnPkt) client_link.write(returnPkt.serialize());
     };
     const io = { send, onData };
-    const socket = new NetSocket(connection, io);
+    const socket = new NetSocket(client_link, io);
     if (EP.isNewSocket(socket)) {
       EP.addClient(socket);
       const uaddr = socket.uaddr;
       LOG(`${uaddr} client connected`);
     }
     // handle incoming data and return on wire
-    connection.on('data', onData);
-    connection.on('end', () => {
+    client_link.on('data', onData);
+    client_link.on('end', () => {
       const uaddr = EP.removeClient(socket);
       LOG(`${uaddr} client disconnected`);
     });
-    connection.on('error', err => {
+    client_link.on('error', err => {
       LOG.error(`.. socket error: ${err}`);
     });
   });
+
   UDS.listen(sock_path, () => {
     const shortPath = PATH.relative(process.cwd(), sock_path);
     LOG.info(`UDS Server listening on '${shortPath}'`);

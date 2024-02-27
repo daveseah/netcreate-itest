@@ -38,10 +38,10 @@ process.on('SIGINT', () => {
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let WSS: WebSocketServer; // websocket server instance
+let WSS: WebSocketServer; // websocket client_link instance
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const EP = new NetEndpoint(); // server endpoint
-EP.configAsServer('SRV02'); // hardcode arbitrary server address
+const EP = new NetEndpoint(); // client_link endpoint
+EP.configAsServer('SRV02'); // hardcode arbitrary client_link address
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -58,30 +58,29 @@ function WSS_Listen() {
   const options = { port: ws_port, host: ws_host, clientTracking: true };
   WSS = new WebSocketServer(options, () => {
     LOG.info(`UDS Server listening on '${ws_url}'`);
-    WSS.on('connection', (connection, request) => {
-      const send = pkt => connection.send(pkt.serialize());
+    WSS.on('connection', (client_link, request) => {
+      const send = pkt => client_link.send(pkt.serialize());
       const onData = data => {
-        const returnPkt = EP._clientData(data, socket);
-        if (returnPkt) connection.send(returnPkt.serialize());
+        const returnPkt = EP._clientDataIngest(data, client_sock);
+        if (returnPkt) client_link.send(returnPkt.serialize());
       };
-      const io = { send, onData };
-      const socket = new NetSocket(connection, io);
-      if (EP.isNewSocket(socket)) {
-        EP.addClient(socket);
-        const uaddr = socket.uaddr;
+      const client_sock = new NetSocket(client_link, { send, onData });
+      if (EP.isNewSocket(client_sock)) {
+        EP.addClient(client_sock);
+        const uaddr = client_sock.uaddr;
         LOG(`${uaddr} client connected`);
       }
       // handle incoming data and return on wire
-      connection.on('message', onData);
-      connection.on('end', () => {
-        const uaddr = EP.removeClient(socket);
+      client_link.on('message', onData);
+      client_link.on('end', () => {
+        const uaddr = EP.removeClient(client_sock);
         LOG(`${uaddr} client disconnected`);
       });
-      connection.on('close', () => {
-        const { uaddr } = socket;
+      client_link.on('close', () => {
+        const { uaddr } = client_sock;
         LOG(`${uaddr} client disconnected`);
       });
-      connection.on('error', err => {
+      client_link.on('error', err => {
         LOG.error(`.. socket error: ${err}`);
       });
     });

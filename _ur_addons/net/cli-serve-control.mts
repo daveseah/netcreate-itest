@@ -24,7 +24,7 @@ const DBG_PROC = true;
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let DETACH_SERVERS = false; // disables child process detaching for debugging
-let USE: TServers = new Set(['wss']);
+let USE: TServers = new Set(['uds']);
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

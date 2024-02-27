@@ -43,7 +43,7 @@ function m_CheckForUDSHost() {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** create a connection to the UDS server */
+/** create a server connection to the UDS server */
 async function Connect(): Promise<boolean> {
   const fn = 'Connect';
   const { sock_path, sock_file } = UDS_INFO;
@@ -53,19 +53,19 @@ async function Connect(): Promise<boolean> {
       return;
     }
     // got this far, the UDS pipe file exists so server is running
-    const connection = NET.createConnection({ path: sock_path }, async () => {
-      // 1. wire-up connection to the endpoint via our netsocket wrapper
+    const server_link = NET.createConnection({ path: sock_path }, async () => {
+      // 1. wire-up server_link to the endpoint via our netsocket wrapper
       LOG(`Connected to server '${sock_file}'`);
-      const send = pkt => connection.write(pkt.serialize());
-      const onData = data => EP._gatewayData(data, client_sock);
-      const client_sock = new NetSocket(connection, { send, onData });
-      connection.on('data', onData);
-      connection.on('end', () => {
-        LOG('server ended connection');
+      const send = pkt => server_link.write(pkt.serialize());
+      const onData = data => EP._serverDataIngest(data, client_sock);
+      const client_sock = new NetSocket(server_link, { send, onData });
+      server_link.on('data', onData);
+      server_link.on('end', () => {
+        LOG('server ended server_link');
         EP.disconnectAsClient();
       });
-      connection.on('close', () => {
-        LOG('server closed connection...exiting process');
+      server_link.on('close', () => {
+        LOG('server closed server_link...exiting process');
         process.exit(0);
       });
       // 2. start client; EP handles the rest

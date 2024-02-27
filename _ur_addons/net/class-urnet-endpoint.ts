@@ -213,9 +213,9 @@ class NetEndpoint {
   /** endpoint client management  - - - - - - - - - - - - - - - - - - - - - **/
 
   /** Server data event handler for incoming data from a client connection.
-   *  This is the mirror to _gatewayData() function used by client endpoints.
+   *  This is the mirror to _serverDataIngest() function used by client endpoints.
    * This is the entry point for incoming data from clients */
-  _clientData(jsonData, socket: I_NetSocket): NetPacket {
+  _clientDataIngest(jsonData, socket: I_NetSocket): NetPacket {
     // 0. first time we're seeing this socket? save it
     let pkt = this.newPacket().deserialize(jsonData);
     let retPkt;
@@ -390,10 +390,10 @@ class NetEndpoint {
   /** client connection handshaking - - - - - - - - - - - - - - - - - - - - **/
 
   /** Client data event handler for incoming data from the gateway.
-   *  This is the mirror to _clientData() function that is used by servers.
+   *  This is the mirror to _clientDataIngest() function that is used by servers.
    *  This is entry point for incoming data from server */
-  _gatewayData(jsonData: any, socket: I_NetSocket): void {
-    const fn = '_gatewayData:';
+  _serverDataIngest(jsonData: any, socket: I_NetSocket): void {
+    const fn = '_serverDataIngest:';
     const pkt = this.newPacket().deserialize(jsonData);
     // 1. is this connection handshaking for clients?
     if (this.cli_gateway) {
@@ -416,7 +416,7 @@ class NetEndpoint {
     if (auth) {
       const pkt = this.newAuthPacket(auth);
       const { msg } = pkt;
-      // this will be intercepted by _gatewayData and not go through
+      // this will be intercepted by _serverDataIngest and not go through
       // the normal netcall interface. It leverages the transaction code
       const requestAuth = new Promise((resolve, reject) => {
         const hash = GetPacketHashString(pkt);

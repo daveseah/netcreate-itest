@@ -34,24 +34,24 @@ function m_Sleep(ms, resolve?): Promise<void> {
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** create a connection to the UDS server */
+/** create a client connection to the UDS server */
 async function Connect(): Promise<boolean> {
   const { ws_url } = WSS_INFO;
   const promiseConnect = new Promise<boolean>(resolve => {
-    const client = new WebSocket(ws_url);
-    client.on('open', async function open() {
-      // 1. wire-up connection to the endpoint via our netsocket wrapper
+    const server_link = new WebSocket(ws_url);
+    server_link.on('open', async function open() {
+      // 1. wire-up server_link to the endpoint via our netsocket wrapper
       LOG(`Connected to server '${ws_url}'`);
-      const send = pkt => client.send(pkt.serialize());
-      const onData = data => EP._gatewayData(data, client_sock);
-      const client_sock = new NetSocket(client, { send, onData });
-      client.on('message', onData);
-      client.on('close', (code, reason) => {
+      const send = pkt => server_link.send(pkt.serialize()); // client send
+      const onData = data => EP._serverDataIngest(data, client_sock); // client receive
+      const client_sock = new NetSocket(server_link, { send, onData });
+      server_link.on('message', onData);
+      server_link.on('close', (code, reason) => {
         LOG('server closed', code, reason);
         EP.disconnectAsClient();
         process.exit(0);
       });
-      client.on('error', err => LOG.error(err));
+      server_link.on('error', err => LOG.error(err));
       // 2. start client; EP handles the rest
       const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
       const resdata = await EP.connectAsClient(client_sock, auth);
