@@ -6,6 +6,10 @@
 
 import { FILE } from '@ursys/core';
 
+/// TYPES & INTERFACES ////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type TServerType = 'uds' | 'wss' | 'http';
+
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DIR_ADDON_NET = FILE.AbsLocalPath('_ur_addons/net');
@@ -28,10 +32,20 @@ const WSS_INFO = {
   ws_url
 };
 
+/// RUNTIME CONTROL ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const SERVERS: Set<TServerType> = new Set(['uds', 'wss']);
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function UseServer(serverType: TServerType) {
+  return SERVERS.has(serverType);
+}
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
   DIR_ADDON_NET, // abs path to the _ur_addons/net directory
   UDS_INFO, // used for net:node unix domain socket server and client
-  WSS_INFO // used for ws websocket server and client
+  WSS_INFO, // used for ws websocket server and client
+  //
+  UseServer // check if a server type is enabled
 };

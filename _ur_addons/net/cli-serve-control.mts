@@ -9,11 +9,7 @@ import PATH from 'node:path';
 import * as KV from './kv-json.mts';
 import { SpawnOptions, spawn } from 'node:child_process';
 import { PR, PROC, FILE } from '@ursys/core';
-import { UDS_INFO } from './urnet-constants.mts';
-
-/// TYPES /////////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type TServers = Set<'uds' | 'wss' | 'http'>;
+import { UDS_INFO, UseServer } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -24,7 +20,6 @@ const DBG_PROC = true;
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let DETACH_SERVERS = false; // disables child process detaching for debugging
-let USE: TServers = new Set(['uds']);
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,9 +93,9 @@ async function StartServers() {
     LOG.warn(`note: 'net start' will not exit automatically; use ctrl-c to exit`);
   }
   // main protocol host
-  if (USE.has('uds')) await SpawnServer('./serve-uds.mts', 'uds');
-  if (USE.has('wss')) await SpawnServer('./serve-wss.mts', 'wss');
-  if (USE.has('http')) await SpawnServer('./serve-http.mts', 'http');
+  if (UseServer('uds')) await SpawnServer('./serve-uds.mts', 'uds');
+  if (UseServer('wss')) await SpawnServer('./serve-wss.mts', 'wss');
+  if (UseServer('http')) await SpawnServer('./serve-http.mts', 'http');
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** shutdown all communication servers */
