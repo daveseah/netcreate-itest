@@ -1,22 +1,20 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET UNIX DOMAIN SOCKET (UDS) NODE CLIENT
+  URNET WEB SOCKET SERVER (WSS) NODE CLIENT
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILE, PROC } from '@ursys/core';
-import { UDS_INFO } from './urnet-constants.mts';
-import NET from 'node:net';
+import { PR, PROC } from '@ursys/core';
 import EP_DEFAULT from './class-urnet-endpoint.ts';
+import { WebSocket } from 'ws';
+import { WSS_INFO } from './urnet-constants.mts';
 import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
 const { NetEndpoint } = EP_DEFAULT;
 const { NetSocket } = NS_DEFAULT;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('UDSClient', 'TagBlue');
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let UDS_DETECTED = false;
+const LOG = PR('WSSClient', 'TagBlue');
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
@@ -33,41 +31,27 @@ function m_Sleep(ms, resolve?): Promise<void> {
     }, ms)
   );
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** check for UDS host sock file, meaning UDS server is running */
-function m_CheckForUDSHost() {
-  const { sock_path } = UDS_INFO;
-  UDS_DETECTED = FILE.FileExists(sock_path);
-  return UDS_DETECTED;
-}
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** create a connection to the UDS server */
 async function Connect(): Promise<boolean> {
-  const fn = 'Connect';
-  const { sock_path, sock_file } = UDS_INFO;
+  const { ws_url } = WSS_INFO;
   const promiseConnect = new Promise<boolean>(resolve => {
-    if (!m_CheckForUDSHost()) {
-      resolve(false);
-      return;
-    }
-    // got this far, the UDS pipe file exists so server is running
-    const connection = NET.createConnection({ path: sock_path }, async () => {
+    const client = new WebSocket(ws_url);
+    client.on('open', async function open() {
       // 1. wire-up connection to the endpoint via our netsocket wrapper
-      LOG(`Connected to server '${sock_file}'`);
-      const send = pkt => connection.write(pkt.serialize());
+      LOG(`Connected to server '${ws_url}'`);
+      const send = pkt => client.send(pkt.serialize());
       const onData = data => EP._gatewayData(data, client_sock);
-      const client_sock = new NetSocket(connection, { send, onData });
-      connection.on('data', onData);
-      connection.on('end', () => {
-        LOG('server ended connection');
+      const client_sock = new NetSocket(client, { send, onData });
+      client.on('message', onData);
+      client.on('close', (code, reason) => {
+        LOG('server closed', code, reason);
         EP.disconnectAsClient();
-      });
-      connection.on('close', () => {
-        LOG('server closed connection...exiting process');
         process.exit(0);
       });
+      client.on('error', err => LOG.error(err));
       // 2. start client; EP handles the rest
       const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
       const resdata = await EP.connectAsClient(client_sock, auth);
@@ -78,7 +62,7 @@ async function Connect(): Promise<boolean> {
         return;
       }
       // 3. register client with server
-      const info = { name: 'UDSClient', type: 'client' };
+      const info = { name: 'WSSClient', type: 'client' };
       const regdata = await EP.registerClient(info);
       if (regdata.error) {
         LOG.error(regdata.error);
@@ -87,7 +71,7 @@ async function Connect(): Promise<boolean> {
       }
       LOG('EP.registerClient returned', regdata);
       resolve(true);
-    }); // end createConnection
+    }); // end
   });
   return promiseConnect;
 }
@@ -125,7 +109,6 @@ async function RegisterMessages() {
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function Disconnect() {
-  const { sock_path } = UDS_INFO;
   await new Promise((resolve, reject) => {
     try {
       resolve(true);

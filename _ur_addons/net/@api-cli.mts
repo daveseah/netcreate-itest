@@ -11,7 +11,8 @@ import { PR, PROC, FILE } from '@ursys/core';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
-import * as CLIENT from './client-uds.mts';
+// import * as CLIENT from './client-uds.mts';
+import * as CLIENT from './client-wss.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,9 +36,6 @@ function m_Sleep(ms, resolve?): Promise<void> {
     }, ms)
   );
 }
-
-/// API: UDS CLIENT ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// API: CLI MANAGEMENT ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -106,13 +104,13 @@ const COMMAND_DICT = {
     await CTRL.StartServers();
   },
   'client': async () => {
-    if (await CLIENT.UDS_Connect()) {
+    if (await CLIENT.Connect()) {
       const dur = ARGS[2] || 15; // 15 min default
       LOG(`client: sleeping for ${dur} minutes`);
       const ms = 1000 * 60 * Number(dur);
-      m_Sleep(ms, CLIENT.UDS_Disconnect);
+      m_Sleep(ms, CLIENT.Disconnect);
       // extra
-      await CLIENT.UDS_RegisterMessages();
+      await CLIENT.RegisterMessages();
     }
   },
   'stop': async () => {

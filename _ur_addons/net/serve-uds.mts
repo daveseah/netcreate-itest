@@ -1,6 +1,6 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET UNIX DOMAIN SOCKET (UDS) SERVER
+  URNET UNIX DOMAIN SOCKET (UDS) NODE SERVER
 
   This is an URNET host that is spawned as a standalone process by 
   cli-serve-control.mts.
@@ -39,6 +39,7 @@ process.on('SIGINT', () => {
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+let UDS: NET.Server; // unix domain socket server instance
 const EP = new NetEndpoint(); // server endpoint
 EP.configAsServer('SRV01'); // hardcode arbitrary server address
 
@@ -55,11 +56,11 @@ function UDS_RegisterServices() {
 function UDS_Listen() {
   const { sock_path } = UDS_INFO;
 
-  const server = NET.createServer(connection => {
+  UDS = NET.createServer(connection => {
     // socket housekeeping
     const send = pkt => connection.write(pkt.serialize());
     const onData = data => {
-      const returnPkt = EP.handleClient(data, socket);
+      const returnPkt = EP._clientData(data, socket);
       if (returnPkt) connection.write(returnPkt.serialize());
     };
     const io = { send, onData };
@@ -79,7 +80,7 @@ function UDS_Listen() {
       LOG.error(`.. socket error: ${err}`);
     });
   });
-  server.listen(sock_path, () => {
+  UDS.listen(sock_path, () => {
     const shortPath = PATH.relative(process.cwd(), sock_path);
     LOG.info(`UDS Server listening on '${shortPath}'`);
   });
@@ -88,7 +89,6 @@ function UDS_Listen() {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  // Start Unix Domain Socket Server
   UDS_RegisterServices();
   UDS_Listen();
 }

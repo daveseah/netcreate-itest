@@ -1,6 +1,6 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  NODEJS URNET RUNTIME CONSTANTS
+  URNET RUNTIME CONSTANTS
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
@@ -8,16 +8,30 @@ import { FILE } from '@ursys/core';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const ADIR_NET = FILE.AbsLocalPath('_ur_addons/net');
-const SOCKET_FILE = 'UDSHOST_nocommit.sock';
+const DIR_ADDON_NET = FILE.AbsLocalPath('_ur_addons/net');
+const sock_file = 'UDSHOST_nocommit.sock';
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const UDS_INFO = {
-  net_dir: ADIR_NET,
-  sock_file: SOCKET_FILE, // Name of the Unix Domain Socket file
-  sock_path: `${ADIR_NET}/${SOCKET_FILE}` // Path to the Unix Domain Socket file
+  sock_file,
+  sock_path: `${DIR_ADDON_NET}/${sock_file}`
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const ws_host = '127.0.0.1';
+const ws_port = 2929;
+const ws_path = '/urnet';
+const ws_url = `ws://${ws_host}:${ws_port}${ws_path}`;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const WSS_INFO = {
+  ws_host,
+  ws_port,
+  ws_path,
+  ws_url
 };
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
-  UDS_INFO // used for ipc.connectToNet
+  DIR_ADDON_NET, // abs path to the _ur_addons/net directory
+  UDS_INFO, // used for net:node unix domain socket server and client
+  WSS_INFO // used for ws websocket server and client
 };
