@@ -53,8 +53,8 @@ async function RemoveProcessKey(script: string) {
  *  with identifier. Allow only one such identifier */
 async function SpawnServer(scriptName: string, id: string) {
   // make sure that this isn't already in here
-  let identifier = `${m_script}`;
-  if (id) identifier = `${identifier}-${id}`;
+  let identifier = `${scriptName}`;
+  if (id) identifier = `${identifier} ('${id}')`;
   const found = await KV.GetEntryByValue(identifier);
   if (found) {
     if (DBG)
