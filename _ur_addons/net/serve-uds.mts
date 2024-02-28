@@ -94,13 +94,34 @@ function Start() {
   UDS_Listen();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Stop() {
-  const { sock_path } = UDS_INFO;
-  const shortPath = FILE.ShortPath(sock_path);
-  LOG.info(`.. stopping UDS Server on ${shortPath}`);
-  // request end all socket connections
-  EP.srv_socks.forEach(sock => sock.connector.end());
-  if (FILE.UnlinkFile(sock_path)) LOG.info(`.. unlinked ${shortPath}`);
+function Stop() {
+  return new Promise<void>(resolve => {
+    const { sock_path } = UDS_INFO;
+    const shortPath = FILE.ShortPath(sock_path);
+    LOG.info(`.. stopping UDS Server on ${shortPath}`);
+    // request end all socket connections
+    EP.srv_socks.forEach(sock => sock.connector.end());
+    if (FILE.UnlinkFile(sock_path)) LOG.info(`.. unlinked ${shortPath}`);
+    const _checker = setInterval(() => {
+      // check if EP.srv_socks map is empty
+      if (EP.srv_socks.size === 0) {
+        clearInterval(_checker);
+        process.exit(0); // force exit...
+        return;
+      }
+      const clients = Array.from(EP.srv_socks.values());
+      if (
+        clients.every(client => {
+          const test = client.connector.destroyed;
+          if (!test) LOG(`client ${client.uaddr} still active`);
+          return test;
+        })
+      ) {
+        clearInterval(_checker);
+        resolve();
+      }
+    }, 1000);
+  });
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////

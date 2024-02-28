@@ -196,6 +196,7 @@ function Stop() {
     const _checker = setInterval(() => {
       if (typeof WSS.clients.every !== 'function') {
         clearInterval(_checker);
+        process.exit(0); // force exit...
         return;
       }
       if (WSS.clients.every(client => client.readyState === WebSocketServer.CLOSED)) {
