@@ -71,7 +71,7 @@ async function SpawnServer(scriptName: string, id: string) {
     ['--transpile-only', scriptName, ...m_args],
     options
   );
-  if (DBG_PROC) LOG.info(`.. spawning ${identifier} with pid:${proc.pid}`);
+  if (DBG_PROC) LOG(`Spawning ${identifier} with pid:${proc.pid}`);
 
   const pid = proc.pid.toString();
   await KV.SaveKey(pid, `${identifier}`);
