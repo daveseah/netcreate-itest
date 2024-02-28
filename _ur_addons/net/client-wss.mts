@@ -36,12 +36,12 @@ function m_Sleep(ms, resolve?): Promise<void> {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** create a client connection to the UDS server */
 async function Connect(): Promise<boolean> {
-  const { ws_url } = WSS_INFO;
+  const { wss_url } = WSS_INFO;
   const promiseConnect = new Promise<boolean>(resolve => {
-    const server_link = new WebSocket(ws_url);
+    const server_link = new WebSocket(wss_url);
     server_link.on('open', async function open() {
       // 1. wire-up server_link to the endpoint via our netsocket wrapper
-      LOG(`Connected to server '${ws_url}'`);
+      LOG(`Connected to server '${wss_url}'`);
       const send = pkt => server_link.send(pkt.serialize()); // client send
       const onData = data => EP._serverDataIngest(data, client_sock); // client receive
       const client_sock = new NetSocket(server_link, { send, onData });

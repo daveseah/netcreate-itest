@@ -97,10 +97,10 @@ function Start() {
 async function Stop() {
   const { sock_path } = UDS_INFO;
   const shortPath = FILE.ShortPath(sock_path);
-  LOG(`.. stopping UDS Server on ${shortPath}`);
+  LOG.info(`.. stopping UDS Server on ${shortPath}`);
   // request end all socket connections
   EP.srv_socks.forEach(sock => sock.connector.end());
-  if (FILE.UnlinkFile(sock_path)) LOG(`.. unlinked ${shortPath}`);
+  if (FILE.UnlinkFile(sock_path)) LOG.info(`.. unlinked ${shortPath}`);
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////

@@ -54,10 +54,10 @@ function WSS_RegisterServices() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function WSS_Listen() {
-  const { ws_port, ws_host, ws_url } = WSS_INFO;
-  const options = { port: ws_port, host: ws_host, clientTracking: true };
+  const { wss_port, wss_host, wss_url } = WSS_INFO;
+  const options = { port: wss_port, host: wss_host, clientTracking: true };
   WSS = new WebSocketServer(options, () => {
-    LOG.info(`WSS Server listening on '${ws_url}'`);
+    LOG.info(`WSS Server listening on '${wss_url}'`);
     WSS.on('connection', (client_link, request) => {
       const send = pkt => client_link.send(pkt.serialize());
       const onData = data => {
@@ -96,8 +96,8 @@ function Start() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Stop() {
   return new Promise<void>(resolve => {
-    const { ws_url } = WSS_INFO;
-    LOG(`.. stopping WSS Server on ${ws_url}`);
+    const { wss_url } = WSS_INFO;
+    LOG.info(`.. stopping WSS Server on ${wss_url}`);
     WSS.clients.forEach(client => client.close());
     WSS.close();
     const _checker = setInterval(() => {

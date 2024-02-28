@@ -20,7 +20,7 @@ import CLASS_NS from './class-urnet-socket.ts';
 const { NetEndpoint } = CLASS_EP;
 const { NetSocket } = CLASS_NS;
 
-import { HTTP_INFO, WSS_INFO, ESBUILD_INFO } from './urnet-constants.mts';
+import { HTTP_INFO, ESBUILD_INFO } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -60,7 +60,7 @@ async function HTTP_BuildApp() {
   const { http_docs, app_src, app_index } = HTTP_INFO;
   const { app_entry, app_bundle, app_bundle_map } = HTTP_INFO;
   const { es_target } = ESBUILD_INFO;
-  LOG(`.. HTTP Server building ${app_entry}`);
+  LOG.info(`HTTP Server building '${app_entry}' for '${app_index}'`);
   FILE.EnsureDir(http_docs);
   const entryFile = `${app_src}/${app_entry}`;
   if (!FILE.FileExists(entryFile)) throw Error(`${fn} missing entry ${entryFile}`);
@@ -106,7 +106,7 @@ async function HTTP_BuildApp() {
     format: 'esm'
   });
   //
-  console.log(`${LOG.DIM}info: built ${app_entry} ${LOG.RST}`);
+  // console.log(`${LOG.DIM}info: built ${app_entry} ${LOG.RST}`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function HTTP_Listen() {
@@ -130,7 +130,7 @@ function HTTP_Listen() {
   APP.use(express.static(http_docs));
   // start HTTP server
   SERVER = APP.listen(http_port, http_host, () => {
-    LOG.info(`HTTP Server listening on at 'http://${http_host}:${http_port}'`);
+    LOG.info(`HTTP Server listening at 'http://${http_host}:${http_port}'`);
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -143,10 +143,10 @@ function WSS_RegisterServices() {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function WSS_Listen() {
-  const { ws_port, ws_host, ws_url } = WSS_INFO;
-  const options = { port: ws_port, host: ws_host, clientTracking: true };
+  const { wss_port, wss_host, wss_url } = HTTP_INFO;
+  const options = { port: wss_port, host: wss_host, clientTracking: true };
   WSS = new WebSocketServer(options, () => {
-    LOG.info(`WSS Server listening on '${ws_url}'`);
+    LOG.info(`HTTP/WSS Server listening on '${wss_url}'`);
     WSS.on('connection', (client_link, request) => {
       const send = pkt => client_link.send(pkt.serialize());
       const onData = data => {
@@ -187,12 +187,11 @@ async function Start() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Stop() {
   return new Promise<void>(resolve => {
-    const { ws_url } = WSS_INFO;
-    const { http_url } = HTTP_INFO;
-    LOG(`.. stopping WSS Server on ${ws_url}`);
+    const { http_url, wss_url } = HTTP_INFO;
+    LOG.info(`.. stopping HTTP/WSS Server on ${wss_url}`);
     WSS.clients.forEach(client => client.close());
     WSS.close();
-    LOG(`.. stopping HTTP Server on ${http_url}`);
+    LOG.info(`.. stopping HTTP Server on ${http_url}`);
     SERVER.close();
     const _checker = setInterval(() => {
       if (typeof WSS.clients.every !== 'function') {

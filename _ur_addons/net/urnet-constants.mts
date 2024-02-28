@@ -10,6 +10,15 @@ import { FILE } from '@ursys/core';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type TServerType = 'uds' | 'wss' | 'http';
 
+/// RUNTIME CONTROL ///////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** Utility to set what servers should be enabled in net addon */
+const SERVERS: Set<TServerType> = new Set(['http', 'wss', 'uds']);
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function UseServer(serverType: TServerType) {
+  return SERVERS.has(serverType);
+}
+
 /// SERVER CONFIGURATION INFO /////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const dir_addon_net = FILE.AbsLocalPath('_ur_addons/net');
@@ -20,15 +29,14 @@ const UDS_INFO = {
   sock_path // full socket file path
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const ws_host = '127.0.0.1';
-const ws_port = 2929;
-const ws_path = '/urnet';
-const ws_url = `ws://${ws_host}:${ws_port}${ws_path}`;
+const wss_host = '127.0.0.1';
+const wss_port = 2929; // websocket server port
+const wss_path = '/urnet'; // websocket server path
 const WSS_INFO = {
-  ws_host, // websocket server host
-  ws_port, // websocket server port
-  ws_path, // websocket server path
-  ws_url // full websocket url address
+  wss_host, // websocket server host
+  wss_port, // websocket server port
+  wss_path, // websocket server path
+  wss_url: `ws://${wss_host}:${wss_port}${wss_path}` // full wss url address
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const http_port = 8080;
@@ -42,6 +50,10 @@ const app_bundle = 'js/net-http.bundle.js';
 const app_bundle_map = 'script/net-http.bundle.js.map';
 const http_url = `http://${http_host}:${http_port}`;
 const https_url = `https://${http_host}:${https_port}`;
+const http_wss_path = wss_path + '-http';
+const http_wss_port = wss_port + 100;
+const http_wss_host = wss_host;
+const http_wss_url = `ws://${http_wss_host}:${http_wss_port}${http_wss_path}`;
 const HTTP_INFO = {
   app_src, // source directory for the app
   app_index, // html file for the app
@@ -53,6 +65,11 @@ const HTTP_INFO = {
   http_url, // full app url address (http://)
   http_docs, // express served files directory
   //
+  wss_host, // websocket server host
+  wss_path: http_wss_path, // websocket server path
+  wss_port: http_wss_port, // websocket server port
+  wss_url: http_wss_url, // full wss url address
+  //
   https_port, // https server port
   https_url // full app url address (https://)
 };
@@ -62,15 +79,6 @@ const HTTP_INFO = {
 const ESBUILD_INFO = {
   es_target: 'es2018' // esbuild target
 };
-
-/// RUNTIME CONTROL ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Utility to set what servers should be enabled in net addon */
-const SERVERS: Set<TServerType> = new Set(['http']);
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function UseServer(serverType: TServerType) {
-  return SERVERS.has(serverType);
-}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
