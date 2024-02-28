@@ -15,11 +15,14 @@ const { NetSocket } = NS_DEFAULT;
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PR('WSSClient', 'TagBlue');
+const DBG = false;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const EP = new NetEndpoint();
+let SERVER_LINK: WebSocket;
 
 /// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,27 +38,25 @@ function m_Sleep(ms, resolve?): Promise<void> {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** create a client connection to the UDS server */
-async function Connect(): Promise<boolean> {
+function Connect(): Promise<boolean> {
   const { wss_url } = WSS_INFO;
+  SERVER_LINK = new WebSocket(wss_url);
   const promiseConnect = new Promise<boolean>(resolve => {
-    const server_link = new WebSocket(wss_url);
-    server_link.on('open', async function open() {
-      // 1. wire-up server_link to the endpoint via our netsocket wrapper
+    SERVER_LINK.on('open', async function open() {
+      // 1. wire-up SERVER_LINK to the endpoint via our netsocket wrapper
       LOG(`Connected to server '${wss_url}'`);
-      const send = pkt => server_link.send(pkt.serialize()); // client send
+      const send = pkt => SERVER_LINK.send(pkt.serialize()); // client send
       const onData = data => EP._serverDataIngest(data, client_sock); // client receive
-      const client_sock = new NetSocket(server_link, { send, onData });
-      server_link.on('message', onData);
-      server_link.on('close', (code, reason) => {
-        LOG('server closed', code, reason);
+      const client_sock = new NetSocket(SERVER_LINK, { send, onData });
+      SERVER_LINK.on('message', onData);
+      SERVER_LINK.on('close', (code, reason) => {
+        LOG('server closed connection');
         EP.disconnectAsClient();
-        process.exit(0);
       });
-      server_link.on('error', err => LOG.error(err));
+      SERVER_LINK.on('error', err => LOG.error(err));
       // 2. start client; EP handles the rest
       const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
       const resdata = await EP.connectAsClient(client_sock, auth);
-      LOG('EP.connectAsClient returned', resdata);
       if (resdata.error) {
         LOG.error(resdata.error);
         resolve(false);
@@ -69,7 +70,6 @@ async function Connect(): Promise<boolean> {
         resolve(false);
         return;
       }
-      LOG('EP.registerClient returned', regdata);
       resolve(true);
     }); // end
   });
@@ -86,12 +86,12 @@ async function RegisterMessages() {
     return { 'NET:CLIENT_TEST': 'received' };
   });
   const resdata = await EP.clientDeclare();
-  LOG('EP.clientDeclare returned', resdata);
+  // test code below can be removed //
   let count = 0;
   let foo = setInterval(() => {
     if (count > 9) {
       clearInterval(foo);
-      LOG('interval stopped');
+      LOG('netCall test sequence complete');
       return;
     }
     if (count % 2) {
@@ -108,16 +108,13 @@ async function RegisterMessages() {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Disconnect() {
-  await new Promise((resolve, reject) => {
-    try {
+/** disconnect from the server after */
+function Disconnect(seconds = 3) {
+  return new Promise((resolve, reject) => {
+    m_Sleep(seconds * 1000, () => {
+      if (SERVER_LINK) SERVER_LINK.close();
       resolve(true);
-    } catch (err) {
-      reject(err);
-    }
-    m_Sleep(1000, resolve);
-  }).catch(err => {
-    LOG.error(err);
+    });
   });
 }
 

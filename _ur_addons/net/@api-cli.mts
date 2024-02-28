@@ -98,25 +98,21 @@ async function ShutdownCLI() {
   } else if (DBG_CLI) LOG.info(`CLI: ${m_script} retained in process list`);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** called by COMMAND_DICT */
 async function ClientUDS() {
   if (await CLIENT_UDS.Connect()) {
-    const dur = ARGS[2] || 15; // 15 min default
-    LOG(`client: sleeping for ${dur} minutes`);
-    const ms = 1000 * 60 * Number(dur);
-    m_Sleep(ms, CLIENT_UDS.Disconnect);
-    // extra
+    LOG('uds client connected');
     await CLIENT_UDS.RegisterMessages();
+    LOG('uds client declared messages');
   }
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** called by COMMAND_DICT */
 async function ClientWSS() {
   if (await CLIENT_WSS.Connect()) {
-    const dur = ARGS[2] || 15; // 15 min default
-    LOG(`client: sleeping for ${dur} minutes`);
-    const ms = 1000 * 60 * Number(dur);
-    m_Sleep(ms, CLIENT_WSS.Disconnect);
-    // extra
+    LOG('wss client connected');
     await CLIENT_WSS.RegisterMessages();
+    LOG('uds client declared messages');
   }
 }
 
@@ -127,8 +123,18 @@ const COMMAND_DICT = {
     await CTRL.StartServers();
   },
   'client': async () => {
+    const sec = 15;
     if (UseServer('uds')) await ClientUDS();
     if (UseServer('wss')) await ClientWSS();
+    LOG(`will disconnect clients in ${sec} seconds...`);
+    await m_Sleep(sec * 1000);
+    LOG('disconnecting clients...');
+    const p = [];
+    if (UseServer('wss')) p.push(CLIENT_WSS.Disconnect());
+    if (UseServer('uds')) p.push(CLIENT_UDS.Disconnect());
+    await Promise.all(p);
+    await m_Sleep(1000);
+    process.exit(0);
   },
   'stop': async () => {
     await CTRL.TerminateServers();

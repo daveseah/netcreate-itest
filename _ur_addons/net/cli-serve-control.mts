@@ -103,7 +103,7 @@ async function TerminateServers() {
   LOG(`Terminating Child Processes...`);
   const entries = await GetActiveHostList();
   if (entries.length === 0) {
-    LOG.warn(`!! no running server processes`);
+    LOG.warn(`!! no running server processes${LOG.RST}`);
     return;
   }
   entries.forEach(async e => {

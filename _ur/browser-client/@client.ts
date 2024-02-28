@@ -10,11 +10,19 @@
 // note: cjs-style modules in 'common' can not be destructured on import
 import PROMPTS from '../common/util-prompts.js';
 const { makeStyleFormatter } = PROMPTS;
+// cjs-style modules
+import TEXT from '../common/util-text.js';
+// typescript classes
+import OpSequencer from '../common/class-op-seq.ts';
 import StateMgr from '../common/class-state-mgr.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const PR = makeStyleFormatter('UR', 'TagCyan');
+const CLASS = {
+  OpSequencer,
+  StateMgr
+};
 
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -27,6 +35,9 @@ function ClientTest(): void {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
   // classes
+  TEXT,
+  CLASS,
+  PROMPTS,
   StateMgr,
   // formatting
   makeStyleFormatter as ConsoleStyler, // style formatter for browser

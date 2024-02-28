@@ -43,7 +43,6 @@ import {
   NormalizeMessage,
   NormalizeData
 } from './urnet-types.ts';
-const OpSeq = CLASS.OpSequencer;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
