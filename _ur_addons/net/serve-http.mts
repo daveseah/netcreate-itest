@@ -136,7 +136,7 @@ function HTTP_Listen() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function WSS_RegisterServices() {
   EP.registerMessage('SRV:MYSERVER', data => {
-    return { memo: 'defined in serve-http.WSS_RegisterServices' };
+    return { memo: `defined in ${m_script}.RegisterServices` };
   });
   // note that default services are also registered in Endpoint
   // configAsServer() method

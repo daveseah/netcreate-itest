@@ -47,7 +47,7 @@ EP.configAsServer('SRV02'); // hardcode arbitrary client_link address
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function WSS_RegisterServices() {
   EP.registerMessage('SRV:MYSERVER', data => {
-    return { memo: 'defined in serve-uds.UDS_RegisterServices' };
+    return { memo: `defined in ${m_script}.RegisterServices` };
   });
   // note that default services are also registered in Endpoint
   // configAsServer() method

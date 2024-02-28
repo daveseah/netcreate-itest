@@ -53,7 +53,7 @@ function Connect(): Promise<boolean> {
         LOG('server closed connection');
         EP.disconnectAsClient();
       });
-      SERVER_LINK.on('error', err => LOG.error(err));
+      SERVER_LINK.on('error', err => LOG.error(err.code));
       // 2. start client; EP handles the rest
       const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
       const resdata = await EP.connectAsClient(client_sock, auth);
