@@ -52,6 +52,7 @@ const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id 
 
 /// DEFAULTS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// TODO This is temporarily hard-coded until we have a new Template Editor
 const DEFAULT_CommentTypes = [
   {
     id: 'cmt',
