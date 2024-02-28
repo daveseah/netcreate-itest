@@ -37,11 +37,7 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
   echo "vsenv: VISUAL STUDIO CODE INTEGRATED TERMINAL DETECTED"
   echo   "       ${str_out} detected setting: node ${INFO}$NODE_VERSION${NRML}"
   ARCH=$(uname -m)
-  if [[ $VSCODE_TERM == force* ]]; then
-    echo "       architecture forced to ${INFO}$ARCH${NRML} by .code-workspace setting"
-  else
-    echo "       architecture is ${INFO}$ARCH${NRML}"
-  fi  
+  echo "       architecture is ${INFO}$ARCH${NRML} (this can be forced in .code-workspace)"
 
   # check if node binary is in the path
   if ! command -v node &> /dev/null; then
