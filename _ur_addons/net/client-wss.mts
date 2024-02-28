@@ -89,7 +89,7 @@ async function RegisterMessages() {
   // test code below can be removed //
   let count = 0;
   let foo = setInterval(() => {
-    if (count > 9) {
+    if (count > 3) {
       clearInterval(foo);
       LOG('netCall test sequence complete');
       return;
