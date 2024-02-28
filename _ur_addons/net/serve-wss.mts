@@ -11,9 +11,9 @@ import { WebSocketServer } from 'ws';
 import { PR, PROC } from '@ursys/core';
 import CLASS_EP from './class-urnet-endpoint.ts';
 import CLASS_NS from './class-urnet-socket.ts';
-import { WSS_INFO } from './urnet-constants.mts';
 const { NetEndpoint } = CLASS_EP;
 const { NetSocket } = CLASS_NS;
+import { WSS_INFO } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -57,7 +57,7 @@ function WSS_Listen() {
   const { ws_port, ws_host, ws_url } = WSS_INFO;
   const options = { port: ws_port, host: ws_host, clientTracking: true };
   WSS = new WebSocketServer(options, () => {
-    LOG.info(`UDS Server listening on '${ws_url}'`);
+    LOG.info(`WSS Server listening on '${ws_url}'`);
     WSS.on('connection', (client_link, request) => {
       const send = pkt => client_link.send(pkt.serialize());
       const onData = data => {
