@@ -528,6 +528,7 @@ function m_NodefileLoadNodes(headers, lines) {
   let isValid = true;
   let messageJsx = '';
   const nodes = lines.map(l => {
+    if (l === "") return undefined; // skip blank lines
     const node = { meta: {} };
     const subcategories = new Map();
     const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
@@ -591,7 +592,7 @@ function m_NodefileLoadNodes(headers, lines) {
     if (isNaN(node.meta.revision)) node.meta.revision = 0;
 
     return node;
-  });
+  }).filter(n => n !== undefined);
   return { isValid, messageJsx, nodes };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -783,6 +784,7 @@ function m_EdgefileLoadEdges(headers, lines) {
   let isValid = true;
   let messageJsx = '';
   const edges = lines.map(l => {
+    if (l === "") return undefined; // skip blank lines
     const edge = { meta: {} };
     const subcategories = new Map();
     const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
@@ -846,7 +848,8 @@ function m_EdgefileLoadEdges(headers, lines) {
     if (isNaN(edge.meta.revision)) edge.meta.revision = 0;
 
     return edge;
-  });
+  }).filter(e => e !== undefined);;
+  console.log('result edges', edges)
   return { isValid, messageJsx, edges };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
