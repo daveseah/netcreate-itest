@@ -683,33 +683,6 @@ class NetEndpoint {
     return removed;
   }
 
-  /** local message handlers registration - - - - - - - - - - - - - - - - - **/
-
-  /** for local handlers, register a message handler for a given message */
-  registerMessage(msg: NP_Msg, handler: HandlerFunc) {
-    const fn = 'registerMessage:';
-    // if (DBG) LOG(this.urnet_addr, `reg handler '${msg}'`);
-    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
-    if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
-    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
-    const key = NormalizeMessage(msg);
-    if (!this.msg_handlers.has(key))
-      this.msg_handlers.set(key, new Set<HandlerFunc>());
-    const handler_set = this.msg_handlers.get(key);
-    handler_set.add(handler);
-  }
-
-  /** for local handlers, unregister a message handler for a given message */
-  removeHandler(msg: NP_Msg, handler: HandlerFunc) {
-    const fn = 'removeHandler:';
-    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
-    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
-    const key = NormalizeMessage(msg);
-    const handler_set = this.msg_handlers.get(key);
-    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
-    handler_set.delete(handler);
-  }
-
   /** packet utility - - - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
   assignPacketId(pkt: NetPacket): NP_ID {
@@ -745,9 +718,34 @@ class NetEndpoint {
     return clone;
   }
 
-  /** message invocation - - - - - - - - - - - - - - - - - - - - - - - - - -**/
+  /** message declaration and invocation - - - - - - - - - - - - - - - - - -**/
 
-  /** call local message */
+  /** declare a message handler for a given message */
+  registerMessage(msg: NP_Msg, handler: HandlerFunc) {
+    const fn = 'registerMessage:';
+    // if (DBG) LOG(this.urnet_addr, `reg handler '${msg}'`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
+    const key = NormalizeMessage(msg);
+    if (!this.msg_handlers.has(key))
+      this.msg_handlers.set(key, new Set<HandlerFunc>());
+    const handler_set = this.msg_handlers.get(key);
+    handler_set.add(handler);
+  }
+
+  /** remove a previously declared message handler for a given message */
+  removeHandler(msg: NP_Msg, handler: HandlerFunc) {
+    const fn = 'removeHandler:';
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
+    const key = NormalizeMessage(msg);
+    const handler_set = this.msg_handlers.get(key);
+    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
+    handler_set.delete(handler);
+  }
+
+  /** call local message registered on this endPoint only */
   async call(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'call:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -771,7 +769,7 @@ class NetEndpoint {
     return resData;
   }
 
-  /** send local message, returning immediately */
+  /** send local message registered on this endPoint only, returning no data */
   async send(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'send:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -784,7 +782,8 @@ class NetEndpoint {
     return Promise.resolve(true);
   }
 
-  /** signal local message, returning immediately. similar to send */
+  /** signal local message registered on this endPoint only, returning no data.
+   */
   async signal(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'signal:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -805,7 +804,7 @@ class NetEndpoint {
     return Promise.resolve(handlers.length);
   }
 
-  /** call net message, returning promise that will resolve on packet return */
+  /** call net message, resolves when packet returns from server with data */
   async netCall(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'netCall:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -829,7 +828,8 @@ class NetEndpoint {
     return resData;
   }
 
-  /** send net message, returning promise that will resolve on packet return */
+  /** send net message, returning promise that will resolve when the server has
+   *  received and processed/forwarded the message */
   async netSend(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'netSend:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -853,7 +853,10 @@ class NetEndpoint {
     return resData;
   }
 
-  /** signal net message, returning void (not promise)  */
+  /** signal net message, returning void (not promise)
+   *  used for the idea of 'raising signals' as opposed to 'sending data'. It
+   *  resolves immediately when the signal is sent, and does not check with the
+   *  server  */
   netSignal(msg: NP_Msg, data: NP_Data): void {
     const fn = 'netSignal:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -865,7 +868,8 @@ class NetEndpoint {
     this.pktSendRequest(pkt);
   }
 
-  /** see if there is a return for the net message */
+  /** returns with a list of uaddr from the server which is the uaddr of the
+   *  all clients that have registered for the message */
   async netPing(msg: NP_Msg): Promise<NP_Data> {
     const fn = 'netPing:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);

@@ -63,8 +63,7 @@ function UDS_Listen() {
       const returnPkt = EP._clientDataIngest(data, socket);
       if (returnPkt) client_link.write(returnPkt.serialize());
     };
-    const io = { send, onData };
-    const socket = new NetSocket(client_link, io);
+    const socket = new NetSocket(client_link, { send, onData });
     if (EP.isNewSocket(socket)) {
       EP.addClient(socket);
       const uaddr = socket.uaddr;
