@@ -116,6 +116,8 @@ function CloseCommentCollection(cref, uid) {
  * @returns commentVOjb[]
  */
 function m_DeriveThreadedViewObjects(cref, uid) {
+  if (cref === undefined)
+    throw new Error('m_DeriveThreadedViewObjects cref: undefined, uid:', uid);
   const commentVObjs = [];
   const threadIds = DCCOMMENTS.GetThreadedCommentIds(cref);
   threadIds.forEach(cid => {
@@ -138,13 +140,18 @@ function m_DeriveThreadedViewObjects(cref, uid) {
     });
   });
 
-  // Figure out which comment can add a reply
-  // only the last comment in a thread is allowed to reply
+  // Figure out which comment can add a reply:
+  // * any top level comment or
+  // * for threads, only the last comment in a thread is allowed to reply
   const reversedCommentVObjs = commentVObjs.reverse();
   const commentReplyVObj = [];
   let prevLevel = -1;
   reversedCommentVObjs.forEach(cvobj => {
-    if (cvobj.level > prevLevel) cvobj.allowReply = true;
+    if (
+      (cvobj.level === 0 && cvobj.level >= prevLevel) || // is top level without a reply thread
+      cvobj.level > prevLevel // or is a thread
+    )
+      cvobj.allowReply = true;
     commentReplyVObj.push(cvobj);
     prevLevel = cvobj.level;
   });
@@ -185,8 +192,11 @@ function GetThreadedViewObjectsCount(cref, uid) {
   return GetThreadedViewObjects(cref, uid).length;
 }
 
+function GetCOMMENTVOBJS() {
+  return COMMENTVOBJS;
+}
+
 function GetCommentVObj(cref, cid) {
-  console.log('COMMENTVOBJS', cref, cid, JSON.stringify(COMMENTVOBJS));
   const thread = COMMENTVOBJS.get(cref);
   const comment = thread.find(c => c.comment_id === cid);
   return comment;
@@ -211,6 +221,13 @@ function AddComment(data) {
   // Make it editable
   let commentVObjs = GetThreadedViewObjects(data.cref, data.commenter_id);
   const cvobj = GetCommentVObj(comment.collection_ref, comment.comment_id);
+  if (cvobj === undefined)
+    console.error(
+      'ac-comment:Could not find CommentVObj',
+      comment.collection_ref,
+      comment.comment_id,
+      COMMENTVOBJS
+    );
   cvobj.isBeingEdited = true;
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
@@ -234,6 +251,8 @@ function RemoveComment(cid) {
  * @param {Object} cobj commentObject
  */
 function UpdateComment(cobj) {
+  if (cobj.collection_ref === undefined)
+    throw new Error('UpdateComment cref is undefined', cobj);
   DCCOMMENTS.UpdateComment(cobj);
 
   // Disable editable and update modify time
@@ -241,12 +260,10 @@ function UpdateComment(cobj) {
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
   cvobj.isBeingEdited = false;
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
-  console.log('......cvobj.modifytime_string', cvobj.modifytime_string);
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
   );
   COMMENTVOBJS.set(cobj.collection_ref, commentVObjs);
-  console.log('........COMMENTVOBJS', COMMENTVOBJS);
 }
 
 /// PASS-THROUGH METHODS //////////////////////////////////////////////////////
@@ -276,6 +293,7 @@ export {
   // Comment Thread View Object
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
+  GetCOMMENTVOBJS,
   GetCommentVObj,
   AddComment,
   RemoveComment,

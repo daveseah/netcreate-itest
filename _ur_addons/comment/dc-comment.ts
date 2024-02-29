@@ -6,8 +6,6 @@
       
   DATA
   
-    COMMENTS
-    --------
     COMMENTS are a flat array of the raw comment data.
     Used by the Comment component to render the text in each comment.
     
@@ -24,8 +22,6 @@
         commenter_text: string[];
       };
 
-    READBY
-    ------
     READBY keeps track of which user id has "read" which comment id.
     This can get rather long over time.
     
@@ -34,6 +30,19 @@
         commenter_ids: any[];
       }
 
+    EXAMPLE
+    
+       parnt prev                                        NEXT  REPLY-ROOT
+                   "r1 First Comment"                    r2    r1.1
+       r1            "r1.1 Reply to First Comment"       r1.2
+       r1    r1.1    "r1.2 Reply to First Comment"       
+             r1    "r2 Second Comment"                   r3    r2.1
+       r2            "r2.1 Reply to Second Comment"      r2.2
+       r2    r2.1    "r2.2 Reply to Second Comment"      r2.3
+       r2    r2.2    "r2.3 Reply to Second Comment"
+             r2    "r3 Third Comment"                    r4
+             r4    "r4 Fourth Comment"                   
+  
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -224,9 +233,10 @@ function m_DeriveValues() {
   COMMENTS.forEach(c => {
     if (c.comment_id_parent === '' && c.comment_id_previous === '')
       ROOTS.set(c.collection_ref, c.comment_id);
-    if (c.comment_id_parent !== '' && c.comment_id_previous === '')
+    if (c.comment_id_parent !== '' && c.comment_id_previous === '') {
       REPLY_ROOTS.set(c.comment_id_parent, c.comment_id);
-    NEXT.set(c.comment_id_previous, c.comment_id);
+    }
+    if (c.comment_id_previous !== '') NEXT.set(c.comment_id_previous, c.comment_id);
   });
   if (DBG) console.log('ROOTS', ROOTS);
   if (DBG) console.log('REPLY_ROOTS', REPLY_ROOTS);
@@ -302,32 +312,38 @@ function IsMarkedRead(cid, uid) {
  * @returns comment_id[]
  */
 function GetThreadedCommentIds(cref) {
-  console.log('looking up cref', cref, typeof cref);
-  const anchor_comment_ids = [];
   const all_comments_ids = [];
-  // 1. Start with Roots
-  const rootId = ROOTS.get(cref);
-  if (rootId === undefined) return [];
-  anchor_comment_ids.push(rootId);
-  // 2. Find Next
-  // recursively add next
-  function getNext(cid) {
-    const nextId = NEXT.get(cid);
-    if (nextId) return [nextId, ...getNext(nextId)];
-    return [];
-  }
-  anchor_comment_ids.push(...getNext(rootId));
-  // 3. Find Replies
-  anchor_comment_ids.forEach(cid => {
-    // are there replies?
+
+  // recursively add replies and next
+  // 1. Adds nested children reply threads first
+  // 2. Then adds the next younger sibling
+  function getRepliesAndNext(cid) {
+    const results = [];
+
+    // are there "replies"?
     const reply_root_id = REPLY_ROOTS.get(cid);
     if (reply_root_id) {
       // then recursively find next reply
-      all_comments_ids.push(cid, reply_root_id, ...getNext(reply_root_id));
+      results.push(reply_root_id, ...getRepliesAndNext(reply_root_id));
     }
-    // else just return the root cid
-    else all_comments_ids.push(cid);
-  });
+
+    // are there "next" items?
+    const nextId = NEXT.get(cid);
+    if (nextId) {
+      // then recursively find next reply
+      results.push(nextId, ...getRepliesAndNext(nextId));
+    }
+
+    return results;
+  }
+
+  // 1. Start with Roots
+  const rootId = ROOTS.get(cref);
+  if (rootId === undefined) return [];
+
+  // 2. Find Replies (children) followed by Next (younger siblings)
+  all_comments_ids.push(rootId, ...getRepliesAndNext(rootId));
+
   return all_comments_ids;
 }
 if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('1'));

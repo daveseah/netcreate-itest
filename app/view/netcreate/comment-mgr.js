@@ -2,10 +2,8 @@
 
   COMMENT MANAGER
 
-  <NCCommentThread>
-    ...
-    <NCComment>
-  </NCCommentThread>
+  See UR ADDONS / Comment
+
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -23,6 +21,24 @@ const PR = 'comment-mgr: ';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let MOD = UNISYS.NewModule(module.id);
 let UDATA = UNISYS.NewDataLink(MOD);
+
+/// UNISYS LIFECYCLE HOOKS ////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** CONFIGURE fires after LOADASSETS, so this is a good place to put TEMPLATE
+ *  validation.
+ */
+MOD.Hook('CONFIGURE', () => {
+  if (DBG) console.log('comment-mgr CONFIGURE');
+}); // end CONFIGURE HOOK
+
+/// APP_READY MESSAGE REGISTRATION ////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** The APP_READY hook is fired after all initialization phases have finished
+ *  and may also fire at other times with a valid info packet
+ */
+MOD.Hook('APP_READY', function (info) {
+  if (DBG) console.log('comment-mgr APP_READY');
+});
 
 /// UNISYS HANDLERS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -55,13 +71,13 @@ MOD.COMMENTICON = (
   </svg>
 );
 
-function m_UpdateCommentCollectionsState() {
+function m_UpdateStateCommentCollections() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
   UDATA.SetAppState('COMMENTCOLLECTION', COMMENTCOLLECTION);
 }
 
-function m_UpdateCommentVObjsState() {
-  const COMMENTVOBJS = COMMENT.GetThreadedViewObjects();
+function m_UpdateStateCommentVObjs() {
+  const COMMENTVOBJS = COMMENT.GetCOMMENTVOBJS();
   UDATA.SetAppState('COMMENTVOBJS', COMMENTVOBJS);
 }
 
@@ -94,7 +110,7 @@ MOD.GetCommentCollection = (cref) => {
  */
 MOD.UpdateCommentCollection = (ccol) => {
   COMMENT.UpdateCommentCollection(ccol);
-  m_UpdateCommentCollectionsState();
+  m_UpdateStateCommentCollections();
 }
 
 /**
@@ -103,7 +119,7 @@ MOD.UpdateCommentCollection = (ccol) => {
  */
 MOD.CloseCommentCollection = (cref, uid) => {
   COMMENT.CloseCommentCollection(cref, uid);
-  m_UpdateCommentCollectionsState();
+  m_UpdateStateCommentCollections();
 }
 
 MOD.GetCommentTypes = () => {
@@ -126,30 +142,35 @@ MOD.GetCommentVObj = (cref, cid) => {
   return COMMENT.GetCommentVObj(cref, cid);
 }
 
+/**
+ *
+ * @param {Object} cobj Comment Object
+ */
 MOD.AddComment = (cobj) => {
+  // This just generates a new ID, but doesn't update the DB
   DATASTORE.PromiseNewCommentID().then(newCommentID => {
     cobj.comment_id = newCommentID;
-  COMMENT.AddComment(cobj);
-  m_UpdateCommentVObjsState();
+    COMMENT.AddComment(cobj); // creates a comment vobject
+    m_UpdateStateCommentVObjs();
   });
 
 }
 
 MOD.RemoveComment = (cid) => {
   COMMENT.RemoveComment(cid);
-  m_UpdateCommentVObjsState();
+  m_UpdateStateCommentVObjs();
 }
 
 MOD.UpdateComment = (cobj) => {
   m_DBUpdateComment(cobj);
   COMMENT.UpdateComment(cobj);
-  m_UpdateCommentVObjsState();
+  m_UpdateStateCommentVObjs();
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// DB Calls
 
-function m_DBUpdateComment(cobj) {
+function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,
     comment_id: cobj.comment_id,
@@ -162,7 +183,7 @@ function m_DBUpdateComment(cobj) {
     commenter_text: cobj.commenter_text
   }
   UDATA.LocalCall('DB_UPDATE', { comment }).then(data => {
-    if (DBG) console.log('m_DBUpdateComment DB_UPDATE callback');
+    if (typeof cb === 'function') cb(data);
   });
 }
 

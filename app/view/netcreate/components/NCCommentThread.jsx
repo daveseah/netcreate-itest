@@ -66,8 +66,8 @@ class NCCommentThread extends React.Component {
         commenter_id: uid
       });
     } else {
-      // Add reply to last comment in thread
-      const lastComment = commentVObjs[numComments - 1];
+      // Add reply to last ROOT comment in thread (last comment at level 0)
+      const lastComment = commentVObjs.reverse().find(cvobj => cvobj.level === 0);
       CMTMGR.AddComment({
         cref,
         comment_id_parent: '',

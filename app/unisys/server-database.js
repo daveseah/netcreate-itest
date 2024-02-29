@@ -1146,9 +1146,9 @@ DB.PKT_Update = function (pkt) {
   // PROCESS COMMENT INSERT/UPDATE
   if (comment) {
     m_CleanObjID(`${pkt.Info()} comment.id`, comment);
-    let matches = COMMENTS.find({ id: comment.comment_id });
+    let matches = COMMENTS.find({ comment_id: comment.comment_id });
     if (matches.length === 0) {
-      // if there was no nocommentde, then this is an insert new operation
+      // if there was no comment, then this is an insert new operation
       if (DBG)
         console.log(
           PR,
@@ -1165,16 +1165,16 @@ DB.PKT_Update = function (pkt) {
       DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
       COMMENTS.insert(comment);
       // Return the updated record -- needed to update metadata
-      let updatedComment = COMMENTS.findOne({ id: comment.comment_id });
+      let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
       if (!updatedComment)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find comment after update!  This should not happen! ${comment.comment_id
+          `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
           } ${JSON.stringify(comment)}`
         );
       retval = { op: 'insert', comment: updatedComment };
     } else if (matches.length === 1) {
-      // there was one match to update
+      // there was one match to, so update the comment
       COMMENTS.findAndUpdate({ id: comment.comment_id }, c => {
         if (DBG)
           console.log(
@@ -1188,11 +1188,12 @@ DB.PKT_Update = function (pkt) {
         Object.assign(c, comment);
       });
       // Return the updated record -- needed to update metadata
-      let updatedComment = COMMENTS.findOne({ id: comment.comment_id });
+
+      let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
       if (!updatedComment)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find comment after update!  This should not happen! ${comment.comment_id
+          `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
           } ${JSON.stringify(comment)}`
         );
       retval = { op: 'update', comment: updatedComment };
