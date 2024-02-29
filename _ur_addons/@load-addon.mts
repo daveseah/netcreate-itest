@@ -14,7 +14,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { FILES, PR, PROC } from '@ursys/core';
+import { FILE, PR, PROC } from '@ursys/core';
 import { fork } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -36,7 +36,7 @@ async function ForkAddon(addonSelector: string) {
   // success!
   if (DBG) LOG(`.. found ${entryFiles.length} addon entryFile(s)`);
   if (DBG) entryFiles.forEach(f => LOG(`   . ${addonName}/${f}  `));
-  const cwd = FILES.AbsLocalPath(`_ur_addons/${addonName}`);
+  const cwd = FILE.AbsLocalPath(`_ur_addons/${addonName}`);
   const child_pid = fork(entryFile, ARGS, { cwd });
   const { pid } = child_pid;
   if (DBG) LOG(`.. forking '${addonName}${entryName}' (pid ${pid})`);

@@ -8,7 +8,8 @@
 import PATH from 'node:path';
 import * as KV from './kv-json.mts';
 import { SpawnOptions, spawn } from 'node:child_process';
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, FILE } from '@ursys/core';
+import { UDS_INFO, UseServer } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,7 +20,6 @@ const DBG_PROC = true;
 const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let DETACH_SERVERS = false; // disables child process detaching for debugging
-let UDS_ONLY = true; // set when only UDS server will be spawned
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -53,8 +53,8 @@ async function RemoveProcessKey(script: string) {
  *  with identifier. Allow only one such identifier */
 async function SpawnServer(scriptName: string, id: string) {
   // make sure that this isn't already in here
-  let identifier = `${m_script}`;
-  if (id) identifier = `${identifier}-${id}`;
+  let identifier = `${scriptName}`;
+  if (id) identifier = `${identifier} ('${id}')`;
   const found = await KV.GetEntryByValue(identifier);
   if (found) {
     if (DBG)
@@ -71,7 +71,7 @@ async function SpawnServer(scriptName: string, id: string) {
     ['--transpile-only', scriptName, ...m_args],
     options
   );
-  if (DBG_PROC) LOG.info(`.. spawning ${identifier} with pid:${proc.pid}`);
+  if (DBG_PROC) LOG(`Spawning ${identifier} with pid:${proc.pid}`);
 
   const pid = proc.pid.toString();
   await KV.SaveKey(pid, `${identifier}`);
@@ -93,14 +93,9 @@ async function StartServers() {
     LOG.warn(`note: 'net start' will not exit automatically; use ctrl-c to exit`);
   }
   // main protocol host
-  await SpawnServer('./serve-uds.mts', 'uds');
-  // supplementary protocol hosts
-  if (!UDS_ONLY) {
-    await SpawnServer('./serve-wss.mts', 'wss');
-    await SpawnServer('./serve-http.mts', 'http');
-  } else {
-    LOG.warn(`UDS_ONLY flag is enabled, skipping other servers`);
-  }
+  if (UseServer('uds')) await SpawnServer('./serve-uds.mts', 'uds');
+  if (UseServer('wss')) await SpawnServer('./serve-wss.mts', 'wss');
+  if (UseServer('http')) await SpawnServer('./serve-http.mts', 'http');
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** shutdown all communication servers */
@@ -108,7 +103,7 @@ async function TerminateServers() {
   LOG(`Terminating Child Processes...`);
   const entries = await GetActiveHostList();
   if (entries.length === 0) {
-    LOG.warn(`!! no running server processes`);
+    LOG.warn(`!! no running server processes${LOG.RST}`);
     return;
   }
   entries.forEach(async e => {
@@ -126,6 +121,13 @@ async function TerminateServers() {
       } else LOG(`** Error sending SIGTERM to process ${pid}:`, err.code);
     }
   });
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** unlink the UDS socket file */
+async function UnlinkSocketFiles() {
+  const { sock_path } = UDS_INFO;
+  const res = await FILE.UnlinkFile(sock_path);
+  if (res) LOG(`.. unlinked ${FILE.ShortPath(sock_path)}`, res);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** handle 'net hosts' command */
@@ -159,5 +161,6 @@ export {
   //
   GetActiveHostList,
   //
-  RemoveProcessKey
+  RemoveProcessKey,
+  UnlinkSocketFiles
 };

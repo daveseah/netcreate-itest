@@ -8,7 +8,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILES } from '@ursys/core';
+import { PR, FILE } from '@ursys/core';
 import FSE from 'fs-extra';
 import { copy } from 'esbuild-plugin-copy';
 import esbuild from 'esbuild';
@@ -20,8 +20,8 @@ const LOG = PR('MIDI', 'TagPurple');
 /// BUILD FILES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 async function ESBuildApp() {
-  const SRC = FILES.AbsLocalPath('_ur_addons/midi');
-  const DST = FILES.AbsLocalPath('_ur_addons/_dist/_public');
+  const SRC = FILE.AbsLocalPath('_ur_addons/midi');
+  const DST = FILE.AbsLocalPath('_ur_addons/_dist/_public');
   FSE.ensureDir(DST);
 
   // build the webapp and stuff it into public

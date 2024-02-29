@@ -4,6 +4,8 @@
   independent object. It provides the API for sending and receiving messages
   in conjunction with the NetPacket class.
 
+  NetEndpoint makes use of NetSockets, an abstraction of a "socketish" object
+
   CROSS PLATFORM USAGE --------------------------------------------------------
 
   When using from nodejs mts file, you can only import 'default', which is the
@@ -11,19 +13,27 @@
   destructure the .default prop; to access the NetPacket class do this:
 
     import EP_DEFAULT from './class-urnet-endpoint.ts';
-    const NetEndpoint = UR_TYPES.default; // note .default
+    const NetEndpoint = EP_DEFAULT.default; // note .default
 
   You can import the types as usual, though:
 
-    import EP_DEFAULT, { EP_Socket } from './urnet-types.ts';
+    import EP_DEFAULT, { I_NetSocket } from './urnet-types.ts';
 
   This is not required when importing from another .ts typescript file.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR } from '@ursys/core';
-import NetPacket from './class-urnet-packet.ts';
-import { NP_ID, NP_Address, NP_Msg, NP_Data, NP_Hash } from './urnet-types.ts';
+import { PR, CLASS } from '@ursys/core';
+import { NetPacket } from './class-urnet-packet.ts';
+import {
+  NP_ID,
+  NP_Address,
+  NP_Msg,
+  NP_Data,
+  NP_Hash,
+  UADDR_NONE
+} from './urnet-types.ts';
+import type { I_NetSocket } from './class-urnet-socket.ts';
 import { GetPacketHashString } from './urnet-types.ts';
 import {
   IsLocalMessage,
@@ -36,31 +46,21 @@ import {
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('Endpoint', 'TagBlue');
-const DBG = true;
+const DBG = false;
+const PR = typeof process !== 'undefined' ? 'EndPoint'.padEnd(13) : 'EndPoint:';
+const LOG = (...args) => DBG && console.log(PR, ...args);
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let AGE_INTERVAL = 1000; // milliseconds
 let AGE_MAX = 60 * 30; // 30 minutes
 
 /// LOCAL TYPES ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export type EP_SendFunc = (pkt: NetPacket) => void;
-/** this is the socket-ish object that we use to send data to the wire */
-export type EP_Socket = {
-  send: EP_SendFunc;
-  // set by addClient()
-  uaddr?: NP_Address; // assigned uaddr for this socket-ish object
-  auth?: any; // whatever authentication is needed for this socket
-  age?: number; // number of seconds since this socket was used
-  label?: string; // name of the socket-ish object
-};
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerFunc = (data: NP_Data) => NP_Data | void;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 type HandlerSet = Set<HandlerFunc>; // set(handler1, handler2, ...)
 type AddressSet = Set<NP_Address>; // ['UA001', 'UA002', ...]
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-type SocketMap = Map<NP_Address, EP_Socket>; //
+type SocketMap = Map<NP_Address, I_NetSocket>; //
 type ForwardMap = Map<NP_Msg, AddressSet>; // msg->set of uaddr
 type HandlerMap = Map<NP_Msg, HandlerSet>; // msg->handler functions
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -78,8 +78,20 @@ type PktRoutingInfo = {
   msg: NP_Msg;
   src_addr: NP_Address;
   self_addr: NP_Address;
-  gateway: EP_Socket;
-  clients: EP_Socket[];
+  gateway: I_NetSocket;
+  clients: I_NetSocket[];
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type TClientAuth = {
+  identity: string;
+  secret: string;
+};
+type TClientReg = {
+  name: string;
+  type: string;
+};
+type TClientDeclare = {
+  msg_list: NP_Msg[];
 };
 
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
@@ -87,7 +99,7 @@ type PktRoutingInfo = {
 /** utility to dump packet info to console */
 function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
   let { id, msg, msg_type } = pkt;
-  if (id === undefined && msg_type === '_reg') id = 'pkt[NEW0:0]';
+  if (id === undefined && msg_type === '_reg') id = `pkt[${UADDR_NONE}:0]`;
   let out = `${ep.urnet_addr} ${text} '${msg}' `.padEnd(40, '~');
   out += ` ${id.padEnd(12)} ${fn}`;
   return out;
@@ -98,8 +110,8 @@ function _PKT(ep: NetEndpoint, fn: string, text: string, pkt: NetPacket) {
 class NetEndpoint {
   urnet_addr: NP_Address; // the address for this endpoint
   //
-  cli_gateway: EP_Socket; // gateway to server
-  srv_socks: SocketMap; // uaddr->EP_Socket
+  cli_gateway: I_NetSocket; // gateway to server
+  srv_socks: SocketMap; // uaddr->I_NetSocket
   srv_msgs: ForwardMap; // msg->uaddr[]
   msg_handlers: HandlerMap; // msg->handlers[]
   transactions: TransactionMap; // hash->resolver
@@ -108,14 +120,18 @@ class NetEndpoint {
   pkt_counter: number; // counter for generating packet ids
   //
   cli_sck_timer: any; // timer for checking socket age
-  cli_auth: any; // jtw for authenticating socket
+  cli_ident: any; // client credentials to request authentication
+  cli_auth: any; // client access token for
+  cli_reg: TClientReg; // client registration status
 
   constructor() {
     //
     this.urnet_addr = undefined; // assigned address
     // endpoint as client
-    this.cli_auth = undefined; // jwt
-    this.cli_gateway = undefined;
+    this.cli_ident = undefined; // client identity
+    this.cli_auth = undefined; // client access token
+    this.cli_reg = undefined; // client registration status
+    this.cli_gateway = undefined; // client gateway
     // endpoint as server
     this.srv_socks = undefined;
     this.srv_msgs = undefined;
@@ -130,17 +146,6 @@ class NetEndpoint {
 
   /** client connection management  - - - - - - - - - - - - - - - - - - - - **/
 
-  /** client endpoints need to have an "address" assigned to them, otherwise
-   *  the endpoint will not work */
-  configAsClient(urnet_addr: NP_Address, gateway: EP_Socket) {
-    const fn = 'configAsClient:';
-    if (IsValidAddress(urnet_addr)) this.urnet_addr = urnet_addr;
-    else throw Error(`${fn} invalid urnet_addr`);
-    if (gateway && typeof gateway.send === 'function') {
-      this.cli_gateway = gateway;
-    } else throw Error(`${fn} invalid gateway`);
-  }
-
   /** return true if this endpoint is managing connections */
   configAsServer(srv_addr: NP_Address) {
     const fn = 'configAsServer:';
@@ -154,10 +159,14 @@ class NetEndpoint {
     // make sure we don't nuke
     if (this.srv_socks !== undefined)
       LOG(this.urnet_addr, `already configured`, [...this.srv_socks.keys()]);
-    this.srv_socks = new Map<NP_Address, EP_Socket>();
+    this.srv_socks = new Map<NP_Address, I_NetSocket>();
     if (this.srv_msgs !== undefined)
       LOG(this.urnet_addr, `already configured`, [...this.srv_msgs.keys()]);
     this.srv_msgs = new Map<NP_Msg, AddressSet>();
+    // add default service message handlers here
+    this.registerMessage('SRV:REFLECT', data => {
+      return { memo: 'defaults defined in Endpoint.configAsServer' };
+    });
   }
 
   /** return true if this endpoint is managing connections */
@@ -168,7 +177,7 @@ class NetEndpoint {
   /** socket utilities  - - - - - - - - - - - - - - - - - - - - - - - - - - **/
 
   /** given a socket, see if it's already registered */
-  isNewSocket(socket: EP_Socket): boolean {
+  isNewSocket(socket: I_NetSocket): boolean {
     const fn = 'isNewSocket:';
     if (typeof socket !== 'object') return false;
     return socket.uaddr === undefined;
@@ -180,37 +189,149 @@ class NetEndpoint {
   authorizeSocket(auth: any) {
     const fn = 'authorizeSocket:';
     LOG(this.urnet_addr, 'would check auth token');
-    this.cli_auth = auth;
   }
 
   /** return true if this socket passes authentication status */
-  isAuthorizedSocket(socket: EP_Socket): boolean {
+  isAuthorizedSocket(socket: I_NetSocket): boolean {
     const fn = 'authorizeSocket:';
-    LOG.warn(fn, 'would check JWT in socket.auth');
-    LOG.warn(this.urnet_addr, 'would check JWT in socket.auth');
+    LOG(fn, 'would check JWT in socket.auth');
+    LOG(this.urnet_addr, 'would check JWT in socket.auth');
     if (!socket.auth) return false;
     return true;
   }
 
   /** endpoint client management  - - - - - - - - - - - - - - - - - - - - - **/
 
+  /** Server data event handler for incoming data from a client connection.
+   *  This is the mirror to _serverDataIngest() function used by client endpoints.
+   * This is the entry point for incoming data from clients */
+  _clientDataIngest(jsonData, socket: I_NetSocket): NetPacket {
+    let pkt = this.newPacket().deserialize(jsonData);
+    let retPkt: NetPacket;
+
+    // 1. protocol: authentication packet (once)
+    retPkt = this.handleClientAuth(pkt, socket);
+    if (retPkt) return retPkt;
+
+    // 2. protocol: registration packet (once)
+    retPkt = this.handleClientReg(pkt, socket);
+    if (retPkt) return retPkt;
+
+    // 3. protocol: is definition packet (anytime)
+    retPkt = this.handleClientDeclare(pkt, socket);
+    if (retPkt) return retPkt;
+
+    // 4. normal: handle packets with authentication token
+    if (pkt.auth) {
+      LOG('.. would check authentication token');
+      this.pktReceive(pkt);
+      return;
+    }
+    // 4. reject packets without authentication token
+    pkt.setDir('res');
+    pkt.addHop(this.urnet_addr);
+    pkt.data = { error: 'unauthorized packet rejected' };
+    return pkt;
+  }
+
+  /** handle auth packet */
+  handleClientAuth(pkt: NetPacket, socket: I_NetSocket): NetPacket {
+    // only handle auth once to enforce one socket per login session
+    // for purposes of data consistency?
+    if (socket.auth === undefined) {
+      pkt.setDir('res');
+      pkt.addHop(this.urnet_addr);
+      if (pkt.msg_type === '_auth') {
+        if (pkt.msg !== 'SRV:AUTH') {
+          pkt.data = { error: `invalid auth packet ${pkt.msg}` };
+          return pkt;
+        }
+      }
+      // got this far
+      const { identity } = pkt.data;
+      if (identity) {
+        socket.auth = identity;
+        pkt.data = { uaddr: socket.uaddr, cli_auth: 'AnAuthToken' };
+      } else {
+        pkt.data = { error: 'invalid identity' };
+      }
+      return pkt;
+    }
+    return undefined;
+  }
+
+  /** handle registration packet */
+  handleClientReg(pkt: NetPacket, socket: I_NetSocket): NetPacket {
+    if (pkt.msg_type === '_reg') {
+      pkt.setDir('res');
+      pkt.addHop(this.urnet_addr);
+      if (pkt.msg !== 'SRV:REG') {
+        pkt.data = { error: `invalid reg packet ${pkt.msg}` };
+        return pkt;
+      }
+      if (pkt.src_addr !== socket.uaddr) {
+        LOG('src address mismatch', pkt.src_addr, '!= sock', socket.uaddr);
+        pkt.data = { error: 'address mismatch' };
+        return pkt;
+      }
+      const { name, type } = pkt.data;
+      if (name) {
+        const { uaddr } = socket;
+        pkt.data = { ok: true, status: `registered name:${name} type:${type}` };
+        return pkt;
+      }
+      pkt.data = { error: 'registration failed' };
+      return pkt;
+    }
+    return undefined;
+  }
+
+  /** handle client dynamic definitions */
+  handleClientDeclare(pkt: NetPacket, socket: I_NetSocket): NetPacket {
+    if (pkt.msg_type === '_decl') {
+      pkt.setDir('res');
+      pkt.addHop(this.urnet_addr);
+      if (pkt.msg !== 'SRV:DEF') {
+        pkt.data = { error: `invalid def packet ${pkt.msg}` };
+        return pkt;
+      }
+      // currently support msg_list only
+      pkt.data.status = [];
+      const { msg_list } = pkt.data;
+      const { uaddr } = socket;
+      if (Array.isArray(msg_list)) {
+        this.registerRemoteMessages(uaddr, msg_list);
+        pkt.data.status.push(`registered ${msg_list.length} messages`);
+      }
+      //
+      // ... other definitions can go here
+      //
+      if (pkt.data.status.length === 0) {
+        pkt.data = { error: 'no definitions' };
+        return pkt;
+      }
+    }
+    return undefined;
+  }
+
   /** when a client connects to this endpoint, register it as a socket and
    *  allocate a uaddr for it */
-  addClient(socket: EP_Socket): NP_Address {
+  addClient(socket: I_NetSocket): NP_Address {
     const fn = 'addClient:';
     if (typeof socket !== 'object') throw Error(`${fn} invalid socket`);
     if (socket.uaddr !== undefined) throw Error(`${fn} socket already added`);
     const new_uaddr = AllocateAddress({ prefix: 'UR_' });
     socket.uaddr = new_uaddr;
     socket.age = 0;
-    socket.auth = undefined;
+    socket.auth = undefined; // filled-in by socket authorization
+    socket.msglist = undefined; // filled-in by message registration
     this.srv_socks.set(new_uaddr, socket);
     // if (DBG) LOG(this.urnet_addr, `socket ${new_uaddr} registered`);
     return new_uaddr;
   }
 
   /** given a uaddr, return the socket */
-  getClient(uaddr: NP_Address): EP_Socket {
+  getClient(uaddr: NP_Address): I_NetSocket {
     const fn = 'getClient:';
     if (this.srv_socks === undefined) return undefined;
     return this.srv_socks.get(uaddr);
@@ -218,11 +339,11 @@ class NetEndpoint {
 
   /** when a client disconnects from this endpoint, delete its socket and
    *  remove all message forwarding */
-  removeClient(uaddr_obj: NP_Address | EP_Socket): NP_Address {
+  removeClient(uaddr_obj: NP_Address | I_NetSocket): NP_Address {
     const fn = 'removeClient:';
     let uaddr = typeof uaddr_obj === 'string' ? uaddr_obj : uaddr_obj.uaddr;
     if (typeof uaddr !== 'string') {
-      LOG.error(`${fn} invalid uaddr ${typeof uaddr}`);
+      LOG(`${fn} invalid uaddr ${typeof uaddr}`);
       return undefined;
     }
     if (!this.srv_socks.has(uaddr)) throw Error(`${fn} unknown uaddr ${uaddr}`);
@@ -230,7 +351,7 @@ class NetEndpoint {
     this._delRemoteMessages(uaddr);
     // delete the socket
     this.srv_socks.delete(uaddr);
-    if (DBG) LOG(this.urnet_addr, `socket ${uaddr} deleted`);
+    // if (DBG) LOG(this.urnet_addr, `socket ${uaddr} deleted`);
     return uaddr;
   }
 
@@ -253,6 +374,202 @@ class NetEndpoint {
     if (this.cli_sck_timer) clearInterval(this.cli_sck_timer);
     this.cli_sck_timer = null;
     if (DBG) LOG(this.urnet_addr, `timer stopped`);
+  }
+
+  /** client connection handshaking - - - - - - - - - - - - - - - - - - - - **/
+
+  /** Client data event handler for incoming data from the gateway.
+   *  This is the mirror to _clientDataIngest() function that is used by servers.
+   *  This is entry point for incoming data from server */
+  _serverDataIngest(jsonData: any, socket: I_NetSocket): void {
+    const fn = '_serverDataIngest:';
+    const pkt = this.newPacket().deserialize(jsonData);
+    // 1. is this connection handshaking for clients?
+    if (this.cli_gateway) {
+      // these types of packets are never dispatched through the net message
+      // API, and are handled directly by the client endpoint to connect
+      if (this.handleAuthResponse(pkt)) return;
+      if (this.handleRegResponse(pkt)) return;
+    }
+    // 2. otherwise handle the netcall interface normally
+    this.pktReceive(pkt);
+  }
+
+  /** client endpoints need to have an "address" assigned to them, otherwise
+   *  the endpoint will not work */
+  async connectAsClient(gateway: I_NetSocket, auth: TClientAuth): Promise<NP_Data> {
+    const fn = 'connectAsClient:';
+    if (gateway && typeof gateway.send === 'function') {
+      this.cli_gateway = gateway;
+    } else throw Error(`${fn} invalid gateway`);
+    if (auth) {
+      const pkt = this.newAuthPacket(auth);
+      const { msg } = pkt;
+      // this will be intercepted by _serverDataIngest and not go through
+      // the normal netcall interface. It leverages the transaction code
+      const requestAuth = new Promise((resolve, reject) => {
+        const hash = GetPacketHashString(pkt);
+        if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
+        const meta = { msg, uaddr: this.urnet_addr };
+        this.transactions.set(hash, { resolve, reject, ...meta });
+        try {
+          this.cli_gateway.send(pkt);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      /** suspend through transaction **/
+      let authData: NP_Data = await requestAuth;
+      /** resumes when handleAuthResponse() resolves the transaction **/
+      const { uaddr, cli_auth, error } = authData;
+      if (error) {
+        LOG(`${fn} error:`, error);
+        return false;
+      }
+      if (!IsValidAddress(uaddr)) throw Error(`${fn} invalid uaddr ${uaddr}`);
+      this.urnet_addr = uaddr;
+      if (cli_auth === undefined) throw Error(`${fn} invalid cli_auth`);
+      this.cli_auth = cli_auth;
+      LOG('** AUTHENTICATED **', uaddr, cli_auth);
+      this.cli_auth = cli_auth;
+      return authData;
+    }
+    throw Error(`${fn} arg must be identity`);
+  }
+
+  /** create a authentication packet, which is the first packet that must be sent
+   *  after connecting to the server */
+  newAuthPacket(authObj: TClientAuth): NetPacket {
+    const pkt = this.newPacket('SRV:AUTH', { ...authObj });
+    pkt.setMeta('_auth', { rsvp: true });
+    pkt.setSrcAddr(UADDR_NONE); // provide null address
+    this.assignPacketId(pkt);
+    return pkt;
+  }
+
+  /** handle authentication response packet directly rather than through
+   *  the netcall interface in pktReceive() */
+  handleAuthResponse(pkt: NetPacket): boolean {
+    const fn = 'handleAuthResponse:';
+    if (pkt.msg_type !== '_auth') return false;
+    if (pkt.hop_dir !== 'res') return false;
+    // resuming from connectAsClient() await requestAuth
+    this.pktResolveRequest(pkt);
+    return true;
+  }
+
+  /** register client with client endpoint info */
+  async registerClient(info: TClientReg): Promise<NP_Data> {
+    const fn = 'registerClient:';
+    if (!this.cli_gateway) throw Error(`${fn} no gateway`);
+    const pkt = this.newRegPacket();
+    pkt.data = { ...info };
+    const { msg } = pkt;
+    const requestReg = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
+      try {
+        this.cli_gateway.send(pkt);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    /** suspend through transaction **/
+    let regData: NP_Data = await requestReg;
+    /** resumes when handleAuthResponse() resolves the transaction **/
+    const { ok, status, error } = regData;
+    if (error) {
+      LOG(`${fn} error:`, error);
+      return regData;
+    }
+    if (ok) {
+      LOG('** REGISTERED **', status);
+      this.cli_reg = info; // save registration info
+      return regData;
+    }
+    throw Error(`${fn} unexpected response`, regData);
+  }
+
+  /** create a registration packet */
+  newRegPacket(): NetPacket {
+    const pkt = this.newPacket('SRV:REG');
+    pkt.setMeta('_reg', { rsvp: true });
+    return pkt;
+  }
+
+  /** handle registration response packet directly rather than through
+   *  the netcall interface in pktReceive() */
+  handleRegResponse(pkt: NetPacket): boolean {
+    const fn = 'handleRegResponse:';
+    if (pkt.msg_type !== '_reg') return false;
+    if (pkt.hop_dir !== 'res') return false;
+    if (pkt.src_addr !== this.urnet_addr) throw Error(`${fn} misaddressed packet???`);
+    // resuming from registerClient() await requestReg
+    this.pktResolveRequest(pkt);
+    return true;
+  }
+
+  /** declare client messages */
+  async clientDeclare() {
+    const msg_list = this.listNetMessages();
+    return await this.clientDeclareServices({ msg_list });
+  }
+
+  /** declare client attributes */
+  async clientDeclareServices(def: TClientDeclare): Promise<NP_Data> {
+    const fn = 'clientDeclareServices:';
+    if (!this.cli_gateway) throw Error(`${fn} no gateway`);
+    const pkt = this.newDeclPacket();
+    pkt.data = { ...def };
+    const { msg } = pkt;
+    const decSvcs = new Promise((resolve, reject) => {
+      const hash = GetPacketHashString(pkt);
+      if (this.transactions.has(hash)) throw Error(`${fn} duplicate hash ${hash}`);
+      const meta = { msg, uaddr: this.urnet_addr };
+      this.transactions.set(hash, { resolve, reject, ...meta });
+      try {
+        this.cli_gateway.send(pkt);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    /** suspend through transaction **/
+    let declared: NP_Data = await decSvcs;
+    /** resumes when handleAuthResponse() resolves the transaction **/
+    const { error, status } = declared;
+    if (error) {
+      LOG(`${fn} error:`, error);
+      return declared;
+    }
+    if (status) {
+      LOG('** DECLARED **', status);
+      return declared;
+    }
+    throw Error(`${fn} unexpected response`, declared);
+  }
+
+  /** create a definition packet */
+  newDeclPacket(): NetPacket {
+    const pkt = this.newPacket('SRV:DEF');
+    pkt.setMeta('_decl', { rsvp: true });
+    return pkt;
+  }
+
+  handleDeclResponse(pkt: NetPacket): boolean {
+    const fn = 'handleDeclResponse:';
+    if (pkt.msg_type !== '_decl') return false;
+    if (pkt.hop_dir !== 'res') return false;
+    if (pkt.src_addr !== this.urnet_addr) throw Error(`${fn} misaddressed packet???`);
+    // resuming from clientDeclareServices() await requestReg
+    this.pktResolveRequest(pkt);
+    return true;
+  }
+
+  /** disables down the gateway */
+  disconnectAsClient() {
+    this.cli_gateway = undefined;
   }
 
   /** endpoint lookup tables - - - - - - - - - - - - - - - - - - - -  - - - **/
@@ -366,33 +683,6 @@ class NetEndpoint {
     return removed;
   }
 
-  /** local message handlers registration - - - - - - - - - - - - - - - - - **/
-
-  /** for local handlers, register a message handler for a given message */
-  registerHandler(msg: NP_Msg, handler: HandlerFunc) {
-    const fn = 'registerHandler:';
-    // if (DBG) LOG(this.urnet_addr, `reg handler '${msg}'`);
-    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
-    if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
-    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
-    const key = NormalizeMessage(msg);
-    if (!this.msg_handlers.has(key))
-      this.msg_handlers.set(key, new Set<HandlerFunc>());
-    const handler_set = this.msg_handlers.get(key);
-    handler_set.add(handler);
-  }
-
-  /** for local handlers, unregister a message handler for a given message */
-  removeHandler(msg: NP_Msg, handler: HandlerFunc) {
-    const fn = 'removeHandler:';
-    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
-    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
-    const key = NormalizeMessage(msg);
-    const handler_set = this.msg_handlers.get(key);
-    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
-    handler_set.delete(handler);
-  }
-
   /** packet utility - - - - - - - - - - - - - - - - - - - - - - - - - - - -**/
 
   assignPacketId(pkt: NetPacket): NP_ID {
@@ -408,20 +698,14 @@ class NetEndpoint {
     pkt.setFromJSON(json);
     return pkt;
   }
+
   /** create a new packet with proper address */
   newPacket(msg?: NP_Msg, data?: NP_Data): NetPacket {
     const fn = 'newPacket:';
     const pkt = new NetPacket(msg, data);
-    if (this.urnet_addr === undefined)
-      throw Error(`${fn} endpoint address was not assigned`);
+    pkt.setSrcAddr(this.urnet_addr || UADDR_NONE);
+    if (this.cli_auth) pkt.setAuth(this.cli_auth);
     pkt.id = this.assignPacketId(pkt);
-    return pkt;
-  }
-  /** create a registration packet */
-  newRegistrationPacket(): NetPacket {
-    const fn = 'newRegistrationPacket:';
-    const pkt = new NetPacket('SRV:REQ_ADDR', {});
-    pkt.setMeta('_reg', { rsvp: true });
     return pkt;
   }
 
@@ -434,9 +718,34 @@ class NetEndpoint {
     return clone;
   }
 
-  /** message invocation - - - - - - - - - - - - - - - - - - - - - - - - - -**/
+  /** message declaration and invocation - - - - - - - - - - - - - - - - - -**/
 
-  /** call local message */
+  /** declare a message handler for a given message */
+  registerMessage(msg: NP_Msg, handler: HandlerFunc) {
+    const fn = 'registerMessage:';
+    // if (DBG) LOG(this.urnet_addr, `reg handler '${msg}'`);
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (msg !== msg.toUpperCase()) throw Error(`${fn} msg must be uppercase`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
+    const key = NormalizeMessage(msg);
+    if (!this.msg_handlers.has(key))
+      this.msg_handlers.set(key, new Set<HandlerFunc>());
+    const handler_set = this.msg_handlers.get(key);
+    handler_set.add(handler);
+  }
+
+  /** remove a previously declared message handler for a given message */
+  removeHandler(msg: NP_Msg, handler: HandlerFunc) {
+    const fn = 'removeHandler:';
+    if (typeof msg !== 'string') throw Error(`${fn} invalid msg`);
+    if (typeof handler !== 'function') throw Error(`${fn} invalid handler`);
+    const key = NormalizeMessage(msg);
+    const handler_set = this.msg_handlers.get(key);
+    if (!handler_set) throw Error(`${fn} unexpected empty set '${key}'`);
+    handler_set.delete(handler);
+  }
+
+  /** call local message registered on this endPoint only */
   async call(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'call:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -460,7 +769,7 @@ class NetEndpoint {
     return resData;
   }
 
-  /** send local message, returning immediately */
+  /** send local message registered on this endPoint only, returning no data */
   async send(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'send:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -473,7 +782,8 @@ class NetEndpoint {
     return Promise.resolve(true);
   }
 
-  /** signal local message, returning immediately. similar to send */
+  /** signal local message registered on this endPoint only, returning no data.
+   */
   async signal(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'signal:';
     if (!IsLocalMessage(msg)) throw Error(`${fn} '${msg}' not local (drop prefix)`);
@@ -494,7 +804,7 @@ class NetEndpoint {
     return Promise.resolve(handlers.length);
   }
 
-  /** call net message, returning promise that will resolve on packet return */
+  /** call net message, resolves when packet returns from server with data */
   async netCall(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'netCall:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -518,7 +828,8 @@ class NetEndpoint {
     return resData;
   }
 
-  /** send net message, returning promise that will resolve on packet return */
+  /** send net message, returning promise that will resolve when the server has
+   *  received and processed/forwarded the message */
   async netSend(msg: NP_Msg, data: NP_Data): Promise<NP_Data> {
     const fn = 'netSend:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -542,7 +853,10 @@ class NetEndpoint {
     return resData;
   }
 
-  /** signal net message, returning void (not promise)  */
+  /** signal net message, returning void (not promise)
+   *  used for the idea of 'raising signals' as opposed to 'sending data'. It
+   *  resolves immediately when the signal is sent, and does not check with the
+   *  server  */
   netSignal(msg: NP_Msg, data: NP_Data): void {
     const fn = 'netSignal:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -554,7 +868,8 @@ class NetEndpoint {
     this.pktSendRequest(pkt);
   }
 
-  /** see if there is a return for the net message */
+  /** returns with a list of uaddr from the server which is the uaddr of the
+   *  all clients that have registered for the message */
   async netPing(msg: NP_Msg): Promise<NP_Data> {
     const fn = 'netPing:';
     if (!IsNetMessage(msg)) throw Error(`${fn} '${msg}' missing NET prefix`);
@@ -590,7 +905,7 @@ class NetEndpoint {
    *  If the packet has the rsvp flag set, we need to return
    *  it to the source address in the packet with any data
    */
-  async pktReceive(pkt: NetPacket) {
+  async pktReceive(pkt: NetPacket): Promise<void> {
     try {
       const fn = 'pktReceive:';
       // is this a response to a transaction?
@@ -599,11 +914,12 @@ class NetEndpoint {
         else this.pktSendResponse(pkt);
         return;
       }
-      // otherwise it's a request
+      // make sure if it's not a response, then it's a request
       if (!pkt.isRequest()) {
-        LOG.error(this.urnet_addr, fn, `invalid packet`, pkt);
+        LOG(this.urnet_addr, fn, `invalid packet`, pkt);
         return;
       }
+
       // if it's a ping, we just want to return number of
       // messages this server knows about.
       if (pkt.msg_type === 'ping') {
@@ -617,7 +933,7 @@ class NetEndpoint {
       // if it's a signal, this is not an rsvp, but log it
       if (pkt.msg_type === 'signal') {
         if (DBG) LOG(_PKT(this, fn, '-recv-sig-', pkt), pkt.data);
-        // will be handled normally and get routed
+        LOG('would handle signal', pkt.msg);
       }
       //
       const { msg } = pkt;
@@ -627,7 +943,7 @@ class NetEndpoint {
       } else if (this.srv_msgs.has(msg)) {
         retData = await this.pktAwaitRequest(pkt);
       } else {
-        LOG.error(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
+        LOG(this.urnet_addr, fn, `unknown message '${msg}'`, pkt);
         retData = { error: `unknown message '${msg}'` };
       }
 
@@ -642,8 +958,8 @@ class NetEndpoint {
       this.pktSendResponse(pkt);
     } catch (err) {
       // format the error message to be nicer to read
-      LOG.error(err.message);
-      LOG.info(err.stack.split('\n').slice(1).join('\n').trim());
+      LOG(err.message);
+      LOG(err.stack.split('\n').slice(1).join('\n').trim());
     }
   }
 
@@ -664,7 +980,10 @@ class NetEndpoint {
     const { gateway, clients } = this.pktGetSocketRouting(pkt);
     // send on the wire
     pkt.addHop(this.urnet_addr);
-    if (gateway) gateway.send(pkt);
+    if (gateway) {
+      if (this.cli_reg === undefined) throw Error(`${fn} endpoint not registered`);
+      gateway.send(pkt);
+    }
     if (Array.isArray(clients)) {
       clients.forEach(sock => sock.send(pkt));
     }
@@ -675,7 +994,7 @@ class NetEndpoint {
    *  is used by server endpoints as a utility to send a clone
    *  packet on a particular socket to a particular address.
    */
-  pktQueueRequest(pkt: NetPacket, sock: EP_Socket): Promise<any> {
+  pktQueueRequest(pkt: NetPacket, sock: I_NetSocket): Promise<any> {
     const fn = 'pktQueueRequest:';
     const clone = this.clonePacket(pkt);
     clone.id = this.assignPacketId(clone);
@@ -697,7 +1016,8 @@ class NetEndpoint {
     // if (DBG) LOG(this.urnet_addr, 'resolving', pkt.msg);
     if (pkt.hop_rsvp !== true) throw Error(`${fn} packet is not RSVP`);
     if (pkt.hop_dir !== 'res') throw Error(`${fn} packet is not a response`);
-    if (pkt.hop_seq.length < 2) throw Error(`${fn} packet has no hops`);
+    if (pkt.hop_seq.length < 2 && !pkt.isProtocol())
+      throw Error(`${fn} packet has no hops`);
     const hash = GetPacketHashString(pkt);
     const resolver = this.transactions.get(hash);
     if (!resolver) throw Error(`${fn} no resolver for hash ${hash}`);
@@ -718,7 +1038,6 @@ class NetEndpoint {
     const fn = 'pktSendResponse:';
     // check for validity
     if (pkt.hop_rsvp !== true) throw Error(`${fn} packet is not RSVP`);
-    if (pkt.hop_dir !== 'req') throw Error(`${fn} packet is not a request`);
     if (pkt.hop_seq.length < 1) throw Error(`${fn} packet has no hops`);
     // prep for return
     pkt.setDir('res');
@@ -811,6 +1130,7 @@ class NetEndpoint {
     const msg_list = this.getAddressesForMessage(msg);
     const clients = [];
     msg_list.forEach(uaddr => {
+      LOG('uaddr', uaddr);
       if (uaddr === this.urnet_addr) return; // skip self
       const socket = this.getClient(uaddr);
       if (socket) clients.push(socket);
@@ -823,10 +1143,8 @@ class NetEndpoint {
       clients
     };
   }
-
-  // end class
-}
+} // end NetEndpoint class
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default NetEndpoint;
+export { NetEndpoint };

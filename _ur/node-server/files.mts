@@ -18,44 +18,40 @@ import NDIR from 'node-dir';
 import FSE from 'fs-extra';
 import PATH from 'node:path';
 import PROMPT from '../common/util-prompts.js';
+import { ShortPath } from '@ursys/core';
 import * as url from 'url';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return the directory name of the current module */
 function m_Dirname() {
   if (import.meta) return url.fileURLToPath(new URL('.', import.meta.url));
   return __dirname;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PROMPT.makeTerminalOut(' FILES', 'TagGreen');
+/** scan for parent directory that contains a file that uniquely appears in the
+ *  root directory of the project. It defaults to `.nvmrc`
+ */
+function DetectedRootDir(rootfile: string = '.nvmrc'): string {
+  if (typeof DETECTED_DIR === 'string') return DETECTED_DIR;
+  let currentDir = m_Dirname();
+  const check_dir = dir => FSE.existsSync(PATH.join(dir, rootfile));
+  // walk through parent directories until root is reached
+  while (currentDir !== PATH.parse(currentDir).root) {
+    if (check_dir(currentDir)) {
+      DETECTED_DIR = currentDir;
+      return DETECTED_DIR;
+    }
+    currentDir = PATH.resolve(currentDir, '..');
+  }
+  // If reached root and file not found by loop
+  return undefined;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const LOG = PROMPT.makeTerminalOut(' FILE', 'TagGreen');
+let DETECTED_DIR; // cached value of DetectedRootDir
 const ERR_UR = 444;
 const DBG = false;
-
-/// ADDON MODULE SUPPORT //////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** given a root directory, return an object that has
- *  - path: return a normalized path relative to base path with no trailing /
- *  - short: return path without the root directory portion
- */
-function NormalPathUtility(rootRelDir?: string) {
-  const dirname = m_Dirname();
-  // calculate the root dit
-  if (rootRelDir === undefined) rootRelDir = PATH.normalize(PATH.join(dirname, '..'));
-  const u_path = path => {
-    if (path.length === 0) return rootRelDir;
-    path = PATH.normalize(PATH.join(rootRelDir, path));
-    if (path.endsWith('/')) path = path.slice(0, -1);
-    return path;
-  };
-  const u_short = path => {
-    if (path.startsWith(rootRelDir)) return path.slice(rootRelDir.length);
-    return path;
-  };
-  return {
-    path: u_path,
-    short: u_short
-  };
-}
 
 /// SYNCHRONOUS FILE METHODS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -125,20 +121,6 @@ function RemoveDir(dirpath): boolean {
 }
 //
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** scan for parent directory that contains a file that uniquely appears in the
- *  root directory of the project. It defaults to `.nvmrc`
- */
-function DetectedRootDir(rootfile: string = '.nvmrc'): string {
-  let currentDir = m_Dirname();
-  const check_dir = dir => FSE.existsSync(PATH.join(dir, rootfile));
-  while (currentDir !== PATH.parse(currentDir).root) {
-    if (check_dir(currentDir)) return currentDir;
-    currentDir = PATH.resolve(currentDir, '..');
-  }
-  // If reached root and file not found
-  return undefined;
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Make a string relative to the project root, returning a normalized path */
 function AbsLocalPath(subdir: string): string {
   const root = DetectedRootDir();
@@ -151,6 +133,13 @@ function RelLocalPath(subdir: string): string {
   const root = DetectedRootDir();
   if (!root) throw Error('AbsLocalPath: could not find project root');
   const path = PATH.normalize(PATH.join(root, subdir));
+  return path.slice(root.length);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** return the short path name with project root removed */
+function ShortPath(path: string): string {
+  const root = DetectedRootDir();
+  if (!root) throw Error('ShortPath: could not find project root');
   return path.slice(root.length);
 }
 
@@ -227,6 +216,16 @@ async function AsyncWriteJSON(filepath, obj) {
   if (typeof obj !== 'string') obj = JSON.stringify(obj, null, 2);
   await UnsafeWriteFile(filepath, obj);
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+async function UnlinkFile(filepath) {
+  try {
+    FSE.unlinkSync(filepath);
+    return true;
+  } catch (err) {
+    if (err.code === 'ENOENT') return false;
+    console.log(err.code);
+  }
+}
 
 /// SYNCHRONOUS TESTS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -249,6 +248,7 @@ export {
   DetectedRootDir,
   AbsLocalPath,
   RelLocalPath,
+  ShortPath,
   Files,
   Subdirs,
   //
@@ -257,6 +257,8 @@ export {
   UnsafeWriteFile,
   AsyncReadJSON,
   AsyncWriteJSON,
+  //
+  UnlinkFile,
   //
   Test
 };

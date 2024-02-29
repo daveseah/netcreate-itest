@@ -1,105 +1,117 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET WEB SOCKET SERVER (WSS)
+  URNET WEB SOCKET (WSS) NODE SERVER
+
+  This is an URNET host spawned as a standalone process by
+  cli-serve-control.mts.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { WebSocketServer, Socket } from 'ws';
-import { PR } from '@ursys/core';
+import { WebSocketServer } from 'ws';
+import { PR, PROC } from '@ursys/core';
+import CLASS_EP from './class-urnet-endpoint.ts';
+import CLASS_NS from './class-urnet-socket.ts';
+const { NetEndpoint } = CLASS_EP;
+const { NetSocket } = CLASS_NS;
+import { WSS_INFO } from './urnet-constants.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('WSS', 'TagBlue');
-const ARGS = process.argv.slice(2);
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const D_PORT = 2929;
-const D_ADDR = '127.0.0.1';
-const D_UADDR = 'URNET-SRV';
+const LOG = PR('WSSHost', 'TagBlue');
+const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
 
 /// PROCESS SIGNAL HANDLING ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGTERM', () => {
   (async () => {
+    LOG(`SIGTERM received by '${m_script}' (pid ${process.pid})`);
     await Stop();
   })();
 });
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 process.on('SIGINT', () => {
   (async () => {
+    LOG(`SIGINT received by '${m_script}' (pid ${process.pid})`);
     await Stop();
   })();
 });
 
 /// DATA INIT /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let WSS: WebSocketServer; // websocket server instance
-let UADDRS = new Map<string, Socket>(); // websocket address dictionary
+let WSS: WebSocketServer; // websocket client_link instance
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const m_addon_selector = ARGS[0];
-let m_uaddr_counter = 0; // counter for generating unique addresses
+const EP = new NetEndpoint(); // client_link endpoint
+EP.configAsServer('SRV02'); // hardcode arbitrary client_link address
 
-/// SUPPORT FUNCTIONS /////////////////////////////////////////////////////////
+/// HELPERS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_GetNewUADDR() {
-  ++m_uaddr_counter;
-  let cstr = m_uaddr_counter.toString(10).padStart(2, '0');
-  return `UADDR_${cstr}`; // UR ADDRESS
+function WSS_RegisterServices() {
+  EP.registerMessage('SRV:MYSERVER', data => {
+    return { memo: `defined in ${m_script}.RegisterServices` };
+  });
+  // note that default services are also registered in Endpoint
+  // configAsServer() method
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketAdd(socket) {
-  let new_uaddr = m_GetNewUADDR();
-  socket.UADDR = new_uaddr;
-  if (UADDRS.has(new_uaddr)) throw Error(`${new_uaddr} already in use`);
-  UADDRS.set(new_uaddr, socket);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketDelete(socket) {
-  let { uaddr } = socket;
-  if (uaddr === undefined) throw Error(`socket has no uaddr`);
-  if (UADDRS.has(uaddr)) UADDRS.delete(uaddr);
-  else throw Error(`${uaddr} not found`);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketConnectionAck(socket) {
-  let data = {
-    UADDR: socket.UADDR
-  };
-  socket.send(JSON.stringify(data));
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_SocketMessage(socket, json) {
-  if (socket.UADDR === undefined) throw Error(`socket has no uaddr`);
-  LOG(`-> socket ${socket.UADDR} message: ${json}`);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_OnSocketConnection(socket) {
-  m_SocketAdd(socket);
-  m_SocketConnectionAck(socket);
-  socket.on('close', socket => m_SocketDelete(socket));
-  socket.on('message', json => {
-    m_SocketMessage(socket, json);
+function WSS_Listen() {
+  const { wss_port, wss_host, wss_url } = WSS_INFO;
+  const options = { port: wss_port, host: wss_host, clientTracking: true };
+  WSS = new WebSocketServer(options, () => {
+    LOG.info(`WSS Server listening on '${wss_url}'`);
+    WSS.on('connection', (client_link, request) => {
+      const send = pkt => client_link.send(pkt.serialize());
+      const onData = data => {
+        const returnPkt = EP._clientDataIngest(data, client_sock);
+        if (returnPkt) client_link.send(returnPkt.serialize());
+      };
+      const client_sock = new NetSocket(client_link, { send, onData });
+      if (EP.isNewSocket(client_sock)) {
+        EP.addClient(client_sock);
+        const uaddr = client_sock.uaddr;
+        LOG(`${uaddr} client connected`);
+      }
+      // handle incoming data and return on wire
+      client_link.on('message', onData);
+      client_link.on('end', () => {
+        const uaddr = EP.removeClient(client_sock);
+        LOG(`${uaddr} client disconnected`);
+      });
+      client_link.on('close', () => {
+        const { uaddr } = client_sock;
+        LOG(`${uaddr} client disconnected`);
+      });
+      client_link.on('error', err => {
+        LOG.error(`.. socket error: ${err}`);
+      });
+    });
   });
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Start() {
-  // LOG(`Starting Websocket Server on ${D_ADDR}:${D_PORT}`);
-  const options = { port: D_PORT, host: D_ADDR };
-  WSS = new WebSocketServer(options);
-  WSS.on('listening', () => {
-    LOG(`.. WebSocket Server listening on ${D_ADDR}:${D_PORT}`);
-    WSS.on('connection', socket => m_OnSocketConnection(socket));
-  });
+  WSS_RegisterServices();
+  WSS_Listen();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-async function Stop() {
-  // LOG(`Terminating Websocket Server on ${D_ADDR}:${D_PORT}...`);
-  await WSS.close();
-  // process all pending transactions
-  // delete all registered messages
-  // delete all uaddr sockets
-  LOG(`.. stopping Websocket Server`);
+function Stop() {
+  return new Promise<void>(resolve => {
+    const { wss_url } = WSS_INFO;
+    LOG.info(`.. stopping WSS Server on ${wss_url}`);
+    WSS.clients.forEach(client => client.close());
+    WSS.close();
+    const _checker = setInterval(() => {
+      if (typeof WSS.clients.every !== 'function') {
+        clearInterval(_checker);
+        process.exit(0); // force exit...
+        return;
+      }
+      if (WSS.clients.every(client => client.readyState === WebSocketServer.CLOSED)) {
+        clearInterval(_checker);
+        resolve();
+      }
+    }, 1000);
+  });
 }
 
 /// RUNTIME INITIALIZE ////////////////////////////////////////////////////////

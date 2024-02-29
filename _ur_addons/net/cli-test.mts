@@ -5,14 +5,15 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, CLASS } from '@ursys/core';
 // note: ts files imported by node contain { default }
-import EP_DEFAULT, { EP_Socket } from './class-urnet-endpoint.ts';
+import EP_DEFAULT from './class-urnet-endpoint.ts';
+import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
 import NP_DEFAULT from './class-urnet-packet.ts';
 import RT_DEFAULT from './urnet-types.ts';
-// destructure defaults
-const NetEndpoint = EP_DEFAULT.default;
-const NetPacket = NP_DEFAULT.default;
+// destructure defaults; these will get moved to ursys core at some point
+const { NetEndpoint } = EP_DEFAULT;
+const { NetPacket } = NP_DEFAULT;
 const { AllocateAddress } = RT_DEFAULT;
 
 /// TYPE DECLARATIONS /////////////////////////////////////////////////////////
@@ -36,12 +37,12 @@ async function RunLocalTests() {
 
     const ep = new NetEndpoint();
 
-    ep.registerHandler('FOO', async data => {
+    ep.registerMessage('FOO', async data => {
       LOG('FOO handler called, returned data: ', data);
       data.one = 1;
       return data;
     });
-    ep.registerHandler('FOO', async data => {
+    ep.registerMessage('FOO', async data => {
       LOG('FOO handler 2 called, returned data: ', data);
       data.two = 2;
       return data;
@@ -87,13 +88,13 @@ function RunPacketLoopbackTests() {
 
     const ep = new NetEndpoint();
 
-    ep.registerHandler('BAR', async data => {
+    ep.registerMessage('BAR', async data => {
       data.result = data.result || [];
       data.result.push('one');
       LOG('BAR handler called, returned data: ', data);
       return data;
     });
-    ep.registerHandler('BAR', async data => {
+    ep.registerMessage('BAR', async data => {
       data.result = data.result || [];
       data.result.push('two');
       LOG('BAR handler called, returned data: ', data);
@@ -116,7 +117,7 @@ function RunPacketLoopbackTests() {
 
 /// PACKET TESTS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RunPacketTests() {
+async function RunPacketTests() {
   LOG.info('Running Packet Tests');
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function PT_Register(name: string, ep: T_Endpoint) {
@@ -125,12 +126,12 @@ function RunPacketTests() {
     const netMsg = `NET:${name}`;
     const msg = name;
     //
-    ep.registerHandler(netMsg, data => {
+    ep.registerMessage(netMsg, data => {
       data[name] = `'${netMsg}' succeeded`;
       LOG.info(`'${netMsg}' handler called, returned data: `, data);
       return data;
     });
-    ep.registerHandler(msg, data => {
+    ep.registerMessage(msg, data => {
       data[name] = `'${msg}' succeeded`;
       LOG.info(`'${msg}' handler called, returned data: `, data);
       return data;
@@ -146,13 +147,20 @@ function RunPacketTests() {
     return host;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function PT_AddClient(name, host: T_Endpoint, gateway: EP_Socket) {
+  async function PT_AddClient(name, host: T_Endpoint, gateway: I_NetSocket) {
     const client: T_Endpoint = new NetEndpoint();
     const sock = {
       send: (pkt: T_Packet) => client.pktReceive(pkt)
     };
     const addr = host.addClient(sock);
-    client.configAsClient(addr, gateway);
+    const auth = {
+      identity: 'my_voice_is_my_passport',
+      secret: 'crypty'
+    };
+    client.urnet_addr = addr; // hack to set the address
+    const authData = await client.connectAsClient(gateway, auth);
+    const info = { name: 'UDSClient', type: 'client' };
+    const regdata = await client.registerClient(info);
     PT_Register(name, client);
     host.registerRemoteMessages(addr, client.listNetMessages());
     return client;
@@ -167,9 +175,9 @@ function RunPacketTests() {
       send: (pkt: T_Packet) => host.pktReceive(pkt)
     };
 
-    const alice = PT_AddClient('alice', host, client_gateway);
-    const bob = PT_AddClient('bob', host, client_gateway);
-    const bob2 = PT_AddClient('bob', host, client_gateway);
+    const alice = await PT_AddClient('alice', host, client_gateway);
+    const bob = await PT_AddClient('bob', host, client_gateway);
+    const bob2 = await PT_AddClient('bob', host, client_gateway);
 
     // test test local calls
     host.call('ALICE', { caller: 'host' }).then(data => {
@@ -202,12 +210,47 @@ function RunPacketTests() {
   }
 }
 
+/// RUNTIME OPERATION SEQUENCER TEST ////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RunSeqTests() {
+  const ops = new CLASS.OpSequencer('URNET_Handshake');
+  const f_connecting = ops => console.log('connecting');
+  const f_authenticating = ops => console.log('authenticating');
+  const f_registering = ops => console.log('registering');
+  const f_listening = ops => console.log('listening');
+
+  ops.addOp('wait', { func: f_connecting });
+  ops.addOp('auth', { func: f_authenticating });
+  ops.addOp('reg', { func: f_registering });
+  ops.addOp('listen', { func: f_listening });
+
+  const f_change = (newOp, oldOp, ops) =>
+    console.log('* change *', oldOp._opName, '->', newOp._opName);
+  ops.subscribe('listen', f_change);
+
+  let op = ops.next();
+  while (op) {
+    op.data.func(ops);
+    if (ops.matchOp('auth')) console.log('* auth matched in loop *');
+    op = ops.next();
+  }
+
+  console.log('total ops staged', ops.length);
+  ops.dispose();
+  try {
+    console.log('disposed', ops.length());
+  } catch (err) {
+    console.log('disposed success');
+  }
+}
+
 /// TEST METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RunTests() {
   RunLocalTests();
   RunPacketLoopbackTests();
   RunPacketTests();
+  RunSeqTests();
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
