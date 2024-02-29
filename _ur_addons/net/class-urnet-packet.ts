@@ -27,7 +27,8 @@ import { IsValidMessage, IsValidAddress, IsValidType } from './urnet-types';
 import { NP_Msg, NP_Data, DecodeMessage } from './urnet-types';
 import { NP_Options } from './urnet-types';
 
-const LOG = PR('Packet', 'TagOrange');
+const PR = typeof process !== 'undefined' ? 'Packet'.padEnd(13) : 'Packet:';
+const LOG = (...args) => console.log(PR, ...args);
 
 /// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -36,6 +37,7 @@ class NetPacket implements I_NetMessage {
   msg_type: NP_Type; // ping, signal, send, call
   msg: NP_Msg; // name of the URNET message
   data: any; // payload of the URNET message
+  auth: string; // authentication token
   src_addr: NP_Address; // URNET address of the sender
   hop_seq: NP_Address[]; // URNET addresses that have seen this packet
   hop_log: string[]; // log of debug messages by hop
@@ -50,6 +52,7 @@ class NetPacket implements I_NetMessage {
     this.hop_rsvp = false;
     this.hop_seq = [];
     this.hop_log = [];
+    this.auth = undefined;
     this.err = undefined;
     //
     if (data !== undefined) this.data = data;
@@ -96,6 +99,16 @@ class NetPacket implements I_NetMessage {
     return this;
   }
 
+  /** set the authorization token */
+  setAuth(auth: string): NetPacket {
+    if (typeof auth !== 'string') {
+      LOG('setAuth: invalid auth', auth);
+      throw Error(`invalid auth: ${auth}`);
+    }
+    this.auth = auth;
+    return this;
+  }
+
   /** set message and data */
   setMsgData(msg: NP_Msg, data: NP_Data): NetPacket {
     this.setMsg(msg);
@@ -122,13 +135,15 @@ class NetPacket implements I_NetMessage {
 
   /** make a packet from existing JSON */
   setFromJSON(json: string): NetPacket {
-    if (typeof json !== 'string') throw Error(`invalid json: ${json}`);
+    if (typeof json !== 'string')
+      throw Error(`invalid json: ${json}, is ${typeof json}`);
     return this.deserialize(json);
   }
   /** make a packet from existing object */
   setFromObject(pktObj) {
     const fn = 'setFromObject';
-    if (typeof pktObj !== 'object') throw Error(`invalid pktObj: ${pktObj}`);
+    if (typeof pktObj !== 'object')
+      throw Error(`invalid pktObj: ${pktObj}, is ${typeof pktObj}`);
     this.id = pktObj.id;
     this.msg = pktObj.msg;
     if (pktObj.data === undefined)
@@ -141,6 +156,7 @@ class NetPacket implements I_NetMessage {
     this.hop_dir = pktObj.hop_dir;
     this.hop_rsvp = pktObj.hop_rsvp;
     this.err = pktObj.err;
+    this.auth = pktObj.auth;
     return this;
   }
 
@@ -153,6 +169,11 @@ class NetPacket implements I_NetMessage {
 
   lastHop() {
     return this.hop_seq[this.hop_seq.length - 1];
+  }
+
+  /** types that begin with _ are protocol messages that bypass pktReceive() */
+  isProtocol() {
+    return this.msg_type.startsWith('_');
   }
 
   isRequest() {
@@ -169,8 +190,12 @@ class NetPacket implements I_NetMessage {
     return JSON.stringify(this);
   }
   deserialize(data: string): NetPacket {
-    let obj = JSON.parse(data);
-    return this.setFromObject(obj);
+    try {
+      let obj = JSON.parse(data);
+      return this.setFromObject(obj);
+    } catch (err) {
+      LOG('NetPacket.deserialize failed', data);
+    }
   }
 
   /** information utilities - - - - - - - - - - - - - - - - - - - - - - - - **/
@@ -209,4 +234,4 @@ class NetPacket implements I_NetMessage {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default NetPacket;
+export { NetPacket };

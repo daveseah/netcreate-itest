@@ -196,7 +196,7 @@ module.exports = (config, callback) => {
       console.log(PR, YL('NOTICE: CODE-WORKSPACE NOT LOADED'));
       console.log(PR, YL('.. skipped version environment checks'));
     } else {
-      console.log(PR, `vscode terminal profile is ${BL(process.env.VSCODE_PROFILE)}`);
+      console.log(PR, `vscode terminal profile is ${BL(process.env.VSCODE_TERM)}`);
     }
 
     /// START URSYS NETWORK SOCKETS ///

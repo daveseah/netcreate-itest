@@ -7,11 +7,13 @@
 
 import PATH from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PR, PROC } from '@ursys/core';
+import { PR, PROC, FILE } from '@ursys/core';
 import * as KV from './kv-json.mts';
 import * as CTRL from './cli-serve-control.mts';
 import * as TEST from './cli-test.mts';
-import * as CLIENT from './client-uds.mts';
+import { UseServer } from './urnet-constants.mts';
+import * as CLIENT_UDS from './client-uds.mts';
+import * as CLIENT_WSS from './client-wss.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,9 +37,6 @@ function m_Sleep(ms, resolve?): Promise<void> {
     }, ms)
   );
 }
-
-/// API: UDS CLIENT ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// API: CLI MANAGEMENT ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,28 +97,57 @@ async function ShutdownCLI() {
     if (DBG_CLI) LOG.info(`CLI: ${m_script} removed from process list`);
   } else if (DBG_CLI) LOG.info(`CLI: ${m_script} retained in process list`);
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** called by COMMAND_DICT */
+async function ClientUDS() {
+  if (await CLIENT_UDS.Connect()) {
+    LOG('uds client connected');
+    await CLIENT_UDS.RegisterMessages();
+    LOG('uds client declared messages');
+  }
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** called by COMMAND_DICT */
+async function ClientWSS() {
+  if (await CLIENT_WSS.Connect()) {
+    LOG('wss client connected');
+    await CLIENT_WSS.RegisterMessages();
+    LOG('uds client declared messages');
+  }
+}
 
 /// CLI: MAIN PARSER ///////////////////////////////////////////////////////////
 /// - - - - - - - -å - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const COMMAND_DICT = {
-  start: async () => {
+  'start': async () => {
     await CTRL.StartServers();
   },
-  restart: async () => {
+  'client': async () => {
+    const sec = 15;
+    if (UseServer('uds')) await ClientUDS();
+    if (UseServer('wss')) await ClientWSS();
+    LOG(`will disconnect clients in ${sec} seconds...`);
+    await m_Sleep(sec * 1000);
+    LOG('disconnecting clients...');
+    const p = [];
+    if (UseServer('wss')) p.push(CLIENT_WSS.Disconnect());
+    if (UseServer('uds')) p.push(CLIENT_UDS.Disconnect());
+    await Promise.all(p);
+    await m_Sleep(1000);
+    process.exit(0);
+  },
+  'stop': async () => {
+    await CTRL.TerminateServers();
+    await CTRL.UnlinkSocketFiles();
+  },
+  'restart': async () => {
     await CTRL.TerminateServers();
     await CTRL.StartServers();
   },
-  stop: async () => {
-    await CTRL.TerminateServers();
-  },
-  hosts: async () => {
+  'hosts': async () => {
     await CTRL.ManageHosts();
   },
-  send: async () => {
-    await CLIENT.Connect();
-    m_Sleep(1000, CLIENT.Disconnect);
-  },
-  test: async () => {
+  'test': async () => {
     await TEST.RunTests();
   }
 };

@@ -28,7 +28,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 import { expect, test } from 'vitest';
-import OpSequencer, { TOpNode, TOpChangeFunc } from './class-op-sequencer.ts';
+import OpSequencer, { TOpNode, TOpChangeFunc } from './class-op-seq.ts';
 
 /// TESTS /////////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -40,6 +40,6 @@ test('OpSeq initializes', () => {
 
 test('OpSeq adds nodes', () => {
   const seq = new OpSequencer('Test2');
-  seq.addNode({ name: 'node1', data: {} });
-  expect(seq.hasNode('node1')).toBe(true);
+  seq.addOp('node1', {});
+  expect(seq.hasOp('node1')).toBe(true);
 });

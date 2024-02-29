@@ -33,27 +33,31 @@
 
 /// RUNTIME UTILITIES /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const VALID_MSG_CHANNELS = ['NET', 'SRV', 'LOCAL', ''] as const;
 export const VALID_PKT_TYPES = [
   'ping',
   'signal',
   'send',
   'call',
+  '_auth', // special packet
   '_reg', // special packet
-  '_auth' // special packet
+  '_decl' // special packet
 ] as const;
-export const VALID_ADDR_PREFIX = ['NEW', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
+export const VALID_ADDR_PREFIX = ['???', 'UR_', 'WSS', 'UDS', 'MQT', 'SRV'] as const;
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+export const UADDR_DIGITS = 3; // number of digits in UADDR (padded with 0)
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export const USED_ADDRS = new Set<NP_Address>();
+// make string foo with a number of zeros equal to UADDR_DIGITS length
+const zeroPad = `0`.padStart(UADDR_DIGITS, '0');
+export const UADDR_NONE = `???${zeroPad}` as NP_Address; // unroutable address
 
 /// BASIC NETPACKET TYPES //////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export type NP_ID = `pkt[${NP_Address}:${number}]`;
 export type NP_Chan = (typeof VALID_MSG_CHANNELS)[number];
 export type NP_Type = (typeof VALID_PKT_TYPES)[number];
-export type NP_Msg = `${NP_Chan}${string}`;
+export type NP_Msg = `${NP_Chan}${string}`; // e.g. 'NET:HELLO' or 'HELLO'
 export type NP_Data = any;
 export type NP_Dir = 'req' | 'res';
 export type NP_AddrPre = (typeof VALID_ADDR_PREFIX)[number];
@@ -92,6 +96,12 @@ export interface I_NetMessage {
 /** runtime check of NP_Type */
 export function IsValidType(msg_type: string): boolean {
   return VALID_PKT_TYPES.includes(msg_type as NP_Type);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** runtime check of protocol-related NP_Type */
+export function IsProtocolType(msg_type: string): boolean {
+  if (!IsValidType(msg_type)) return false;
+  return msg_type.startsWith('_');
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** runtime check of NP_Chan */

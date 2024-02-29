@@ -1,11 +1,6 @@
 # The following script is invoked on Apple OSX machines
 # in the .code-workspace setting "terminal.integrated.profiles.osx"
 
-#
-# (1) Ensure NVM Version is Obeyed in Shell
-#
-NODE_PREFERRED="v18.16.0"
-
 # ANSI Terminal Colors
 ALRT="\e[33;1m" # yellow
 INFO="\e[34;1m" # blue
@@ -42,11 +37,7 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
   echo "vsenv: VISUAL STUDIO CODE INTEGRATED TERMINAL DETECTED"
   echo   "       ${str_out} detected setting: node ${INFO}$NODE_VERSION${NRML}"
   ARCH=$(uname -m)
-  if [[ $VSCODE_TERM == force* ]]; then
-    echo "       architecture forced to ${INFO}$ARCH${NRML} by .code-workspace setting"
-  else
-    echo "       architecture is ${INFO}$ARCH${NRML}"
-  fi  
+  echo "       architecture is ${INFO}$ARCH${NRML} (this can be forced in .code-workspace)"
 
   # check if node binary is in the path
   if ! command -v node &> /dev/null; then
@@ -68,10 +59,6 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
     echo "       this shell is using version ${INFO}$CURRENT_VERSION${NRML} until you do"
     echo "       alternatively, type ${ALRT}nvm use $NODE_VERSION${NRML} to use it now"
   fi
-else
-  nvm use $NODE_PREFERRED > /dev/null 2>&1
-  nvm alias default $NODE_PREFERRED > /dev/null 2>&1
-  echo "vsenv: setting default node $NODE_PREFERRED"
 fi
 
 # for bash and zsh shells: if ./ is not in PATH, add it to end of PATH

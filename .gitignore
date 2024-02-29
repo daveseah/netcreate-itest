@@ -9,8 +9,9 @@
 /runtime
 netcreate-config.js
 
-# _ur package
+# _ur packages
 _dist
+_ur_addons/_public
 
 # Also ignore build system directories
 .npmignore

@@ -1,32 +1,23 @@
 /*///////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URNET UNIX DOMAIN SOCKET (UDS) NODE CLIENT
+  URNET EXPRESS/WS (HTTP) CLIENT MODULE
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import { PR, FILE, PROC } from '@ursys/core';
-import { UDS_INFO } from './urnet-constants.mts';
-import NET from 'node:net';
-import EP_DEFAULT from './class-urnet-endpoint.ts';
-import NS_DEFAULT, { I_NetSocket } from './class-urnet-socket.ts';
-const { NetEndpoint } = EP_DEFAULT;
-const { NetSocket } = NS_DEFAULT;
+import { ConsoleStyler } from '@ursys/core';
+import { NetEndpoint } from '../../net/class-urnet-endpoint.ts';
+import { NetSocket } from '../../net/class-urnet-socket.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const LOG = PR('UDSClient', 'TagBlue');
+const PR = ConsoleStyler('URNET', 'TagBlue');
+const LOG = console.log.bind(console);
 const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const [m_script, m_addon, ...m_args] = PROC.DecodeAddonArgs(process.argv);
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-let UDS_DETECTED = false;
-
-/// DATA INIT /////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const EP = new NetEndpoint();
-let SERVER_LINK: NET.Socket;
+let SERVER_LINK: WebSocket;
 
-/// HELPERS ///////////////////////////////////////////////////////////////////
+/// HELPER METHODS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_Sleep(ms, resolve?): Promise<void> {
   return new Promise(localResolve =>
@@ -36,38 +27,23 @@ function m_Sleep(ms, resolve?): Promise<void> {
     }, ms)
   );
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** check for UDS host sock file, meaning UDS server is running */
-function m_CheckForUDSHost() {
-  const { sock_path } = UDS_INFO;
-  UDS_DETECTED = FILE.FileExists(sock_path);
-  return UDS_DETECTED;
-}
 
-/// API METHODS ///////////////////////////////////////////////////////////////
+/// CLIENT API ////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** create a server connection to the UDS server */
+/** create a client connection to the HTTP/WS server */
 function Connect(): Promise<boolean> {
-  const fn = 'Connect';
-  const { sock_path, sock_file } = UDS_INFO;
   const promiseConnect = new Promise<boolean>(resolve => {
-    if (!m_CheckForUDSHost()) {
-      resolve(false);
-      return;
-    }
-    // got this far, the UDS pipe file exists so server is running
-    SERVER_LINK = NET.createConnection({ path: sock_path }, async () => {
-      // 1. wire-up SERVER_LINK to the endpoint via our netsocket wrapper
-      LOG(`Connected to server '${sock_file}'`);
-      const send = pkt => SERVER_LINK.write(pkt.serialize());
-      const onData = data => EP._serverDataIngest(data, client_sock);
+    let wsURI = 'ws://localhost:3029/urnet-http';
+    SERVER_LINK = new WebSocket(wsURI);
+    SERVER_LINK.addEventListener('open', async () => {
+      LOG(...PR('Connected to server'));
+      const send = pkt => SERVER_LINK.send(pkt.serialize());
+      const onData = event => EP._serverDataIngest(event.data, client_sock);
       const client_sock = new NetSocket(SERVER_LINK, { send, onData });
-      SERVER_LINK.on('data', onData);
-      SERVER_LINK.on('end', () => {
+      SERVER_LINK.addEventListener('message', onData);
+      SERVER_LINK.addEventListener('close', () => {
+        LOG(...PR('server closed connection'));
         EP.disconnectAsClient();
-      });
-      SERVER_LINK.on('close', () => {
-        LOG('server closed connection');
       });
       // 2. start client; EP handles the rest
       const auth = { identity: 'my_voice_is_my_passport', secret: 'crypty' };
@@ -81,7 +57,7 @@ function Connect(): Promise<boolean> {
       // 3. register client with server
       const info = { name: 'UDSClient', type: 'client' };
       const regdata = await EP.registerClient(info);
-      if (DBG) LOG('EP.registerClient returned', regdata);
+      if (DBG) LOG(...PR('EP.registerClient returned', regdata));
       if (regdata.error) {
         LOG.error(regdata.error);
         resolve(false);
@@ -97,9 +73,8 @@ function Connect(): Promise<boolean> {
  *  URNET message network
  */
 async function RegisterMessages() {
-  // register some message handlers
   EP.registerMessage('NET:CLIENT_TEST', data => {
-    LOG('NET:CLIENT_TEST got', data);
+    LOG(...PR('NET:CLIENT_TEST got', data));
     return { 'NET:CLIENT_TEST': 'received' };
   });
   const resdata = await EP.clientDeclare();
@@ -109,38 +84,40 @@ async function RegisterMessages() {
   let foo = setInterval(() => {
     if (count > 3) {
       clearInterval(foo);
-      LOG('netCall test sequence complete');
+      LOG(...PR('netCall test sequence complete'));
       return;
     }
     if (count % 2) {
       EP.netCall('SRV:REFLECT', { foo: 'bar' }).then(res => {
-        LOG('SRV:REFLECT returned', res);
+        LOG(...PR('SRV:REFLECT returned', res));
       });
     } else {
       EP.netCall('SRV:MYSERVER', { hello: 'world' }).then(res => {
-        LOG('SRV:MYSERVER returned', res);
+        LOG(...PR('SRV:MYSERVER returned', res));
       });
     }
     count++;
   }, 1000);
 }
-
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function Disconnect(seconds = 3) {
+function Disconnect(seconds = 15) {
   return new Promise((resolve, reject) => {
+    LOG(...PR(`waiting for ${seconds} seconds...`));
     m_Sleep(seconds * 1000, () => {
-      if (SERVER_LINK) SERVER_LINK.end();
       resolve(true);
+      SERVER_LINK.close();
+      LOG(...PR(`closing client connection...`));
     });
   });
 }
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// used by direct module import
+export default {
+  Endpoint: EP // endpoint implement calls
+};
 export {
-  // client interfaces (experimental wip, nonfunctional)
-  Connect,
-  RegisterMessages,
-  Disconnect
+  Connect, // await Connect() to start URNET client
+  RegisterMessages, // await RegisterMessages() to declare client messages
+  Disconnect // await Disconnect() to close client connection
 };
