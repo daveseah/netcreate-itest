@@ -9,11 +9,17 @@
     />
 
   STATES:
-
     * Empty -- No comments.  Empty chat bubble.
     * HasUnreadComments -- Gold comment icon with count of comments in red
     * HasReadComments -- Gray comment icon with count of comments in white
-    * IsOpen -- Corresponding comment window is open.  Comment icon outlined.
+
+    * isOpen -- Corresponding comment window is open.  Comment icon outlined.
+    * openNext -- Used to differentiate a comment window open click request
+                  from local comment button vs the same cref button from
+                  another source (e.g. table vs node/edge)
+    * x, y -- position of CommentThread window
+    * commentButtonId -- unique id for each button
+                         allows showing open/closed status for the same comment
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -40,8 +46,10 @@ class NCCommentBtn extends React.Component {
     this.state = {
       uid, // empty uid is allowed for non-logged in users
       isOpen: false,
+      openNext: false, // delays opening until after state update from click
       x: '300px',
-      y: '120px'
+      y: '120px',
+      commentButtonId: `comment-button-${props.cref}`
     };
 
     // EVENT HANDLERS
@@ -71,9 +79,10 @@ class NCCommentBtn extends React.Component {
 
   GetCommentThreadPosition() {
     const { cref } = this.props;
+    const { commentButtonId } = this.state;
 
     // figure out comment thread position based on comment button
-    const btn = document.getElementById(`comment-button-${cref}`);
+    const btn = document.getElementById(commentButtonId);
     const cmtbtnx = btn.getBoundingClientRect().left;
     let x;
     if (window.screen.width - cmtbtnx - 400 < 500) {
@@ -87,10 +96,12 @@ class NCCommentBtn extends React.Component {
 
   UpdateCommentCollection(COMMENTCOLLECTION) {
     const { cref } = this.props;
+    const { openNext } = this.state;
     const ccol = COMMENTCOLLECTION.get(cref);
-    this.setState({
-      isOpen: ccol.isOpen
-    });
+    if (openNext && ccol.isOpen) {
+      // only open if user just clicked open and state update is open
+      this.setState({ isOpen: true, openNext: false });
+    } else this.setState({ isOpen: false, openNext: false });
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
@@ -102,7 +113,12 @@ class NCCommentBtn extends React.Component {
 
     const updatedIsOpen = !this.state.isOpen;
     const position = this.GetCommentThreadPosition();
-    const updatedState = { isOpen: updatedIsOpen, x: position.x, y: position.y };
+    const updatedState = {
+      isOpen: updatedIsOpen,
+      openNext: updatedIsOpen,
+      x: position.x,
+      y: position.y
+    };
     this.setState(updatedState, () => {
       CMTMGR.UpdateCommentCollection({
         cref: this.props.cref,
@@ -113,7 +129,7 @@ class NCCommentBtn extends React.Component {
 
   render() {
     const { cref } = this.props;
-    const { uid, isOpen, x, y } = this.state;
+    const { uid, isOpen, x, y, commentButtonId } = this.state;
 
     const count = CMTMGR.GetThreadedViewObjectsCount(cref, uid); // also used to seed the collection
     const ccol = CMTMGR.GetCommentCollection(cref) || {};
@@ -126,7 +142,7 @@ class NCCommentBtn extends React.Component {
     const label = count > 0 ? count : '';
 
     return (
-      <div id={`comment-button-${cref}`}>
+      <div id={commentButtonId}>
         <div className={css} onClick={this.UIOnClick}>
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{label}</div>
