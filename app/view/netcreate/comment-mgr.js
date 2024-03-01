@@ -118,6 +118,7 @@ MOD.UpdateCommentCollection = (ccol) => {
  * @param {Object} cref collection_ref
  */
 MOD.CloseCommentCollection = (cref, uid) => {
+  m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(cref, uid);
   m_UpdateStateCommentCollections();
 }
@@ -131,10 +132,12 @@ MOD.GetComment = (cid) => {
 }
 
 MOD.GetThreadedViewObjects = (cref, uid) => {
+  if (uid === "") console.warn(`GetThreadedViewObjects uid must be defined!`)
   return COMMENT.GetThreadedViewObjects(cref, uid);
 }
 
 MOD.GetThreadedViewObjectsCount = (cref, uid) => {
+  if (uid === "") console.warn(`GetThreadedViewObjectsCount uid must be defined!`)
   return COMMENT.GetThreadedViewObjectsCount(cref, uid);
 }
 
@@ -181,8 +184,27 @@ function m_DBUpdateComment(cobj, cb) {
     comment_modifytime: cobj.comment_modifytime,
     commenter_id: cobj.commenter_id,
     commenter_text: cobj.commenter_text
-  }
+  };
   UDATA.LocalCall('DB_UPDATE', { comment }).then(data => {
+    if (typeof cb === 'function') cb(data);
+  });
+}
+
+function m_DBUpdateReadBy(cref, uid) {
+  // Get existing readby
+  const cvobjs = COMMENT.GetThreadedViewObjects(cref, uid);
+  const readbys = [];
+  cvobjs.forEach(cvobj => {
+    const commenter_ids = COMMENT.GetReadby(cvobj.comment_id) || [];
+    // Add uid if it's not already marked
+    if (!commenter_ids.includes(uid)) commenter_ids.push(uid);
+    const readby = {
+      comment_id: cvobj.comment_id,
+      commenter_ids
+    };
+    readbys.push(readby);
+  })
+  UDATA.LocalCall('DB_UPDATE', { readbys }).then(data => {
     if (typeof cb === 'function') cb(data);
   });
 }

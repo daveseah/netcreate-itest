@@ -53,7 +53,7 @@ const DBG = true;
 const USERS = new Map(); // Map<uid, name>
 const COMMENTTYPES = new Map(); // Map<typeId, commentTypeObject>
 const COMMENTS = new Map(); // Map<cid, commentObject>
-const READBY = new Map();
+const READBY = new Map(); // Map<cid, readbyObject[]>
 /// DERIVED DATA
 const ROOTS = new Map(); // Map<cref, comment_id> Root comment for a given collection_ref
 const REPLY_ROOTS = new Map(); // Map<comment_id_parent, comment_id> Root comment_id for any given comment. (thread roots)
@@ -172,6 +172,9 @@ function m_LoadCommentTypes(commentTypes) {
 function m_LoadComments(comments) {
   comments.forEach(c => COMMENTS.set(c.comment_id, c));
 }
+function m_LoadReadBy(readby) {
+  readby.forEach(r => READBY.set(r.comment_id, r.commenter_ids));
+}
 
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -186,16 +189,18 @@ function Init() {
  * @param {Object} data.users
  * @param {Object} data.commenttypes
  * @param {Object} data.comments
+ * @param {Object} data.readby
  */
 function LoadDB(data) {
-  console.error('dc-comments.LoadDB', data);
   // Load Data!
   if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
   if (data.users) m_LoadUsers(data.users);
   if (data.comments) m_LoadComments(data.comments);
+  if (data.readby) m_LoadReadBy(data.readby);
   if (DBG) console.log('USERS', USERS);
   if (DBG) console.log('COMMENTTYPES', COMMENTTYPES);
   if (DBG) console.log('COMMENTS', COMMENTS);
+  if (DBG) console.log('READBY', READBY);
   // Derive Secondary Values
   m_DeriveValues();
 }
@@ -360,6 +365,10 @@ function GetThreadedCommentData(cref) {
   return all_comments_ids.map(cid => COMMENTS.get(cid));
 }
 
+function GetReadby(cid) {
+  return READBY.get(cid);
+}
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export default {
@@ -383,5 +392,7 @@ export default {
   MarkCommentRead,
   IsMarkedRead,
   GetThreadedCommentIds,
-  GetThreadedCommentData
+  GetThreadedCommentData,
+  // READBY
+  GetReadby
 };

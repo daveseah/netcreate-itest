@@ -35,8 +35,10 @@ class NCCommentBtn extends React.Component {
   constructor(props) {
     super(props);
 
+    const uid = CMTMGR.GetCurrentUserId();
+
     this.state = {
-      uid: '', // allow '' for first render
+      uid,
       isOpen: false,
       x: '300px',
       y: '120px'
@@ -60,8 +62,6 @@ class NCCommentBtn extends React.Component {
   componentDidMount() {
     const { cref } = this.props;
 
-    const uid = CMTMGR.GetCurrentUserId();
-
     // figure out comment thread position based on comment button
     const btn = document.getElementById(`comment-button-${cref}`);
     const cmtbtnx = btn.getBoundingClientRect().left;
@@ -72,7 +72,7 @@ class NCCommentBtn extends React.Component {
       x = cmtbtnx + 35;
     }
     const y = btn.getBoundingClientRect().top;
-    this.setState({ uid, x: `${x}px`, y });
+    this.setState({ x: `${x}px`, y });
   }
 
   componentWillUnmount() {
