@@ -116,10 +116,8 @@ function CloseCommentCollection(cref, uid) {
  * @returns commentVOjb[]
  */
 function m_DeriveThreadedViewObjects(cref, uid) {
-  if (cref === undefined || uid === undefined)
-    throw new Error(
-      `m_DeriveThreadedViewObjects cref: ${cref}, uid: ${uid} must be defined `
-    );
+  if (cref === undefined)
+    throw new Error(`m_DeriveThreadedViewObjects cref: "${cref}" must be defined!`);
   const commentVObjs = [];
   const threadIds = DCCOMMENTS.GetThreadedCommentIds(cref);
   threadIds.forEach(cid => {

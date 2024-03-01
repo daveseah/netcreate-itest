@@ -38,7 +38,7 @@ class NCCommentBtn extends React.Component {
     const uid = CMTMGR.GetCurrentUserId();
 
     this.state = {
-      uid,
+      uid, // empty uid is allowed for non-logged in users
       isOpen: false,
       x: '300px',
       y: '120px'
