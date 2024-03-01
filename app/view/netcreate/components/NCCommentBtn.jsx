@@ -45,6 +45,7 @@ class NCCommentBtn extends React.Component {
     };
 
     // EVENT HANDLERS
+    this.GetCommentThreadPosition = this.GetCommentThreadPosition.bind(this);
     this.UpdateCommentCollection = this.UpdateCommentCollection.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     // UI HANDLERS
@@ -60,6 +61,15 @@ class NCCommentBtn extends React.Component {
   }
 
   componentDidMount() {
+    this.setState(this.GetCommentThreadPosition());
+  }
+
+  componentWillUnmount() {
+    UDATA.AppStateChangeOff('COMMENTCOLLECTION', this.UpdateCommentCollection);
+    UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+  }
+
+  GetCommentThreadPosition() {
     const { cref } = this.props;
 
     // figure out comment thread position based on comment button
@@ -71,13 +81,8 @@ class NCCommentBtn extends React.Component {
     } else {
       x = cmtbtnx + 35;
     }
-    const y = btn.getBoundingClientRect().top;
-    this.setState({ x: `${x}px`, y });
-  }
-
-  componentWillUnmount() {
-    UDATA.AppStateChangeOff('COMMENTCOLLECTION', this.UpdateCommentCollection);
-    UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    const y = btn.getBoundingClientRect().top + window.scrollY;
+    return { x: `${x}px`, y: `${y}px` };
   }
 
   UpdateCommentCollection(COMMENTCOLLECTION) {
@@ -96,7 +101,9 @@ class NCCommentBtn extends React.Component {
     event.stopPropagation(); // prevent Edge deselect
 
     const updatedIsOpen = !this.state.isOpen;
-    this.setState({ isOpen: updatedIsOpen }, () => {
+    const position = this.GetCommentThreadPosition();
+    const updatedState = { isOpen: updatedIsOpen, x: position.x, y: position.y };
+    this.setState(updatedState, () => {
       CMTMGR.UpdateCommentCollection({
         cref: this.props.cref,
         isOpen: updatedIsOpen
