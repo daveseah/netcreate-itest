@@ -132,12 +132,10 @@ MOD.GetComment = (cid) => {
 }
 
 MOD.GetThreadedViewObjects = (cref, uid) => {
-  if (uid === "") console.warn(`GetThreadedViewObjects uid must be defined!`)
   return COMMENT.GetThreadedViewObjects(cref, uid);
 }
 
 MOD.GetThreadedViewObjectsCount = (cref, uid) => {
-  if (uid === "") console.warn(`GetThreadedViewObjectsCount uid must be defined!`)
   return COMMENT.GetThreadedViewObjectsCount(cref, uid);
 }
 
