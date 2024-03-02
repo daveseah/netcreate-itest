@@ -1196,7 +1196,7 @@ DB.PKT_Update = function (pkt) {
       retval = { op: 'insert', comment: updatedComment };
     } else if (matches.length === 1) {
       // there was one match to, so update the comment
-      COMMENTS.findAndUpdate({ id: comment.comment_id }, c => {
+      COMMENTS.findAndUpdate({ comment_id: comment.comment_id }, c => {
         if (DBG)
           console.log(
             PR,
@@ -1224,8 +1224,6 @@ DB.PKT_Update = function (pkt) {
       LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
       retval = { op: 'error-multinodeid' };
     }
-    // Always update m_max_commentID
-    m_CalculateMaxCommentID();
     return retval;
   } // if comment
 
@@ -1263,7 +1261,7 @@ DB.PKT_Update = function (pkt) {
         retval = { op: 'insert', readby: updatedReadby };
       } else if (matches.length === 1) {
         // there was one match to, so update the comment
-        READBY.findAndUpdate({ id: readby.comment_id }, r => {
+        READBY.findAndUpdate({ comment_id: readby.comment_id }, r => {
           if (DBG)
             console.log(
               PR,

@@ -157,6 +157,12 @@ MOD.AddComment = (cobj) => {
 
 }
 
+MOD.UpdateComment = (cobj) => {
+  m_DBUpdateComment(cobj);
+  COMMENT.UpdateComment(cobj);
+  m_UpdateStateCommentVObjs();
+}
+
 MOD.RemoveComment = (cid) => {
   COMMENT.RemoveComment(cid);
   m_UpdateStateCommentVObjs();
