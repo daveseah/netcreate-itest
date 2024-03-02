@@ -6,7 +6,12 @@
 
     <NCCommentBtn
       cref={collection_ref}
+      isTable
     />
+
+  PROPS:
+    * isTable -- used to differentiate comment buttons on tables vs nodes/edges
+                 ensures that each comment button id is unique
 
   STATES:
     * Empty -- No comments.  Empty chat bubble.
@@ -49,7 +54,7 @@ class NCCommentBtn extends React.Component {
       openNext: false, // delays opening until after state update from click
       x: '300px',
       y: '120px',
-      commentButtonId: `comment-button-${props.cref}`
+      commentButtonId: `comment-button-${props.cref}-${props.isTable}`
     };
 
     // EVENT HANDLERS
