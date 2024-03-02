@@ -274,14 +274,6 @@ function AddComment(data) {
   return comment;
 }
 
-function RemoveComment(cid) {
-  // TODO Remove parent references
-  // TODO Remove previous references
-  COMMENTS.delete(cid);
-  m_DeriveValues();
-  // TODO: Add DB Call round trip
-}
-
 /**
  *
  * @param {Object} cobj commentObject
@@ -292,6 +284,13 @@ function UpdateComment(cobj) {
   cobj.comment_modifytime = new Date();
   COMMENTS.set(cobj.comment_id, cobj);
   console.log('...modify time', cobj.comment_modifytime);
+
+function RemoveComment(cid) {
+  // TODO Remove parent references
+  // TODO Remove previous references
+  COMMENTS.delete(cid);
+  m_DeriveValues();
+  // TODO: Add DB Call round trip
 }
 
 /**

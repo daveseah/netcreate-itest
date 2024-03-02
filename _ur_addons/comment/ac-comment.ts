@@ -242,10 +242,6 @@ function AddComment(data) {
   return comment;
 }
 
-function RemoveComment(cid) {
-  DCCOMMENTS.RemoveComment(cid);
-}
-
 /**
  *
  * @param {Object} cobj commentObject
@@ -264,6 +260,10 @@ function UpdateComment(cobj) {
     c.comment_id === cvobj.comment_id ? cvobj : c
   );
   COMMENTVOBJS.set(cobj.collection_ref, commentVObjs);
+}
+
+function RemoveComment(cid) {
+  DCCOMMENTS.RemoveComment(cid);
 }
 
 /// PASS-THROUGH METHODS //////////////////////////////////////////////////////
