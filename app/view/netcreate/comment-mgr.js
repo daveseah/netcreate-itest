@@ -24,24 +24,6 @@ let UDATA = UNISYS.NewDataLink(MOD);
 
 /// UNISYS LIFECYCLE HOOKS ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** CONFIGURE fires after LOADASSETS, so this is a good place to put TEMPLATE
- *  validation.
- */
-MOD.Hook('CONFIGURE', () => {
-  if (DBG) console.log('comment-mgr CONFIGURE');
-}); // end CONFIGURE HOOK
-
-/// APP_READY MESSAGE REGISTRATION ////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** The APP_READY hook is fired after all initialization phases have finished
- *  and may also fire at other times with a valid info packet
- */
-MOD.Hook('APP_READY', function (info) {
-  if (DBG) console.log('comment-mgr APP_READY');
-});
-
-/// UNISYS HANDLERS ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** lifecycle INITIALIZE handler
  */
 MOD.Hook('INITIALIZE', () => {
@@ -58,7 +40,23 @@ MOD.Hook('INITIALIZE', () => {
   UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => {
     COMMENT.LoadDB(data);
   });
-});
+}); // end INITIALIZE Hook
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** CONFIGURE fires after LOADASSETS, so this is a good place to put TEMPLATE
+ *  validation.
+ */
+MOD.Hook('CONFIGURE', () => {
+  if (DBG) console.log('comment-mgr CONFIGURE');
+}); // end CONFIGURE Hook
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** The APP_READY hook is fired after all initialization phases have finished
+ *  and may also fire at other times with a valid info packet
+ */
+MOD.Hook('APP_READY', function (info) {
+  if (DBG) console.log('comment-mgr APP_READY');
+}); // end APP_READY Hook
+
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,7 +96,6 @@ MOD.GetCurrentUserId = () => {
 MOD.GetUserName = (uid) => {
   return COMMENT.GetUserName(uid);
 }
-
 
 MOD.GetCommentCollection = (cref) => {
   return COMMENT.GetCommentCollection(cref);
