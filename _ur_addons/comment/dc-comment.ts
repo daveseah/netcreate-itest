@@ -283,7 +283,7 @@ function UpdateComment(cobj) {
   // Fake modify date until we get DB roundtrip
   cobj.comment_modifytime = new Date();
   COMMENTS.set(cobj.comment_id, cobj);
-  console.log('...modify time', cobj.comment_modifytime);
+}
 
 function RemoveComment(cid) {
   // TODO Remove parent references
@@ -370,7 +370,7 @@ function GetReadby(cid) {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export default {
+export {
   Init,
   // DB
   LoadDB,
