@@ -1230,6 +1230,7 @@ DB.PKT_Update = function (pkt) {
   // PROCESS READBY INSERT/UPDATE
   // NOTE this is a little different than the others because `readbys` is an array of readby objects.
   if (readbys) {
+    const retvals = [];
     readbys.forEach(readby => {
       m_CleanObjID(`${pkt.Info()} readby.id`, readby);
       let matches = READBY.find({ comment_id: readby.comment_id });
@@ -1289,8 +1290,10 @@ DB.PKT_Update = function (pkt) {
         LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, readby.comment_id, 'duplicate comment id');
         retval = { op: 'error-multinodeid' };
       }
-      return retval;
+      // NOTE returns an array of retvals for multiple replies
+      retvals.push(retval);
     });
+    return retvals;
   } // if readby
 
   // return update value
