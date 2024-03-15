@@ -5,8 +5,20 @@
   USE:
 
     <NCComentThread
+      uiref
       cref={collection_ref}
+      uid
+      x
+      y
     />
+
+  PROPS:
+    * uiref   -- reference to the comment button id, usu commentButtonId
+    * cref    -- collection reference (usu node ide, edge id)
+    * uid     -- user id of active user viewing or changing comment
+    * x,y     -- position of open comment thread used to set proximity to
+                 comment button
+
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -78,12 +90,12 @@ class NCCommentThread extends React.Component {
   }
 
   UIOnClose(event) {
-    const { cref, uid } = this.props;
-    CMTMGR.CloseCommentCollection(cref, uid);
+    const { uiref, cref, uid } = this.props;
+    CMTMGR.CloseCommentCollection(uiref, cref, uid);
   }
 
   render() {
-    const { cref, uid, x, y } = this.props;
+    const { uiref, cref, uid, x, y } = this.props;
 
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;

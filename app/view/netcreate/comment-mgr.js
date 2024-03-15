@@ -37,9 +37,12 @@ MOD.Hook('INITIALIZE', () => {
    *  @param {Object} data.commenttypes
    *  @param {Object} data.comments
    */
-  UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => {
-    COMMENT.LoadDB(data);
-  });
+  UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => COMMENT.LoadDB(data));
+  /// STATE UPDATES and Message Handlers
+  UDATA.OnAppStateChange('COMMENTCOLLECTION', COMMENTCOLLECTION => console.log('COMMENTCOLLECTION update', COMMENTCOLLECTION));
+  UDATA.OnAppStateChange('COMMENTVOBJS', COMMENTVOBJS => console.log('COMMENTVOBJS update', COMMENTVOBJS));
+  UDATA.HandleMessage('COMMENT_UPDATE', MOD.HandleCOMMENT_UPDATE);
+  UDATA.HandleMessage('READBY_UPDATE', MOD.HandleREADBY_UPDATE);
 }); // end INITIALIZE Hook
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** CONFIGURE fires after LOADASSETS, so this is a good place to put TEMPLATE
@@ -69,12 +72,12 @@ MOD.COMMENTICON = (
   </svg>
 );
 
-function m_UpdateStateCommentCollections() {
+function m_SetAppStateCommentCollections() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
   UDATA.SetAppState('COMMENTCOLLECTION', COMMENTCOLLECTION);
 }
 
-function m_UpdateStateCommentVObjs() {
+function m_SetAppStateCommentVObjs() {
   const COMMENTVOBJS = COMMENT.GetCOMMENTVOBJS();
   UDATA.SetAppState('COMMENTVOBJS', COMMENTVOBJS);
 }
@@ -82,64 +85,87 @@ function m_UpdateStateCommentVObjs() {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Collection Reference Generators
 MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// User Id
 MOD.GetCurrentUserId = () => {
   const session = UDATA.AppState('SESSION');
   const uid = session.token;
   return uid;
 }
-
 MOD.GetUserName = (uid) => {
   return COMMENT.GetUserName(uid);
 }
 
-MOD.GetCommentCollection = (cref) => {
-  return COMMENT.GetCommentCollection(cref);
-}
-
-/**
- *
- * @param {Object} ccol CommentCollection
- */
-MOD.UpdateCommentCollection = (ccol) => {
-  COMMENT.UpdateCommentCollection(ccol);
-  m_UpdateStateCommentCollections();
-}
-
-/**
- * Marks a comment as read, and closes the component.
- * @param {Object} cref collection_ref
- */
-MOD.CloseCommentCollection = (cref, uid) => {
-  m_DBUpdateReadBy(cref, uid);
-  COMMENT.CloseCommentCollection(cref, uid);
-  m_UpdateStateCommentCollections();
-}
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comment Type
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
 }
 
-MOD.GetComment = (cid) => {
-  return COMMENT.GetComment(cid);
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comment Collections
+MOD.GetCommentCollection = (uiref) => {
+  return COMMENT.GetCommentCollection(uiref);
+}
+/**
+ * Marks a comment as read, and closes the component.
+ * @param {Object} uiref comment button id
+ * @param {Object} cref collection_ref
+ * @param {Object} uid user id
+ */
+MOD.CloseCommentCollection = (uiref, cref, uid) => {
+  m_DBUpdateReadBy(cref, uid);
+  COMMENT.CloseCommentCollection(uiref, cref, uid);
+  m_SetAppStateCommentCollections();
 }
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comment UI State
+MOD.GetCommentUIState = uiref => {
+  return COMMENT.GetCommentUIState(uiref);
+}
+/**
+ *
+ * @param {Object} data
+ * @param {Object} data.uiref
+ * @param {Object} data.cref
+ * @param {Object} data.isOpen
+ */
+MOD.UpdateCommentUIState = data => {
+  COMMENT.UpdateCommentUIState(data);
+  m_SetAppStateCommentCollections();
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Open Comments
+MOD.GetOpenComments = cref => COMMENT.GetOpenComments(cref);
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Threaded View Objects
 MOD.GetThreadedViewObjects = (cref, uid) => {
   return COMMENT.GetThreadedViewObjects(cref, uid);
 }
-
 MOD.GetThreadedViewObjectsCount = (cref, uid) => {
   return COMMENT.GetThreadedViewObjectsCount(cref, uid);
 }
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comment View Objects
 MOD.GetCommentVObj = (cref, cid) => {
   return COMMENT.GetCommentVObj(cref, cid);
 }
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comments
+MOD.GetComment = (cid) => {
+  return COMMENT.GetComment(cid);
+}
 /**
  *
  * @param {Object} cobj Comment Object
@@ -149,31 +175,60 @@ MOD.AddComment = (cobj) => {
   DATASTORE.PromiseNewCommentID().then(newCommentID => {
     cobj.comment_id = newCommentID;
     COMMENT.AddComment(cobj); // creates a comment vobject
-    m_UpdateStateCommentVObjs();
+    m_SetAppStateCommentVObjs();
   });
 
 }
-
 MOD.UpdateComment = (cobj) => {
   m_DBUpdateComment(cobj);
   COMMENT.UpdateComment(cobj);
-  m_UpdateStateCommentVObjs();
+  m_SetAppStateCommentVObjs();
 }
-
 MOD.RemoveComment = (cid) => {
   COMMENT.RemoveComment(cid);
-  m_UpdateStateCommentVObjs();
+  m_SetAppStateCommentVObjs();
 }
 
-MOD.UpdateComment = (cobj) => {
-  m_DBUpdateComment(cobj);
+/**
+ * Respond to network COMMENT_UPDATE Messages
+ * After the server/db saves the new/updated comment, COMMENT_UPDATE is called.
+ * This a network call that is used to update local state for other browsers
+ * (does not trigger another DB update)
+ * @param {*} data
+ */
+MOD.HandleCOMMENT_UPDATE = (data) => {
+  if (DBG) console.log('COMMENT_UPDATE======================');
+  const { comment } = data;
+  const cobj = {
+    collection_ref: comment.collection_ref,
+    comment_id: comment.comment_id,
+    comment_id_parent: comment.comment_id_parent,
+    comment_id_previous: comment.comment_id_previous,
+    comment_type: comment.comment_type,
+    comment_createtime: comment.comment_createtime,
+    comment_modifytime: comment.comment_modifytime,
+    commenter_id: comment.commenter_id,
+    commenter_text: comment.commenter_text
+  };
   COMMENT.UpdateComment(cobj);
-  m_UpdateStateCommentVObjs();
+  // and broadcast a state change
+  m_SetAppStateCommentCollections();
+  m_SetAppStateCommentVObjs();
+}
+MOD.HandleREADBY_UPDATE = data => {
+  if (DBG) console.log('READBY_UPDATE======================');
+  // Not used currently
+  // Use this if we need to update READBY status from another user.
+  // Since "read" status is only displayed for the current user,
+  // we don't need to worry about "read" status updates from other users
+  // across the network.
+  //
+  // The exception to this would be if we wanted to support a single user
+  // logged in to multiple browsers.
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// DB Calls
-
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,
@@ -190,7 +245,6 @@ function m_DBUpdateComment(cobj, cb) {
     if (typeof cb === 'function') cb(data);
   });
 }
-
 function m_DBUpdateReadBy(cref, uid) {
   // Get existing readby
   const cvobjs = COMMENT.GetThreadedViewObjects(cref, uid);

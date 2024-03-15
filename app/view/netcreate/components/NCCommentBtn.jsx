@@ -10,6 +10,7 @@
     />
 
   PROPS:
+    * cref    -- collection reference (usu node ide, edge id)
     * isTable -- used to differentiate comment buttons on tables vs nodes/edges
                  ensures that each comment button id is unique
 
@@ -19,9 +20,6 @@
     * HasReadComments -- Gray comment icon with count of comments in white
 
     * isOpen -- Corresponding comment window is open.  Comment icon outlined.
-    * openNext -- Used to differentiate a comment window open click request
-                  from local comment button vs the same cref button from
-                  another source (e.g. table vs node/edge)
     * x, y -- position of CommentThread window
     * commentButtonId -- unique id for each button
                          allows showing open/closed status for the same comment
@@ -51,7 +49,6 @@ class NCCommentBtn extends React.Component {
     this.state = {
       uid, // empty uid is allowed for non-logged in users
       isOpen: false,
-      openNext: false, // delays opening until after state update from click
       x: '300px',
       y: '120px',
       commentButtonId: `comment-button-${props.cref}-${props.isTable}`
@@ -99,14 +96,21 @@ class NCCommentBtn extends React.Component {
     return { x: `${x}px`, y: `${y}px` };
   }
 
+  //** Comment Button Update */
   UpdateCommentCollection(COMMENTCOLLECTION) {
     const { cref } = this.props;
-    const { openNext } = this.state;
-    const ccol = COMMENTCOLLECTION.get(cref);
-    if (openNext && ccol.isOpen) {
-      // only open if user just clicked open and state update is open
-      this.setState({ isOpen: true, openNext: false });
-    } else this.setState({ isOpen: false, openNext: false });
+    const { commentButtonId } = this.state;
+
+    const uistate = CMTMGR.GetCommentUIState(commentButtonId);
+    const openuiref = CMTMGR.GetOpenComments(cref);
+    if (uistate) {
+      if (openuiref !== commentButtonId) {
+        // close this comment if someone else is trying to open the same comment
+        this.setState({ isOpen: false });
+      } else {
+        this.setState({ isOpen: uistate.isOpen });
+      }
+    }
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
@@ -115,18 +119,20 @@ class NCCommentBtn extends React.Component {
 
   UIOnClick(event) {
     event.stopPropagation(); // prevent Edge deselect
+    const { cref } = this.props;
+    const { commentButtonId } = this.state;
 
     const updatedIsOpen = !this.state.isOpen;
     const position = this.GetCommentThreadPosition();
     const updatedState = {
       isOpen: updatedIsOpen,
-      openNext: updatedIsOpen,
       x: position.x,
       y: position.y
     };
     this.setState(updatedState, () => {
-      CMTMGR.UpdateCommentCollection({
-        cref: this.props.cref,
+      CMTMGR.UpdateCommentUIState({
+        uiref: commentButtonId,
+        cref,
         isOpen: updatedIsOpen
       });
     });
@@ -152,7 +158,15 @@ class NCCommentBtn extends React.Component {
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{label}</div>
         </div>
-        {isOpen && <NCCommentThread cref={cref} uid={uid} x={x} y={y} />}
+        {isOpen && (
+          <NCCommentThread
+            uiref={commentButtonId}
+            cref={cref}
+            uid={uid}
+            x={x}
+            y={y}
+          />
+        )}
       </div>
     );
   }

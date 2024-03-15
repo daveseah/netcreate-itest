@@ -279,10 +279,12 @@ function AddComment(data) {
  * @param {Object} cobj commentObject
  */
 function UpdateComment(cobj) {
-  // TODO: Add DB Call round trip
+  // TODO: Add DB Call round trip?
+
   // Fake modify date until we get DB roundtrip
   cobj.comment_modifytime = new Date();
   COMMENTS.set(cobj.comment_id, cobj);
+  m_DeriveValues();
 }
 
 function RemoveComment(cid) {
@@ -370,7 +372,7 @@ function GetReadby(cid) {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-export {
+export default {
   Init,
   // DB
   LoadDB,

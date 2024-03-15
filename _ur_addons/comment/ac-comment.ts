@@ -6,7 +6,7 @@
   
   DATA
   
-    COMMENTCOLLECTION
+    COMMENTCOLLECTION ccol
     -----------------
     A COMENTCOLLECTION is the main data source for the CommentBtn.
     It primarily shows summary information for the three states of the button:
@@ -16,13 +16,32 @@
     It passes on the collection_ref to the CommentThread components.
     
       interface CommentCollection {
-        collection_ref: any;
+        cref: any; // collection_ref
         hasUnreadComments: boolean;
         hasReadComments: boolean;
-        isOpen: boolean;
       }
+
+      
+    COMMENTUISTATE cui
+    --------------
+    A COMMENTUISTATE object can be opened and closed from multiple UI elements.
+    COMMENTUI keeps track of the `isOpen` status based on the UI element.
+    e.g. a comment button in a node can open a comment but the same comment can
+    be opeend from the node table view.
     
-    COMMENTVOBJS
+      COMMENTUISTATE Map<uiref, {cref, isOpen}>
+    
+    
+    OPENCOMMENTS
+    ------------
+    OPENCOMMENTS keeps track of currently open comment buttons.  This is 
+    used prevent two comment buttons from opening the same comment collection,
+    e.g. if the user opens a node and a node table comment at the same time.
+    
+      OPENCOMMENTS Map<cref, uiref>
+
+      
+    COMMENTVOBJS cvobj
     ------------
     COMMENTVOBJS are a flat array of data sources for CommentThread ojects.
     It handles the UI view state of the each comment in the thread.
@@ -53,6 +72,8 @@ import DCCOMMENTS from './dc-comment.ts';
 const DBG = true;
 
 const COMMENTCOLLECTION = new Map();
+const COMMENTUISTATE = new Map();
+const OPENCOMMENTS = new Map();
 const COMMENTVOBJS = new Map();
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
@@ -90,21 +111,44 @@ function GetCommentCollection(cref) {
   return collection;
 }
 
-function UpdateCommentCollection(updatedCCol) {
-  const ccol = COMMENTCOLLECTION.get(updatedCCol.cref);
-  ccol.isOpen = updatedCCol.isOpen;
-  COMMENTCOLLECTION.set(ccol.cref, ccol);
+/**
+ *
+ * @param {Object} data
+ * @param {Object} data.uiref
+ * @param {Object} data.cref
+ * @param {Object} data.isOpen
+ */
+function UpdateCommentUIState(data) {
+  if (!data.uiref) throw new Error('UpdateCommentUIState "uiref" must be defined!');
+  COMMENTUISTATE.set(data.uiref, { cref: data.cref, isOpen: data.isOpen });
+  OPENCOMMENTS.set(data.cref, data.uiref);
 }
 
-function CloseCommentCollection(cref, uid) {
-  const ccol = COMMENTCOLLECTION.get(cref);
-  ccol.isOpen = false;
-  COMMENTCOLLECTION.set(ccol.cref, ccol);
+function CloseCommentCollection(uiref, cref, uid) {
+  // Set isOpen status
+  COMMENTUISTATE.set(uiref, { cref, isOpen: false });
+  OPENCOMMENTS.set(cref, undefined);
+
   // Mark Read
   const commentVObjs = COMMENTVOBJS.get(cref);
   commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+
   // Update Derived Lists to update Marked status
   m_DeriveThreadedViewObjects(cref, uid);
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// COMMENT UI STATE
+
+function GetCommentUIState(uiref) {
+  return COMMENTUISTATE.get(uiref);
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// OPENCOMMENTS
+
+function GetOpenComments(cref) {
+  return OPENCOMMENTS.get(cref);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -158,17 +202,14 @@ function m_DeriveThreadedViewObjects(cref, uid) {
   COMMENTVOBJS.set(cref, commentReplyVObj.reverse());
 
   // Derive COMMENTCOLLECTION
+  const ccol = COMMENTCOLLECTION.get(cref) || { collection_ref: cref };
   const hasReadComments = commentReplyVObj.length > 0;
   let hasUnreadComments = false;
   commentReplyVObj.forEach(c => {
     if (!c.isMarkedRead) hasUnreadComments = true;
   });
-  const ccol = {
-    collection_ref: cref,
-    hasUnreadComments,
-    hasReadComments,
-    isOpen: false
-  };
+  ccol.hasUnreadComments = hasUnreadComments;
+  ccol.hasReadComments = hasReadComments;
   COMMENTCOLLECTION.set(cref, ccol);
   return commentReplyVObj;
 }
@@ -243,17 +284,23 @@ function AddComment(data) {
 }
 
 /**
- *
+ * Add changed comment to DCCOMMENTS and generate derived objects
  * @param {Object} cobj commentObject
  */
 function UpdateComment(cobj) {
   if (cobj.collection_ref === undefined)
     throw new Error('UpdateComment cref is undefined', cobj);
+
   DCCOMMENTS.UpdateComment(cobj);
 
+  m_DeriveThreadedViewObjects(cobj.collection_ref, cobj.commenter_id);
   // Disable editable and update modify time
   let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, cobj.commenter_id);
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
+  if (cvobj === undefined)
+    throw new Error(
+      `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
+    );
   cvobj.isBeingEdited = false;
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
   commentVObjs = commentVObjs.map(c =>
@@ -291,8 +338,12 @@ export {
   // Comment Collection
   GetCommentCollections,
   GetCommentCollection,
-  UpdateCommentCollection,
+  UpdateCommentUIState,
   CloseCommentCollection,
+  // Comment UI State
+  GetCommentUIState,
+  // Open Comments
+  GetOpenComments,
   // Comment Thread View Object
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
