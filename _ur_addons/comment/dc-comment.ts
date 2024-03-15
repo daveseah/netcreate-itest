@@ -267,8 +267,8 @@ function AddComment(data) {
     commenter_id: data.commenter_id,
     commenter_text: []
   };
-  COMMENTS.set(comment.comment_id, comment);
 
+  COMMENTS.set(comment.comment_id, comment);
   m_DeriveValues();
 
   return comment;
