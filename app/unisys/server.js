@@ -139,6 +139,8 @@ UNISYS.RegisterHandlers = () => {
     if (data.edge) UNET.NetSend('EDGE_UPDATE', data);
     if (data.nodeID !== undefined) UNET.NetSend('NODE_DELETE', data);
     if (data.edgeID !== undefined) UNET.NetSend('EDGE_DELETE', data);
+    if (data.comment) UNET.NetSend('COMMENT_UPDATE', data);
+    if (data.readbys) UNET.NetSend('READBY_UPDATE', data);
     // return SRV_DBUPDATE value (required)
     return { OK: true, info: 'SRC_DBUPDATE' };
   });

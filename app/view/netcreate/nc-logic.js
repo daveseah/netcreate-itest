@@ -811,6 +811,8 @@ MOD.Hook('APP_READY', function (info) {
       `NODE_DELETE`,
       'EDGE_UPDATE',
       'EDGE_DELETE',
+      'COMMENT_UPDATE',
+      'READBY_UPDATE',
       'EDIT_PERMISSIONS_UPDATE',
       'NET_TEMPLATE_UPDATE'
     ]).then(d => {
