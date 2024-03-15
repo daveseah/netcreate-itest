@@ -43,6 +43,15 @@
              r2    "r3 Third Comment"                    r4
              r4    "r4 Fourth Comment"                   
   
+    DERIVED DATA
+    
+    dc-comments keeps track of various indices for constructing threads:
+    * ROOTS -- Root comment for a collection
+    * REPLY_ROOTS -- Root for a reply thread
+    * NEXT -- Points to the next comment in a thread
+    These need to be updated whenever a comment is added, updated, or deleted
+    with a call to `deriveValues()`
+    
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
