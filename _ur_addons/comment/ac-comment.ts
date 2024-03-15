@@ -41,6 +41,16 @@
       OPENCOMMENTS Map<cref, uiref>
 
       
+    EDITABLECOMMENTS
+    ----------------
+    EDITABLECOMMENTS keeps track of which comment is currently open for 
+    editing.  This is used to prevent close requests coming from NCCOmmentThreads
+    from closing a NCComment that is in the middle of being edited.
+    Tracked locally only.
+    
+      EDITABLECOMMENTS Map<cid, cid>
+
+      
     COMMENTVOBJS cvobj
     ------------
     COMMENTVOBJS are a flat array of data sources for CommentThread ojects.
@@ -74,6 +84,7 @@ const DBG = true;
 const COMMENTCOLLECTION = new Map();
 const COMMENTUISTATE = new Map();
 const OPENCOMMENTS = new Map();
+const EDITABLECOMMENTS = new Map();
 const COMMENTVOBJS = new Map();
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
@@ -149,6 +160,20 @@ function GetCommentUIState(uiref) {
 
 function GetOpenComments(cref) {
   return OPENCOMMENTS.get(cref);
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// EDITABLECOMMENTS
+
+function m_RegisterEditableComment(cid) {
+  EDITABLECOMMENTS.set(cid, cid);
+}
+function m_DeRegisterEditableComment(cid) {
+  EDITABLECOMMENTS.delete(cid);
+}
+
+function GetEditableComment(cid) {
+  return EDITABLECOMMENTS.get(cid);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -270,6 +295,8 @@ function AddComment(data) {
       COMMENTVOBJS
     );
   cvobj.isBeingEdited = true;
+  m_RegisterEditableComment(comment.comment_id);
+
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
   );
@@ -302,6 +329,7 @@ function UpdateComment(cobj) {
       `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
     );
   cvobj.isBeingEdited = false;
+  m_DeRegisterEditableComment(cobj.comment_id);
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
@@ -344,6 +372,8 @@ export {
   GetCommentUIState,
   // Open Comments
   GetOpenComments,
+  // Editable Comments
+  GetEditableComment,
   // Comment Thread View Object
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,

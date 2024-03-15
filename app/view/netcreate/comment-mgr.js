@@ -115,11 +115,18 @@ MOD.GetCommentCollection = (uiref) => {
 }
 /**
  * Marks a comment as read, and closes the component.
+ * Called by NCCommentBtn when clicking "Close"
  * @param {Object} uiref comment button id
  * @param {Object} cref collection_ref
  * @param {Object} uid user id
  */
 MOD.CloseCommentCollection = (uiref, cref, uid) => {
+  if (!MOD.OKtoClose(cref)) {
+    // Comment is still being edited, prevent close
+    alert('This comment is still being edited!  Please Save or Cancel before closing the comment.')
+    return;
+  }
+  // OK to close
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
@@ -145,6 +152,18 @@ MOD.UpdateCommentUIState = data => {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Open Comments
 MOD.GetOpenComments = cref => COMMENT.GetOpenComments(cref);
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Editable Comments (comments being ddited)
+
+MOD.OKtoClose = cref => {
+  const cvobjs = MOD.GetThreadedViewObjects(cref)
+  let isBeingEdited = false;
+  cvobjs.forEach(cvobj => {
+    if (COMMENT.GetEditableComment(cvobj.comment_id)) isBeingEdited = true
+  });
+  return !isBeingEdited;
+}
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Threaded View Objects
