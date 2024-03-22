@@ -14,6 +14,7 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
+const Draggable = require('react-draggable');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -44,14 +45,16 @@ class NCDialog extends React.Component {
     return (
       <div className="dialog">
         <div className="screen"></div>
-        <div className="dialogwindow">
-          <div className="dialogmessage">{message}</div>
-          <div className="dialogcontrolbar">
-            {CancelBtn}
-            {`\u00a0`}
-            {OKBtn}
+        <Draggable>
+          <div className="dialogwindow">
+            <div className="dialogmessage">{message}</div>
+            <div className="dialogcontrolbar">
+              {CancelBtn}
+              {`\u00a0`}
+              {OKBtn}
+            </div>
           </div>
-        </div>
+        </Draggable>
       </div>
     );
   }
