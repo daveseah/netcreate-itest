@@ -9,14 +9,14 @@ BOLD="\e[1m"    # normal bold
 
 # Check if NVM_DIR is defined
 if [ -z "$NVM_DIR" ]; then
-  echo ""
-  echo "vsenv: ${ALRT}NVM does not appear to be installed${NRML}"
-  echo "       Does your ${INFO}~/.zshrc${NRML} have ${INFO}export NVM_DIR${NRML} lines?"
-  echo ""
-  echo "       If you haven't installed nvm yet, please follow the instructions"
-  echo "       on the NetCreate wiki."
-  echo "       If you are using 'bash' as your default shell, you can copy "
-  echo "       these lines to your .zshrc file so nvm will also work in zsh."
+  echo -e ""
+  echo -e "vsenv: ${ALRT}NVM does not appear to be installed${NRML}"
+  echo -e "       Does your ${INFO}~/.zshrc${NRML} have ${INFO}export NVM_DIR${NRML} lines?"
+  echo -e ""
+  echo -e "       If you haven't installed nvm yet, please follow the instructions"
+  echo -e "       on the NetCreate wiki."
+  echo -e "       If you are using 'bash' as your default shell, you can copy "
+  echo -e "       these lines to your .zshrc file so nvm will also work in zsh."
   return
 fi
 
@@ -33,39 +33,39 @@ if [ -n "$NVM_DIR" ] && [ -s "./.nvmrc" ] && [ -d "./.vscode" ]; then
   if [ -n "$str_alias" ]; then
     str_out="$str_out and alias"
   fi
-  echo ""
-  echo "vsenv: VISUAL STUDIO CODE INTEGRATED TERMINAL DETECTED"
+  echo -e ""
+  echo -e "vsenv: VISUAL STUDIO CODE INTEGRATED TERMINAL DETECTED"
   echo   "       ${str_out} detected setting: node ${INFO}$NODE_VERSION${NRML}"
   ARCH=$(uname -m)
-  echo "       architecture is ${INFO}$ARCH${NRML} (this can be forced in .code-workspace)"
+  echo -e "       architecture is ${INFO}$ARCH${NRML} (this can be forced in .code-workspace)"
 
   # check if node binary is in the path
   if ! command -v node &> /dev/null; then
-    echo ""
-    echo "vsenv: ${ALRT}The node binary can not be found! That is weird!${NRML}"
-    echo "       This is a possible incompatibility with your shell environment."
-    echo "       Contact your friendly neighborhood developer for help."
-    echo "       your shell:   $SHELL"
-    echo "       your path:    $PATH"
-    echo "       your nvm dir: $NVM_DIR"
+    echo -e ""
+    echo -e "vsenv: ${ALRT}The node binary can not be found! That is weird!${NRML}"
+    echo -e "       This is a possible incompatibility with your shell environment."
+    echo -e "       Contact your friendly neighborhood developer for help."
+    echo -e "       your shell:   $SHELL"
+    echo -e "       your path:    $PATH"
+    echo -e "       your nvm dir: $NVM_DIR"
     return
   else
-    echo "vsenv: node binary found at ${INFO}$(command -v node)${NRML}"
+    echo -e "vsenv: node binary found at ${INFO}$(command -v node)${NRML}"
   fi
 
   CURRENT_VERSION=$(node --version)
   if [ "$CURRENT_VERSION" != "$NODE_VERSION" ] && [ -n "$str_alias" ]; then
-    echo "vsenv: ${BOLD}kill/restart VSCODE for nvm alias default to take effect!${NRML}"
-    echo "       this shell is using version ${INFO}$CURRENT_VERSION${NRML} until you do"
-    echo "       alternatively, type ${ALRT}nvm use $NODE_VERSION${NRML} to use it now"
+    echo -e "vsenv: ${BOLD}kill/restart VSCODE for nvm alias default to take effect!${NRML}"
+    echo -e "       this shell is using version ${INFO}$CURRENT_VERSION${NRML} until you do"
+    echo -e "       alternatively, type ${ALRT}nvm use $NODE_VERSION${NRML} to use it now"
   fi
 fi
 
 # for bash and zsh shells: if ./ is not in PATH, add it to end of PATH
 if [[ $PATH != *":./"* ]]; then
   export PATH=$PATH:./
-  echo ""
-  echo "vsenv: adding './' to end of PATH for easier CLI execution in _ur directory!"
-  echo "       (applies only to this shell)"
+  echo -e ""
+  echo -e "vsenv: adding './' to end of PATH for easier CLI execution in _ur directory!"
+  echo -e "       (applies only to this shell)"
 fi
 
