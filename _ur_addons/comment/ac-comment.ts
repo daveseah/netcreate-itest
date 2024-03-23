@@ -87,11 +87,11 @@ import DCCOMMENTS from './dc-comment.ts';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 
-const COMMENTCOLLECTION = new Map();
-const COMMENTUISTATE = new Map();
-const OPENCOMMENTS = new Map();
-const EDITABLECOMMENTS = new Map();
-const COMMENTVOBJS = new Map();
+const COMMENTCOLLECTION = new Map(); // Map<cref, ccol>
+const COMMENTUISTATE = new Map(); // Map<uiref, {cref, isOpen}>
+const OPENCOMMENTS = new Map(); // Map<cref, uiref>
+const COMMENTS_BEING_EDITED = new Map(); // Map<cid, cid>
+const COMMENTVOBJS = new Map(); // Map<cref, cvobj[]>
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -171,15 +171,15 @@ function GetOpenComments(cref) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// EDITABLECOMMENTS
 
-function m_RegisterEditableComment(cid) {
-  EDITABLECOMMENTS.set(cid, cid);
+function m_RegisterCommentBeingEdited(cid) {
+  COMMENTS_BEING_EDITED.set(cid, cid);
 }
-function m_DeRegisterEditableComment(cid) {
-  EDITABLECOMMENTS.delete(cid);
+function m_DeRegisterCommentBeingEdited(cid) {
+  COMMENTS_BEING_EDITED.delete(cid);
 }
 
-function GetEditableComment(cid) {
-  return EDITABLECOMMENTS.get(cid);
+function GetCommentBeingEdited(cid) {
+  return COMMENTS_BEING_EDITED.get(cid);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -259,9 +259,28 @@ function GetThreadedViewObjects(cref, uid) {
 /**
  *  @param {string} cref
  *  @param {string} uid -- User ID is needed to determine read/unread status
+ * @returns {number} Returns the number of comments in a collection
  */
 function GetThreadedViewObjectsCount(cref, uid) {
   return GetThreadedViewObjects(cref, uid).length;
+}
+
+/**
+ * Handle rederive threads after removing a comment
+ * After a comment is deleted, we need to re-construct the threads
+ * because some comments are removed, and others re-linked
+ * otherwise outdated threads might be re-rendered.
+ */
+function HandleRederiveThreads() {
+  COMMENTVOBJS.forEach((cvobjs, cref, self) => {
+    const updated_cvobjs = [];
+    const cids = DCCOMMENTS.GetThreadedCommentIds(cref);
+    // reconstruct cvobjs using thread
+    cvobjs.forEach(cvobj => {
+      if (cids.includes(cvobj.comment_id)) updated_cvobjs.push(cvobj);
+    });
+    self.set(cref, updated_cvobjs);
+  });
 }
 
 function GetCOMMENTVOBJS() {
@@ -270,8 +289,8 @@ function GetCOMMENTVOBJS() {
 
 function GetCommentVObj(cref, cid) {
   const thread = COMMENTVOBJS.get(cref);
-  const comment = thread.find(c => c.comment_id === cid);
-  return comment;
+  const cvobj = thread.find(c => c.comment_id === cid);
+  return cvobj;
 }
 
 /**
@@ -281,7 +300,7 @@ function GetCommentVObj(cref, cid) {
  * @param {Object} data.comment_id_parent
  * @param {Object} data.comment_id_previous
  * @param {Object} data.commenter_id
- * @returns commentObject
+ * @returns {Object} commentObject
  */
 function AddComment(data) {
   if (data.cref === undefined)
@@ -301,7 +320,7 @@ function AddComment(data) {
       COMMENTVOBJS
     );
   cvobj.isBeingEdited = true;
-  m_RegisterEditableComment(comment.comment_id);
+  m_RegisterCommentBeingEdited(comment.comment_id);
 
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
@@ -335,16 +354,54 @@ function UpdateComment(cobj) {
       `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
     );
   cvobj.isBeingEdited = false;
-  m_DeRegisterEditableComment(cobj.comment_id);
+  m_DeRegisterCommentBeingEdited(cobj.comment_id);
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
   );
   COMMENTVOBJS.set(cobj.collection_ref, commentVObjs);
 }
+/**
+ * Batch updates an array of updated comments
+ * This updates the local browser's comment state to match the server.
+ * Triggered by COMMENTS_UPDATE network call after someone else on the network removes a comment.
+ * Does NOT trigger a database update
+ * (Contrast this with UpdateComment above)
+ * @param {Object[]} comments cobjs
+ */
+function HandleUpdatedComments(comments) {
+  DCCOMMENTS.HandleUpdatedComments(comments);
+}
 
-function RemoveComment(cid) {
-  DCCOMMENTS.RemoveComment(cid);
+/**
+ * Processes the comment removal triggered by the local user, including relinking logic
+ * This is called BEFORE the database update.
+ * (Contrast this with UpdateRemovedComment below)
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.comment_id
+ * @param {Object} parms.uid
+ * @param {Object} parms.isAdmin
+ */
+function RemoveComment(parms) {
+  if (parms.collection_ref === undefined)
+    throw new Error('RemoveComment collection_ref is undefined', parms);
+  const batch = DCCOMMENTS.RemoveComment(parms);
+  m_DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
+  return batch;
+}
+/**
+ * Batch updates a list of removed comment ids
+ * This updates the local browser's comment state to match the server.
+ * Triggered by COMMENTS_UPDATE network call after someone else on the network removes a comment.
+ * This assumes that it is safe to simply delete the comment.  Any relinking
+ * should have been handled by UpdateComment
+ * Does NOT trigger a database update
+ * (Contrast this with RemoveComment above)
+ * @param {number[]} comment_ids
+ */
+function HandleRemovedComments(comment_ids) {
+  DCCOMMENTS.HandleRemovedComments(comment_ids);
 }
 
 /// PASS-THROUGH METHODS //////////////////////////////////////////////////////
@@ -379,15 +436,19 @@ export {
   // Open Comments
   GetOpenComments,
   // Editable Comments
-  GetEditableComment,
+  GetCommentBeingEdited,
   // Comment Thread View Object
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
+  HandleRederiveThreads,
   GetCOMMENTVOBJS,
   GetCommentVObj,
+  // Comment Objects
   AddComment,
-  RemoveComment,
   UpdateComment,
+  HandleUpdatedComments,
+  RemoveComment,
+  HandleRemovedComments,
   // PASS THROUGH
   GetUserName,
   GetCommentTypes,
