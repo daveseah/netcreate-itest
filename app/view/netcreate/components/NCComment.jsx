@@ -176,10 +176,10 @@ class NCComment extends React.Component {
 
     // revert to previous text if current text is empty
     if (inputIsEmpty && hasPreviouslySavedComments) {
-    this.setState({
+      this.setState({
         commenter_text: comment.commenter_text, // restore previous text
-      uViewMode: NCUI.VIEWMODE.VIEW
-    });
+        uViewMode: NCUI.VIEWMODE.VIEW
+      });
     } else {
       CMTMGR.RemoveComment(cid);
     }

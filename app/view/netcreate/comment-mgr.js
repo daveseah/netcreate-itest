@@ -43,11 +43,12 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => COMMENT.LoadDB(data));
   /// STATE UPDATES and Message Handlers
-  UDATA.OnAppStateChange('COMMENTCOLLECTION', COMMENTCOLLECTION => console.log('COMMENTCOLLECTION update', COMMENTCOLLECTION));
-  UDATA.OnAppStateChange('COMMENTVOBJS', COMMENTVOBJS => console.log('COMMENTVOBJS update', COMMENTVOBJS));
   UDATA.HandleMessage('COMMENTS_UPDATE', MOD.HandleCOMMENTS_UPDATE);
   UDATA.HandleMessage('COMMENT_UPDATE', MOD.HandleCOMMENT_UPDATE);
   UDATA.HandleMessage('READBY_UPDATE', MOD.HandleREADBY_UPDATE);
+  // Currently not used
+  // UDATA.OnAppStateChange('COMMENTCOLLECTION', COMMENTCOLLECTION => console.log('comment-mgr.COMMENTCOLLECTION state updated:', COMMENTCOLLECTION));
+  // UDATA.OnAppStateChange('COMMENTVOBJS', COMMENTVOBJS => console.error('comment-mgr.COMMENTVOBJS state updated', COMMENTVOBJS));
 }); // end INITIALIZE Hook
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** CONFIGURE fires after LOADASSETS, so this is a good place to put TEMPLATE
@@ -287,6 +288,7 @@ function m_CloseRemoveCommentDialog() {
  * @param {Object[]} dataArray
  */
 MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
+  if (DBG) console.log('COMMENTS_UPDATE======================');
   const updatedComments = [];
   const removedComments = [];
   dataArray.forEach(data => {
@@ -299,6 +301,7 @@ MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
   // and broadcast a state change
   m_SetAppStateCommentCollections();
   m_SetAppStateCommentVObjs();
+}
 /**
  * Respond to network COMMENT_UPDATE Messages
  * After the server/db saves the new/updated comment, COMMENT_UPDATE is called.
