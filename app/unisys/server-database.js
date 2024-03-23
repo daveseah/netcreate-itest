@@ -1070,8 +1070,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
-          } ${JSON.stringify(node)}`
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          } ${JSON.stringify(edge)}`
         );
       retval = { op: 'insert', edge: updatedEdge };
     } else if (matches.length === 1) {
@@ -1092,8 +1092,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
-          } ${JSON.stringify(node)}`
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          } ${JSON.stringify(edge)}`
         );
       retval = { op: 'update', edge: updatedEdge };
     } else {
@@ -1200,7 +1200,7 @@ DB.PKT_Update = function (pkt) {
         if (DBG)
           console.log(
             PR,
-            `PKT_Update ${pkt.Info()} UPDATE commentID ${comment.comment_id} ${JSON.stringify(
+            `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
               comment
             )}`
           );
@@ -1220,7 +1220,7 @@ DB.PKT_Update = function (pkt) {
       retval = { op: 'update', comment: updatedComment };
     } else {
       if (DBG)
-        console.log(PR, `WARNING: multiple commentID ${comment.comment_id} x${matches.length}`);
+        console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
       LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
       retval = { op: 'error-multinodeid' };
     }
@@ -1266,7 +1266,7 @@ DB.PKT_Update = function (pkt) {
           if (DBG)
             console.log(
               PR,
-              `PKT_Update ${pkt.Info()} UPDATE commentID ${readby.comment_id} ${JSON.stringify(
+              `PKT_Update ${pkt.Info()} UPDATE comment_id ${readby.comment_id} ${JSON.stringify(
                 readby
               )}`
             );
@@ -1286,7 +1286,7 @@ DB.PKT_Update = function (pkt) {
         retval = { op: 'update', readby: updatedReadby };
       } else {
         if (DBG)
-          console.log(PR, `WARNING: multiple commentID ${readby.comment_id} x${matches.length}`);
+          console.log(PR, `WARNING: multiple comment_id ${readby.comment_id} x${matches.length}`);
         LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, readby.comment_id, 'duplicate comment id');
         retval = { op: 'error-multinodeid' };
       }
@@ -1299,6 +1299,88 @@ DB.PKT_Update = function (pkt) {
   // return update value
   return { op: 'error-noaction' };
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** NOTE: Unlike PKT_Update, the return value is an array with multiple results */
+DB.PKT_BatchUpdate = function (pkt) {
+  let { items } = pkt.Data();
+  let retvals = [];
+  items.forEach(item => {
+    const { comment, commentID } = item;
+    // PROCESS COMMENT INSERT/UPDATE
+    if (comment) retvals.push(m_CommentUpdate(comment, pkt));
+    // DELETE SINGLE COMMENT
+    if (commentID !== undefined) retvals.push(m_CommentRemove(commentID, pkt));
+  })
+  return retvals;
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_CommentUpdate(comment, pkt) {
+  m_CleanObjID(`${pkt.Info()} comment.id`, comment);
+  let matches = COMMENTS.find({ comment_id: comment.comment_id });
+  if (matches.length === 0) {
+    // if there was no comment, then this is an insert new operation
+    if (DBG)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} INSERT comment_id ${JSON.stringify(comment)}`
+      );
+    // Handle different id types
+    if (isNaN(comment.comment_id)) {
+      // If the comment id has NOT been defined, generate a new comment id
+      comment.comment_id = m_GetNewCommentID();
+    }
+    LOGGER.WriteRLog(pkt.InfoObj(), `insert comment`, comment.comment_id, JSON.stringify(comment));
+    DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
+    COMMENTS.insert(comment);
+    // Return the updated record -- needed to update metadata
+    let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+    if (!updatedComment)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
+        } ${JSON.stringify(comment)}`
+      );
+    retval = { op: 'insert', comment: updatedComment };
+  } else if (matches.length === 1) {
+    // there was one match to, so update the comment
+    COMMENTS.findAndUpdate({ comment_id: comment.comment_id }, c => {
+      if (DBG)
+        console.log(
+          PR,
+          `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
+            comment
+          )}`
+        );
+      LOGGER.WriteRLog(pkt.InfoObj(), `update comment`, comment.comment_id, JSON.stringify(comment));
+      DB.AppendCommentLog(c, pkt); // log GroupId to node stored in database
+      Object.assign(c, comment);
+    });
+    // Return the updated record -- needed to update metadata
+
+    let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+    if (!updatedComment)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
+        } ${JSON.stringify(comment)}`
+      );
+    retval = { op: 'update', comment: updatedComment };
+  } else {
+    if (DBG)
+      console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
+    LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
+    retval = { op: 'error-multinodeid' };
+  }
+  return retval;
+} // if comment
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_CommentRemove(commentID, pkt) {
+  if (DBG) console.log(PR, `PKT_Update ${pkt.Info()} DELETE commentID ${commentID}`);
+  // Log first so it's apparent what is triggering the changes
+  LOGGER.WriteRLog(pkt.InfoObj(), `delete comment`, commentID);
+  COMMENTS.findAndRemove({ comment_id: commentID });
+  return { op: 'delete', commentID };
+}
 
 /// NODE ANNOTATION ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

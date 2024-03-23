@@ -141,8 +141,20 @@ UNISYS.RegisterHandlers = () => {
     if (data.edgeID !== undefined) UNET.NetSend('EDGE_DELETE', data);
     if (data.comment) UNET.NetSend('COMMENT_UPDATE', data);
     if (data.readbys) UNET.NetSend('READBY_UPDATE', data);
+    if (data.commentID !== undefined) UNET.NetSend('COMMENT_DELETE', data);
     // return SRV_DBUPDATE value (required)
     return { OK: true, info: 'SRC_DBUPDATE' };
+  });
+
+  // receives a batch of packets from a client
+  UNET.HandleMessage('SRV_DBBATCHUPDATE', function (pkt) {
+    if (DBG) console.log(PR, sprint_message(pkt));
+    let retvals = UDB.PKT_BatchUpdate(pkt);
+    // fire update messages
+    // retvals is an array and contains multiple comments and commentIDs
+    UNET.NetSend('COMMENTS_UPDATE', retvals);
+    // return SRV_DBBATCHUPDATE value (required)
+    return { OK: true, info: 'SRV_DBBATCHUPDATE' };
   });
 
   UNET.HandleMessage('SRV_CALCULATE_MAXNODEID', function (pkt) {
