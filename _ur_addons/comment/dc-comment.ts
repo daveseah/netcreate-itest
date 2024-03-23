@@ -6,7 +6,10 @@
       
   DATA
   
+    COMMENTS
+    --------
     COMMENTS are a flat array of the raw comment data.
+    aka a "comment object" or "cobj"
     Used by the Comment component to render the text in each comment.
     
       interface Comment {
@@ -22,6 +25,8 @@
         commenter_text: string[];
       };
 
+    READBY
+    ------
     READBY keeps track of which user id has "read" which comment id.
     This can get rather long over time.
     
@@ -30,8 +35,20 @@
         commenter_ids: any[];
       }
 
+      
+    DERIVED DATA
+    ------------
+    dc-comments keeps track of various indices for constructing threads:
+    * ROOTS       -- Root comment for a collection
+    * REPLY_ROOTS -- Root for a reply thread (the first comment in a child thread)
+    * NEXT        -- Points to the next comment in a thread
+    These need to be updated whenever a comment is added, updated, or deleted
+    with a call to `deriveValues()`
+
     EXAMPLE
     
+       COMMENT OBJECT                                    DERIVED DATA
+       --------------------------------------------      ----------------
        parnt prev                                        NEXT  REPLY-ROOT
                    "r1 First Comment"                    r2    r1.1
        r1            "r1.1 Reply to First Comment"       r1.2

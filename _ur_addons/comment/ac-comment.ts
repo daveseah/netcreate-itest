@@ -51,10 +51,16 @@
       EDITABLECOMMENTS Map<cid, cid>
 
       
-    COMMENTVOBJS cvobj
+    COMMENTVOBJS
     ------------
-    COMMENTVOBJS are a flat array of data sources for CommentThread ojects.
-    It handles the UI view state of the each comment in the thread.
+    COMMENTVOBJS are a flat array of data sources (cvobj) for CommentThread ojects.
+    
+      COMMENTVOBJS Map(cref, cvobj[])
+
+      
+    CommentVObj cvobj
+    -----------
+    CommentVObj a handles the UI view state of the each comment in the thread.
     
       interface CommentVObj {
         comment_id: any;

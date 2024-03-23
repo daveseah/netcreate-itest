@@ -4,7 +4,7 @@
 
   USE:
 
-    <NCComentThread
+    <NCCommentThread
       uiref
       cref={collection_ref}
       uid

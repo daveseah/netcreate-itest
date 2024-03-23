@@ -2,6 +2,19 @@
 
   CommentBtn
 
+  CommentBtn is the main UI element for comments.  It can be attached to any
+  UI component and provides a place to anchor and display comments.
+  * Clicking the CommentBtn will toggle the comment view on and off
+  * Closing the comment by clicking the "Close" or "X" button will mark
+    the comments "read".
+  * "Read/Unread" status is tied to a user id.
+
+  It displays a summary of the comment status:
+  * count of number of comments
+  * has unread comments (gold color)
+  * all comments are read (gray color)
+
+
   USE:
 
     <NCCommentBtn
@@ -23,6 +36,16 @@
     * x, y -- position of CommentThread window
     * commentButtonId -- unique id for each button
                          allows showing open/closed status for the same comment
+
+  STRUCTURE
+
+    <NCCommentBtn>
+      <NCCommentThread>
+        <NCComment />
+        <NCComment />
+        ...
+      </NCCommentThread>
+    </NCCommentBtn>
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
