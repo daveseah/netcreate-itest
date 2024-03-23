@@ -161,11 +161,28 @@ class NCComment extends React.Component {
   }
 
   UIOnCancel(event) {
+    const { cid, commenter_text } = this.state;
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
+
+    let inputIsEmpty = true;
+    commenter_text.forEach(t => {
+      if (t !== '') inputIsEmpty = false;
+    });
+
+    let hasPreviouslySavedComments = false;
+    comment.commenter_text.forEach(t => {
+      if (t !== '') hasPreviouslySavedComments = true;
+    });
+
+    // revert to previous text if current text is empty
+    if (inputIsEmpty && hasPreviouslySavedComments) {
     this.setState({
-      commenter_text: comment.commenter_text,
+        commenter_text: comment.commenter_text, // restore previous text
       uViewMode: NCUI.VIEWMODE.VIEW
     });
+    } else {
+      CMTMGR.RemoveComment(cid);
+    }
   }
 
   UIOnEditMenuSelect(event) {
