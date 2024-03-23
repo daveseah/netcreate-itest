@@ -40,6 +40,12 @@ DSTOR.Hook('INITIALIZE', () => {
     DSTOR.UpdateServerDB(data);
   });
 
+  // DB_UPDATE is a local call originating from within the app
+  // Generally used to update mutliple comments
+  UDATA.HandleMessage('DB_BATCHUPDATE', function (data) {
+    DSTOR.BatchUpdateServerDB(data);
+  });
+
   // DB_INSERT is a local call originating from within the app
   // Generally used to add new nodes and edges after an import
   UDATA.HandleMessage('DB_INSERT', function (data) {
@@ -91,6 +97,24 @@ DSTOR.UpdateServerDB = function (data) {
   }
   // it is!
   UDATA.Call('SRV_DBUPDATE', data).then(res => {
+    if (res.OK) {
+      console.log(PR, `server db transaction`, data, `success`);
+    } else {
+      console.log(PR, 'error updating server db', res);
+    }
+  });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** API: Write batch updates to database
+ */
+DSTOR.BatchUpdateServerDB = function (data) {
+  // check that network is online
+  if (UNISYS.IsStandaloneMode()) {
+    console.warn(PR, `STANDALONE MODE: UpdateServerDB() suppressed!`);
+    return;
+  }
+  // it is!
+  UDATA.Call('SRV_DBBATCHUPDATE', data).then(res => {
     if (res.OK) {
       console.log(PR, `server db transaction`, data, `success`);
     } else {
