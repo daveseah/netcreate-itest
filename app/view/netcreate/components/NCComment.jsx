@@ -84,6 +84,10 @@ class NCComment extends React.Component {
     const cvobj = CMTMGR.GetCommentVObj(cref, cid);
     const comment = CMTMGR.GetComment(cid);
 
+    // When deleting, COMMENTVOBJS state change will trigger a load and render
+    // before the component is unmounted.  So catch it and skip the state update.
+    if (!cvobj || !comment) return;
+
     this.setState({
       // Data
       cref: comment.collection_ref,
@@ -147,7 +151,13 @@ class NCComment extends React.Component {
   }
 
   UIOnDelete(event) {
-    CMTMGR.RemoveComment(this.props.cvobj.comment_id);
+    const { cvobj, uid } = this.props;
+    const { cref } = this.state;
+    CMTMGR.RemoveComment({
+      collection_ref: cref,
+      comment_id: cvobj.comment_id,
+      uid
+    });
   }
 
   UIOnCancel(event) {
@@ -197,10 +207,25 @@ class NCComment extends React.Component {
     const comment = CMTMGR.GetComment(cvobj.comment_id);
     const commentTypes = CMTMGR.GetCommentTypes();
 
+    if (!comment) {
+      if (DBG)
+        console.log(
+          `NCComment rendering skipped because comment ${cvobj.comment_id} was removed`
+        );
+      return '';
+    }
+
     // TODO Allow admins
     const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
-    // OLD BUTTON STYLE -- replced by EditMenu.  Revert?
+    const EditMenu = (
+      <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
+        <option>...</option>
+        <option value="edit">EDIT</option>
+        <option value="delete">DELETE</option>
+      </select>
+    );
+    // OLD BUTTON STYLE -- replaced by EditMenu.  Revert?
     // const EditBtn = (
     //   <button className="outline small" onClick={this.UIOnEdit}>
     //     Edit
@@ -211,13 +236,6 @@ class NCComment extends React.Component {
     //     Delete
     //   </button>
     // );
-    const EditMenu = (
-      <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
-        <option>...</option>
-        <option value="edit">EDIT</option>
-        <option value="delete">DELETE</option>
-      </select>
-    );
 
     const SaveBtn = <button onClick={this.UIOnSave}>Save</button>;
     const ReplyBtn = allowReply ? (

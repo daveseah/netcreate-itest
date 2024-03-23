@@ -45,6 +45,7 @@ MOD.Hook('INITIALIZE', () => {
   /// STATE UPDATES and Message Handlers
   UDATA.OnAppStateChange('COMMENTCOLLECTION', COMMENTCOLLECTION => console.log('COMMENTCOLLECTION update', COMMENTCOLLECTION));
   UDATA.OnAppStateChange('COMMENTVOBJS', COMMENTVOBJS => console.log('COMMENTVOBJS update', COMMENTVOBJS));
+  UDATA.HandleMessage('COMMENTS_UPDATE', MOD.HandleCOMMENTS_UPDATE);
   UDATA.HandleMessage('COMMENT_UPDATE', MOD.HandleCOMMENT_UPDATE);
   UDATA.HandleMessage('READBY_UPDATE', MOD.HandleREADBY_UPDATE);
 }); // end INITIALIZE Hook
@@ -84,6 +85,21 @@ function m_SetAppStateCommentCollections() {
 function m_SetAppStateCommentVObjs() {
   const COMMENTVOBJS = COMMENT.GetCOMMENTVOBJS();
   UDATA.SetAppState('COMMENTVOBJS', COMMENTVOBJS);
+}
+
+function m_UpdateComment(comment) {
+  const cobj = {
+    collection_ref: comment.collection_ref,
+    comment_id: comment.comment_id,
+    comment_id_parent: comment.comment_id_parent,
+    comment_id_previous: comment.comment_id_previous,
+    comment_type: comment.comment_type,
+    comment_createtime: comment.comment_createtime,
+    comment_modifytime: comment.comment_modifytime,
+    commenter_id: comment.commenter_id,
+    commenter_text: comment.commenter_text
+  };
+  COMMENT.UpdateComment(cobj);
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////
@@ -164,7 +180,7 @@ MOD.OKtoClose = cref => {
   const cvobjs = MOD.GetThreadedViewObjects(cref)
   let isBeingEdited = false;
   cvobjs.forEach(cvobj => {
-    if (COMMENT.GetEditableComment(cvobj.comment_id)) isBeingEdited = true
+    if (COMMENT.GetCommentBeingEdited(cvobj.comment_id)) isBeingEdited = true
   });
   return !isBeingEdited;
 }
@@ -207,11 +223,82 @@ MOD.UpdateComment = (cobj) => {
   COMMENT.UpdateComment(cobj);
   m_SetAppStateCommentVObjs();
 }
-MOD.RemoveComment = (cid) => {
-  COMMENT.RemoveComment(cid);
+/**
+ * Removing a comment can affect multiple comments, so this is done
+ * via a batch operation.  We queue up all of the comment changes
+ * using the logic for removing/re-arranging the comments in
+ * ac-comments/dc-comments, then write out the db updates. This way
+ * the db updates can be blindly accomplished in a single operation.
+ *
+ * Removing is a two step process:
+ * 1. Show confirmation dialog
+ * 2. Execute the remova
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.comment_id
+ * @param {Object} parms.uid
+ */
+MOD.RemoveComment = parms => {
+  parms.isAdmin = SETTINGS.IsAdmin();
+  const confirmRemoveMessage = parms.isAdmin
+    ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
+    : `Are you sure you want to delete this comment #${parms.comment_id}?`;
+  const dialog = (
+    <NCDialog
+      message={confirmRemoveMessage}
+      okmessage={`Delete`}
+      onOK={event => m_ExecuteRemoveComment(event, parms)}
+      cancelmessage="Don't Delete"
+      onCancel={m_CloseRemoveCommentDialog}
+    />
+  );
+  const container = document.getElementById(dialogContainerId);
+  ReactDOM.render(dialog, container);
+}
+/**
+ * NOTE: Unlike UpdateComment, the db call is made AFTER ac/dc
+ * handles the removal and the logic of relinking comments.
+ * The db call is dumb, all the logic is in dc-comments.
+ * @param {Object} event
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.comment_id
+ * @param {Object} parms.uid
+ */
+function m_ExecuteRemoveComment(event, parms) {
+  const batch = COMMENT.RemoveComment(parms);
+  m_DBRemoveComment(batch);
   m_SetAppStateCommentVObjs();
+  m_CloseRemoveCommentDialog();
+}
+function m_CloseRemoveCommentDialog() {
+  const container = document.getElementById(dialogContainerId);
+  ReactDOM.unmountComponentAtNode(container);
 }
 
+/**
+ * Respond to network COMMENTS_UPDATE Messages
+ * Usually used after a comment deletion to handle a batch of comment updates
+ * This can include
+ *   * updates to existing comments (marked DELETE or re-linked to other removed comment)
+ *   * removal of comment altogether
+ * This a network call that is used to update local state for other browsers
+ * (does not trigger another DB update)
+ * @param {Object[]} dataArray
+ */
+MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
+  const updatedComments = [];
+  const removedComments = [];
+  dataArray.forEach(data => {
+    if (data.comment) updatedComments.push(data.comment);
+    if (data.commentID) removedComments.push(data.commentID);
+  });
+  COMMENT.HandleRemovedComments(removedComments);
+  COMMENT.HandleUpdatedComments(updatedComments);
+
+  // and broadcast a state change
+  m_SetAppStateCommentCollections();
+  m_SetAppStateCommentVObjs();
 /**
  * Respond to network COMMENT_UPDATE Messages
  * After the server/db saves the new/updated comment, COMMENT_UPDATE is called.
@@ -220,20 +307,9 @@ MOD.RemoveComment = (cid) => {
  * @param {*} data
  */
 MOD.HandleCOMMENT_UPDATE = (data) => {
-  if (DBG) console.log('COMMENT_UPDATE======================');
+  if (DBG) console.log('COMMENT_UPDATE======================', data);
   const { comment } = data;
-  const cobj = {
-    collection_ref: comment.collection_ref,
-    comment_id: comment.comment_id,
-    comment_id_parent: comment.comment_id_parent,
-    comment_id_previous: comment.comment_id_previous,
-    comment_type: comment.comment_type,
-    comment_createtime: comment.comment_createtime,
-    comment_modifytime: comment.comment_modifytime,
-    commenter_id: comment.commenter_id,
-    commenter_text: comment.commenter_text
-  };
-  COMMENT.UpdateComment(cobj);
+  m_UpdateComment(comment);
   // and broadcast a state change
   m_SetAppStateCommentCollections();
   m_SetAppStateCommentVObjs();
@@ -283,6 +359,18 @@ function m_DBUpdateReadBy(cref, uid) {
     readbys.push(readby);
   })
   UDATA.LocalCall('DB_UPDATE', { readbys }).then(data => {
+    if (typeof cb === 'function') cb(data);
+  });
+}
+/**
+ * Executes multiple database operations via a batch of commands:
+ * - `cobjs` will be updated
+ * - `commentIDs` will be deleted
+ * @param {Object[]} items [ ...cobj, ...commentID ]
+ * @param {function} cb callback
+ */
+function m_DBRemoveComment(items, cb) {
+  UDATA.LocalCall('DB_BATCHUPDATE', { items }).then(data => {
     if (typeof cb === 'function') cb(data);
   });
 }

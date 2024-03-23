@@ -59,16 +59,7 @@
        r2    r2.2    "r2.3 Reply to Second Comment"
              r2    "r3 Third Comment"                    r4
              r4    "r4 Fourth Comment"                   
-  
-    DERIVED DATA
-    
-    dc-comments keeps track of various indices for constructing threads:
-    * ROOTS -- Root comment for a collection
-    * REPLY_ROOTS -- Root for a reply thread
-    * NEXT -- Points to the next comment in a thread
-    These need to be updated whenever a comment is added, updated, or deleted
-    with a call to `deriveValues()`
-    
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -261,13 +252,18 @@ function GetComment(cid) {
 }
 
 function m_DeriveValues() {
+  ROOTS.clear();
+  REPLY_ROOTS.clear();
+  NEXT.clear();
   COMMENTS.forEach(c => {
     if (c.comment_id_parent === '' && c.comment_id_previous === '')
       ROOTS.set(c.collection_ref, c.comment_id);
     if (c.comment_id_parent !== '' && c.comment_id_previous === '') {
       REPLY_ROOTS.set(c.comment_id_parent, c.comment_id);
     }
-    if (c.comment_id_previous !== '') NEXT.set(c.comment_id_previous, c.comment_id);
+    if (c.comment_id_previous !== '') {
+      NEXT.set(c.comment_id_previous, c.comment_id);
+    }
   });
   if (DBG) console.log('ROOTS', ROOTS);
   if (DBG) console.log('REPLY_ROOTS', REPLY_ROOTS);
@@ -301,24 +297,139 @@ function AddComment(data) {
 }
 
 /**
- *
+ * Processes a single update
+ * @param {Object} cobj commentObject
+ */
+function m_UpdateComment(cobj) {
+  // Fake modify date until we get DB roundtrip
+  cobj.comment_modifytime = new Date();
+  console.log(
+    'REVIEW: UpdateComment...modify time should use loki time???',
+    cobj.comment_modifytime
+  );
+  COMMENTS.set(cobj.comment_id, cobj);
+}
+/**
+ * API Call to processes a single update
  * @param {Object} cobj commentObject
  */
 function UpdateComment(cobj) {
-  // TODO: Add DB Call round trip?
-
-  // Fake modify date until we get DB roundtrip
-  cobj.comment_modifytime = new Date();
-  COMMENTS.set(cobj.comment_id, cobj);
+  m_UpdateComment(cobj);
+  m_DeriveValues();
+}
+/**
+ * API Call to batch updates an array of updated comments
+ * @param {Object[]} cobjs cobj[]
+ */
+function HandleUpdatedComments(cobjs) {
+  cobjs.forEach(cobj => m_UpdateComment(cobj));
   m_DeriveValues();
 }
 
-function RemoveComment(cid) {
-  // TODO Remove parent references
-  // TODO Remove previous references
-  COMMENTS.delete(cid);
+/**
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.comment_id
+ * @param {Object} parms.uid
+ * @param {Object} parms.isAdmin
+ * @returns {(any|Array)} if {comment: cobj} updates the comment
+ *                        if {comment_id: id} deletes the comment
+ */
+function RemoveComment(parms) {
+  const { collection_ref, comment_id, uid, isAdmin } = parms;
+  const retvals = [];
+
+
+  const cobj = COMMENTS.get(comment_id);
+
+  const next_comment_id = NEXT.get(comment_id);
+  const prev = COMMENTS.get(cobj.comment_id_previous);
+  const isRoot = cobj.comment_id_parent === ''; // does not have parent
+  const hasReplies = REPLY_ROOTS.get(comment_id);
+
+  if (isAdmin) {
+    // A. if admin, force delete all children
+    console.warn('ADMIN DELETING COMPLETE THREAD!');
+
+    // -- 1. delete the comment
+    if (DBG) console.log('...ADMIN deleting root', comment_id);
+    COMMENTS.delete(comment_id);
+    retvals.push({ commentID: comment_id });
+
+    // -- 2. delete all child replies
+    const childThreadIds = [];
+    COMMENTS.forEach((cobj, cid) => {
+      if (DBG) console.log('      --working on', cobj, 'for', comment_id);
+      if (cobj.comment_id_parent === comment_id) childThreadIds.push(cobj.comment_id);
+    });
+    childThreadIds.forEach(id => {
+      if (DBG) console.log('......ADMIN deleting child thread', id);
+      COMMENTS.delete(id);
+      retvals.push({ commentID: id });
+    });
+
+    // -- 3. if there's a NEXT comment that is a root, relink PREVIOUS to the next's NEXT
+    //    ... and move up (next's previous is set to previous)
+    const nextCobj = COMMENTS.get(next_comment_id);
+    if (nextCobj) {
+      nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
+      if (DBG) console.log('...ADMIN next is now', nextCobj.comment_id);
+      COMMENTS.set(nextCobj.comment_id, nextCobj);
+      retvals.push({ comment: nextCobj });
+    }
+  } else if (isRoot && !next_comment_id) {
+    // B. Root Orphan, OK to delete
+    // -- Root orphan has no `next` && has no `parent`
+    if (DBG) console.log('!!! COMMENTS deleting root orphan', comment_id);
+    COMMENTS.delete(comment_id);
+    retvals.push({ commentID: comment_id });
+  } else {
+    if (isRoot && !hasReplies) {
+      // C. Root with no reply threads, OK to delete
+      if (DBG) console.log('!!! COMMENTS deleting thread item', comment_id);
+      COMMENTS.delete(comment_id);
+      retvals.push({ commentID: comment_id });
+
+      // ... and move up (next's previous is set to previous)
+      const nextCobj = COMMENTS.get(next_comment_id);
+      nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
+      COMMENTS.set(nextCobj.comment_id, nextCobj);
+      retvals.push({ comment: nextCobj });
+    } else if (!isRoot && !next_comment_id) {
+      // D. Reply Thread Orphan, OK to delete -- last item in a thread
+      if (DBG) console.log('!!! COMMENTS deleting last thread item', comment_id);
+      COMMENTS.delete(comment_id);
+      retvals.push({ commentID: comment_id });
+
+      // -- if the thread's root is also deleted, then also delete the root
+      console.warn(
+        '!!! TODO: NEED TO DELETE whole collection if all items are deleted'
+      );
+    } else {
+      // E. Root with a reply thread...
+      //    ...or part of a reply thread with more replies: mark[DELETED] only
+      if (DBG) console.log('!!! COMMENTS just marking DELETED', comment_id);
+      cobj.comment_type = DEFAULT_CommentTypes[0].id; // revert to default comment type
+      cobj.commenter_text = ['[DELETED]'];
+      COMMENTS.set(cobj.comment_id, cobj);
+      retvals.push({ comment: cobj });
+    }
+  }
   m_DeriveValues();
-  // TODO: Add DB Call round trip
+  return retvals;
+}
+
+/**
+ * Batch updates an array of removed comment ids
+ * @param {number[]} comment_ids
+ */
+function HandleRemovedComments(comment_ids) {
+  comment_ids.forEach(comment_id => {
+    if (DBG) console.log('...removing', comment_id);
+    COMMENTS.delete(comment_id);
+  });
+  console.log('...remaining COMMENTS', COMMENTS);
+  m_DeriveValues();
 }
 
 /**
@@ -382,6 +493,7 @@ if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('1'));
 if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('2'));
 
 /**
+ * [Currently not used]
  * Get all the comments related to a particular collection_ref
  * @param {string} cref collection_ref id
  * @returns commentObject[]
@@ -414,8 +526,10 @@ export default {
   GetComments,
   GetComment,
   AddComment,
-  RemoveComment,
   UpdateComment,
+  HandleUpdatedComments,
+  RemoveComment,
+  HandleRemovedComments,
   MarkCommentRead,
   IsMarkedRead,
   GetThreadedCommentIds,
