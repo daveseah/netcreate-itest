@@ -812,6 +812,7 @@ MOD.Hook('APP_READY', function (info) {
       'EDGE_UPDATE',
       'EDGE_DELETE',
       'COMMENT_UPDATE',
+      'COMMENTS_UPDATE',
       'READBY_UPDATE',
       'EDIT_PERMISSIONS_UPDATE',
       'NET_TEMPLATE_UPDATE'
