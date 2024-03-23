@@ -8,9 +8,12 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
+const ReactDOM = require('react-dom');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
+const NCDialog = require('./components/NCDialog');
+const SETTINGS = require('settings');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -21,6 +24,7 @@ const PR = 'comment-mgr: ';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let MOD = UNISYS.NewModule(module.id);
 let UDATA = UNISYS.NewDataLink(MOD);
+const dialogContainerId = 'dialog-container'; // used to inject dialogs into NetCreate.jsx
 
 /// UNISYS LIFECYCLE HOOKS ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

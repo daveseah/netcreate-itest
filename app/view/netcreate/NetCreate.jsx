@@ -312,6 +312,7 @@ class NetCreate extends UNISYS.Component {
           concerns and/or to request information contained on this website in an
           accessible format.
         </div>
+        <div id="dialog-container"></div>
       </div>
     ); // end return
   } // end render()
