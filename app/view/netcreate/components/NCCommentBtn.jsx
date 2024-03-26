@@ -110,7 +110,8 @@ class NCCommentBtn extends React.Component {
     const btn = document.getElementById(commentButtonId);
     const cmtbtnx = btn.getBoundingClientRect().left;
     let x;
-    if (window.screen.width - cmtbtnx - 400 < 500) {
+    if (window.screen.width - cmtbtnx < 500) {
+      // comment window is 400px
       x = cmtbtnx - 405;
     } else {
       x = cmtbtnx + 35;
