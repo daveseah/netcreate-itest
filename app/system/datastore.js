@@ -40,7 +40,7 @@ DSTOR.Hook('INITIALIZE', () => {
     DSTOR.UpdateServerDB(data);
   });
 
-  // DB_UPDATE is a local call originating from within the app
+  // DB_BATCHUPDATE is a local call originating from within the app
   // Generally used to update mutliple comments
   UDATA.HandleMessage('DB_BATCHUPDATE', function (data) {
     DSTOR.BatchUpdateServerDB(data);

@@ -219,9 +219,15 @@ MOD.AddComment = (cobj) => {
   });
 
 }
+/**
+ * Update the ac/dc comments, then save it to the db
+ * This will also broadcast COMMENT_UPDATE so other clients on the network
+ * update the data to match the server.
+ * @param {Object} cobj
+ */
 MOD.UpdateComment = (cobj) => {
-  m_DBUpdateComment(cobj);
   COMMENT.UpdateComment(cobj);
+  m_DBUpdateComment(cobj);
   m_SetAppStateCommentVObjs();
 }
 /**
@@ -257,9 +263,8 @@ MOD.RemoveComment = parms => {
   ReactDOM.render(dialog, container);
 }
 /**
- * NOTE: Unlike UpdateComment, the db call is made AFTER ac/dc
- * handles the removal and the logic of relinking comments.
- * The db call is dumb, all the logic is in dc-comments.
+ * The db call is made AFTER ac/dc handles the removal and the logic of
+ * relinking comments.  The db call is dumb, all the logic is in dc-comments.
  * @param {Object} event
  * @param {Object} parms
  * @param {Object} parms.collection_ref
@@ -303,9 +308,10 @@ MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
   m_SetAppStateCommentVObjs();
 }
 /**
- * Respond to network COMMENT_UPDATE Messages
- * After the server/db saves the new/updated comment, COMMENT_UPDATE is called.
- * This a network call that is used to update local state for other browsers
+ * Respond to COMMENT_UPDATE Messages from the network
+ * After the server/db saves the new/updated comment, COMMENT_UPDATE is
+ * broadcast across the network.  This a network call that is used to update
+ * the local state to match the server's comments.
  * (does not trigger another DB update)
  * @param {*} data
  */

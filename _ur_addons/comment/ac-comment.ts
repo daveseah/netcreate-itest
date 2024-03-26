@@ -265,24 +265,6 @@ function GetThreadedViewObjectsCount(cref, uid) {
   return GetThreadedViewObjects(cref, uid).length;
 }
 
-/**
- * Handle rederive threads after removing a comment
- * After a comment is deleted, we need to re-construct the threads
- * because some comments are removed, and others re-linked
- * otherwise outdated threads might be re-rendered.
- */
-function HandleRederiveThreads() {
-  COMMENTVOBJS.forEach((cvobjs, cref, self) => {
-    const updated_cvobjs = [];
-    const cids = DCCOMMENTS.GetThreadedCommentIds(cref);
-    // reconstruct cvobjs using thread
-    cvobjs.forEach(cvobj => {
-      if (cids.includes(cvobj.comment_id)) updated_cvobjs.push(cvobj);
-    });
-    self.set(cref, updated_cvobjs);
-  });
-}
-
 function GetCOMMENTVOBJS() {
   return COMMENTVOBJS;
 }
@@ -440,7 +422,6 @@ export {
   // Comment Thread View Object
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
-  HandleRederiveThreads,
   GetCOMMENTVOBJS,
   GetCommentVObj,
   // Comment Objects

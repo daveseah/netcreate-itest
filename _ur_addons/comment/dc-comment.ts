@@ -297,6 +297,14 @@ function AddComment(data) {
 }
 
 /**
+ * API Call to processes a single update
+ * @param {Object} cobj commentObject
+ */
+function UpdateComment(cobj) {
+  m_UpdateComment(cobj);
+  m_DeriveValues();
+}
+/**
  * Processes a single update
  * @param {Object} cobj commentObject
  */
@@ -308,14 +316,6 @@ function m_UpdateComment(cobj) {
     cobj.comment_modifytime
   );
   COMMENTS.set(cobj.comment_id, cobj);
-}
-/**
- * API Call to processes a single update
- * @param {Object} cobj commentObject
- */
-function UpdateComment(cobj) {
-  m_UpdateComment(cobj);
-  m_DeriveValues();
 }
 /**
  * API Call to batch updates an array of updated comments
@@ -338,7 +338,6 @@ function HandleUpdatedComments(cobjs) {
 function RemoveComment(parms) {
   const { collection_ref, comment_id, uid, isAdmin } = parms;
   const retvals = [];
-
 
   const cobj = COMMENTS.get(comment_id);
 
