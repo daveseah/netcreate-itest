@@ -112,22 +112,24 @@ class NCCommentThread extends React.Component {
               X
             </div>
           </div>
-          {commentVObjs.map(cvobj => (
-            <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
-          ))}
-          {uid && (
-            <textarea
-              className="add"
-              placeholder="Click to add a Comment..."
-              readOnly
-              onClick={this.UIOnReply}
-            ></textarea>
-          )}
-          {!uid && commentVObjs.length < 1 && (
-            <div className="label" style={{ textAlign: 'center' }}>
-              No comments
-            </div>
-          )}
+          <div className="commentScroller">
+            {commentVObjs.map(cvobj => (
+              <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
+            ))}
+            {uid && (
+              <textarea
+                className="add"
+                placeholder="Click to add a Comment..."
+                readOnly
+                onClick={this.UIOnReply}
+              ></textarea>
+            )}
+            {!uid && commentVObjs.length < 1 && (
+              <div className="label" style={{ textAlign: 'center' }}>
+                No comments
+              </div>
+            )}
+          </div>
           <div className="commentbar">{CloseBtn}</div>
         </div>
       </Draggable>
