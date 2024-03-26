@@ -87,8 +87,8 @@
       }
     },
     "terminal.integrated.profiles.linux": {
-      "generic linux": {
-        "path": "${env:SHELL}",
+      "generic bash": {
+        "path": "/bin/bash",
         "args": [
           "-i",
           "-c",
@@ -98,6 +98,6 @@
     },
     // use 'x86 macos' profile to force i386 compatibility on ARM64 Macs
     "terminal.integrated.defaultProfile.osx": "x86 macos",
-    "terminal.integrated.defaultProfile.linux": "generic linux"
+    "terminal.integrated.defaultProfile.linux": "generic bash"
   }
 }
