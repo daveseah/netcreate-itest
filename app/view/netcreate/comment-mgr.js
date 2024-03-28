@@ -100,7 +100,8 @@ function m_UpdateComment(comment) {
     commenter_id: comment.commenter_id,
     commenter_text: comment.commenter_text
   };
-  COMMENT.UpdateComment(cobj);
+  const uid = MOD.GetCurrentUserId();
+  COMMENT.UpdateComment(cobj, uid);
 }
 
 /// API METHODS ///////////////////////////////////////////////////////////////

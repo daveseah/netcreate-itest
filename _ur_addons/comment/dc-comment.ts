@@ -485,7 +485,6 @@ function GetThreadedCommentIds(cref) {
 
   // 2. Find Replies (children) followed by Next (younger siblings)
   all_comments_ids.push(rootId, ...getRepliesAndNext(rootId));
-
   return all_comments_ids;
 }
 if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('1'));

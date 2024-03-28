@@ -320,16 +320,16 @@ function AddComment(data) {
 /**
  * Add changed comment to DCCOMMENTS and generate derived objects
  * @param {Object} cobj commentObject
+ * @param {string} uid ID of the current user for "marked read" status
  */
-function UpdateComment(cobj) {
+function UpdateComment(cobj, uid) {
   if (cobj.collection_ref === undefined)
     throw new Error('UpdateComment cref is undefined', cobj);
 
   DCCOMMENTS.UpdateComment(cobj);
-
-  m_DeriveThreadedViewObjects(cobj.collection_ref, cobj.commenter_id);
+  m_DeriveThreadedViewObjects(cobj.collection_ref, uid);
   // Disable editable and update modify time
-  let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, cobj.commenter_id);
+  let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, uid);
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
   if (cvobj === undefined)
     throw new Error(
