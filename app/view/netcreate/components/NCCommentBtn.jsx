@@ -83,6 +83,7 @@ class NCCommentBtn extends React.Component {
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     // UI HANDLERS
     this.UIOnClick = this.UIOnClick.bind(this);
+    this.UIOnResize = this.UIOnResize.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -91,6 +92,7 @@ class NCCommentBtn extends React.Component {
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTCOLLECTION', this.UpdateCommentCollection);
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    window.addEventListener('resize', this.UIOnResize);
   }
 
   componentDidMount() {
@@ -100,6 +102,7 @@ class NCCommentBtn extends React.Component {
   componentWillUnmount() {
     UDATA.AppStateChangeOff('COMMENTCOLLECTION', this.UpdateCommentCollection);
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    window.removeEventListener('resize', this.UIOnResize);
   }
 
   GetCommentThreadPosition() {
@@ -117,7 +120,7 @@ class NCCommentBtn extends React.Component {
       x = cmtbtnx + 35;
     }
     const y = btn.getBoundingClientRect().top + window.scrollY;
-    return { x: `${x}px`, y: `${y}px` };
+    return { x, y };
   }
 
   //** Comment Button Update */
@@ -159,6 +162,14 @@ class NCCommentBtn extends React.Component {
         cref,
         isOpen: updatedIsOpen
       });
+    });
+  }
+
+  UIOnResize(event) {
+    const position = this.GetCommentThreadPosition();
+    this.setState({
+      x: position.x,
+      y: position.y
     });
   }
 
