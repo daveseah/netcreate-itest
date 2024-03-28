@@ -112,8 +112,9 @@ class NCCommentBtn extends React.Component {
     // figure out comment thread position based on comment button
     const btn = document.getElementById(commentButtonId);
     const cmtbtnx = btn.getBoundingClientRect().left;
+    const windowWidth = Math.min(screen.width, window.innerWidth); // handle Safari and FireFox differences
     let x;
-    if (window.screen.width - cmtbtnx < 500) {
+    if (windowWidth - cmtbtnx < 500) {
       // comment window is 400px
       x = cmtbtnx - 405;
     } else {
