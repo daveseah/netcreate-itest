@@ -58,9 +58,12 @@ svg#comment-icon {
   /* floating */
   position: fixed;
   top: 120px;
+  bottom: 35px;
   left: 380px;
   width: 400px;
-  max-height: 80%;
+  height: min-content;
+  min-height: 100px;
+  max-height: calc(80% - 35px);
   font-size: 14px;
   cursor: move;
   z-index: 100;

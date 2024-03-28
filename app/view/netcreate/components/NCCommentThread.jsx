@@ -100,11 +100,15 @@ class NCCommentThread extends React.Component {
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
 
+    // HACK: To keep the comment from going off screen:
+    const windowHeight = Math.min(screen.height, window.innerHeight); // handle Safari and FireFox differences
+    const commentMaxHeight = `${windowHeight - y - 100}px`;
+
     return (
       <Draggable>
         <div
           className="commentThread"
-          style={{ left: x, top: y }}
+          style={{ left: `${x}px`, top: `${y}px`, maxHeight: commentMaxHeight }}
           onClick={e => e.stopPropagation()} // prevent edge deselect
         >
           <div className="topbar">
