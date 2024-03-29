@@ -121,7 +121,7 @@ class NCComment extends React.Component {
 
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
     comment.comment_type = comment_type;
-    comment.commenter_text = commenter_text;
+    comment.commenter_text = [...commenter_text]; // clone, not byref
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
@@ -161,7 +161,8 @@ class NCComment extends React.Component {
   }
 
   UIOnCancel(event) {
-    const { cid, commenter_text } = this.state;
+    const { uid } = this.props;
+    const { cref, cid, commenter_text } = this.state;
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
 
     let inputIsEmpty = true;
@@ -174,14 +175,19 @@ class NCComment extends React.Component {
       if (t !== '') hasPreviouslySavedComments = true;
     });
 
-    // revert to previous text if current text is empty
-    if (inputIsEmpty && hasPreviouslySavedComments) {
-      this.setState({
-        commenter_text: comment.commenter_text, // restore previous text
-        uViewMode: NCUI.VIEWMODE.VIEW
+    if (inputIsEmpty && !hasPreviouslySavedComments) {
+      // delete the comment if inputIsEmpty and does not hasPreviouslySavedComments
+      CMTMGR.RemoveComment({
+        collection_ref: cref,
+        comment_id: cid,
+        uid
       });
     } else {
-      CMTMGR.RemoveComment(cid);
+    // revert to previous text if current text is empty
+      this.setState({
+        commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
+        uViewMode: NCUI.VIEWMODE.VIEW
+      });
     }
   }
 
