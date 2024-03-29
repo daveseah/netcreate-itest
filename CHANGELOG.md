@@ -1,18 +1,18 @@
 # CHANGELOG
 
 
-[Unreleased](#unreleased)
-[1.5.1](#1.5.1) -- 2024 Jan 8 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.1)
-[1.5.0](#1.5.0) -- 2023 Dec 23 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.0)
-[1.4.0](#1.4.0) -- 2022 Apr 11 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.4.0)
-[1.3.1](#1.3.1) -- 2020 Sep 21 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.1)
-[1.3.0](#1.3.0) -- 2020 Aug 26 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.0)
-[1.2.1](#1.2.1) -- 2020 Jun 5 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.1)
-[1.2.0](#1.2.0) -- 2019 May 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.0)
-[1.1.0](#1.1.0) -- 2019 Feb 12 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.1.0)
-[1.0.1](#1.0.1) -- 2018 Oct 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.1)
-[1.0.0](#1.0.0) -- 2018 Sep 30 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.0)
-[0.1.0](#0.1.0) -- 2018 Aug 28 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/0.1.0)
+[Unreleased](#unreleased)  
+[1.5.1](#1.5.1) -- 2024 Jan 8 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.1)  
+[1.5.0](#1.5.0) -- 2023 Dec 23 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.0)  
+[1.4.0](#1.4.0) -- 2022 Apr 11 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.4.0)  
+[1.3.1](#1.3.1) -- 2020 Sep 21 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.1)  
+[1.3.0](#1.3.0) -- 2020 Aug 26 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.0)  
+[1.2.1](#1.2.1) -- 2020 Jun 5 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.1)  
+[1.2.0](#1.2.0) -- 2019 May 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.0)  
+[1.1.0](#1.1.0) -- 2019 Feb 12 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.1.0)  
+[1.0.1](#1.0.1) -- 2018 Oct 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.1)  
+[1.0.0](#1.0.0) -- 2018 Sep 30 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.0)  
+[0.1.0](#0.1.0) -- 2018 Aug 28 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/0.1.0)  
 
 ---
 # [Unreleased] <a name="unreleased"></a>
