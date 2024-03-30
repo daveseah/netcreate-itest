@@ -182,6 +182,13 @@ svg#comment-icon {
 .commentbar,
 .editbar {
   padding-top: 5px;
+}
+
+.commentbar {
+  display: flex;
+  justify-content: space-between;
+}
+.editbar {
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
@@ -191,6 +198,12 @@ svg#comment-icon {
 .comment .editbar button {
   color: white;
   background-color: #f60;
+  width: fit-content;
+}
+.comment .commentbar button {
+  margin-left: 0; /* override nccomponent */
+}
+.comment .editbar button {
   margin-left: 15px; /* emulate nccomponent */
 }
 .comment .commentbar button:hover,
@@ -202,6 +215,20 @@ svg#comment-icon {
 .comment .editbar button.secondary {
   color: #333;
   background-color: transparent;
+}
+.comment .commentbar button.secondary:hover,
+.comment .editbar button.secondary:hover {
+  background-color: #0002;
+}
+.comment .commentbar button.danger,
+.comment .editbar button.danger {
+  color: #333;
+  background-color: transparent;
+}
+.comment .commentbar button.danger:hover,
+.comment .editbar button.danger:hover {
+  color: white;
+  background-color: #f00;
 }
 .comment .commentbar button {
   /* visibility: hidden; */

@@ -240,30 +240,30 @@ class NCComment extends React.Component {
     // TODO Allow admins
     const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
-    const EditMenu = (
-      <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
-        <option>...</option>
-        <option value="edit">EDIT</option>
-        <option value="delete">DELETE</option>
-      </select>
+    const EditBtn = (
+      <button className="outline small" onClick={this.UIOnEdit}>
+        Edit
+      </button>
     );
-    // OLD BUTTON STYLE -- replaced by EditMenu.  Revert?
-    // const EditBtn = (
-    //   <button className="outline small" onClick={this.UIOnEdit}>
-    //     Edit
-    //   </button>
-    // );
-    // const DeleteBtn = (
-    //   <button className="outline small" onClick={this.UIOnDelete}>
-    //     Delete
-    //   </button>
+    const DeleteBtn = (
+      <button className="outline small danger" onClick={this.UIOnDelete}>
+        Delete
+      </button>
+    );
+    // Alternative three-dot menu approach to hide "Edit" and "Delete"
+    // const EditMenu = (
+    //   <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
+    //     <option>...</option>
+    //     <option value="edit">EDIT</option>
+    //     <option value="delete">DELETE</option>
+    //   </select>
     // );
 
     const SaveBtn = <button onClick={this.UIOnSave}>Save</button>;
     const ReplyBtn = allowReply ? (
       <button onClick={this.UIOnReply}>Reply</button>
     ) : (
-      ''
+      <div></div> // leave empty space so Edit and Delete stay in the same place
     );
     const CancelBtn = (
       <button className="secondary" onClick={this.UIOnCancel}>
@@ -323,7 +323,6 @@ class NCComment extends React.Component {
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>
-            {isAllowedToEditOwnComment && EditMenu}
           </div>
           <div>
             <div className="commentId">#{cid}</div>
@@ -340,7 +339,13 @@ class NCComment extends React.Component {
                 <div className="feedback">{type.feedback}</div>
               </div>
             ))}
-            {uid && <div className="commentbar">{ReplyBtn}</div>}
+            {uid && (
+              <div className="commentbar">
+                {isAllowedToEditOwnComment && DeleteBtn}
+                {isAllowedToEditOwnComment && EditBtn}
+                {ReplyBtn}
+              </div>
+            )}
           </div>
         </div>
       );
