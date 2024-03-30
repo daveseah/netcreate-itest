@@ -245,23 +245,30 @@ MOD.UpdateComment = (cobj) => {
  * @param {string} parms.collection_ref
  * @param {string} parms.comment_id
  * @param {string} parms.uid
- * @param {boolean} parms.skipConfirmDialog
+ * @param {boolean} parms.showCancelDialog
  */
 MOD.RemoveComment = parms => {
-  if (parms.skipConfirmDialog) {
-    m_ExecuteRemoveComment({}, parms);
-    return;
-  }
+  let confirmMessage, okmessage, cancelmessage;
+  if (parms.showCancelDialog) {
+    // Are you sure you want to cancel?
+    confirmMessage = `Are you sure you want to cancel editing this comment #${parms.comment_id}?`;
+    okmessage = 'Cancel Editing and Delete';
+    cancelmessage = "Go Back to Editing";
+  } else {
+    // Are you sure you want to delete?
   parms.isAdmin = SETTINGS.IsAdmin();
-  const confirmRemoveMessage = parms.isAdmin
+    confirmMessage = parms.isAdmin
     ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
     : `Are you sure you want to delete this comment #${parms.comment_id}?`;
+    okmessage = 'Delete';
+    cancelmessage = "Don't Delete";
+  }
   const dialog = (
     <NCDialog
-      message={confirmRemoveMessage}
-      okmessage={`Delete`}
+      message={confirmMessage}
+      okmessage={okmessage}
       onOK={event => m_ExecuteRemoveComment(event, parms)}
-      cancelmessage="Don't Delete"
+      cancelmessage={cancelmessage}
       onCancel={m_CloseRemoveCommentDialog}
     />
   );

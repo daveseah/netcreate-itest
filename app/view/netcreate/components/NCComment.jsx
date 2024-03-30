@@ -179,7 +179,7 @@ class NCComment extends React.Component {
         collection_ref: cref,
         comment_id: cid,
         uid,
-        skipConfirmDialog: true
+        showCancelDialog: true
       });
     } else {
       // revert to previous text if current text is empty
