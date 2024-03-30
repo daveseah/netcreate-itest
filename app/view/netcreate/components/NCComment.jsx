@@ -348,8 +348,8 @@ class NCComment extends React.Component {
             ))}
             {uid && (
               <div className="commentbar">
-                {isAllowedToEditOwnComment && DeleteBtn}
-                {isAllowedToEditOwnComment && EditBtn}
+                {(isAllowedToEditOwnComment && DeleteBtn) || <div></div>}
+                {(isAllowedToEditOwnComment && EditBtn) || <div></div>}
                 {ReplyBtn}
               </div>
             )}
