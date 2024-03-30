@@ -82,11 +82,11 @@ const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id 
 const DEFAULT_CommentTypes = [
   {
     id: 'cmt',
-    label: 'COMMENT', // comment type label
+    label: 'Comment', // comment type label
     prompts: [
       {
-        prompt: 'COMMENT', // prompt label
-        help: '',
+        prompt: 'Comment', // prompt label
+        help: 'Use this for any general comment.',
         feedback: ''
       }
     ]
@@ -97,7 +97,7 @@ const DEFAULT_CommentTypes = [
     prompts: [
       {
         prompt: 'Question or response', // prompt label
-        help: '',
+        help: 'Use this when replying to another comment.',
         feedback: ''
       }
     ]
@@ -107,7 +107,12 @@ const DEFAULT_CommentTypes = [
     label: 'Consistent', // comment type label
     prompts: [
       {
-        prompt: 'Consistent', // prompt label
+        prompt: 'Is this consistent?', // prompt label
+        help: '(yes/no)',
+        feedback: ''
+      },
+      {
+        prompt: 'What makes it consistent?', // prompt label
         help: '',
         feedback: ''
       }
@@ -118,14 +123,14 @@ const DEFAULT_CommentTypes = [
     label: 'Understandable', // comment type label
     prompts: [
       {
-        prompt: 'Understandable', // prompt label
-        help: '',
+        prompt: 'Is this understandable?', // prompt label
+        help: 'If it is not, please offer suggestions for how to improve it.',
         feedback: ''
       }
     ]
   },
   {
-    id: 'understandable',
+    id: 'evidence',
     label: 'Supported by evidence', // comment type label
     prompts: [
       {
@@ -141,37 +146,21 @@ Is there any contradictory evidence that says the model doesn't work this way?
   },
   {
     id: 'changereason',
-    label: 'Change + Reason', // comment type label
+    label: 'Change + Reason (👍🏼/👎🏻)', // comment type label
     prompts: [
       {
-        prompt: 'Change',
-        help: 'What change do you want to make?',
+        prompt: 'Will you change your model?',
+        help: 'yes/no',
         feedback: ''
       },
       {
-        prompt: 'Reason',
-        help: 'Why do you want to make that change',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'three',
-    label: 'Three Points', // comment type label
-    prompts: [
-      {
-        prompt: 'Point 1',
-        help: 'What change do you want to make?',
+        prompt: 'Why',
+        help: 'Why do you want to make that change?',
         feedback: ''
       },
       {
-        prompt: 'Point 2',
-        help: 'Why do you want to make that change',
-        feedback: ''
-      },
-      {
-        prompt: 'Point 3',
-        help: 'Why do you want to make that change',
+        prompt: 'How',
+        help: 'How will you change the model?',
         feedback: ''
       }
     ]
