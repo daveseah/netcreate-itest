@@ -191,6 +191,7 @@ function m_PromiseLoadDB() {
     UTILS.RecalculateAllNodeDegrees(data.d3data);
     UDATA.SetAppState('NCDATA', data.d3data);
     UDATA.SetAppState('TEMPLATE', data.template);
+    UDATA.LocalCall('LOAD_COMMENT_DATACORE', data);
     // Save off local reference because we don't have NCDATA AppStateChange handler
     NCDATA = data.d3data;
     TEMPLATE = data.template;
@@ -705,7 +706,7 @@ MOD.Hook('INITIALIZE', () => {
       if (DBG)
         console.log('nc-logic.EDGE_UPDATE: updating existing edge', updatedEdges);
     } else if (updatedEdges.length > 1) {
-    // if there were more edges than expected
+      // if there were more edges than expected
       throw Error('EdgeUpdate found duplicate IDs');
     }
 
@@ -810,6 +811,9 @@ MOD.Hook('APP_READY', function (info) {
       `NODE_DELETE`,
       'EDGE_UPDATE',
       'EDGE_DELETE',
+      'COMMENT_UPDATE',
+      'COMMENTS_UPDATE',
+      'READBY_UPDATE',
       'EDIT_PERMISSIONS_UPDATE',
       'NET_TEMPLATE_UPDATE'
     ]).then(d => {

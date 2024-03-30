@@ -1,0 +1,263 @@
+/* Comment Icon */
+svg#comment-icon {
+  min-width: inherit;
+  transform: scale(0.9);
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  stroke-width: 2;
+  fill: #ffd700;
+  stroke: white;
+}
+.hasReadComments svg#comment-icon {
+  fill: #0003;
+}
+.isOpen svg#comment-icon {
+  stroke: #d84a00;
+}
+.comment-icon-inline {
+  display: inline-block;
+}
+.comment-icon-inline svg#comment-icon {
+  width: 11px;
+  height: 11px;
+  margin-top: -3px;
+  margin-right: 3px;
+  position: inherit;
+  fill: #d84a00;
+}
+.comment-count {
+  color: #d84a00;
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 30px;
+  position: relative;
+  text-align: center;
+}
+.hasReadComments .comment-count {
+  color: white;
+}
+.commentbtn {
+  cursor: pointer;
+}
+.comment-intable svg#comment-icon {
+  width: 20px;
+  height: 20px;
+  fill: gray;
+  cursor: pointer;
+}
+
+/* Comment Thread */
+.commentThread {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffd700;
+  padding: 5px;
+  /* floating */
+  position: fixed;
+  top: 120px;
+  bottom: 35px;
+  left: 380px;
+  width: 400px;
+  height: min-content;
+  min-height: 100px;
+  max-height: calc(80% - 35px);
+  font-size: 14px;
+  cursor: move;
+  z-index: 100;
+  /* end floating */
+}
+.commentThread textarea.add {
+  width: 100%;
+  border-radius: 2px;
+  margin-bottom: 0;
+  padding: 0 5px;
+  resize: none;
+  border: inset #0003 1px;
+  background-color: #fff7;
+}
+/* .nccomponent .commentThread textarea::placeholder { */
+.commentThread textarea::placeholder {
+  color: #0003;
+}
+
+.commentIndented {
+  margin-left: 20px;
+}
+
+.commentThread button {
+  /* emulates nccomponent */
+  color: #333;
+  background-color: #fff6;
+  border-radius: 5px;
+  border-color: #0006;
+  border-width: 1px;
+  border-style: solid;
+  text-transform: uppercase;
+  font-size: 0.9em;
+}
+
+/* Comment */
+.comment {
+  display: grid;
+  grid-template-columns: 5em auto;
+  background-color: #fff5;
+  margin-bottom: 5px;
+  padding: 5px;
+  cursor: default;
+}
+.comment:hover {
+  background-color: #fff8;
+}
+
+.comment .date {
+  color: #0006;
+  font-size: 0.6em;
+}
+
+.commentThread .label,
+.comment .commenter,
+.comment .label,
+.comment .help /* .help uses nccomponent */,
+.comment .commentId {
+  color: #0008;
+  font-size: 0.8em;
+}
+.commentThread .comment .help {
+  /* override nccomponent */
+  font-size: 10px;
+  font-style: italic; /* emulate nccomponent */
+  opacity: 0.7;
+}
+
+.commentScroller {
+  overflow-y: auto;
+}
+
+.comment .comment-item {
+  margin-bottom: 5px;
+}
+.comment .feedback {
+  color: #0007; /* emulate nccomponent help */
+  opacity: 0.8;
+  font-size: 10px;
+}
+.comment .commenttext {
+  background-color: #fff5;
+  padding-left: 3px;
+}
+
+.comment .commentId {
+  color: #0004;
+  float: right;
+}
+
+.comment .editmenu {
+  visibility: hidden;
+  border: none;
+  font-size: 0.7em;
+}
+.comment:hover .editmenu {
+  visibility: visible;
+}
+
+/* control bars */
+.commentThread .topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 2px;
+}
+.commentThread .topbar .closeBtn {
+  /* content: 'X'; */
+  transform: scaleX(1.35);
+  margin: 0 3px;
+  padding: 0 3px;
+  color: #0006;
+  background-color: #fff2;
+  cursor: pointer;
+}
+
+.commentbar,
+.editbar {
+  padding-top: 5px;
+}
+
+.commentbar {
+  display: flex;
+  justify-content: space-between;
+}
+.editbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.comment .commentbar button,
+.comment .editbar button {
+  color: white;
+  background-color: #f60;
+  width: fit-content;
+}
+.comment .commentbar button {
+  margin-left: 0; /* override nccomponent */
+}
+.comment .editbar button {
+  margin-left: 15px; /* emulate nccomponent */
+}
+.comment .commentbar button:hover,
+.comment .editbar button:hover {
+  color: white;
+  background-color: rgb(255, 141, 65);
+}
+.comment .commentbar button.secondary,
+.comment .editbar button.secondary {
+  color: #333;
+  background-color: transparent;
+}
+.comment .commentbar button.secondary:hover,
+.comment .editbar button.secondary:hover {
+  background-color: #0002;
+}
+.comment .commentbar button.danger,
+.comment .editbar button.danger {
+  color: #333;
+  background-color: transparent;
+}
+.comment .commentbar button.danger:hover,
+.comment .editbar button.danger:hover {
+  color: white;
+  background-color: #f00;
+}
+.comment .commentbar button {
+  /* visibility: hidden; */
+  display: none;
+}
+.comment:hover .commentbar button {
+  /* visibility: visible; */
+  display: block;
+}
+
+/* emulate nccomponent */
+.comment select {
+  width: 100%;
+  border-radius: 5px;
+  border-color: #0006;
+  border-width: 1px;
+  border-style: solid;
+  background-color: #fff8;
+  margin-bottom: 5px;
+}
+/* emulate nccomponent */
+.comment textarea {
+  width: 100%;
+  border-radius: 2px;
+  border-color: #0006;
+  border-width: 1px;
+  border-style: solid;
+  background-color: #fff8;
+  margin-bottom: 5px;
+  padding: 0 5px;
+  resize: none;
+}

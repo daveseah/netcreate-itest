@@ -849,7 +849,6 @@ function m_EdgefileLoadEdges(headers, lines) {
 
     return edge;
   }).filter(e => e !== undefined);;
-  console.log('result edges', edges)
   return { isValid, messageJsx, edges };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

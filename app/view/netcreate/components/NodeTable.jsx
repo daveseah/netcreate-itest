@@ -28,6 +28,8 @@
 const React = require('react');
 const ReactStrap = require('reactstrap');
 const NCUI = require('../nc-ui');
+const CMTMGR = require('../comment-mgr');
+const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
@@ -330,6 +332,29 @@ class NodeTable extends UNISYS.Component {
     return undefined;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   */
+  sortByComment(nodes) {
+    // stuff the count into nodes for calculation
+    const uid = CMTMGR.GetCurrentUserId();
+    const countednodes = nodes.map(n => {
+      const cref = CMTMGR.GetNodeCREF(n.id);
+      n.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+      return n;
+    });
+    if (countednodes) {
+      return countednodes.sort((a, b) => {
+        let akey = a.commentcount || 0,
+          bkey = b.commentcount || 0;
+        // sort descending
+        if (akey > bkey) return 1 * Number(this.sortDirection);
+        if (akey < bkey) return -1 * Number(this.sortDirection);
+        return 0;
+      });
+    }
+    return 0;
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** If no `sortkey` is passed, the sort will use the existing state.sortkey
     Returns the sorted nodes so that the calling function can handle
     state updates all at once.
@@ -344,6 +369,8 @@ class NodeTable extends UNISYS.Component {
       //   return this.sortByUpdated(nodes);
       case 'label':
         return this.sortByLabel(nodes);
+      case 'commentbtn':
+        return this.sortByComment(nodes);
       default:
         return this.sortByKey(nodes, sortkey, type);
     }
@@ -511,6 +538,14 @@ class NodeTable extends UNISYS.Component {
                   {nodeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
                 </Button>
               </th>
+              <th>
+                <div
+                  className="comment-icon-inline comment-intable"
+                  onClick={() => this.setSortKey('commentbtn')}
+                >
+                  {CMTMGR.COMMENTICON}
+                </div>
+              </th>
               {/*
               <th width="10%" hidden={!isLocalHost}>
                 <Button
@@ -558,6 +593,9 @@ class NodeTable extends UNISYS.Component {
                   </td>
                 ))}
                 <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
+                <td>
+                  <NCCommentBtn cref={`n${node.id}`} isTable />
+                </td>
                 {/*
                 <td hidden={!isLocalHost} style={{ fontSize: '9px' }}>
                   {this.displayUpdated(node)}

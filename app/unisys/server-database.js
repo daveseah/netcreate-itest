@@ -43,9 +43,12 @@ let m_options; // saved initialization options
 let m_db; // loki database
 let m_max_edgeID;
 let m_max_nodeID;
+let m_max_commentID;
 let m_dupe_set; // set of nodeIDs for determine whether there are duplicates
 let NODES; // loki "nodes" collection
 let EDGES; // loki "edges" collection
+let COMMENTS; // loki "comments" collection
+let READBY; // loki "readby" collection
 let m_locked_nodes; // map key = nodeID, value = uaddr initiating the lock
 let m_locked_edges; // map key = nodeID, value = uaddr initiating the lock
 let TEMPLATE;
@@ -116,6 +119,10 @@ DB.InitializeDatabase = function (options = {}) {
     EDGES = m_db.getCollection('edges');
     if (EDGES === null) EDGES = m_db.addCollection('edges');
     m_locked_edges = new Map();
+    COMMENTS = m_db.getCollection('comments');
+    if (COMMENTS === null) COMMENTS = m_db.addCollection('comments');
+    READBY = m_db.getCollection('readby');
+    if (READBY === null) READBY = m_db.addCollection('readby');
 
     // initialize unique set manager
     m_dupe_set = new Set();
@@ -171,6 +178,23 @@ DB.InitializeDatabase = function (options = {}) {
       BL(db_file),
       `m_max_nodeID '${m_max_nodeID}', m_max_edgeID '${m_max_edgeID}'`
     );
+
+    // find highest COMMENT ID
+    if (COMMENTS.count() > 0) {
+      m_max_commentID = COMMENTS.mapReduce(
+        obj => {
+          // side-effect: make sure ids are numbers
+          m_CleanObjID('comment.id', obj);
+          return obj.comment_id;
+        },
+        arr => {
+          return Math.max(...arr);
+        }
+      );
+    } else {
+      m_max_commentID = 0;
+    }
+
     m_db.saveDatabase();
 
     await m_LoadTemplate();
@@ -182,7 +206,9 @@ DB.InitializeDatabase = function (options = {}) {
   function f_AutosaveStatus() {
     let nodeCount = NODES.count();
     let edgeCount = EDGES.count();
-    console.log(PR, `AUTOSAVING! ${nodeCount} NODES / ${edgeCount} EDGES <3`);
+    let commentCount = COMMENTS.count();
+    let readbyCount = READBY.count();
+    console.log(PR, `AUTOSAVING! ${nodeCount} NODES / ${edgeCount} EDGES / ${commentCount} COMMENTS / ${readbyCount} READBY <3`);
   }
 }; // InitializeDatabase()
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -577,6 +603,8 @@ function m_ValidateTemplate() {
 DB.PKT_GetDatabase = function (pkt) {
   let nodes = NODES.chain().data({ removeMeta: false });
   let edges = EDGES.chain().data({ removeMeta: false });
+  let comments = COMMENTS.chain().data();
+  let readby = READBY.chain().data();
   if (DBG)
     console.log(
       PR,
@@ -586,22 +614,30 @@ DB.PKT_GetDatabase = function (pkt) {
   m_MigrateNodes(nodes);
   m_MigrateEdges(edges);
   LOGGER.WriteRLog(pkt.InfoObj(), `getdatabase`);
-  return { d3data: { nodes, edges }, template: TEMPLATE };
+  return { d3data: { nodes, edges }, template: TEMPLATE, comments, readby };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API: reset database from scratch
  */
 DB.PKT_SetDatabase = function (pkt) {
   if (DBG) console.log(PR, `PKT_SetDatabase`);
-  let { nodes = [], edges = [] } = pkt.Data();
+  let { nodes = [], edges = [], comments = [], readby = [] } = pkt.Data();
   if (!nodes.length) console.log(PR, 'WARNING: empty nodes array');
   else console.log(PR, `setting ${nodes.length} nodes...`);
   if (!edges.length) console.log(PR, 'WARNING: empty edges array');
   else console.log(PR, `setting ${edges.length} edges...`);
+  if (!comments.length) console.log(PR, 'WARNING: empty comments array');
+  else console.log(PR, `setting ${comments.length} comments...`);
+  if (!readby.length) console.log(PR, 'WARNING: empty readby array');
+  else console.log(PR, `setting ${readby.length} readby...`);
   NODES.clear();
   NODES.insert(nodes);
   EDGES.clear();
   EDGES.insert(edges);
+  COMMENTS.clear();
+  COMMENTS.insert(comments);
+  READBY.clear();
+  READBY.insert(readby);
   console.log(PR, `PKT_SetDatabase complete. Data available on next get.`);
   m_db.close();
   DB.InitializeDatabase();
@@ -613,13 +649,19 @@ DB.PKT_SetDatabase = function (pkt) {
  */
 DB.PKT_InsertDatabase = function (pkt) {
   if (DBG) console.log(PR, `PKT_InsertDatabase`);
-  let { nodes = [], edges = [] } = pkt.Data();
+  let { nodes = [], edges = [], comments = [], readby = [] } = pkt.Data();
   if (!nodes.length) console.log(PR, 'WARNING: empty nodes array');
   else console.log(PR, `setting ${nodes.length} nodes...`);
   if (!edges.length) console.log(PR, 'WARNING: empty edges array');
   else console.log(PR, `setting ${edges.length} edges...`);
+  if (!comments.length) console.log(PR, 'WARNING: empty comments array');
+  else console.log(PR, `setting ${comments.length} comments...`);
+  if (!readby.length) console.log(PR, 'WARNING: empty readby array');
+  else console.log(PR, `setting ${readby.length} readby...`);
   NODES.insert(nodes);
   EDGES.insert(edges);
+  COMMENTS.insert(comments);
+  READBY.insert(readby);
   console.log(PR, `PKT_InsertDatabase complete. Data available on next get.`);
   m_db.close();
   DB.InitializeDatabase();
@@ -636,7 +678,7 @@ DB.PKT_InsertDatabase = function (pkt) {
  */
 DB.PKT_MergeDatabase = function (pkt) {
   if (DBG) console.log(PR, `PKT_MergeDatabase`);
-  let { nodes = [], edges = [] } = pkt.Data();
+  let { nodes = [], edges = [], comments = [], readby = [] } = pkt.Data();
 
   // Save Backup First!
   m_BackupDatabase();
@@ -654,6 +696,18 @@ DB.PKT_MergeDatabase = function (pkt) {
   });
   pkt.data.edge = undefined; // clear, no longer needed
 
+  comments.forEach(c => {
+    pkt.data.comments = c;
+    DB.PKT_Update(pkt);
+  });
+  pkt.data.comment = undefined; // clear, no longer needed
+
+  readby.forEach(r => {
+    pkt.data.readby = r;
+    DB.PKT_Update(pkt);
+  });
+  pkt.data.readby = undefined; // clear, no longer needed
+
   return new Promise((resolve, reject) =>
     m_db.saveDatabase(err => {
       if (err) reject(new Error('rejected'));
@@ -669,13 +723,19 @@ DB.PKT_MergeDatabase = function (pkt) {
  */
 DB.PKT_UpdateDatabase = function (pkt) {
   if (DBG) console.log(PR, `PKT_UpdateDatabase`);
-  let { nodes = [], edges = [] } = pkt.Data();
+  let { nodes = [], edges = [], comments = [], readby = [] } = pkt.Data();
   if (!nodes.length) console.log(PR, 'WARNING: empty nodes array');
   else console.log(PR, `updating ${nodes.length} nodes...`);
   if (!edges.length) console.log(PR, 'WARNING: empty edges array');
   else console.log(PR, `updating ${edges.length} edges...`);
+  if (!comments.length) console.log(PR, 'WARNING: empty comments array');
+  else console.log(PR, `updating ${comments.length} comments...`);
+  if (!readby.length) console.log(PR, 'WARNING: empty readby array');
+  else console.log(PR, `updating ${readby.length} readby...`);
   NODES.update(nodes);
   EDGES.update(edges);
+  COMMENTS.update(comments);
+  READBY.update(readby);
   console.log(PR, `PKT_UpdateDatabase complete. Disk db file updated.`);
   m_db.saveDatabase();
   LOGGER.WriteRLog(pkt.InfoObj(), `updatedatabase`);
@@ -752,6 +812,29 @@ DB.PKT_GetNewEdgeIDs = function (pkt) {
   if (DBG) console.log(PR, `PKT_GetNewEdgeIDs ${pkt.Info()} edgeIDs ${edgeIDs}`);
   return { edgeIDs };
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_GetNewCommentID() {
+  m_max_commentID += 1;
+  return m_max_commentID;
+}
+DB.PKT_GetNewCommentID = function (pkt) {
+  if (DBG) console.log(PR, `PKT_GetNewCommentID ${pkt.Info()} commentID ${m_max_commentID}`);
+  return { comment_id: m_GetNewCommentID() };
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Side Effect: Changes `m_max_nodeID`
+function m_CalculateMaxCommentID() {
+  if (COMMENTS.count() > 0) {
+    m_max_commentID = COMMENTS.mapReduce(
+      obj => obj.comment_id,
+      arr => Math.max(...arr)
+    );
+  } else {
+    m_max_commentID = 0;
+  }
+  return m_max_commentID;
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DB.PKT_RequestLockNode = function (pkt) {
   let { nodeID } = pkt.Data();
@@ -895,7 +978,7 @@ DB.RequestUnlock = function (uaddr) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // eslint-disable-next-line complexity
 DB.PKT_Update = function (pkt) {
-  let { node, edge, nodeID, replacementNodeID, edgeID } = pkt.Data();
+  let { node, edge, nodeID, replacementNodeID, edgeID, comment, readbys } = pkt.Data();
   let retval = {};
   // PROCESS NODE INSERT/UPDATE
   if (node) {
@@ -987,8 +1070,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
-          } ${JSON.stringify(node)}`
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          } ${JSON.stringify(edge)}`
         );
       retval = { op: 'insert', edge: updatedEdge };
     } else if (matches.length === 1) {
@@ -1009,8 +1092,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
-          } ${JSON.stringify(node)}`
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          } ${JSON.stringify(edge)}`
         );
       retval = { op: 'update', edge: updatedEdge };
     } else {
@@ -1081,9 +1164,223 @@ DB.PKT_Update = function (pkt) {
     return { op: 'delete', edgeID };
   }
 
+  // PROCESS COMMENT INSERT/UPDATE
+  if (comment) {
+    m_CleanObjID(`${pkt.Info()} comment.id`, comment);
+    let matches = COMMENTS.find({ comment_id: comment.comment_id });
+    if (matches.length === 0) {
+      // if there was no comment, then this is an insert new operation
+      if (DBG)
+        console.log(
+          PR,
+          `PKT_Update ${pkt.Info()} INSERT comment_id ${JSON.stringify(comment)}`
+        );
+
+      // Handle different id types
+      if (isNaN(comment.comment_id)) {
+        // If the node id has NOT been defined, generate a new node id
+        comment.comment_id = m_GetNewCommentID();
+      }
+
+      LOGGER.WriteRLog(pkt.InfoObj(), `insert comment`, comment.comment_id, JSON.stringify(comment));
+      DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
+      COMMENTS.insert(comment);
+      // Return the updated record -- needed to update metadata
+      let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+      if (!updatedComment)
+        console.log(
+          PR,
+          `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
+          } ${JSON.stringify(comment)}`
+        );
+      retval = { op: 'insert', comment: updatedComment };
+    } else if (matches.length === 1) {
+      // there was one match to, so update the comment
+      COMMENTS.findAndUpdate({ comment_id: comment.comment_id }, c => {
+        if (DBG)
+          console.log(
+            PR,
+            `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
+              comment
+            )}`
+          );
+        LOGGER.WriteRLog(pkt.InfoObj(), `update comment`, comment.comment_id, JSON.stringify(comment));
+        DB.AppendCommentLog(c, pkt); // log GroupId to node stored in database
+        Object.assign(c, comment);
+      });
+      // Return the updated record -- needed to update metadata
+
+      let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+      if (!updatedComment)
+        console.log(
+          PR,
+          `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
+          } ${JSON.stringify(comment)}`
+        );
+      retval = { op: 'update', comment: updatedComment };
+    } else {
+      if (DBG)
+        console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
+      LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
+      retval = { op: 'error-multinodeid' };
+    }
+    return retval;
+  } // if comment
+
+  // PROCESS READBY INSERT/UPDATE
+  // NOTE this is a little different than the others because `readbys` is an array of readby objects.
+  if (readbys) {
+    const retvals = [];
+    readbys.forEach(readby => {
+      m_CleanObjID(`${pkt.Info()} readby.id`, readby);
+      let matches = READBY.find({ comment_id: readby.comment_id });
+      if (matches.length === 0) {
+        // if there was no readby, then this is an insert new operation
+        if (DBG)
+          console.log(
+            PR,
+            `PKT_Update ${pkt.Info()} INSERT comment_id ${JSON.stringify(readby)}`
+          );
+
+        // Handle different id types
+        if (isNaN(readby.comment_id)) {
+          // If the node id has NOT been defined, generate a new node id
+          throw new Error(`server-database.PKT_Update called with invalid comment_id ${JSON.stringify(readby)}. This should not happen.`);
+        }
+
+        LOGGER.WriteRLog(pkt.InfoObj(), `insert readby`, readby.comment_id, JSON.stringify(readby));
+        DB.AppendReadbyLog(readby, pkt); // log GroupId to node stored in database
+        READBY.insert(readby);
+        // Return the updated record -- needed to update metadata
+        let updatedReadby = READBY.findOne({ comment_id: readby.comment_id });
+        if (!updatedReadby)
+          console.log(
+            PR,
+            `PKT_Update ${pkt.Info()} could not find new readby after update!  This should not happen! ${readby.comment_id
+            } ${JSON.stringify(readby)}`
+          );
+        retval = { op: 'insert', readby: updatedReadby };
+      } else if (matches.length === 1) {
+        // there was one match to, so update the comment
+        READBY.findAndUpdate({ comment_id: readby.comment_id }, r => {
+          if (DBG)
+            console.log(
+              PR,
+              `PKT_Update ${pkt.Info()} UPDATE comment_id ${readby.comment_id} ${JSON.stringify(
+                readby
+              )}`
+            );
+          LOGGER.WriteRLog(pkt.InfoObj(), `update readby`, readby.comment_id, JSON.stringify(readby));
+          DB.AppendReadbyLog(r, pkt); // log GroupId to node stored in database
+          Object.assign(r, readby);
+        });
+        // Return the updated record -- needed to update metadata
+
+        let updatedReadby = READBY.findOne({ comment_id: readby.comment_id });
+        if (!updatedReadby)
+          console.log(
+            PR,
+            `PKT_Update ${pkt.Info()} could not find updated readby after update!  This should not happen! ${readby.comment_id
+            } ${JSON.stringify(readby)}`
+          );
+        retval = { op: 'update', readby: updatedReadby };
+      } else {
+        if (DBG)
+          console.log(PR, `WARNING: multiple comment_id ${readby.comment_id} x${matches.length}`);
+        LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, readby.comment_id, 'duplicate comment id');
+        retval = { op: 'error-multinodeid' };
+      }
+      // NOTE returns an array of retvals for multiple replies
+      retvals.push(retval);
+    });
+    return retvals;
+  } // if readby
+
   // return update value
   return { op: 'error-noaction' };
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** NOTE: Unlike PKT_Update, the return value is an array with multiple results */
+DB.PKT_BatchUpdate = function (pkt) {
+  let { items } = pkt.Data();
+  let retvals = [];
+  items.forEach(item => {
+    const { comment, commentID } = item;
+    // PROCESS COMMENT INSERT/UPDATE
+    if (comment) retvals.push(m_CommentUpdate(comment, pkt));
+    // DELETE SINGLE COMMENT
+    if (commentID !== undefined) retvals.push(m_CommentRemove(commentID, pkt));
+  })
+  return retvals;
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_CommentUpdate(comment, pkt) {
+  m_CleanObjID(`${pkt.Info()} comment.id`, comment);
+  let matches = COMMENTS.find({ comment_id: comment.comment_id });
+  if (matches.length === 0) {
+    // if there was no comment, then this is an insert new operation
+    if (DBG)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} INSERT comment_id ${JSON.stringify(comment)}`
+      );
+    // Handle different id types
+    if (isNaN(comment.comment_id)) {
+      // If the comment id has NOT been defined, generate a new comment id
+      comment.comment_id = m_GetNewCommentID();
+    }
+    LOGGER.WriteRLog(pkt.InfoObj(), `insert comment`, comment.comment_id, JSON.stringify(comment));
+    DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
+    COMMENTS.insert(comment);
+    // Return the updated record -- needed to update metadata
+    let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+    if (!updatedComment)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
+        } ${JSON.stringify(comment)}`
+      );
+    retval = { op: 'insert', comment: updatedComment };
+  } else if (matches.length === 1) {
+    // there was one match to, so update the comment
+    COMMENTS.findAndUpdate({ comment_id: comment.comment_id }, c => {
+      if (DBG)
+        console.log(
+          PR,
+          `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
+            comment
+          )}`
+        );
+      LOGGER.WriteRLog(pkt.InfoObj(), `update comment`, comment.comment_id, JSON.stringify(comment));
+      DB.AppendCommentLog(c, pkt); // log GroupId to node stored in database
+      Object.assign(c, comment);
+    });
+    // Return the updated record -- needed to update metadata
+
+    let updatedComment = COMMENTS.findOne({ comment_id: comment.comment_id });
+    if (!updatedComment)
+      console.log(
+        PR,
+        `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
+        } ${JSON.stringify(comment)}`
+      );
+    retval = { op: 'update', comment: updatedComment };
+  } else {
+    if (DBG)
+      console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
+    LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
+    retval = { op: 'error-multinodeid' };
+  }
+  return retval;
+} // if comment
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_CommentRemove(commentID, pkt) {
+  if (DBG) console.log(PR, `PKT_Update ${pkt.Info()} DELETE commentID ${commentID}`);
+  // Log first so it's apparent what is triggering the changes
+  LOGGER.WriteRLog(pkt.InfoObj(), `delete comment`, commentID);
+  COMMENTS.findAndRemove({ comment_id: commentID });
+  return { op: 'delete', commentID };
+}
 
 /// NODE ANNOTATION ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1128,6 +1425,50 @@ DB.FilterEdgeLog = function (edge) {
   let newEdge = Object.assign({}, edge);
   Reflect.deleteProperty(newEdge, '_elog');
   return newEdge;
+};
+/// COMMENT ANNOTATION ////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** write/remove packet SourceGroupID() information into the comment before writing
+    the first entry is the insert, subsequent operations are updates
+ */
+DB.AppendCommentLog = function (comment, pkt) {
+  if (!comment._nlog) comment._nlog = [];
+  let gid = pkt.SourceGroupID() || pkt.SourceAddress();
+  comment._nlog.push(gid);
+  if (DBG) {
+    let out = '';
+    comment._nlog.forEach(el => {
+      out += `[${el}] `;
+    });
+    console.log(PR, 'commentlog', out);
+  }
+};
+DB.FilterCommentLog = function (comment) {
+  let newComment = Object.assign({}, comment);
+  Reflect.deleteProperty(newComment, '_nlog');
+  return newComment;
+};
+/// READBY ANNOTATION ////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** write/remove packet SourceGroupID() information into the readby before writing
+    the first entry is the insert, subsequent operations are updates
+ */
+DB.AppendReadbyLog = function (readby, pkt) {
+  if (!readby._nlog) readby._nlog = [];
+  let gid = pkt.SourceGroupID() || pkt.SourceAddress();
+  readby._nlog.push(gid);
+  if (DBG) {
+    let out = '';
+    readby._nlog.forEach(el => {
+      out += `[${el}] `;
+    });
+    console.log(PR, 'readbylog', out);
+  }
+};
+DB.FilterReadbyLog = function (readby) {
+  let newReadby = Object.assign({}, readby);
+  Reflect.deleteProperty(newReadby, '_nlog');
+  return newReadby;
 };
 
 /// JSON EXPORT ///////////////////////////////////////////////////////////////

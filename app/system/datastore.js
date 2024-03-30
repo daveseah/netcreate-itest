@@ -40,6 +40,12 @@ DSTOR.Hook('INITIALIZE', () => {
     DSTOR.UpdateServerDB(data);
   });
 
+  // DB_BATCHUPDATE is a local call originating from within the app
+  // Generally used to update mutliple comments
+  UDATA.HandleMessage('DB_BATCHUPDATE', function (data) {
+    DSTOR.BatchUpdateServerDB(data);
+  });
+
   // DB_INSERT is a local call originating from within the app
   // Generally used to add new nodes and edges after an import
   UDATA.HandleMessage('DB_INSERT', function (data) {
@@ -91,6 +97,24 @@ DSTOR.UpdateServerDB = function (data) {
   }
   // it is!
   UDATA.Call('SRV_DBUPDATE', data).then(res => {
+    if (res.OK) {
+      console.log(PR, `server db transaction`, data, `success`);
+    } else {
+      console.log(PR, 'error updating server db', res);
+    }
+  });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** API: Write batch updates to database
+ */
+DSTOR.BatchUpdateServerDB = function (data) {
+  // check that network is online
+  if (UNISYS.IsStandaloneMode()) {
+    console.warn(PR, `STANDALONE MODE: UpdateServerDB() suppressed!`);
+    return;
+  }
+  // it is!
+  UDATA.Call('SRV_DBBATCHUPDATE', data).then(res => {
     if (res.OK) {
       console.log(PR, `server db transaction`, data, `success`);
     } else {
@@ -200,6 +224,29 @@ DSTOR.PromiseNewEdgeIDs = function (count) {
         resolve(data.edgeIDs);
       } else {
         reject(new Error('unknown error' + JSON.stringify(data)));
+      }
+    });
+  });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** get a unique CommentID
+ */
+DSTOR.PromiseNewCommentID = function () {
+  return new Promise((resolve, reject) => {
+    UDATA.NetCall('SRV_DBGETCOMMENTID').then(data => {
+      if (data.comment_id) {
+        if (DBG) console.log(PR, 'server allocated comment_id', data.comment_id);
+        resolve(data.comment_id);
+      } else {
+        if (UNISYS.IsStandaloneMode()) {
+          reject(
+            new Error(
+              'STANDALONE MODE: UI should prevent PromiseNewCommentID() from running!'
+            )
+          );
+        } else {
+          reject(new Error('unknown error' + JSON.stringify(data)));
+        }
       }
     });
   });

@@ -12,6 +12,16 @@
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** API METHOD
+ *  Generates a universal unique identifer for use with
+ *  - comment ids
+ *  This is a placeholder method.
+ *  @return string
+ */
+function GenerateUUID() {
+  // TODO generate actual unique id
+  return String(Math.random() * 128);
+}
+/** API METHOD
  *  Calculates and sets `degrees` for all nodes
  *  `degrees` is the number of edges connected to a node
  *  degrees needs to be recalculated whenever an edge is changed
@@ -73,6 +83,7 @@ function RecalculateAllEdgeSizes(data) {
 /// MODULE EXPORTS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 module.exports = {
+  GenerateUUID,
   RecalculateAllNodeDegrees,
   RecalculateAllEdgeSizes
 };

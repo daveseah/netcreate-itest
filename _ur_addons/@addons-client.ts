@@ -8,6 +8,7 @@ import * as UR from '@ursys/core'; // this is a .js file
 import { NetEndpoint } from './net/class-urnet-endpoint.ts';
 import { NetSocket } from './net/class-urnet-socket.ts';
 import { NetPacket } from './net/class-urnet-packet.ts';
+import * as COMMENT from './comment/ac-comment.ts';
 
 /// ASSEMBLE MODULES //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -29,5 +30,6 @@ function AddonClientTest() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
   CLASS, //
-  AddonClientTest
+  AddonClientTest,
+  COMMENT
 };

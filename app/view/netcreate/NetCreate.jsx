@@ -75,6 +75,7 @@ class NetCreate extends UNISYS.Component {
     SM._initializeState({ prop_1: 1 });
     console.log('SM:StateMgr contains:', SM.state());
     /** end of _ur core and _ur_addons tests **/
+    URADD.COMMENT.Init();
 
     this.state = {
       isConnected: true,
@@ -311,6 +312,7 @@ class NetCreate extends UNISYS.Component {
           concerns and/or to request information contained on this website in an
           accessible format.
         </div>
+        <div id="dialog-container"></div>
       </div>
     ); // end return
   } // end render()

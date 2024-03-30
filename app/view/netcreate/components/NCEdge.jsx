@@ -31,8 +31,10 @@ const {
   ARROW_UPDOWN
 } = require('system/util/constant');
 const NCUI = require('../nc-ui');
+const CMTMGR = require('../comment-mgr');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
+const NCCommentBtn = require('./NCCommentBtn');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
 
@@ -609,19 +611,19 @@ class NCEdge extends UNISYS.Component {
         uViewMode: NCUI.VIEWMODE.VIEW
       },
       () => {
-    this.AppCall('DB_UPDATE', { edge }).then(() => {
-      this.UnlockEdge(() => {
-        // Clear the secondary selection
-        UDATA.LocalCall('SELECTMGR_DESELECT_SECONDARY');
+        this.AppCall('DB_UPDATE', { edge }).then(() => {
+          this.UnlockEdge(() => {
+            // Clear the secondary selection
+            UDATA.LocalCall('SELECTMGR_DESELECT_SECONDARY');
 
-        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-        this.setState({
-          uIsLockedByDB: false,
+            UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+            this.setState({
+              uIsLockedByDB: false,
               uSelectSourceTarget: undefined
+            });
+          });
         });
-      });
-    });
-  }
+      }
     );
   }
   DeleteEdge() {
@@ -846,6 +848,7 @@ class NCEdge extends UNISYS.Component {
         ? `${TEMPLATE.citation.text}. `
         : '') +
       `Last accessed at ${NCUI.DateFormatted()}.`;
+    const collection_ref = CMTMGR.GetEdgeCREF(id);
 
     return (
       <div className={`nccomponent ncedge ${animateHeight}`}>
@@ -855,6 +858,11 @@ class NCEdge extends UNISYS.Component {
           onClick={this.UIDeselectEdge}
         >
           {/* BUILT-IN - - - - - - - - - - - - - - - - - */}
+          <div className="titlebar" style={{ marginBottom: '3px' }}>
+            <div className="nodenumber">EDGE {id} </div>
+            <div></div>
+            <NCCommentBtn cref={collection_ref} />
+          </div>
           <div className="formview">
             {NCUI.RenderLabel('source', defs['source'].displayLabel)}
             {this.RenderSourceTargetButton(
