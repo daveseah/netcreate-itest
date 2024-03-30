@@ -376,8 +376,8 @@ function RemoveComment(parms) {
       COMMENTS.set(nextCobj.comment_id, nextCobj);
       retvals.push({ comment: nextCobj });
     }
-  } else if (isRoot && !next_comment_id) {
-    // B. Root Orphan, OK to delete
+  } else if (isRoot && !hasReplies && !next_comment_id) {
+    // B. Root Orphan (with no replies), OK to delete
     // -- Root orphan has no `next` && has no `parent`
     if (DBG) console.log('!!! COMMENTS deleting root orphan', comment_id);
     COMMENTS.delete(comment_id);

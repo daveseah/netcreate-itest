@@ -236,6 +236,13 @@ class NCComment extends React.Component {
         );
       return '';
     }
+    // Error check: verify that comment types exist
+    if (!commentTypes.get(comment_type))
+      throw new Error(
+        `NCComment could not find comment type "${comment_type}"!  Did you redefine comment types? Known Comment Types: ${[
+          ...commentTypes.keys()
+        ]}`
+      );
 
     // TODO Allow admins
     const isAllowedToEditOwnComment = uid === comment.commenter_id;
