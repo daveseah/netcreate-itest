@@ -165,25 +165,24 @@ class NCComment extends React.Component {
     const { cref, cid, commenter_text } = this.state;
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
 
-    let inputIsEmpty = true;
-    commenter_text.forEach(t => {
-      if (t !== '') inputIsEmpty = false;
-    });
-
-    let hasPreviouslySavedComments = false;
+    let savedCommentIsEmpty = true;
     comment.commenter_text.forEach(t => {
-      if (t !== '') hasPreviouslySavedComments = true;
+      if (t !== '') savedCommentIsEmpty = false;
     });
 
-    if (inputIsEmpty && !hasPreviouslySavedComments) {
-      // delete the comment if inputIsEmpty and does not hasPreviouslySavedComments
+    if (savedCommentIsEmpty) {
+      // "Cancel" will always remove the comment if the comment is empty
+      // - usually because it's a newly created comment
+      // - but also if the user clears all the text fields
+      // We don't care if the user entered any text
       CMTMGR.RemoveComment({
         collection_ref: cref,
         comment_id: cid,
-        uid
+        uid,
+        skipConfirmDialog: true
       });
     } else {
-    // revert to previous text if current text is empty
+      // revert to previous text if current text is empty
       this.setState({
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
         uViewMode: NCUI.VIEWMODE.VIEW

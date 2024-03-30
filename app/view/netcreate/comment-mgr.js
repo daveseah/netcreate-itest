@@ -242,11 +242,16 @@ MOD.UpdateComment = (cobj) => {
  * 1. Show confirmation dialog
  * 2. Execute the remova
  * @param {Object} parms
- * @param {Object} parms.collection_ref
- * @param {Object} parms.comment_id
- * @param {Object} parms.uid
+ * @param {string} parms.collection_ref
+ * @param {string} parms.comment_id
+ * @param {string} parms.uid
+ * @param {boolean} parms.skipConfirmDialog
  */
 MOD.RemoveComment = parms => {
+  if (parms.skipConfirmDialog) {
+    m_ExecuteRemoveComment({}, parms);
+    return;
+  }
   parms.isAdmin = SETTINGS.IsAdmin();
   const confirmRemoveMessage = parms.isAdmin
     ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
