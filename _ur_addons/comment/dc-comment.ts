@@ -164,6 +164,18 @@ Is there any contradictory evidence that says the model doesn't work this way?
         feedback: ''
       }
     ]
+  },
+  {
+    id: 'cource',
+    label: 'Source', // comment type label
+    prompts: [
+      {
+        prompt: 'What is the source of this?', // prompt label
+        help: `What is the source / citation, and how might that have informed your analysis?
+`,
+        feedback: ''
+      }
+    ]
   }
 ];
 
