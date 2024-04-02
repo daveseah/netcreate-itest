@@ -112,6 +112,30 @@ svg#comment-icon {
   background-color: #fff8;
 }
 
+.comment.deleted {
+  background-color: #0000000a;
+}
+.comment.deleted .commenttext {
+  color: #0003;
+  background-color: transparent;
+}
+.comment.deleted .commenter,
+.comment.deleted .date,
+.comment.deleted .help /* .help uses nccomponent */,
+.comment.deleted .commentId {
+  color: #0003;
+}
+.comment.deleted .label::before {
+  content: 'DELETED';
+  color: #0003;
+}
+.comment.deleted .label {
+  color: transparent;
+}
+.comment.deleted svg#comment-icon {
+  fill: transparent;
+}
+
 .comment .date {
   color: #0006;
   font-size: 0.6em;
