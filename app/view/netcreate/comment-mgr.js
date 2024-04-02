@@ -97,6 +97,7 @@ function m_UpdateComment(comment) {
     comment_type: comment.comment_type,
     comment_createtime: comment.comment_createtime,
     comment_modifytime: comment.comment_modifytime,
+    comment_isMarkedDeleted: comment.comment_isMarkedDeleted,
     commenter_id: comment.commenter_id,
     commenter_text: comment.commenter_text
   };
@@ -359,6 +360,7 @@ function m_DBUpdateComment(cobj, cb) {
     comment_type: cobj.comment_type,
     comment_createtime: cobj.comment_createtime,
     comment_modifytime: cobj.comment_modifytime,
+    comment_isMarkedDeleted: cobj.comment_isMarkedDeleted,
     commenter_id: cobj.commenter_id,
     commenter_text: cobj.commenter_text
   };

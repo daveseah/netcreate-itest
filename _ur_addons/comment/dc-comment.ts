@@ -20,6 +20,7 @@
         comment_type: string;
         comment_createtime: number;
         comment_modifytime: number;
+        comment_isMarkedDeleted: boolean;
 
         commenter_id: any;
         commenter_text: string[];
@@ -285,6 +286,7 @@ function AddComment(data) {
     comment_type: 'cmt', // default type, no prompts
     comment_createtime: new Date(),
     comment_modifytime: '',
+    comment_isMarkedDeleted: data.comment_isMarkedDeleted,
 
     commenter_id: data.commenter_id,
     commenter_text: []
@@ -446,12 +448,10 @@ function IsMarkedRead(cid, uid) {
   return readby.includes(uid);
 }
 
-/**
- * Get all the comment ids related to a particular collection_ref
- * based on ROOTS.
- * DeriveValues needs to be called before this method can be used.
- * @param {string} cref collection_ref id
- * @returns comment_id[]
+function IsMarkedDeleted(cid) {
+  return COMMENTS.get(cid).comment_isMarkedDeleted;
+}
+
  */
 function GetThreadedCommentIds(cref) {
   const all_comments_ids = [];
@@ -530,6 +530,7 @@ export default {
   HandleRemovedComments,
   MarkCommentRead,
   IsMarkedRead,
+  IsMarkedDeleted,
   GetThreadedCommentIds,
   GetThreadedCommentData,
   // READBY
