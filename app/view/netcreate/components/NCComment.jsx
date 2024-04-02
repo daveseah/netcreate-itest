@@ -15,6 +15,7 @@ const React = require('react');
 const UNISYS = require('unisys/client');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
+const SETTINGS = require('settings');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -226,6 +227,7 @@ class NCComment extends React.Component {
       allowReply
     } = this.state;
 
+    const isAdmin = SETTINGS.IsAdmin();
     const comment = CMTMGR.GetComment(cvobj.comment_id);
     const commentTypes = CMTMGR.GetCommentTypes();
 
@@ -294,7 +296,7 @@ class NCComment extends React.Component {
       // EDIT mode
       CommentComponent = (
         <div
-          className="comment"
+          className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
           onMouseDown={e => e.stopPropagation()} // allow text drag, stops Draggable
         >
           <div>
@@ -326,7 +328,7 @@ class NCComment extends React.Component {
       // VIEW mode
       const markedUnRead = cvobj.isMarkedRead ? '' : 'markedUnRead';
       CommentComponent = (
-        <div className="comment">
+        <div className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}>
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>
@@ -337,20 +339,28 @@ class NCComment extends React.Component {
               <div key={index} className="comment-item">
                 <div className="label">
                   <div className="comment-icon-inline">
-                    {!cvobj.isMarkedRead && CMTMGR.COMMENTICON}
+                    {!cvobj.isMarkedRead &&
+                      !comment.comment_isMarkedDeleted &&
+                      CMTMGR.COMMENTICON}
                   </div>
                   {type.prompt}
                 </div>
                 <div className="help">{type.help}</div>
-                <div className="commenttext">{commenter_text[index]}</div>
+                <div className="commenttext">
+                  {!comment.comment_isMarkedDeleted && commenter_text[index]}
+                </div>
                 <div className="feedback">{type.feedback}</div>
               </div>
             ))}
             {uid && (
               <div className="commentbar">
-                {(isAllowedToEditOwnComment && DeleteBtn) || <div></div>}
-                {(isAllowedToEditOwnComment && EditBtn) || <div></div>}
-                {ReplyBtn}
+                {(((isAllowedToEditOwnComment && !comment.comment_isMarkedDeleted) ||
+                  isAdmin) &&
+                  DeleteBtn) || <div></div>}
+                {(isAllowedToEditOwnComment &&
+                  !comment.comment_isMarkedDeleted &&
+                  EditBtn) || <div></div>}
+                {!comment.comment_isMarkedDeleted && ReplyBtn}
               </div>
             )}
           </div>
