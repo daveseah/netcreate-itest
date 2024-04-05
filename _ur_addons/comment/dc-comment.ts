@@ -20,6 +20,7 @@
         comment_type: string;
         comment_createtime: number;
         comment_modifytime: number;
+        comment_isMarkedDeleted: boolean;
 
         commenter_id: any;
         commenter_text: string[];
@@ -285,6 +286,7 @@ function AddComment(data) {
     comment_type: 'cmt', // default type, no prompts
     comment_createtime: new Date(),
     comment_modifytime: '',
+    comment_isMarkedDeleted: data.comment_isMarkedDeleted,
 
     commenter_id: data.commenter_id,
     commenter_text: []
@@ -337,85 +339,207 @@ function HandleUpdatedComments(cobjs) {
  */
 function RemoveComment(parms) {
   const { collection_ref, comment_id, uid, isAdmin } = parms;
-  const retvals = [];
+  const queuedActions = [];
 
-  const cobj = COMMENTS.get(comment_id);
+  // MAIN PROCESS: `xxxToDelete`
+  // A. Determine the comment to remove
+  //    Can we delete it?
+  //    If isAdmin just delete it
+  //    If root &&
+  //    ... does it have a reply thread ? Then Mark Deleted
+  //    ... else delete it
+  //    If reply &&
+  //    ... does it have next comments?  Then Mark Deleted
+  //    ... else delete it
+  // B. If root and threads have been marked deleted
+  //    then remove the whole thread
+  // C. Delete it
+  // D. Handle the next comment
+  //    If it has a next comment, re-link
 
-  const next_comment_id = NEXT.get(comment_id);
-  const prev = COMMENTS.get(cobj.comment_id_previous);
-  const isRoot = cobj.comment_id_parent === ''; // does not have parent
-  const hasReplies = REPLY_ROOTS.get(comment_id);
+  // Multiple actions are possible, so pre-plan for them
+  let deleteTarget = false;
+  let deleteTargetAndNext = false; // del this comment and any child replies
+  let deleteRootAndChildren = false; // del this comment, and top level root and replies
+  let markDeleted = false;
+  let relinkNext = false;
 
+  const cidToDelete = comment_id;
+  const cobjToDelete = COMMENTS.get(cidToDelete);
+  const cobjIsRoot = cobjToDelete.comment_id_parent === ''; // does not have parent, so it's a root
+
+  // I. THINK
   if (isAdmin) {
-    // A. if admin, force delete all children
-    console.warn('ADMIN DELETING COMPLETE THREAD!');
-
-    // -- 1. delete the comment
-    if (DBG) console.log('...ADMIN deleting root', comment_id);
-    COMMENTS.delete(comment_id);
-    retvals.push({ commentID: comment_id });
-
-    // -- 2. delete all child replies
-    const childThreadIds = [];
-    COMMENTS.forEach((cobj, cid) => {
-      if (DBG) console.log('      --working on', cobj, 'for', comment_id);
-      if (cobj.comment_id_parent === comment_id) childThreadIds.push(cobj.comment_id);
-    });
-    childThreadIds.forEach(id => {
-      if (DBG) console.log('......ADMIN deleting child thread', id);
-      COMMENTS.delete(id);
-      retvals.push({ commentID: id });
-    });
-
-    // -- 3. if there's a NEXT comment that is a root, relink PREVIOUS to the next's NEXT
-    //    ... and move up (next's previous is set to previous)
-    const nextCobj = COMMENTS.get(next_comment_id);
-    if (nextCobj) {
-      nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
-      if (DBG) console.log('...ADMIN next is now', nextCobj.comment_id);
-      COMMENTS.set(nextCobj.comment_id, nextCobj);
-      retvals.push({ comment: nextCobj });
-    }
-  } else if (isRoot && !next_comment_id) {
-    // B. Root Orphan, OK to delete
-    // -- Root orphan has no `next` && has no `parent`
-    if (DBG) console.log('!!! COMMENTS deleting root orphan', comment_id);
-    COMMENTS.delete(comment_id);
-    retvals.push({ commentID: comment_id });
-  } else {
-    if (isRoot && !hasReplies) {
-      // C. Root with no reply threads, OK to delete
-      if (DBG) console.log('!!! COMMENTS deleting thread item', comment_id);
-      COMMENTS.delete(comment_id);
-      retvals.push({ commentID: comment_id });
-
-      // ... and move up (next's previous is set to previous)
-      const nextCobj = COMMENTS.get(next_comment_id);
-      nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
-      COMMENTS.set(nextCobj.comment_id, nextCobj);
-      retvals.push({ comment: nextCobj });
-    } else if (!isRoot && !next_comment_id) {
-      // D. Reply Thread Orphan, OK to delete -- last item in a thread
-      if (DBG) console.log('!!! COMMENTS deleting last thread item', comment_id);
-      COMMENTS.delete(comment_id);
-      retvals.push({ commentID: comment_id });
-
-      // -- if the thread's root is also deleted, then also delete the root
-      console.warn(
-        '!!! TODO: NEED TO DELETE whole collection if all items are deleted'
-      );
+    // ADMIN
+    if (cobjIsRoot) {
+      deleteRootAndChildren = true; // is admin and is root, so delete the root and all replies
+      relinkNext = true; // and always relink next if it's root
     } else {
-      // E. Root with a reply thread...
-      //    ...or part of a reply thread with more replies: mark[DELETED] only
-      if (DBG) console.log('!!! COMMENTS just marking DELETED', comment_id);
-      cobj.comment_type = DEFAULT_CommentTypes[0].id; // revert to default comment type
-      cobj.commenter_text = ['[DELETED]'];
-      COMMENTS.set(cobj.comment_id, cobj);
-      retvals.push({ comment: cobj });
+      deleteTargetAndNext = true; // is admin and is reply thread, so delete comment and subsequent comments
+    }
+  } else {
+    // NOT ADMIN
+    if (cobjIsRoot) {
+      // is not admin and is root...
+      const hasChildReplies = REPLY_ROOTS.get(cidToDelete);
+      if (!hasChildReplies) {
+        deleteTarget = true; // ...so delete if there are no threads
+        const hasNext = NEXT.get(cidToDelete);
+        if (hasNext) relinkNext = true; // ...is root and has next comments, so relink them
+      } else markDeleted = true; // ...else just mark deleted
+    } else {
+      // is not admin and is reply thread...
+      const hasNext = NEXT.get(cidToDelete);
+      if (hasNext) markDeleted = true; // ...has Next so just mark it
+      else deleteTarget = true; // ...else orphan, just delete
     }
   }
+
+  // II. DO ACTIONS
+
+  // IIa. DELETE CHILDREN?
+  if (deleteRootAndChildren) {
+    if (DBG) console.log(`deleteRootAndChildren`);
+    const childThreadIds = [];
+    COMMENTS.forEach(cobj => {
+      // find child thread ids
+      if (cobj.comment_id_parent === cidToDelete)
+        childThreadIds.push(cobj.comment_id);
+    });
+    childThreadIds.forEach(cid => {
+      COMMENTS.delete(cid);
+      queuedActions.push({ commentID: cid });
+    });
+  }
+
+  // IIb. DELETE NEXT
+  if (deleteTargetAndNext) {
+    if (DBG) console.log(`deleteTargetAndNext`);
+    const nextIds = m_GetNexts(cidToDelete);
+    nextIds.forEach(cid => {
+      COMMENTS.delete(cid);
+      queuedActions.push({ commentID: cid });
+    });
+  }
+
+  // IIc. RELINK NEXT -- Relink BEFORE deleting the target
+  //      Generally only happens if it's a root
+  if (relinkNext) {
+    if (DBG) console.log(`relinkNext`);
+    if (!cobjIsRoot)
+      throw new Error(
+        `relinkNext a non-root comment are you sure?  Usually we don't relink! ${cidToDelete}`
+      );
+    const nextCid = NEXT.get(cidToDelete);
+    const nextCobj = COMMENTS.get(nextCid);
+    const prev = COMMENTS.get(cobjToDelete.comment_id_previous);
+    if (nextCobj) {
+      nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
+      COMMENTS.set(nextCobj.comment_id, nextCobj);
+      queuedActions.push({ comment: nextCobj });
+    }
+  }
+
+  // IId. DELETE TARGET or just MARK it DELETED?
+  if (deleteTarget || deleteTargetAndNext || deleteRootAndChildren) {
+    // DELETE TARGET
+    if (DBG) console.log('deleteTarget or Root', cidToDelete);
+    COMMENTS.delete(cidToDelete);
+    queuedActions.push({ commentID: cidToDelete });
+  } else if (markDeleted) {
+    // MARK TARGET DELETED
+    if (DBG) console.log('markDeleted', cidToDelete);
+    cobjToDelete.comment_type = DEFAULT_CommentTypes[0].id; // revert to default comment type
+    cobjToDelete.comment_isMarkedDeleted = true;
+    COMMENTS.set(cobjToDelete.comment_id, cobjToDelete);
+    queuedActions.push({ comment: cobjToDelete });
+  }
+
+  // IIe. DELETE ALL?
+  // If everything in the thread has been deleted, also remove everything.
+  // If root, then if the root and replies are all deleted, delete all
+  // If thread, then if root and replies are all deelted, delete all
+  // This an odd call because if we're deleting a thread item, we need to pop up a level
+  // and also delete and relink the root
+  let rootId;
+  if (cobjIsRoot) rootId = comment_id; // get the first reply and the next
+  else rootId = cobjToDelete.comment_id_parent; // is a thread reply, so pop up a level and get the root
+  if (m_AllAreMarkedDeleted(rootId)) {
+    if (DBG) console.log('delete all!');
+    // re-order the next BEFORE deleting
+    // this is necessary if we're deleting a thread item we also need to
+    // pop up level to the root and deleting that too
+    // also need to re=order before deleteTarget!!
+    const rootCobj = COMMENTS.get(rootId);
+    if (rootCobj) {
+      // may have already been deleted
+      const nextCid = NEXT.get(rootId);
+      const nextCobj = COMMENTS.get(nextCid);
+      const prev = COMMENTS.get(rootCobj.comment_id_previous);
+      if (nextCobj) {
+        nextCobj.comment_id_previous = prev ? prev.comment_id : ''; // if there's no prev, this is the first root
+        COMMENTS.set(nextCobj.comment_id, nextCobj);
+        queuedActions.push({ comment: nextCobj });
+      }
+    }
+
+    const replyIds = m_GetReplies(rootId);
+    replyIds.forEach(cid => {
+      if (COMMENTS.has(cid)) {
+        COMMENTS.delete(cid);
+        queuedActions.push({ commentID: cid });
+      }
+    });
+
+    // also delete the root
+    if (COMMENTS.has(rootId)) {
+      COMMENTS.delete(rootId);
+      queuedActions.push({ commentID: rootId });
+    }
+  }
+
+  // IIf. DELETE DANGLING THREADS
+  // If we're a thread, the prune any remaining marked deleted from the end
+  if (!cobjIsRoot) {
+    const rootId = cobjToDelete.comment_id_parent;
+    const replyIds = m_GetReplies(rootId).reverse(); // walk backwards towards undeleted
+
+    for (let i = 0; i < replyIds.length; i++) {
+      const cid = replyIds[i];
+      const cobj = COMMENTS.get(cid);
+      if (cobj && cobj.comment_isMarkedDeleted) {
+        // is already marked deleted so remove it
+        COMMENTS.delete(cid);
+        queuedActions.push({ commentID: cid });
+      } else if (cobj && !cobj.comment_isMarkedDelted) {
+        // found an undeleted item, stop!
+        break;
+      }
+    }
+  }
+
+  // IIg. FINISHED
   m_DeriveValues();
-  return retvals;
+  return queuedActions;
+}
+
+/**
+ * Checks if the current root and all children are marked deleted.
+ * Ignores the NEXT root items
+ * This is used to determine if we can safely prune the whole thread
+ * because every other comment in the thread has been marked deleted.
+ * @param {string} rootCommentId NOT a comment thread
+ * @returns {boolean}
+ */
+function m_AllAreMarkedDeleted(rootCommentId) {
+  const allCommentIdsInThread = [rootCommentId, ...m_GetReplies(rootCommentId)];
+  const allCommentsInThread = allCommentIdsInThread.map(cid => COMMENTS.get(cid));
+  let allAreMarkedDeleted = true;
+  allCommentsInThread.forEach(cobj => {
+    if (!cobj) return; // was already deleted
+    if (!cobj.comment_isMarkedDeleted) allAreMarkedDeleted = false;
+  });
+  return allAreMarkedDeleted;
 }
 
 /**
@@ -446,6 +570,60 @@ function IsMarkedRead(cid, uid) {
   return readby.includes(uid);
 }
 
+function IsMarkedDeleted(cid) {
+  return COMMENTS.get(cid).comment_isMarkedDeleted;
+}
+
+/** Walk down the next items starting with the current
+ *  Ignores child threads
+ *  @returns {string[]} comment_ids
+ */
+function m_GetNexts(cid) {
+  const results = [];
+  const nextId = NEXT.get(cid);
+  // if there are next comments, then recursively find next reply
+  if (nextId) results.push(nextId, ...m_GetNexts(nextId));
+  return results;
+}
+
+/** Gets all the child reply comments under the root
+ *  Does not include the rootCid
+ *  @param {string} rootCid root comment id
+ *  @returns {string[]} comment_ids
+ */
+function m_GetReplies(rootCid) {
+  const results = [];
+  const replyRootId = REPLY_ROOTS.get(rootCid);
+  // if there are replies under the root, then recursively find next replies
+  if (replyRootId) results.push(replyRootId, ...m_GetNexts(replyRootId));
+  return results;
+}
+
+/** recursively add replies and next
+ * 1. Adds nested children reply threads first
+ * 2. Then adds the next younger sibling
+ * Does NOT include the passed cid
+ */
+function m_GetRepliesAndNext(cid) {
+  const results = [];
+
+  // are there "replies"?
+  const reply_root_id = REPLY_ROOTS.get(cid);
+  if (reply_root_id) {
+    // then recursively find next reply
+    results.push(reply_root_id, ...m_GetRepliesAndNext(reply_root_id));
+  }
+
+  // are there "next" items?
+  const nextId = NEXT.get(cid);
+  if (nextId) {
+    // then recursively find next reply
+    results.push(nextId, ...m_GetRepliesAndNext(nextId));
+  }
+
+  return results;
+}
+
 /**
  * Get all the comment ids related to a particular collection_ref
  * based on ROOTS.
@@ -456,35 +634,12 @@ function IsMarkedRead(cid, uid) {
 function GetThreadedCommentIds(cref) {
   const all_comments_ids = [];
 
-  // recursively add replies and next
-  // 1. Adds nested children reply threads first
-  // 2. Then adds the next younger sibling
-  function getRepliesAndNext(cid) {
-    const results = [];
-
-    // are there "replies"?
-    const reply_root_id = REPLY_ROOTS.get(cid);
-    if (reply_root_id) {
-      // then recursively find next reply
-      results.push(reply_root_id, ...getRepliesAndNext(reply_root_id));
-    }
-
-    // are there "next" items?
-    const nextId = NEXT.get(cid);
-    if (nextId) {
-      // then recursively find next reply
-      results.push(nextId, ...getRepliesAndNext(nextId));
-    }
-
-    return results;
-  }
-
   // 1. Start with Roots
   const rootId = ROOTS.get(cref);
   if (rootId === undefined) return [];
 
   // 2. Find Replies (children) followed by Next (younger siblings)
-  all_comments_ids.push(rootId, ...getRepliesAndNext(rootId));
+  all_comments_ids.push(rootId, ...m_GetRepliesAndNext(rootId));
   return all_comments_ids;
 }
 if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('1'));
@@ -494,13 +649,27 @@ if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('2'));
  * [Currently not used]
  * Get all the comments related to a particular collection_ref
  * @param {string} cref collection_ref id
- * @returns commentObject[]
+ * @returns {Object[]} commentObject[]
  */
 function GetThreadedCommentData(cref) {
-  const all_comments_ids = GetThreadedCommentIds(cref);
+  const threaded_comments_ids = GetThreadedCommentIds(cref);
   // convert ids to comment objects
-  return all_comments_ids.map(cid => COMMENTS.get(cid));
+  return threaded_comments_ids.map(cid => COMMENTS.get(cid));
 }
+
+// NOT USED?
+//
+// /**
+//  * Get all the comments related to a particular root
+//  * Gets just the child replies, does not include the root
+//  * @param {string} comment_id
+//  * @returns {Object[]} commentObject[]
+//  */
+// function GetThreadedCommentDataForRoot(comment_id) {
+//   const threaded_comments_ids = m_GetRepliesAndNext(comment_id);
+//   // convert ids to comment objects
+//   return threaded_comments_ids.map(cid => COMMENTS.get(cid));
+// }
 
 function GetReadby(cid) {
   return READBY.get(cid);
@@ -530,8 +699,10 @@ export default {
   HandleRemovedComments,
   MarkCommentRead,
   IsMarkedRead,
+  IsMarkedDeleted,
   GetThreadedCommentIds,
   GetThreadedCommentData,
+  // GetThreadedCommentDataForRoot,
   // READBY
   GetReadby
 };
