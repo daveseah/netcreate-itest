@@ -416,8 +416,8 @@ function RemoveComment(parms) {
   // IIb. DELETE NEXT
   if (deleteTargetAndNext) {
     if (DBG) console.log(`deleteTargetAndNext`);
-    const nexts = m_GetNexts(cidToDelete);
-    nexts.forEach(cid => {
+    const nextIds = m_GetNexts(cidToDelete);
+    nextIds.forEach(cid => {
       COMMENTS.delete(cid);
       queuedActions.push({ commentID: cid });
     });
@@ -467,8 +467,6 @@ function RemoveComment(parms) {
   else rootId = cobjToDelete.comment_id_parent; // is a thread reply, so pop up a level and get the root
   if (m_AllAreMarkedDeleted(rootId)) {
     if (DBG) console.log('delete all!');
-    let subsequentCommentIds;
-
     // re-order the next BEFORE deleting
     // this is necessary if we're deleting a thread item we also need to
     // pop up level to the root and deleting that too
@@ -486,8 +484,8 @@ function RemoveComment(parms) {
       }
     }
 
-    subsequentCommentIds = m_GetReplies(rootId);
-    subsequentCommentIds.forEach(cid => {
+    const replyIds = m_GetReplies(rootId);
+    replyIds.forEach(cid => {
       if (COMMENTS.has(cid)) {
         COMMENTS.delete(cid);
         queuedActions.push({ commentID: cid });
@@ -498,13 +496,30 @@ function RemoveComment(parms) {
     if (COMMENTS.has(rootId)) {
       COMMENTS.delete(rootId);
       queuedActions.push({ commentID: rootId });
-      console.log('...also deleting the root', rootId);
-    } else {
-      console.error('...skipping extra delete root');
     }
   }
 
-  // IIf. FINISHED
+  // IIf. DELETE DANGLING THREADS
+  // If we're a thread, the prune any remaining marked deleted from the end
+  if (!cobjIsRoot) {
+    const rootId = cobjToDelete.comment_id_parent;
+    const replyIds = m_GetReplies(rootId).reverse(); // walk backwards towards undeleted
+
+    for (let i = 0; i < replyIds.length; i++) {
+      const cid = replyIds[i];
+      const cobj = COMMENTS.get(cid);
+      if (cobj && cobj.comment_isMarkedDeleted) {
+        // is already marked deleted so remove it
+        COMMENTS.delete(cid);
+        queuedActions.push({ commentID: cid });
+      } else if (cobj && !cobj.comment_isMarkedDelted) {
+        // found an undeleted item, stop!
+        break;
+      }
+    }
+  }
+
+  // IIg. FINISHED
   m_DeriveValues();
   return queuedActions;
 }
