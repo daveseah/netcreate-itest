@@ -52,6 +52,7 @@ const { Button } = ReactStrap;
 const NCSearch = require('./components/NCSearch');
 const NCNode = require('./components/NCNode');
 const NCGraph = require('./components/NCGraph');
+const NCCommentStatus = require('./components/NCCommentStatus');
 const InfoPanel = require('./components/InfoPanel');
 const FiltersPanel = require('./components/filter/FiltersPanel');
 const NCLOGIC = require('./nc-logic'); // require to bootstrap data loading
@@ -59,6 +60,7 @@ const FILTERMGR = require('./filter-mgr'); // handles filtering functions
 const EDGEMGR = require('./edge-mgr'); // handles edge synthesis
 const SELECTIONMGR = require('./selection-mgr'); // handles UI selection events
 const HILITEMGR = require('./hilite-mgr'); // handles UI hilite events
+const CMTMGR = require('./comment-mgr');
 const FILTER = require('./components/filter/FilterEnums');
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
@@ -83,7 +85,8 @@ class NetCreate extends UNISYS.Component {
       requireLogin: this.AppState('TEMPLATE').requireLogin,
       disconnectMsg: '',
       layoutNodesOpen: true,
-      layoutFiltersOpen: false
+      layoutFiltersOpen: false,
+      commentStatusMessage: 'waiting...'
     };
     this.OnDOMReady(() => {
       if (DBG) console.log(PR, 'OnDOMReady');
@@ -159,8 +162,14 @@ class NetCreate extends UNISYS.Component {
   /** Define the component structure of the web application
    */
   render() {
-    const { isLoggedIn, disconnectMsg, layoutNodesOpen, layoutFiltersOpen } =
-      this.state;
+    const {
+      isLoggedIn,
+      disconnectMsg,
+      layoutNodesOpen,
+      layoutFiltersOpen,
+      commentStatusMessage,
+      handleMessageUpdate
+    } = this.state;
 
     // show or hide graph
     // Use 'visibiliity' css NOT React's 'hidden' so size is properly
@@ -313,6 +322,10 @@ class NetCreate extends UNISYS.Component {
           accessible format.
         </div>
         <div id="dialog-container"></div>
+        <NCCommentStatus
+          message={commentStatusMessage}
+          handleMessageUpdate={handleMessageUpdate}
+        />
       </div>
     ); // end return
   } // end render()

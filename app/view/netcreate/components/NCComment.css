@@ -1,3 +1,43 @@
+:root {
+  --comment-bg: #ffd700;
+}
+
+/* Comment Status */
+#comment-status {
+  position: absolute;
+  top: 0px;
+  right: 200px;
+  width: fit-content;
+  max-width: 50%;
+  height: 1.2rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5rem;
+  text-align: right;
+  z-index: 2000;
+  overflow: hidden;
+  background-color: red;
+  opacity: 0.01;
+  transform: translateY(-150%);
+}
+.comment-status-body {
+  padding: 0 5px;
+  background: var(--comment-bg);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#comment-status.appear {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.5s ease-in;
+}
+#comment-status.disappear {
+  opacity: 0.01;
+  transform: translateY(0);
+  transition: all 3s ease-in;
+}
+
 /* Comment Icon */
 svg#comment-icon {
   min-width: inherit;
@@ -53,7 +93,7 @@ svg#comment-icon {
 .commentThread {
   display: flex;
   flex-direction: column;
-  background-color: #ffd700;
+  background-color: var(--comment-bg);
   padding: 5px;
   /* floating */
   position: fixed;
@@ -145,7 +185,8 @@ svg#comment-icon {
 .comment .commenter,
 .comment .label,
 .comment .help /* .help uses nccomponent */,
-.comment .commentId {
+.comment .commentId,
+.comment-status-body .commenter {
   color: #0008;
   font-size: 0.8em;
 }
