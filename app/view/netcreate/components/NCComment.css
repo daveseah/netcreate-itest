@@ -9,23 +9,20 @@
   right: 200px;
   width: fit-content;
   max-width: 50%;
-  height: 1.2rem;
+  height: 1.5rem;
   margin-top: 0.5rem;
+  padding: 0 5px;
   font-size: 0.8rem;
   line-height: 1.5rem;
   text-align: right;
-  z-index: 2000;
   overflow: hidden;
-  background-color: red;
+  background-color: var(--comment-bg);
   opacity: 0.01;
   transform: translateY(-150%);
+  z-index: 2000;
 }
-.comment-status-body {
-  padding: 0 5px;
-  background: var(--comment-bg);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+#comment-status.expanded {
+  height: fit-content;
 }
 #comment-status.appear {
   opacity: 1;
@@ -35,7 +32,28 @@
 #comment-status.disappear {
   opacity: 0.01;
   transform: translateY(0);
-  transition: all 3s ease-in;
+  transition: all 5s ease-in;
+}
+.comment-status-body {
+  padding: 0 5px;
+  background: var(--comment-bg);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.comment-status-body .comment-item {
+  display: inline-block;
+}
+#comment-status button.small {
+  background-color: #fff6;
+  border-radius: 5px;
+  border-color: #0006;
+  border-width: 1px;
+  border-style: solid;
+  color: #333;
+  font-size: 0.6rem;
+  line-height: 0.9rem;
+  margin-left: 0.25rem;
 }
 
 /* Comment Icon */
