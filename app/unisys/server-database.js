@@ -1305,11 +1305,13 @@ DB.PKT_BatchUpdate = function (pkt) {
   let { items } = pkt.Data();
   let retvals = [];
   items.forEach(item => {
-    const { comment, commentID } = item;
+    const { comment, commentID, collection_ref } = item;
     // PROCESS COMMENT INSERT/UPDATE
     if (comment) retvals.push(m_CommentUpdate(comment, pkt));
     // DELETE SINGLE COMMENT
     if (commentID !== undefined) retvals.push(m_CommentRemove(commentID, pkt));
+    // Trigger derived value update after removal
+    if (collection_ref) retvals.push({ op: 'refresh', collection_ref });
   })
   return retvals;
 };

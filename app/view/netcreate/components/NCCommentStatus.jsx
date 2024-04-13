@@ -28,9 +28,13 @@ class NCCommentStatus extends React.Component {
     super(props);
     this.state = {
       message: 'delayed',
-      activeCSS: ''
+      messages: [],
+      activeCSS: '',
+      uiIsExpanded: false
     };
     this.HandleCOMMENT_UPDATE = this.HandleCOMMENT_UPDATE.bind(this);
+    this.UIKeepOpen = this.UIKeepOpen.bind(this);
+    this.UIClose = this.UIClose.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -40,10 +44,13 @@ class NCCommentStatus extends React.Component {
     UDATA.HandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
   }
 
-  HandleCOMMENT_UPDATE(data, extras) {
-    const { comment } = data;
-    console.error('COMMENT_UPDATE', data);
-    console.log('EXTRAS', extras);
+  HandleCOMMENT_UPDATE(data) {
+    const { messages } = this.state;
+    const { comment, uaddr } = data;
+
+    const my_uaddr = UNISYS.SocketUADDR();
+    const isNotMe = my_uaddr !== uaddr;
+
     if (comment && comment.commenter_text.length > 0) {
       let source;
       if (comment.comment_id_parent) {
@@ -52,12 +59,16 @@ class NCCommentStatus extends React.Component {
         source = `${comment.commenter_id} commented: `;
       }
       const message = (
-        <div>
+        <div className="comment-item">
           <span className="commenter">{source}</span>
-          &ldquo;{String(comment.commenter_text.join('|')).trim()}&rdquo;
+          &ldquo;{String(comment.commenter_text.join('|')).trim()}&rdquo;{' '}
+          <a href="#">{`#${comment.comment_id}`}</a>
         </div>
       );
-      console.log('========>update');
+      messages.push(message);
+
+      // Only show status update if it's coming from another
+      if (isNotMe) {
       clearTimeout(AppearTimer);
       clearTimeout(DisappearTimer);
       clearTimeout(ResetTimer);
@@ -65,31 +76,59 @@ class NCCommentStatus extends React.Component {
       this.setState(
         {
           message,
+            messages,
           activeCSS: ''
         },
         () => {
           AppearTimer = setTimeout(() => {
-            console.log('========>appear');
             this.setState({ activeCSS: 'appear' });
           }, 250);
           DisappearTimer = setTimeout(() => {
-            console.log('========>disappear');
             this.setState({ activeCSS: 'disappear' });
-          }, 5000);
+            }, 8000);
           ResetTimer = setTimeout(() => {
-            console.log('========>reset');
             this.setState({ message: '', activeCSS: '' });
-          }, 8000); // should equal the `disappeaer` ease-in period + 'disappear' timeout
+            }, 13000); // should equal the `disappeaer` ease-in period + 'disappear' timeout
         }
       );
     }
   }
+  }
+
+  UIKeepOpen() {
+    clearTimeout(DisappearTimer);
+    clearTimeout(ResetTimer);
+    this.setState({ activeCSS: 'appear', uiIsExpanded: true });
+  }
+
+  UIClose() {
+    this.setState({ message: '', activeCSS: '', uiIsExpanded: false });
+  }
 
   render() {
-    const { message, activeCSS } = this.state;
+    const { message, messages, activeCSS, uiIsExpanded } = this.state;
     return (
-      <div id="comment-status" className={activeCSS}>
-        <div className="comment-status-body">{message}</div>
+      <div
+        id="comment-status"
+        className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
+      >
+        {!uiIsExpanded && (
+          <div className="comment-status-body">
+            {message}{' '}
+            <button className="small" onClick={this.UIKeepOpen}>
+              Recent Comments...
+            </button>
+          </div>
+        )}
+
+        {messages.map((message, index) => (
+          <div className="comment-status-body" key={index}>
+            {message}
+          </div>
+        ))}
+        <button className="small" onClick={this.UIClose}>
+          Close
+        </button>
       </div>
     );
   }

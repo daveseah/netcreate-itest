@@ -286,8 +286,8 @@ MOD.RemoveComment = parms => {
  * @param {Object} parms.uid
  */
 function m_ExecuteRemoveComment(event, parms) {
-  const batch = COMMENT.RemoveComment(parms);
-  m_DBRemoveComment(batch);
+  const queuedActions = COMMENT.RemoveComment(parms);
+  m_DBRemoveComment(queuedActions);
   m_SetAppStateCommentVObjs();
   m_CloseRemoveCommentDialog();
 }
@@ -307,15 +307,25 @@ function m_CloseRemoveCommentDialog() {
  * @param {Object[]} dataArray
  */
 MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
-  if (DBG) console.log('COMMENTS_UPDATE======================');
+  if (DBG) console.log('COMMENTS_UPDATE======================', dataArray);
   const updatedComments = [];
   const removedComments = [];
+  const updatedCrefs = new Map();
   dataArray.forEach(data => {
-    if (data.comment) updatedComments.push(data.comment);
+    if (data.comment) {
+      updatedComments.push(data.comment);
+      updatedCrefs.set(data.comment.collection_ref, 'flag');
+    }
     if (data.commentID) removedComments.push(data.commentID);
+    if (data.collection_ref)
+      updatedCrefs.set(data.collection_ref, 'flag');
   });
-  COMMENT.HandleRemovedComments(removedComments);
-  COMMENT.HandleUpdatedComments(updatedComments);
+  const uid = MOD.GetCurrentUserId();
+  COMMENT.HandleRemovedComments(removedComments, uid);
+  COMMENT.HandleUpdatedComments(updatedComments, uid);
+
+  const crefs = [...updatedCrefs.keys()];
+  crefs.forEach(cref => COMMENT.DeriveThreadedViewObjects(cref, uid));
 
   // and broadcast a state change
   m_SetAppStateCommentCollections();
@@ -327,7 +337,8 @@ MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
  * broadcast across the network.  This a network call that is used to update
  * the local state to match the server's comments.
  * (does not trigger another DB update)
- * @param {*} data
+ * @param {Object} data
+ * @param {Object} data.comment cobj
  */
 MOD.HandleCOMMENT_UPDATE = (data) => {
   if (DBG) console.log('COMMENT_UPDATE======================', data);
