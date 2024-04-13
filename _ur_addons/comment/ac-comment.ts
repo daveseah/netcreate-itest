@@ -151,7 +151,7 @@ function CloseCommentCollection(uiref, cref, uid) {
   commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
 
   // Update Derived Lists to update Marked status
-  m_DeriveThreadedViewObjects(cref, uid);
+  DeriveThreadedViewObjects(cref, uid);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -190,7 +190,7 @@ function GetCommentBeingEdited(cid) {
  * @param {string} cref collection_ref id
  * @returns commentVOjb[]
  */
-function m_DeriveThreadedViewObjects(cref, uid) {
+function DeriveThreadedViewObjects(cref, uid) {
   if (cref === undefined)
     throw new Error(`m_DeriveThreadedViewObjects cref: "${cref}" must be defined!`);
   const commentVObjs = [];
@@ -252,7 +252,7 @@ function m_DeriveThreadedViewObjects(cref, uid) {
 function GetThreadedViewObjects(cref, uid) {
   const commentVObjs = COMMENTVOBJS.get(cref);
   return commentVObjs === undefined
-    ? m_DeriveThreadedViewObjects(cref, uid)
+    ? DeriveThreadedViewObjects(cref, uid)
     : commentVObjs;
 }
 
@@ -289,7 +289,7 @@ function AddComment(data) {
     throw new Error('Comments must have a collection ref!');
 
   const comment = DCCOMMENTS.AddComment(data);
-  m_DeriveThreadedViewObjects(data.cref, data.commenter_id);
+  DeriveThreadedViewObjects(data.cref, data.commenter_id);
 
   // Make it editable
   let commentVObjs = GetThreadedViewObjects(data.cref, data.commenter_id);
@@ -327,7 +327,7 @@ function UpdateComment(cobj, uid) {
     throw new Error('UpdateComment cref is undefined', cobj);
 
   DCCOMMENTS.UpdateComment(cobj);
-  m_DeriveThreadedViewObjects(cobj.collection_ref, uid);
+  DeriveThreadedViewObjects(cobj.collection_ref, uid);
   // Disable editable and update modify time
   let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, uid);
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
@@ -364,13 +364,17 @@ function HandleUpdatedComments(comments) {
  * @param {Object} parms.comment_id
  * @param {Object} parms.uid
  * @param {Object} parms.isAdmin
+ * @returns {Object[]} queuedActions
  */
 function RemoveComment(parms) {
   if (parms.collection_ref === undefined)
     throw new Error('RemoveComment collection_ref is undefined', parms);
-  const batch = DCCOMMENTS.RemoveComment(parms);
-  m_DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
-  return batch;
+  const queuedActions = DCCOMMENTS.RemoveComment(parms);
+  DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
+  // Add an action to update the collection_ref, which forces an update after removal
+  // otherwise the comment would have been removed and we no longer have a reference to the cref
+  queuedActions.push({ collection_ref: parms.collection_ref });
+  return queuedActions;
 }
 /**
  * Batch updates a list of removed comment ids
@@ -420,6 +424,7 @@ export {
   // Editable Comments
   GetCommentBeingEdited,
   // Comment Thread View Object
+  DeriveThreadedViewObjects,
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
   GetCOMMENTVOBJS,
