@@ -40,10 +40,12 @@ class NCCommentStatus extends React.Component {
     UDATA.HandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
   }
 
-  HandleCOMMENT_UPDATE(data, extras) {
-    const { comment } = data;
-    console.error('COMMENT_UPDATE', data);
-    console.log('EXTRAS', extras);
+  HandleCOMMENT_UPDATE(data) {
+    const { comment, uaddr } = data;
+
+    const my_uaddr = UNISYS.SocketUADDR();
+    const isNotMe = my_uaddr !== uaddr;
+
     if (comment && comment.commenter_text.length > 0) {
       let source;
       if (comment.comment_id_parent) {
@@ -57,7 +59,9 @@ class NCCommentStatus extends React.Component {
           &ldquo;{String(comment.commenter_text.join('|')).trim()}&rdquo;
         </div>
       );
-      console.log('========>update');
+
+      // Only show status update if it's coming from another browser
+      if (isNotMe) {
       clearTimeout(AppearTimer);
       clearTimeout(DisappearTimer);
       clearTimeout(ResetTimer);
@@ -69,20 +73,18 @@ class NCCommentStatus extends React.Component {
         },
         () => {
           AppearTimer = setTimeout(() => {
-            console.log('========>appear');
             this.setState({ activeCSS: 'appear' });
           }, 250);
           DisappearTimer = setTimeout(() => {
-            console.log('========>disappear');
             this.setState({ activeCSS: 'disappear' });
           }, 5000);
           ResetTimer = setTimeout(() => {
-            console.log('========>reset');
             this.setState({ message: '', activeCSS: '' });
           }, 8000); // should equal the `disappeaer` ease-in period + 'disappear' timeout
         }
       );
     }
+  }
   }
 
   render() {
