@@ -37,7 +37,6 @@ class NCCommentStatus extends React.Component {
     this.HandleCOMMENT_UPDATE = this.HandleCOMMENT_UPDATE.bind(this);
     this.GetCommentItem = this.GetCommentItem.bind(this);
     this.UIOpen = this.UIOpen.bind(this);
-    this.UIKeepOpen = this.UIKeepOpen.bind(this);
     this.UIClose = this.UIClose.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
@@ -73,28 +72,28 @@ class NCCommentStatus extends React.Component {
 
       // Only show status update if it's coming from another
       if (isNotMe) {
-      clearTimeout(AppearTimer);
-      clearTimeout(DisappearTimer);
-      clearTimeout(ResetTimer);
-      // clear it first, then appear (so that each new comment triggers the animation)
-      this.setState(
-        {
-          message,
+        clearTimeout(AppearTimer);
+        clearTimeout(DisappearTimer);
+        clearTimeout(ResetTimer);
+        // clear it first, then appear (so that each new comment triggers the animation)
+        this.setState(
+          {
+            message,
             messages,
-          activeCSS: ''
-        },
-        () => {
-          AppearTimer = setTimeout(() => {
-            this.setState({ activeCSS: 'appear' });
-          }, 250);
-          DisappearTimer = setTimeout(() => {
-            this.setState({ activeCSS: 'disappear' });
+            activeCSS: ''
+          },
+          () => {
+            AppearTimer = setTimeout(() => {
+              this.setState({ activeCSS: 'appear' });
+            }, 250);
+            DisappearTimer = setTimeout(() => {
+              this.setState({ activeCSS: 'disappear' });
             }, 8000);
-          ResetTimer = setTimeout(() => {
-            this.setState({ message: '', activeCSS: '' });
+            ResetTimer = setTimeout(() => {
+              this.setState({ message: '', activeCSS: '' });
             }, 13000); // should equal the `disappeaer` ease-in period + 'disappear' timeout
-        }
-      );
+          }
+        );
       } else {
         this.forceUpdate(); // force update to update counts
       }
@@ -131,12 +130,6 @@ class NCCommentStatus extends React.Component {
   }
 
   UIOpen() {
-    clearTimeout(DisappearTimer);
-    clearTimeout(ResetTimer);
-    this.setState({ activeCSS: 'appear', uiIsExpanded: true });
-  }
-
-  UIKeepOpen() {
     clearTimeout(DisappearTimer);
     clearTimeout(ResetTimer);
     this.setState({ activeCSS: 'appear', uiIsExpanded: true });
@@ -179,12 +172,12 @@ class NCCommentStatus extends React.Component {
 
     return (
       <div id="comment-bar">
-      <div
+        <div
           id="comment-alert"
-        className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
-      >
+          className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
+        >
           {!uiIsExpanded && <div className="comment-status-body">{message}</div>}
-          </div>
+        </div>
         <div>
           <div
             id="comment-summary"
@@ -193,16 +186,20 @@ class NCCommentStatus extends React.Component {
           >
             {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
           </div>
-          <div id="comment-panel" className={`${uiIsExpanded ? ' expanded' : ''}`}>
+          <div
+            id="comment-panel"
+            className={`${uiIsExpanded ? ' expanded' : ''}`}
+            onClick={this.UIClose}
+          >
             <div className="comments-unread">
               {UnreadRepliesToMeButtonJSX}
               <div className="comment-status-body">{unreadRepliesToMeItems}</div>
               {UnreadButtonJSX}
               <div className="comment-status-body">{unreadCommentItems}</div>
-        <button className="small" onClick={this.UIClose}>
-          Close
-        </button>
-      </div>
+              <button className="small" onClick={this.UIClose}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
