@@ -10,6 +10,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const CMTMGR = require('../comment-mgr');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -32,7 +33,10 @@ class NCCommentStatus extends React.Component {
       activeCSS: '',
       uiIsExpanded: false
     };
+    this.HandleCOMMENTS_UPDATE = this.HandleCOMMENTS_UPDATE.bind(this);
     this.HandleCOMMENT_UPDATE = this.HandleCOMMENT_UPDATE.bind(this);
+    this.GetCommentItem = this.GetCommentItem.bind(this);
+    this.UIOpen = this.UIOpen.bind(this);
     this.UIKeepOpen = this.UIKeepOpen.bind(this);
     this.UIClose = this.UIClose.bind(this);
 
@@ -41,7 +45,12 @@ class NCCommentStatus extends React.Component {
 
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
+    UDATA.HandleMessage('COMMENTS_UPDATE', this.HandleCOMMENTS_UPDATE);
     UDATA.HandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
+  }
+
+  HandleCOMMENTS_UPDATE(data) {
+    this.forceUpdate();
   }
 
   HandleCOMMENT_UPDATE(data) {
@@ -58,13 +67,8 @@ class NCCommentStatus extends React.Component {
       } else {
         source = `${comment.commenter_id} commented: `;
       }
-      const message = (
-        <div className="comment-item">
-          <span className="commenter">{source}</span>
-          &ldquo;{String(comment.commenter_text.join('|')).trim()}&rdquo;{' '}
-          <a href="#">{`#${comment.comment_id}`}</a>
-        </div>
-      );
+      comment.commenter_id = source;
+      const message = this.GetCommentItem(comment);
       messages.push(message);
 
       // Only show status update if it's coming from another
@@ -91,8 +95,45 @@ class NCCommentStatus extends React.Component {
             }, 13000); // should equal the `disappeaer` ease-in period + 'disappear' timeout
         }
       );
+      } else {
+        this.forceUpdate(); // force update to update counts
+      }
     }
   }
+
+  GetCommentItem(comment) {
+    // HACK Source Name
+    const cref = comment ? comment.collection_ref : '';
+    const type = cref.substring(0, 1);
+    const id = cref.substring(1);
+    let typeLabel;
+    switch (type) {
+      case 'n':
+        typeLabel = 'Node';
+        break;
+      case 'e':
+        typeLabel = 'Edge';
+        break;
+      case 'p':
+        typeLabel = 'Project';
+        break;
+    }
+    const sourceLabel = `${typeLabel} ${id}`;
+    return (
+      <div className="comment-item" key={comment.comment_id}>
+        <span className="commenter">
+          {sourceLabel}: {comment.commenter_id}&nbsp;
+        </span>
+        <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
+        {String(comment.commenter_text.join('|')).trim()}&rdquo;
+      </div>
+    );
+  }
+
+  UIOpen() {
+    clearTimeout(DisappearTimer);
+    clearTimeout(ResetTimer);
+    this.setState({ activeCSS: 'appear', uiIsExpanded: true });
   }
 
   UIKeepOpen() {
@@ -107,28 +148,63 @@ class NCCommentStatus extends React.Component {
 
   render() {
     const { message, messages, activeCSS, uiIsExpanded } = this.state;
+    const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
+    const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();
+    const unreadRepliesToMeItems = unreadRepliesToMe.map(comment =>
+      this.GetCommentItem(comment)
+    );
+    const unreadComments = CMTMGR.GetUnreadComments();
+    const unreadCommentItems = unreadComments.map(comment =>
+      this.GetCommentItem(comment)
+    );
+
+    const UnreadRepliesToMeButtonJSX = (
+      <div>
+        <div className="commentbtn hasNewComments" onClick={this.UIOnClick}>
+          {CMTMGR.COMMENTICON}
+          <div className="comment-count">{countRepliesToMe}</div>
+        </div>
+        <h3>&nbsp;unread replies to me</h3>
+      </div>
+    );
+    const UnreadButtonJSX = (
+      <div>
+        <div className="commentbtn hasUnreadComments" onClick={this.UIOnClick}>
+          {CMTMGR.COMMENTICON}
+          <div className="comment-count">{countUnread}</div>
+        </div>
+        <h3>&nbsp;unread</h3>
+      </div>
+    );
+
     return (
+      <div id="comment-bar">
       <div
-        id="comment-status"
+          id="comment-alert"
         className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
       >
-        {!uiIsExpanded && (
-          <div className="comment-status-body">
-            {message}{' '}
-            <button className="small" onClick={this.UIKeepOpen}>
-              Recent Comments...
-            </button>
+          {!uiIsExpanded && <div className="comment-status-body">{message}</div>}
           </div>
-        )}
-
-        {messages.map((message, index) => (
-          <div className="comment-status-body" key={index}>
-            {message}
+        <div>
+          <div
+            id="comment-summary"
+            className={`${uiIsExpanded ? ' expanded' : ''}`}
+            onClick={this.UIOpen}
+          >
+            {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
           </div>
-        ))}
+          <div id="comment-panel" className={`${uiIsExpanded ? ' expanded' : ''}`}>
+            <div className="comments-unread">
+              {UnreadRepliesToMeButtonJSX}
+              <div className="comment-status-body">{unreadRepliesToMeItems}</div>
+              {UnreadButtonJSX}
+              <div className="comment-status-body">{unreadCommentItems}</div>
         <button className="small" onClick={this.UIClose}>
           Close
         </button>
+      </div>
+          </div>
+        </div>
       </div>
     );
   }

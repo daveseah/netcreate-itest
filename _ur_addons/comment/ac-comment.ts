@@ -61,6 +61,7 @@
     CommentVObj cvobj
     -----------
     CommentVObj a handles the UI view state of the each comment in the thread.
+    cvobjs are a unique to each user id.
       
       interface CommentVObj {
         comment_id: any;
@@ -74,6 +75,7 @@
         isBeingEdited: boolean;
         isEditable: boolean;
         isMarkedRead: boolean;
+        isReplyToMe: boolean;
         allowReply: boolean;
         
         markedRead: boolean;
@@ -154,6 +156,42 @@ function CloseCommentCollection(uiref, cref, uid) {
   DeriveThreadedViewObjects(cref, uid);
 }
 
+function GetCommentStats(uid) {
+  let countRepliesToMe = 0;
+  let countUnread = 0;
+  DeriveAllThreadedViewObjects(uid);
+
+  // find replies to me
+  const crefs = DCCOMMENTS.GetCrefs();
+  let rootCidsWithRepliesToMe = [];
+  crefs.forEach(cref => {
+    const cvobjs = COMMENTVOBJS.get(cref);
+    cvobjs.find(cvobj => {
+      const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
+      if (comment.commenter_id === uid && comment.comment_id_parent !== '')
+        rootCidsWithRepliesToMe.push(comment.comment_id_parent);
+    });
+  });
+
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (!cvobj.isMarkedRead) {
+        // count unread
+        countUnread++;
+        // count repliesToMe
+        const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
+        if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
+          // HACK: Update cvobj by reference!
+          cvobj.isReplyToMe = true;
+          countRepliesToMe++;
+        }
+      }
+    });
+  });
+
+  return { countRepliesToMe, countUnread };
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// COMMENT UI STATE
 
@@ -162,14 +200,14 @@ function GetCommentUIState(uiref) {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// OPENCOMMENTS
+/// OPEN COMMENTS
 
 function GetOpenComments(cref) {
   return OPENCOMMENTS.get(cref);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// EDITABLECOMMENTS
+/// EDITABLE COMMENTS
 
 function m_RegisterCommentBeingEdited(cid) {
   COMMENTS_BEING_EDITED.set(cid, cid);
@@ -183,7 +221,34 @@ function GetCommentBeingEdited(cid) {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// UNREAD COMMENTS
+
+function GetUnreadRepliesToMe(ui) {
+  const comments = [];
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (cvobj.isReplyToMe) comments.push(DCCOMMENTS.GetComment(cvobj.comment_id));
+    });
+  });
+  return comments;
+}
+function GetUnreadComments() {
+  const comments = [];
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (!cvobj.isMarkedRead) comments.push(DCCOMMENTS.GetComment(cvobj.comment_id));
+    });
+  });
+  return comments;
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// COMMENT THREAD VIEW OBJECTS
+
+function DeriveAllThreadedViewObjects(uid) {
+  const crefs = DCCOMMENTS.GetCrefs();
+  crefs.forEach(cref => DeriveThreadedViewObjects(cref, uid));
+}
 
 /**
  * Returns flat array of comment view objects
@@ -417,12 +482,16 @@ export {
   GetCommentCollection,
   UpdateCommentUIState,
   CloseCommentCollection,
+  GetCommentStats,
   // Comment UI State
   GetCommentUIState,
   // Open Comments
   GetOpenComments,
   // Editable Comments
   GetCommentBeingEdited,
+  // Unread Comments
+  GetUnreadRepliesToMe,
+  GetUnreadComments,
   // Comment Thread View Object
   DeriveThreadedViewObjects,
   GetThreadedViewObjects,
