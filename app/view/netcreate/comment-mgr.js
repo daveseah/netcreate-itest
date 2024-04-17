@@ -155,6 +155,11 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
   m_SetAppStateCommentCollections();
 }
 
+MOD.GetCommentStats = () => {
+  const uid = MOD.GetCurrentUserId();
+  return COMMENT.GetCommentStats(uid);
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment UI State
 MOD.GetCommentUIState = uiref => {
@@ -207,6 +212,12 @@ MOD.GetCommentVObj = (cref, cid) => {
 /// Comments
 MOD.GetComment = (cid) => {
   return COMMENT.GetComment(cid);
+}
+MOD.GetUnreadRepliesToMe = ui => {
+  return COMMENT.GetUnreadRepliesToMe(ui);
+}
+MOD.GetUnreadComments = () => {
+  return COMMENT.GetUnreadComments();
 }
 /**
  *

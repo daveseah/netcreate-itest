@@ -1,50 +1,42 @@
 :root {
   --comment-bg: #ffd700;
+  --comment-bg-light: #f1e9c5ee;
+  --comment-bg-new: #d84a00;
+  --comment-statust-font-color: #d84a0088;
 }
 
-/* Comment Status */
-#comment-status {
+/* Comment Bar ------------------------------------------------------------- */
+#comment-bar {
   position: absolute;
   top: 0px;
   right: 200px;
-  width: fit-content;
-  max-width: 50%;
-  height: 1.5rem;
-  margin-top: 0.5rem;
-  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
   font-size: 0.8rem;
-  line-height: 1.5rem;
-  text-align: right;
-  overflow: hidden;
-  background-color: var(--comment-bg);
-  opacity: 0.01;
-  transform: translateY(-150%);
   z-index: 2000;
 }
-#comment-status.expanded {
-  height: fit-content;
-}
-#comment-status.appear {
-  opacity: 1;
-  transform: translateY(0);
-  transition: all 0.5s ease-in;
-}
-#comment-status.disappear {
-  opacity: 0.01;
-  transform: translateY(0);
-  transition: all 5s ease-in;
-}
-.comment-status-body {
-  padding: 0 5px;
-  background: var(--comment-bg);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.comment-status-body .comment-item {
+#comment-bar h3 {
   display: inline-block;
+  color: var(--comment-statust-font-color);
+  margin: 3px 0 5px 0;
+  font-size: 10px;
+  width: 1px;
+  height: 1em;
+  margin: 0;
+  overflow: hidden;
+  transition: all 0.1s ease-in;
 }
-#comment-status button.small {
+#comment-bar:hover h3 {
+  width: 120px;
+  transition: all 0.1s ease-in;
+}
+#comment-bar .comment-item {
+  background: var(--comment-bg);
+  margin-bottom: 3px;
+  padding: 0 5px;
+}
+#comment-bar button.small {
   background-color: #fff6;
   border-radius: 5px;
   border-color: #0006;
@@ -54,9 +46,97 @@
   font-size: 0.6rem;
   line-height: 0.9rem;
   margin-left: 0.25rem;
+  float: right;
+}
+/* Comment Summary */
+#comment-summary {
+  display: flex;
+  color: var(--comment-statust-font-color);
+  background-color: var(--comment-bg-light);
+  border-radius: 15px;
+  height: 1.8rem;
+  line-height: 1.3rem;
+  cursor: pointer;
+  width: fit-content;
+  padding: 3px 7px;
+  float: right;
+}
+#comment-summary.expanded {
+  display: none;
+}
+#comment-summary span {
+  display: inline-block;
+  margin: 0 0.5rem 0 0.2rem;
+}
+#comment-summary svg#comment-icon,
+.comments-unread svg#comment-icon {
+  width: 20px;
+  height: 20px;
+}
+#comment-summary .comment-count,
+.comments-unread .comment-count {
+  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+}
+/* Comment Panel */
+#comment-panel {
+  background-color: var(--comment-bg-light);
+  border-radius: 15px;
+  display: none;
+  width: fit-content;
+  padding: 5px;
+  overflow: hidden;
+}
+#comment-panel.expanded {
+  display: block;
+  height: fit-content;
+}
+/* Comment Alert */
+#comment-alert {
+  height: 2em;
+  padding-right: 10px;
+  line-height: 1.5rem;
+  overflow: hidden;
+  opacity: 0.01;
+  transform: translateY(-150%);
+}
+#comment-alert.expanded {
+  display: block;
+  height: fit-content;
+}
+#comment-alert.appear {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.5s ease-in;
+}
+#comment-alert.disappear {
+  display: block;
+  opacity: 0.01;
+  transform: translateY(0);
+  transition: all 5s ease-in;
+}
+.comment-status-body {
+  margin-left: 1.3rem;
+  padding-bottom: 0.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.comment-status-body .comment-item {
+  display: inline-block;
+}
+/* Comments Unread */
+.comments-unread {
+  padding: 5px 10px;
+}
+.comments-unread .comment-item {
+  display: block;
 }
 
-/* Comment Icon */
+/* Comment Icon ------------------------------------------------------------ */
 svg#comment-icon {
   min-width: inherit;
   transform: scale(0.9);
@@ -67,11 +147,8 @@ svg#comment-icon {
   fill: #ffd700;
   stroke: white;
 }
-.hasReadComments svg#comment-icon {
-  fill: #0003;
-}
 .isOpen svg#comment-icon {
-  stroke: #d84a00;
+  stroke: var(--comment-bg-new);
 }
 .comment-icon-inline {
   display: inline-block;
@@ -82,10 +159,10 @@ svg#comment-icon {
   margin-top: -3px;
   margin-right: 3px;
   position: inherit;
-  fill: #d84a00;
+  fill: var(--comment-bg-new);
 }
 .comment-count {
-  color: #d84a00;
+  color: var(--comment-bg-new);
   width: 30px;
   height: 30px;
   font-size: 12px;
@@ -94,10 +171,20 @@ svg#comment-icon {
   position: relative;
   text-align: center;
 }
+.hasNewComments svg#comment-icon {
+  fill: var(--comment-bg-new);
+}
+.hasNewComments .comment-count {
+  color: white;
+}
+.hasReadComments svg#comment-icon {
+  fill: #0003;
+}
 .hasReadComments .comment-count {
   color: white;
 }
 .commentbtn {
+  display: inline-block;
   cursor: pointer;
 }
 .comment-intable svg#comment-icon {

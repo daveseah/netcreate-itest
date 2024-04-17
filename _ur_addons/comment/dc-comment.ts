@@ -676,6 +676,10 @@ function GetReadby(cid) {
   return READBY.get(cid);
 }
 
+function GetCrefs() {
+  return [...ROOTS.keys()];
+}
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export default {
@@ -705,5 +709,7 @@ export default {
   GetThreadedCommentData,
   // GetThreadedCommentDataForRoot,
   // READBY
-  GetReadby
+  GetReadby,
+  // ROOTS
+  GetCrefs
 };
