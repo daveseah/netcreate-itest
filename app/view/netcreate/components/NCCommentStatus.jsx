@@ -45,6 +45,7 @@ class NCCommentStatus extends React.Component {
 
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', () => this.forceUpdate()); // respond to close
     UDATA.HandleMessage('COMMENTS_UPDATE', this.HandleCOMMENTS_UPDATE);
     UDATA.HandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
   }
