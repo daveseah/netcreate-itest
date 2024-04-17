@@ -10,6 +10,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const NetMessage = require('unisys/common-netmessage-class');
 const CMTMGR = require('../comment-mgr');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -140,6 +141,9 @@ class NCCommentStatus extends React.Component {
   }
 
   render() {
+    const isLoggedIn = NetMessage.GlobalGroupID();
+    if (!isLoggedIn) return '';
+
     const { message, messages, activeCSS, uiIsExpanded } = this.state;
     const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
     const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();
