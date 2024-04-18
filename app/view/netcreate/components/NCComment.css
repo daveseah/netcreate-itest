@@ -3,6 +3,7 @@
   --comment-bg-light: #f1e9c5ee;
   --comment-bg-new: #d84a00;
   --comment-statust-font-color: #d84a0088;
+  --comment-system-font-color: #0003;
 }
 
 /* Comment Bar ------------------------------------------------------------- */
@@ -37,6 +38,27 @@
   background: var(--comment-bg);
   margin-bottom: 3px;
   padding: 0 5px;
+}
+#comment-bar .comment-item .comment-sourcetype {
+  display: inline-block;
+  color: var(--comment-system-font-color);
+}
+#comment-bar .comment-item .comment-sourcelabel {
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#comment-bar .comment-item .commenter {
+  display: inline-block;
+}
+#comment-bar .comment-item .comment-text {
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 #comment-bar button.small {
   background-color: #fff6;

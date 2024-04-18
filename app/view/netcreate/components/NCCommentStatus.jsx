@@ -109,11 +109,14 @@ class NCCommentStatus extends React.Component {
     const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
     return (
       <div className="comment-item" key={comment.comment_id}>
-        <span className="commenter">
-          {typeLabel} {sourceLabel}: {comment.commenter_id}&nbsp;
-        </span>
+        <div className="comment-sourcetype">{typeLabel}&nbsp;</div>
+        <div className="comment-sourcelabel">{sourceLabel}</div>
+        <div className="commenter">: {comment.commenter_id}&nbsp;</div>
         <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
-        {String(comment.commenter_text.join('|')).trim()}&rdquo;
+        <div className="comment-text">
+          {String(comment.commenter_text.join('|')).trim()}
+        </div>
+        &rdquo;
       </div>
     );
   }

@@ -565,6 +565,12 @@ function MarkCommentRead(cid, uid) {
   if (!readby.includes(uid)) readby.push(uid);
   READBY.set(cid, readby);
 }
+function MarkCommentUnread(cid, uid) {
+  // Mark the comment NOT read
+  const readby = READBY.get(cid) || [];
+  const updatedReadby = readby.filter(readByUid => readByUid !== uid);
+  READBY.set(cid, updatedReadby);
+}
 
 function IsMarkedRead(cid, uid) {
   const readby = READBY.get(cid) || [];
@@ -703,6 +709,7 @@ export default {
   RemoveComment,
   HandleRemovedComments,
   MarkCommentRead,
+  MarkCommentUnread,
   IsMarkedRead,
   IsMarkedDeleted,
   GetThreadedCommentIds,
