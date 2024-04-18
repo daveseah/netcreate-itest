@@ -115,18 +115,21 @@ MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
-MOD.GetCREFSourceLabel = cref => {
+function deconstructCref(cref) {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
+  return { type, id }
+}
+MOD.GetCREFSourceLabel = cref => {
+  const { type, id } = deconstructCref(cref);
   let typeLabel;
   let node, edge, nodes, sourceNode, targetNode;
   let sourceLabel;
   switch (type) {
     case 'n':
       typeLabel = 'Node';
-      source = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
-      console.log('found source', source, 'looking for', id, UDATA.AppState('NCDATA').nodes)
-      sourceLabel = source ? source.label : 'not found';
+      node = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
+      sourceLabel = node ? node.label : 'not found';
       break;
     case 'e':
       typeLabel = 'Edge';
@@ -143,6 +146,25 @@ MOD.GetCREFSourceLabel = cref => {
       break;
   }
   return { typeLabel, sourceLabel };
+}
+
+MOD.OpenSource = cref => {
+  const { type, id } = deconstructCref(cref);
+  let edge;
+  switch (type) {
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
+      });
+      break;
+    case 'p':
+      // do something?
+      break;
+  }
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

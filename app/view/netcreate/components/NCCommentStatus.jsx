@@ -40,6 +40,7 @@ class NCCommentStatus extends React.Component {
     this.UIOpen = this.UIOpen.bind(this);
     this.UIClose = this.UIClose.bind(this);
     this.UIMarkAllRead = this.UIMarkAllRead.bind(this);
+    this.UIOpenSource = this.UIOpenSource.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -104,13 +105,18 @@ class NCCommentStatus extends React.Component {
   }
 
   GetCommentItem(comment) {
-    // HACK Source Name
     const cref = comment ? comment.collection_ref : '';
     const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
     return (
       <div className="comment-item" key={comment.comment_id}>
         <div className="comment-sourcetype">{typeLabel}&nbsp;</div>
-        <div className="comment-sourcelabel">{sourceLabel}</div>
+        <a
+          href="#"
+          className="comment-sourcelabel"
+          onClick={event => this.UIOpenSource(event, cref)}
+        >
+          {sourceLabel}
+        </a>
         <div className="commenter">: {comment.commenter_id}&nbsp;</div>
         <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
         <div className="comment-text">
@@ -133,6 +139,12 @@ class NCCommentStatus extends React.Component {
 
   UIMarkAllRead() {
     CMTMGR.MarkAllRead();
+  }
+
+  UIOpenSource(event, cref) {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenSource(cref);
   }
 
   render() {
