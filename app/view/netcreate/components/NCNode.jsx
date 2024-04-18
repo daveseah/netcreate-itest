@@ -90,6 +90,7 @@ class NCNode extends UNISYS.Component {
     this.UpdateSelection = this.UpdateSelection.bind(this);
     this.SelectEdgeAndEdit = this.SelectEdgeAndEdit.bind(this);
     this.SelectEdge = this.SelectEdge.bind(this);
+    this.DeselectEdge = this.DeselectEdge.bind(this);
     // DATA LOADING
     this.LoadNode = this.LoadNode.bind(this);
     this.LoadEdges = this.LoadEdges.bind(this);
@@ -134,7 +135,7 @@ class NCNode extends UNISYS.Component {
     UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.HandleMessage('NODE_EDIT', this.UIRequestEditNode); // Node Table request
     UDATA.HandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
-    UDATA.HandleMessage('EDGE_DESELECT', this.SelectEdge);
+    UDATA.HandleMessage('EDGE_DESELECT', this.DeselectEdge);
   }
 
   componentDidMount() {
@@ -148,6 +149,7 @@ class NCNode extends UNISYS.Component {
     UDATA.AppStateChangeOff('SELECTION', this.UpdateSelection);
     UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.UnhandleMessage('NODE_EDIT', this.UIRequestEditNode);
+    UDATA.UnhandleMessage('EDGE_DESELECT', this.DeselectEdge);
     window.removeEventListener('beforeunload', this.CheckUnload);
     window.removeEventListener('unload', this.DoUnload);
   }
@@ -294,7 +296,7 @@ class NCNode extends UNISYS.Component {
       });
     });
   }
-  SelectEdge() {
+  DeselectEdge() {
     this.setState({ selectedEdgeId: null });
   }
 
