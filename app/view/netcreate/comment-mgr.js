@@ -12,6 +12,7 @@ const ReactDOM = require('react-dom');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
+const { ARROW_RIGHT } = require('system/util/constant');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
 
@@ -118,7 +119,7 @@ MOD.GetCREFSourceLabel = cref => {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
   let typeLabel;
-  let source;
+  let node, edge, nodes, sourceNode, targetNode;
   let sourceLabel;
   switch (type) {
     case 'n':
@@ -129,7 +130,12 @@ MOD.GetCREFSourceLabel = cref => {
       break;
     case 'e':
       typeLabel = 'Edge';
-      sourceLabel = id;
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      nodes = UDATA.AppState('NCDATA').nodes;
+      sourceNode = nodes.find(n => n.id === Number(edge.source));
+      targetNode = nodes.find(n => n.id === Number(edge.target));
+      if (edge && sourceNode && targetNode)
+        sourceLabel = `${sourceNode.label}${ARROW_RIGHT}${targetNode.label}`;
       break;
     case 'p':
       typeLabel = 'Project';

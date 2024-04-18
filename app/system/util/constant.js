@@ -11,6 +11,7 @@ const CONSTANT = {};
 CONSTANT.EDGE_NOT_SET_LABEL = '...';
 CONSTANT.ARROW_DOWN = `\u2193`;
 CONSTANT.ARROW_UPDOWN = `\u21F5`;
+CONSTANT.ARROW_RIGHT = `\u2794`;
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
