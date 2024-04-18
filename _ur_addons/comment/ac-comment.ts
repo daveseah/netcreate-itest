@@ -404,6 +404,11 @@ function UpdateComment(cobj, uid) {
     throw new Error(
       `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
     );
+
+  // mark it unread
+  cvobj.isMarkedRead = false; // clear read status
+  DCCOMMENTS.MarkCommentUnread(cvobj.comment_id, uid);
+
   cvobj.isBeingEdited = false;
   m_DeRegisterCommentBeingEdited(cobj.comment_id);
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
