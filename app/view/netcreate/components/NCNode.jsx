@@ -42,6 +42,7 @@ const UNISYS = require('unisys/client');
 const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const CMTMGR = require('../comment-mgr');
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
+const { EDGE_NOT_SET_LABEL, ARROW_RIGHT } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
 const NCCommentBtn = require('./NCCommentBtn');
@@ -61,8 +62,6 @@ const TABS = {
   EDGES: 'EDGES',
   PROVENANCE: 'PROVENANCE'
 };
-const EDGE_NOT_SET_LABEL = '...';
-const ARROW_RIGHT = `\u2794`;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDATA;
 
