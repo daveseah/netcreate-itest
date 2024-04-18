@@ -729,7 +729,7 @@ class EdgeTable extends UNISYS.Component {
                 ))}
                 <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={`e${edge.id}`} isTable />
+                  <NCCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>

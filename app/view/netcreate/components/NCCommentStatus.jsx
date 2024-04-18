@@ -106,25 +106,11 @@ class NCCommentStatus extends React.Component {
   GetCommentItem(comment) {
     // HACK Source Name
     const cref = comment ? comment.collection_ref : '';
-    const type = cref.substring(0, 1);
-    const id = cref.substring(1);
-    let typeLabel;
-    switch (type) {
-      case 'n':
-        typeLabel = 'Node';
-        break;
-      case 'e':
-        typeLabel = 'Edge';
-        break;
-      case 'p':
-        typeLabel = 'Project';
-        break;
-    }
-    const sourceLabel = `${typeLabel} ${id}`;
+    const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
     return (
       <div className="comment-item" key={comment.comment_id}>
         <span className="commenter">
-          {sourceLabel}: {comment.commenter_id}&nbsp;
+          {typeLabel} {sourceLabel}: {comment.commenter_id}&nbsp;
         </span>
         <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
         {String(comment.commenter_text.join('|')).trim()}&rdquo;
