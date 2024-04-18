@@ -135,6 +135,7 @@ class NCNode extends UNISYS.Component {
     UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.HandleMessage('NODE_EDIT', this.UIRequestEditNode); // Node Table request
     UDATA.HandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
+    UDATA.HandleMessage('EDGE_SELECT', this.SelectEdge);
     UDATA.HandleMessage('EDGE_DESELECT', this.DeselectEdge);
   }
 
@@ -149,6 +150,8 @@ class NCNode extends UNISYS.Component {
     UDATA.AppStateChangeOff('SELECTION', this.UpdateSelection);
     UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.UnhandleMessage('NODE_EDIT', this.UIRequestEditNode);
+    UDATA.UnhandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
+    UDATA.UnhandleMessage('EDGE_SELECT', this.SelectEdge);
     UDATA.UnhandleMessage('EDGE_DESELECT', this.DeselectEdge);
     window.removeEventListener('beforeunload', this.CheckUnload);
     window.removeEventListener('unload', this.DoUnload);
@@ -294,6 +297,15 @@ class NCNode extends UNISYS.Component {
       UDATA.LocalCall('EDGE_OPEN', { edge }).then(() => {
         UDATA.LocalCall('EDGE_EDIT', { edgeId });
       });
+    });
+  }
+  SelectEdge(data) {
+    const { edgeId } = data;
+    this.setState({ uSelectedTab: TABS.EDGES, selectedEdgeId: edgeId }, () => {
+      const { edges } = this.state;
+      const edge = edges.find(e => e.id === Number(edgeId));
+      this.setState({ selectedEdgeId: edgeId });
+      UDATA.LocalCall('EDGE_OPEN', { edge });
     });
   }
   DeselectEdge() {
