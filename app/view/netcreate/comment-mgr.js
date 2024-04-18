@@ -114,6 +114,31 @@ MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
+MOD.GetCREFSourceLabel = cref => {
+  const type = cref.substring(0, 1);
+  const id = cref.substring(1);
+  let typeLabel;
+  let source;
+  let sourceLabel;
+  switch (type) {
+    case 'n':
+      typeLabel = 'Node';
+      source = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
+      console.log('found source', source, 'looking for', id, UDATA.AppState('NCDATA').nodes)
+      sourceLabel = source ? source.label : 'not found';
+      break;
+    case 'e':
+      typeLabel = 'Edge';
+      sourceLabel = id;
+      break;
+    case 'p':
+      typeLabel = 'Project';
+      sourceLabel = id;
+      break;
+  }
+  return { typeLabel, sourceLabel };
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
 MOD.GetCurrentUserId = () => {
@@ -129,6 +154,19 @@ MOD.GetUserName = (uid) => {
 /// Comment Type
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Global Operations
+MOD.MarkAllRead = () => {
+  const uid = MOD.GetCurrentUserId();
+  const crefs = COMMENT.GetCrefs();
+  crefs.forEach(cref => {
+    m_DBUpdateReadBy(cref, uid);
+    COMMENT.MarkRead(cref, uid);
+  })
+  COMMENT.DeriveAllThreadedViewObjects(uid);
+  m_SetAppStateCommentCollections();
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -307,6 +345,9 @@ function m_CloseRemoveCommentDialog() {
   ReactDOM.unmountComponentAtNode(container);
 }
 
+/// EVENT HANDLERS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 /**
  * Respond to network COMMENTS_UPDATE Messages
  * Usually used after a comment deletion to handle a batch of comment updates
@@ -371,8 +412,8 @@ MOD.HandleREADBY_UPDATE = data => {
   // logged in to multiple browsers.
 }
 
+/// DB CALLS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// DB Calls
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,

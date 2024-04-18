@@ -594,7 +594,7 @@ class NodeTable extends UNISYS.Component {
                 ))}
                 <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={`n${node.id}`} isTable />
+                  <NCCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isLocalHost} style={{ fontSize: '9px' }}>

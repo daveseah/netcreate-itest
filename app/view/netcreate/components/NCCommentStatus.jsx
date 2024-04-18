@@ -39,6 +39,7 @@ class NCCommentStatus extends React.Component {
     this.GetCommentItem = this.GetCommentItem.bind(this);
     this.UIOpen = this.UIOpen.bind(this);
     this.UIClose = this.UIClose.bind(this);
+    this.UIMarkAllRead = this.UIMarkAllRead.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -105,25 +106,11 @@ class NCCommentStatus extends React.Component {
   GetCommentItem(comment) {
     // HACK Source Name
     const cref = comment ? comment.collection_ref : '';
-    const type = cref.substring(0, 1);
-    const id = cref.substring(1);
-    let typeLabel;
-    switch (type) {
-      case 'n':
-        typeLabel = 'Node';
-        break;
-      case 'e':
-        typeLabel = 'Edge';
-        break;
-      case 'p':
-        typeLabel = 'Project';
-        break;
-    }
-    const sourceLabel = `${typeLabel} ${id}`;
+    const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
     return (
       <div className="comment-item" key={comment.comment_id}>
         <span className="commenter">
-          {sourceLabel}: {comment.commenter_id}&nbsp;
+          {typeLabel} {sourceLabel}: {comment.commenter_id}&nbsp;
         </span>
         <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
         {String(comment.commenter_text.join('|')).trim()}&rdquo;
@@ -139,6 +126,10 @@ class NCCommentStatus extends React.Component {
 
   UIClose() {
     this.setState({ message: '', activeCSS: '', uiIsExpanded: false });
+  }
+
+  UIMarkAllRead() {
+    CMTMGR.MarkAllRead();
   }
 
   render() {
@@ -201,12 +192,17 @@ class NCCommentStatus extends React.Component {
               <div className="comment-status-body">{unreadRepliesToMeItems}</div>
               {UnreadButtonJSX}
               <div className="comment-status-body">{unreadCommentItems}</div>
+              <div className="commentbar">
+                <button className="small" onClick={this.UIMarkAllRead}>
+                  Mark All Read
+                </button>
               <button className="small" onClick={this.UIClose}>
                 Close
               </button>
             </div>
           </div>
         </div>
+      </div>
       </div>
     );
   }
