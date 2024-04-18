@@ -46,7 +46,7 @@
 #comment-bar .comment-item .comment-sourcelabel {
   display: inline-block;
   vertical-align: bottom;
-  max-width: 100px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

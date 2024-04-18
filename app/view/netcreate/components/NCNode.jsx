@@ -42,6 +42,7 @@ const UNISYS = require('unisys/client');
 const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const CMTMGR = require('../comment-mgr');
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
+const { EDGE_NOT_SET_LABEL, ARROW_RIGHT } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
 const NCCommentBtn = require('./NCCommentBtn');
@@ -61,8 +62,6 @@ const TABS = {
   EDGES: 'EDGES',
   PROVENANCE: 'PROVENANCE'
 };
-const EDGE_NOT_SET_LABEL = '...';
-const ARROW_RIGHT = `\u2794`;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDATA;
 
@@ -91,6 +90,7 @@ class NCNode extends UNISYS.Component {
     this.UpdateSelection = this.UpdateSelection.bind(this);
     this.SelectEdgeAndEdit = this.SelectEdgeAndEdit.bind(this);
     this.SelectEdge = this.SelectEdge.bind(this);
+    this.DeselectEdge = this.DeselectEdge.bind(this);
     // DATA LOADING
     this.LoadNode = this.LoadNode.bind(this);
     this.LoadEdges = this.LoadEdges.bind(this);
@@ -135,7 +135,8 @@ class NCNode extends UNISYS.Component {
     UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.HandleMessage('NODE_EDIT', this.UIRequestEditNode); // Node Table request
     UDATA.HandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
-    UDATA.HandleMessage('EDGE_DESELECT', this.SelectEdge);
+    UDATA.HandleMessage('EDGE_SELECT', this.SelectEdge);
+    UDATA.HandleMessage('EDGE_DESELECT', this.DeselectEdge);
   }
 
   componentDidMount() {
@@ -149,6 +150,9 @@ class NCNode extends UNISYS.Component {
     UDATA.AppStateChangeOff('SELECTION', this.UpdateSelection);
     UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
     UDATA.UnhandleMessage('NODE_EDIT', this.UIRequestEditNode);
+    UDATA.UnhandleMessage('EDGE_SELECT_AND_EDIT', this.SelectEdgeAndEdit);
+    UDATA.UnhandleMessage('EDGE_SELECT', this.SelectEdge);
+    UDATA.UnhandleMessage('EDGE_DESELECT', this.DeselectEdge);
     window.removeEventListener('beforeunload', this.CheckUnload);
     window.removeEventListener('unload', this.DoUnload);
   }
@@ -295,7 +299,16 @@ class NCNode extends UNISYS.Component {
       });
     });
   }
-  SelectEdge() {
+  SelectEdge(data) {
+    const { edgeId } = data;
+    this.setState({ uSelectedTab: TABS.EDGES, selectedEdgeId: edgeId }, () => {
+      const { edges } = this.state;
+      const edge = edges.find(e => e.id === Number(edgeId));
+      this.setState({ selectedEdgeId: edgeId });
+      UDATA.LocalCall('EDGE_OPEN', { edge });
+    });
+  }
+  DeselectEdge() {
     this.setState({ selectedEdgeId: null });
   }
 

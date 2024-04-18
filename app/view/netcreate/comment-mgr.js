@@ -12,6 +12,7 @@ const ReactDOM = require('react-dom');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
+const { ARROW_RIGHT } = require('system/util/constant');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
 
@@ -114,22 +115,36 @@ MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
-MOD.GetCREFSourceLabel = cref => {
+function deconstructCref(cref) {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
+  return { type, id }
+}
+
+/**
+ * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
+ * @param {string} cref
+ * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
+ */
+MOD.GetCREFSourceLabel = cref => {
+  const { type, id } = deconstructCref(cref);
   let typeLabel;
-  let source;
-  let sourceLabel;
+  let node, edge, nodes, sourceNode, targetNode;
+  let sourceLabel; // undefined if not found
   switch (type) {
     case 'n':
       typeLabel = 'Node';
-      source = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
-      console.log('found source', source, 'looking for', id, UDATA.AppState('NCDATA').nodes)
-      sourceLabel = source ? source.label : 'not found';
+      node = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
+      if (node) sourceLabel = node.label;
       break;
     case 'e':
       typeLabel = 'Edge';
-      sourceLabel = id;
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      nodes = UDATA.AppState('NCDATA').nodes;
+      sourceNode = nodes.find(n => n.id === Number(edge.source));
+      targetNode = nodes.find(n => n.id === Number(edge.target));
+      if (edge && sourceNode && targetNode)
+        sourceLabel = `${sourceNode.label}${ARROW_RIGHT}${targetNode.label}`;
       break;
     case 'p':
       typeLabel = 'Project';
@@ -137,6 +152,48 @@ MOD.GetCREFSourceLabel = cref => {
       break;
   }
   return { typeLabel, sourceLabel };
+}
+
+MOD.OpenSource = cref => {
+  const { type, id } = deconstructCref(cref);
+  let edge;
+  switch (type) {
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
+      });
+      break;
+    case 'p':
+      // do something?
+      break;
+  }
+}
+
+MOD.OpenComment = cref => {
+  const { type, id } = deconstructCref(cref);
+  let edge;
+  switch (type) {
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
+        UDATA.LocalCall('COMMENT_SELECT', { cref });
+      });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
+          UDATA.LocalCall('COMMENT_SELECT', { cref });
+        });
+      });
+      break;
+    case 'p':
+      // do something?
+      break;
+  }
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
