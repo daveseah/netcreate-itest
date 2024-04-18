@@ -120,16 +120,22 @@ function deconstructCref(cref) {
   const id = cref.substring(1);
   return { type, id }
 }
+
+/**
+ * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
+ * @param {string} cref
+ * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
+ */
 MOD.GetCREFSourceLabel = cref => {
   const { type, id } = deconstructCref(cref);
   let typeLabel;
   let node, edge, nodes, sourceNode, targetNode;
-  let sourceLabel;
+  let sourceLabel; // undefined if not found
   switch (type) {
     case 'n':
       typeLabel = 'Node';
       node = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
-      sourceLabel = node ? node.label : 'not found';
+      if (node) sourceLabel = node.label;
       break;
     case 'e':
       typeLabel = 'Edge';

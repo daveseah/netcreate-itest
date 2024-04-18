@@ -112,8 +112,10 @@ class NCCommentStatus extends React.Component {
   }
 
   GetCommentItem(comment) {
+    if (comment.comment_isMarkedDeleted) return ''; // was marked deleted, so skip
     const cref = comment ? comment.collection_ref : '';
     const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
+    if (sourceLabel === undefined) return ''; // source was deleted, so skip
     return (
       <div className="comment-item" key={comment.comment_id}>
         <div className="comment-sourcetype">{typeLabel}&nbsp;</div>
