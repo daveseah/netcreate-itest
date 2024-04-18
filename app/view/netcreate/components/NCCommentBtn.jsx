@@ -81,6 +81,8 @@ class NCCommentBtn extends React.Component {
     this.GetCommentThreadPosition = this.GetCommentThreadPosition.bind(this);
     this.UpdateCommentCollection = this.UpdateCommentCollection.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
+    this.HandleCOMMENT_SELECT = this.HandleCOMMENT_SELECT.bind(this);
+    this.UIOpenComment = this.UIOpenComment.bind(this);
     // UI HANDLERS
     this.UIOnClick = this.UIOnClick.bind(this);
     this.UIOnResize = this.UIOnResize.bind(this);
@@ -92,6 +94,7 @@ class NCCommentBtn extends React.Component {
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTCOLLECTION', this.UpdateCommentCollection);
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_SELECT', this.HandleCOMMENT_SELECT);
     window.addEventListener('resize', this.UIOnResize);
   }
 
@@ -145,11 +148,14 @@ class NCCommentBtn extends React.Component {
     this.forceUpdate();
   }
 
-  UIOnClick(event) {
-    event.stopPropagation(); // prevent Edge deselect
+  HandleCOMMENT_SELECT(data) {
+    const { cref } = this.props;
+    if (data.cref === cref) this.UIOpenComment();
+  }
+
+  UIOpenComment() {
     const { cref } = this.props;
     const { commentButtonId } = this.state;
-
     const updatedIsOpen = !this.state.isOpen;
     const position = this.GetCommentThreadPosition();
     const updatedState = {
@@ -164,6 +170,11 @@ class NCCommentBtn extends React.Component {
         isOpen: updatedIsOpen
       });
     });
+  }
+
+  UIOnClick(event) {
+    event.stopPropagation(); // prevent Edge deselect
+    this.UIOpenComment();
   }
 
   UIOnResize(event) {

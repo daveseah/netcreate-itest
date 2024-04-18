@@ -37,10 +37,11 @@ class NCCommentStatus extends React.Component {
     this.HandleCOMMENTS_UPDATE = this.HandleCOMMENTS_UPDATE.bind(this);
     this.HandleCOMMENT_UPDATE = this.HandleCOMMENT_UPDATE.bind(this);
     this.GetCommentItem = this.GetCommentItem.bind(this);
-    this.UIOpen = this.UIOpen.bind(this);
+    this.UIExpandPanel = this.UIExpandPanel.bind(this);
     this.UIClose = this.UIClose.bind(this);
     this.UIMarkAllRead = this.UIMarkAllRead.bind(this);
     this.UIOpenSource = this.UIOpenSource.bind(this);
+    this.UIOpenComment = this.UIOpenComment.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -50,6 +51,12 @@ class NCCommentStatus extends React.Component {
     UDATA.OnAppStateChange('COMMENTCOLLECTION', () => this.forceUpdate()); // respond to close
     UDATA.HandleMessage('COMMENTS_UPDATE', this.HandleCOMMENTS_UPDATE);
     UDATA.HandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
+  }
+
+  componentWillUnmount() {
+    UDATA.AppStateChangeOff('COMMENTCOLLECTION', () => this.forceUpdate()); // respond to close
+    UDATA.UnhandleMessage('COMMENTS_UPDATE', this.HandleCOMMENTS_UPDATE);
+    UDATA.UnhandleMessage('COMMENT_UPDATE', this.HandleCOMMENT_UPDATE);
   }
 
   HandleCOMMENTS_UPDATE(data) {
@@ -118,7 +125,11 @@ class NCCommentStatus extends React.Component {
           {sourceLabel}
         </a>
         <div className="commenter">: {comment.commenter_id}&nbsp;</div>
-        <a href="#">{`#${comment.comment_id}`}</a>&nbsp;&ldquo;
+        <a
+          href="#"
+          onClick={event => this.UIOpenComment(event, cref)}
+        >{`#${comment.comment_id}`}</a>
+        &nbsp;&ldquo;
         <div className="comment-text">
           {String(comment.commenter_text.join('|')).trim()}
         </div>
@@ -127,7 +138,7 @@ class NCCommentStatus extends React.Component {
     );
   }
 
-  UIOpen() {
+  UIExpandPanel() {
     clearTimeout(DisappearTimer);
     clearTimeout(ResetTimer);
     this.setState({ activeCSS: 'appear', uiIsExpanded: true });
@@ -145,6 +156,12 @@ class NCCommentStatus extends React.Component {
     event.preventDefault();
     event.stopPropagation();
     CMTMGR.OpenSource(cref);
+  }
+
+  UIOpenComment(event, cref) {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenComment(cref);
   }
 
   render() {
@@ -193,7 +210,7 @@ class NCCommentStatus extends React.Component {
           <div
             id="comment-summary"
             className={`${uiIsExpanded ? ' expanded' : ''}`}
-            onClick={this.UIOpen}
+            onClick={this.UIExpandPanel}
           >
             {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
           </div>
