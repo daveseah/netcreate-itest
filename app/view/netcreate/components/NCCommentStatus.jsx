@@ -39,6 +39,7 @@ class NCCommentStatus extends React.Component {
     this.GetCommentItem = this.GetCommentItem.bind(this);
     this.UIOpen = this.UIOpen.bind(this);
     this.UIClose = this.UIClose.bind(this);
+    this.UIMarkAllRead = this.UIMarkAllRead.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -141,6 +142,10 @@ class NCCommentStatus extends React.Component {
     this.setState({ message: '', activeCSS: '', uiIsExpanded: false });
   }
 
+  UIMarkAllRead() {
+    CMTMGR.MarkAllRead();
+  }
+
   render() {
     const isLoggedIn = NetMessage.GlobalGroupID();
     if (!isLoggedIn) return '';
@@ -201,12 +206,17 @@ class NCCommentStatus extends React.Component {
               <div className="comment-status-body">{unreadRepliesToMeItems}</div>
               {UnreadButtonJSX}
               <div className="comment-status-body">{unreadCommentItems}</div>
+              <div className="commentbar">
+                <button className="small" onClick={this.UIMarkAllRead}>
+                  Mark All Read
+                </button>
               <button className="small" onClick={this.UIClose}>
                 Close
               </button>
             </div>
           </div>
         </div>
+      </div>
       </div>
     );
   }

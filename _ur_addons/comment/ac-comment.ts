@@ -148,12 +148,16 @@ function CloseCommentCollection(uiref, cref, uid) {
   COMMENTUISTATE.set(uiref, { cref, isOpen: false });
   OPENCOMMENTS.set(cref, undefined);
 
-  // Mark Read
-  const commentVObjs = COMMENTVOBJS.get(cref);
-  commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+  MarkRead(cref, uid);
 
   // Update Derived Lists to update Marked status
   DeriveThreadedViewObjects(cref, uid);
+}
+
+function MarkRead(cref, uid) {
+  // Mark Read
+  const commentVObjs = COMMENTVOBJS.get(cref);
+  commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
 }
 
 function GetCommentStats(uid) {
@@ -223,7 +227,7 @@ function GetCommentBeingEdited(cid) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// UNREAD COMMENTS
 
-function GetUnreadRepliesToMe(ui) {
+function GetUnreadRepliesToMe() {
   const comments = [];
   COMMENTVOBJS.forEach(cvobjs => {
     cvobjs.forEach(cvobj => {
@@ -469,6 +473,9 @@ function GetComment(cid) {
 function GetReadby(cid) {
   return DCCOMMENTS.GetReadby(cid);
 }
+function GetCrefs() {
+  return DCCOMMENTS.GetCrefs();
+}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -482,6 +489,7 @@ export {
   GetCommentCollection,
   UpdateCommentUIState,
   CloseCommentCollection,
+  MarkRead,
   GetCommentStats,
   // Comment UI State
   GetCommentUIState,
@@ -493,6 +501,7 @@ export {
   GetUnreadRepliesToMe,
   GetUnreadComments,
   // Comment Thread View Object
+  DeriveAllThreadedViewObjects,
   DeriveThreadedViewObjects,
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
@@ -508,5 +517,6 @@ export {
   GetUserName,
   GetCommentTypes,
   GetComment,
-  GetReadby
+  GetReadby,
+  GetCrefs
 };

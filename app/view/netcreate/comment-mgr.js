@@ -132,6 +132,19 @@ MOD.GetCommentTypes = () => {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Global Operations
+MOD.MarkAllRead = () => {
+  const uid = MOD.GetCurrentUserId();
+  const crefs = COMMENT.GetCrefs();
+  crefs.forEach(cref => {
+    m_DBUpdateReadBy(cref, uid);
+    COMMENT.MarkRead(cref, uid);
+  })
+  COMMENT.DeriveAllThreadedViewObjects(uid);
+  m_SetAppStateCommentCollections();
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment Collections
 MOD.GetCommentCollection = (uiref) => {
   return COMMENT.GetCommentCollection(uiref);
@@ -307,6 +320,9 @@ function m_CloseRemoveCommentDialog() {
   ReactDOM.unmountComponentAtNode(container);
 }
 
+/// EVENT HANDLERS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 /**
  * Respond to network COMMENTS_UPDATE Messages
  * Usually used after a comment deletion to handle a batch of comment updates
@@ -371,8 +387,8 @@ MOD.HandleREADBY_UPDATE = data => {
   // logged in to multiple browsers.
 }
 
+/// DB CALLS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// DB Calls
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,
