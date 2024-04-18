@@ -183,7 +183,12 @@ class NCCommentStatus extends React.Component {
 
     const UnreadRepliesToMeButtonJSX = (
       <div>
-        <div className="commentbtn hasNewComments" onClick={this.UIOnClick}>
+        <div
+          className={`commentbtn ${
+            countRepliesToMe ? 'hasNewComments' : 'hasReadComments'
+          }`}
+          onClick={this.UIOnClick}
+        >
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{countRepliesToMe}</div>
         </div>
@@ -192,7 +197,12 @@ class NCCommentStatus extends React.Component {
     );
     const UnreadButtonJSX = (
       <div>
-        <div className="commentbtn hasUnreadComments" onClick={this.UIOnClick}>
+        <div
+          className={`commentbtn ${
+            countUnread ? 'hasUnreadComments' : 'hasReadComments'
+          }`}
+          onClick={this.UIOnClick}
+        >
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{countUnread}</div>
         </div>
