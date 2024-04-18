@@ -196,13 +196,13 @@ class NCCommentStatus extends React.Component {
                 <button className="small" onClick={this.UIMarkAllRead}>
                   Mark All Read
                 </button>
-              <button className="small" onClick={this.UIClose}>
-                Close
-              </button>
+                <button className="small" onClick={this.UIClose}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     );
   }
