@@ -296,6 +296,7 @@ class NCComment extends React.Component {
       // EDIT mode
       CommentComponent = (
         <div
+          id={cid}
           className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
           onMouseDown={e => e.stopPropagation()} // allow text drag, stops Draggable
         >
@@ -328,7 +329,10 @@ class NCComment extends React.Component {
       // VIEW mode
       const markedUnRead = cvobj.isMarkedRead ? '' : 'markedUnRead';
       CommentComponent = (
-        <div className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}>
+        <div
+          id={cid}
+          className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
+        >
           <div>
             <div className="commenter">{commenter}</div>
             <div className="date">{modifytime_string || createtime_string}</div>
