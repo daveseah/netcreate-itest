@@ -173,20 +173,26 @@ MOD.OpenSource = cref => {
   }
 }
 
-MOD.OpenComment = cref => {
+MOD.OpenComment = (cref, cid) => {
   const { type, id } = deconstructCref(cref);
   let edge;
   switch (type) {
     case 'n':
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
-        UDATA.LocalCall('COMMENT_SELECT', { cref });
+        UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+          const commentEl = document.getElementById(cid);
+          commentEl.scrollIntoView();
+        });
       });
       break;
     case 'e':
       edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
         UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
-          UDATA.LocalCall('COMMENT_SELECT', { cref });
+          UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+            const commentEl = document.getElementById(cid);
+            commentEl.scrollIntoView();
+          });
         });
       });
       break;
