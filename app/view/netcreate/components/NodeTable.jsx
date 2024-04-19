@@ -33,6 +33,7 @@ const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
+const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
 
@@ -386,13 +387,10 @@ class NodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
-  onButtonClick(event) {
+  onButtonClick(event, nodeId) {
     event.preventDefault();
-
-    // REVIEW: For some reason React converts the integer IDs into string
-    // values when returned in event.target.value.  So we have to convert
-    // it here.
-    let nodeID = parseInt(event.target.value);
+    event.stopPropagation();
+    let nodeID = parseInt(nodeId);
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [nodeID] }).then(() => {
       if (DBG) console.error('NodeTable: Calling NODE_EDIT', nodeID);
       UDATA.LocalCall('NODE_EDIT', { nodeID: nodeID });
@@ -569,14 +567,12 @@ class NodeTable extends UNISYS.Component {
                 onMouseOver={() => this.onHighlightRow(node.id)}
               >
                 <td>
-                  <Button
-                    size="sm"
-                    outline
-                    value={node.id}
-                    onClick={this.onButtonClick}
+                  <button
+                    className="small outline"
+                    onClick={event => this.onButtonClick(event, node.id)}
                   >
-                    {isLocked ? 'View' : 'Edit'}
-                  </Button>
+                    {isLocked ? ICON_VIEW : ICON_PENCIL}
+                  </button>
                 </td>
                 <td hidden={!DBG}>{node.id}</td>
                 <td>{node.degrees}</td>

@@ -129,7 +129,7 @@ class NCCommentStatus extends React.Component {
         <div className="commenter">: {comment.commenter_id}&nbsp;</div>
         <a
           href="#"
-          onClick={event => this.UIOpenComment(event, cref)}
+          onClick={event => this.UIOpenComment(event, cref, comment.comment_id)}
         >{`#${comment.comment_id}`}</a>
         &nbsp;&ldquo;
         <div className="comment-text">
@@ -160,10 +160,10 @@ class NCCommentStatus extends React.Component {
     CMTMGR.OpenSource(cref);
   }
 
-  UIOpenComment(event, cref) {
+  UIOpenComment(event, cref, cid) {
     event.preventDefault();
     event.stopPropagation();
-    CMTMGR.OpenComment(cref);
+    CMTMGR.OpenComment(cref, cid);
   }
 
   render() {
@@ -183,7 +183,12 @@ class NCCommentStatus extends React.Component {
 
     const UnreadRepliesToMeButtonJSX = (
       <div>
-        <div className="commentbtn hasNewComments" onClick={this.UIOnClick}>
+        <div
+          className={`commentbtn ${
+            countRepliesToMe ? 'hasNewComments' : 'hasReadComments'
+          }`}
+          onClick={this.UIOnClick}
+        >
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{countRepliesToMe}</div>
         </div>
@@ -192,7 +197,12 @@ class NCCommentStatus extends React.Component {
     );
     const UnreadButtonJSX = (
       <div>
-        <div className="commentbtn hasUnreadComments" onClick={this.UIOnClick}>
+        <div
+          className={`commentbtn ${
+            countUnread ? 'hasUnreadComments' : 'hasReadComments'
+          }`}
+          onClick={this.UIOnClick}
+        >
           {CMTMGR.COMMENTICON}
           <div className="comment-count">{countUnread}</div>
         </div>

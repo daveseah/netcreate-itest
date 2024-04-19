@@ -150,16 +150,15 @@ class NCCommentBtn extends React.Component {
 
   HandleCOMMENT_SELECT(data) {
     const { cref } = this.props;
-    if (data.cref === cref) this.UIOpenComment();
+    if (data.cref === cref) this.UIOpenComment(true);
   }
 
-  UIOpenComment() {
+  UIOpenComment(isOpen) {
     const { cref } = this.props;
     const { commentButtonId } = this.state;
-    const updatedIsOpen = !this.state.isOpen;
     const position = this.GetCommentThreadPosition();
     const updatedState = {
-      isOpen: updatedIsOpen,
+      isOpen,
       x: position.x,
       y: position.y
     };
@@ -167,14 +166,15 @@ class NCCommentBtn extends React.Component {
       CMTMGR.UpdateCommentUIState({
         uiref: commentButtonId,
         cref,
-        isOpen: updatedIsOpen
+        isOpen
       });
     });
   }
 
   UIOnClick(event) {
     event.stopPropagation(); // prevent Edge deselect
-    this.UIOpenComment();
+    const updatedIsOpen = !this.state.isOpen;
+    this.UIOpenComment(updatedIsOpen);
   }
 
   UIOnResize(event) {
