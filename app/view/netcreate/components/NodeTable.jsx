@@ -69,7 +69,8 @@ class NodeTable extends UNISYS.Component {
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
     this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
-    this.onButtonClick = this.onButtonClick.bind(this);
+    this.onViewButtonClick = this.onViewButtonClick.bind(this);
+    this.onEditButtonClick = this.onEditButtonClick.bind(this);
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
     this.onHighlightRow = this.onHighlightRow.bind(this);
     this.setSortKey = this.setSortKey.bind(this);
@@ -387,7 +388,15 @@ class NodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
-  onButtonClick(event, nodeId) {
+  onViewButtonClick(event, nodeId) {
+    event.preventDefault();
+    event.stopPropagation();
+    let nodeID = parseInt(nodeId);
+    UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [nodeID] });
+  }
+  /**
+   */
+  onEditButtonClick(event, nodeId) {
     event.preventDefault();
     event.stopPropagation();
     let nodeID = parseInt(nodeId);
@@ -569,10 +578,18 @@ class NodeTable extends UNISYS.Component {
                 <td>
                   <button
                     className="small outline"
-                    onClick={event => this.onButtonClick(event, node.id)}
+                    onClick={event => this.onViewButtonClick(event, node.id)}
                   >
-                    {isLocked ? ICON_VIEW : ICON_PENCIL}
+                    {ICON_VIEW}
                   </button>
+                  {!isLocked && (
+                    <button
+                      className="small outline"
+                      onClick={event => this.onEditButtonClick(event, node.id)}
+                  >
+                      {ICON_PENCIL}
+                  </button>
+                  )}
                 </td>
                 <td hidden={!DBG}>{node.id}</td>
                 <td>{node.degrees}</td>
