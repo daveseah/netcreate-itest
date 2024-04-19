@@ -41,14 +41,6 @@
 .nccomponent button.secondary {
   background-color: transparent;
 }
-.nccomponent button.outline {
-  border: none;
-  color: inherit;
-  background-color: transparent;
-}
-.nccomponent button.small {
-  font-size: 0.75em;
-}
 .nccomponent input {
   width: 100%;
   border-radius: 2px;
