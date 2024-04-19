@@ -181,7 +181,7 @@ MOD.OpenComment = (cref, cid) => {
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
         UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
           const commentEl = document.getElementById(cid);
-          commentEl.scrollIntoView();
+          commentEl.scrollIntoView({ behavior: "smooth" });
         });
       });
       break;
@@ -191,7 +191,7 @@ MOD.OpenComment = (cref, cid) => {
         UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
           UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
             const commentEl = document.getElementById(cid);
-            commentEl.scrollIntoView();
+            commentEl.scrollIntoView({ behavior: "smooth" });
           });
         });
       });
