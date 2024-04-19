@@ -38,6 +38,11 @@ svg#netgraph .nodes text {
   user-select: none;
 }
 
+/* Tables ------------------------------------------------------------------ */
+.table thead th {
+  z-index: 100; /* override bootstrap, comment buttons */
+}
+
 /* Button Icons ------------------------------------------------------------ */
 button.outline {
   border: none;
