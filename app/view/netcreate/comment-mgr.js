@@ -408,6 +408,18 @@ function m_CloseRemoveCommentDialog() {
   ReactDOM.unmountComponentAtNode(container);
 }
 
+/**
+ * Requested when a node/edge is deleted
+ * @param {string} cref
+ */
+MOD.RemoveAllCommentsForCref = cref => {
+  const uid = MOD.GetCurrentUserId();
+  const parms = { uid, collection_ref: cref };
+  const queuedActions = COMMENT.RemoveAllCommentsForCref(parms);
+  m_DBRemoveComment(queuedActions);
+  m_SetAppStateCommentVObjs();
+}
+
 /// EVENT HANDLERS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

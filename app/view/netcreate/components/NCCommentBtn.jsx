@@ -82,8 +82,8 @@ class NCCommentBtn extends React.Component {
     this.UpdateCommentCollection = this.UpdateCommentCollection.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     this.HandleCOMMENT_SELECT = this.HandleCOMMENT_SELECT.bind(this);
-    this.UIOpenComment = this.UIOpenComment.bind(this);
     // UI HANDLERS
+    this.UIOpenComment = this.UIOpenComment.bind(this);
     this.UIOnClick = this.UIOnClick.bind(this);
     this.UIOnResize = this.UIOnResize.bind(this);
 

@@ -336,7 +336,7 @@ function HandleUpdatedComments(cobjs) {
  * @param {Object} parms.uid
  * @param {Object} parms.isAdmin
  * @returns {(any|Array)} if {comment: cobj} updates the comment
- *                        if {comment_id: id} deletes the comment
+ *                        if {commentID: id} deletes the comment
  */
 function RemoveComment(parms) {
   const { collection_ref, comment_id, uid, isAdmin } = parms;
@@ -525,6 +525,26 @@ function RemoveComment(parms) {
 }
 
 /**
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.uid
+ * @returns {(any|Array)} if {comment: cobj} updates the comment
+ *                        if {comment_id: id} deletes the comment
+ */
+function RemoveAllCommentsForCref(parms) {
+  const { collection_ref } = parms;
+  const queuedActions = [];
+  const cids = COMMENTS.forEach(cobj => {
+    if (cobj.collection_ref === collection_ref) {
+      COMMENTS.delete(cobj.comment_id);
+      queuedActions.push({ commentID: cobj.comment_id });
+    }
+  });
+  m_DeriveValues();
+  return queuedActions;
+}
+
+/**
  * Checks if the current root and all children are marked deleted.
  * Ignores the NEXT root items
  * This is used to determine if we can safely prune the whole thread
@@ -707,6 +727,7 @@ export default {
   UpdateComment,
   HandleUpdatedComments,
   RemoveComment,
+  RemoveAllCommentsForCref,
   HandleRemovedComments,
   MarkCommentRead,
   MarkCommentUnread,
