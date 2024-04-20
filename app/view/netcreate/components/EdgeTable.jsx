@@ -35,6 +35,7 @@ const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_EDGE } = require('system/util/enum');
+const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
 
@@ -67,7 +68,8 @@ class EdgeTable extends UNISYS.Component {
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
     this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
-    this.onButtonClick = this.onButtonClick.bind(this);
+    this.onViewButtonClick = this.onViewButtonClick.bind(this);
+    this.onEditButtonClick = this.onEditButtonClick.bind(this);
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
     this.onHighlightNode = this.onHighlightNode.bind(this);
     this.m_FindMatchingObjsByProp = this.m_FindMatchingObjsByProp.bind(this);
@@ -425,14 +427,23 @@ class EdgeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
-  onButtonClick(event) {
+  onViewButtonClick(event, edgeId) {
     event.preventDefault();
-
-    let edgeID = parseInt(event.target.value);
+    event.stopPropagation();
+    let edgeID = parseInt(edgeId);
     let edge = this.m_FindEdgeById(edgeID);
-
+    if (DBG) console.log('EdgeTable: Edge id', edge.id, 'selected for viewing');
+    // Load Source Node then Edge
+    UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+      UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
+    });
+  }
+  onEditButtonClick(event, edgeId) {
+    event.preventDefault();
+    event.stopPropagation();
+    let edgeID = parseInt(edgeId);
+    let edge = this.m_FindEdgeById(edgeID);
     if (DBG) console.log('EdgeTable: Edge id', edge.id, 'selected for editing');
-
     // Load Source Node then Edge
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
       UDATA.LocalCall('EDGE_SELECT_AND_EDIT', { edgeId: edge.id });
@@ -688,14 +699,20 @@ class EdgeTable extends UNISYS.Component {
                 <td hidden={!DBG}>{edge.id}</td>
                 <td hidden={!DBG}>{edge.size}</td>
                 <td>
-                  <Button
-                    size="sm"
-                    outline
-                    value={edge.id}
-                    onClick={this.onButtonClick}
+                  <button
+                    className="small outline"
+                    onClick={event => this.onViewButtonClick(event, edge.id)}
                   >
-                    {isLocked ? 'View' : 'Edit'}
-                  </Button>
+                    {ICON_VIEW}
+                  </button>
+                  {!isLocked && (
+                    <button
+                      className="small outline"
+                      onClick={event => this.onEditButtonClick(event, edge.id)}
+                    >
+                      {ICON_PENCIL}
+                    </button>
+                  )}
                 </td>
                 {/* Cast to string for edge.target where target is undefined */}
                 <td hidden={!DBG}>{String(edge.source)}</td>
@@ -729,7 +746,7 @@ class EdgeTable extends UNISYS.Component {
                 ))}
                 <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={`e${edge.id}`} isTable />
+                  <NCCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>

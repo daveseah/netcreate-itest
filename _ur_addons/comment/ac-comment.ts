@@ -61,6 +61,7 @@
     CommentVObj cvobj
     -----------
     CommentVObj a handles the UI view state of the each comment in the thread.
+    cvobjs are a unique to each user id.
       
       interface CommentVObj {
         comment_id: any;
@@ -74,6 +75,7 @@
         isBeingEdited: boolean;
         isEditable: boolean;
         isMarkedRead: boolean;
+        isReplyToMe: boolean;
         allowReply: boolean;
         
         markedRead: boolean;
@@ -146,12 +148,52 @@ function CloseCommentCollection(uiref, cref, uid) {
   COMMENTUISTATE.set(uiref, { cref, isOpen: false });
   OPENCOMMENTS.set(cref, undefined);
 
+  MarkRead(cref, uid);
+
+  // Update Derived Lists to update Marked status
+  DeriveThreadedViewObjects(cref, uid);
+}
+
+function MarkRead(cref, uid) {
   // Mark Read
   const commentVObjs = COMMENTVOBJS.get(cref);
   commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+}
 
-  // Update Derived Lists to update Marked status
-  m_DeriveThreadedViewObjects(cref, uid);
+function GetCommentStats(uid) {
+  let countRepliesToMe = 0;
+  let countUnread = 0;
+  DeriveAllThreadedViewObjects(uid);
+
+  // find replies to me
+  const crefs = DCCOMMENTS.GetCrefs();
+  let rootCidsWithRepliesToMe = [];
+  crefs.forEach(cref => {
+    const cvobjs = COMMENTVOBJS.get(cref);
+    cvobjs.find(cvobj => {
+      const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
+      if (comment.commenter_id === uid && comment.comment_id_parent !== '')
+        rootCidsWithRepliesToMe.push(comment.comment_id_parent);
+    });
+  });
+
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (!cvobj.isMarkedRead) {
+        // count unread
+        countUnread++;
+        // count repliesToMe
+        const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
+        if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
+          // HACK: Update cvobj by reference!
+          cvobj.isReplyToMe = true;
+          countRepliesToMe++;
+        }
+      }
+    });
+  });
+
+  return { countRepliesToMe, countUnread };
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -162,14 +204,14 @@ function GetCommentUIState(uiref) {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// OPENCOMMENTS
+/// OPEN COMMENTS
 
 function GetOpenComments(cref) {
   return OPENCOMMENTS.get(cref);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// EDITABLECOMMENTS
+/// EDITABLE COMMENTS
 
 function m_RegisterCommentBeingEdited(cid) {
   COMMENTS_BEING_EDITED.set(cid, cid);
@@ -183,14 +225,41 @@ function GetCommentBeingEdited(cid) {
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// UNREAD COMMENTS
+
+function GetUnreadRepliesToMe() {
+  const comments = [];
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (cvobj.isReplyToMe) comments.push(DCCOMMENTS.GetComment(cvobj.comment_id));
+    });
+  });
+  return comments;
+}
+function GetUnreadComments() {
+  const comments = [];
+  COMMENTVOBJS.forEach(cvobjs => {
+    cvobjs.forEach(cvobj => {
+      if (!cvobj.isMarkedRead) comments.push(DCCOMMENTS.GetComment(cvobj.comment_id));
+    });
+  });
+  return comments;
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// COMMENT THREAD VIEW OBJECTS
+
+function DeriveAllThreadedViewObjects(uid) {
+  const crefs = DCCOMMENTS.GetCrefs();
+  crefs.forEach(cref => DeriveThreadedViewObjects(cref, uid));
+}
 
 /**
  * Returns flat array of comment view objects
  * @param {string} cref collection_ref id
  * @returns commentVOjb[]
  */
-function m_DeriveThreadedViewObjects(cref, uid) {
+function DeriveThreadedViewObjects(cref, uid) {
   if (cref === undefined)
     throw new Error(`m_DeriveThreadedViewObjects cref: "${cref}" must be defined!`);
   const commentVObjs = [];
@@ -252,7 +321,7 @@ function m_DeriveThreadedViewObjects(cref, uid) {
 function GetThreadedViewObjects(cref, uid) {
   const commentVObjs = COMMENTVOBJS.get(cref);
   return commentVObjs === undefined
-    ? m_DeriveThreadedViewObjects(cref, uid)
+    ? DeriveThreadedViewObjects(cref, uid)
     : commentVObjs;
 }
 
@@ -289,7 +358,7 @@ function AddComment(data) {
     throw new Error('Comments must have a collection ref!');
 
   const comment = DCCOMMENTS.AddComment(data);
-  m_DeriveThreadedViewObjects(data.cref, data.commenter_id);
+  DeriveThreadedViewObjects(data.cref, data.commenter_id);
 
   // Make it editable
   let commentVObjs = GetThreadedViewObjects(data.cref, data.commenter_id);
@@ -327,7 +396,7 @@ function UpdateComment(cobj, uid) {
     throw new Error('UpdateComment cref is undefined', cobj);
 
   DCCOMMENTS.UpdateComment(cobj);
-  m_DeriveThreadedViewObjects(cobj.collection_ref, uid);
+  DeriveThreadedViewObjects(cobj.collection_ref, uid);
   // Disable editable and update modify time
   let commentVObjs = GetThreadedViewObjects(cobj.collection_ref, uid);
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
@@ -335,6 +404,11 @@ function UpdateComment(cobj, uid) {
     throw new Error(
       `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
     );
+
+  // mark it unread
+  cvobj.isMarkedRead = false; // clear read status
+  DCCOMMENTS.MarkCommentUnread(cvobj.comment_id, uid);
+
   cvobj.isBeingEdited = false;
   m_DeRegisterCommentBeingEdited(cobj.comment_id);
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
@@ -364,13 +438,33 @@ function HandleUpdatedComments(comments) {
  * @param {Object} parms.comment_id
  * @param {Object} parms.uid
  * @param {Object} parms.isAdmin
+ * @returns {Object[]} queuedActions
  */
 function RemoveComment(parms) {
   if (parms.collection_ref === undefined)
     throw new Error('RemoveComment collection_ref is undefined', parms);
-  const batch = DCCOMMENTS.RemoveComment(parms);
-  m_DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
-  return batch;
+  const queuedActions = DCCOMMENTS.RemoveComment(parms);
+  DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
+  // Add an action to update the collection_ref, which forces an update after removal
+  // otherwise the comment would have been removed and we no longer have a reference to the cref
+  queuedActions.push({ collection_ref: parms.collection_ref });
+  return queuedActions;
+}
+/**
+ * Processes comment removal triggered by deletion of a source (e.g. node or edge)
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.uid
+ */
+function RemoveAllCommentsForCref(parms) {
+  if (parms.collection_ref === undefined)
+    throw new Error('RemoveAllCommentsForCref collection_ref is undefined', parms);
+  const queuedActions = DCCOMMENTS.RemoveAllCommentsForCref(parms);
+  DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
+  // Add an action to update the collection_ref, which forces an update after removal
+  // otherwise the comment would have been removed and we no longer have a reference to the cref
+  queuedActions.push({ collection_ref: parms.collection_ref });
+  return queuedActions;
 }
 /**
  * Batch updates a list of removed comment ids
@@ -400,6 +494,9 @@ function GetComment(cid) {
 function GetReadby(cid) {
   return DCCOMMENTS.GetReadby(cid);
 }
+function GetCrefs() {
+  return DCCOMMENTS.GetCrefs();
+}
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -413,13 +510,20 @@ export {
   GetCommentCollection,
   UpdateCommentUIState,
   CloseCommentCollection,
+  MarkRead,
+  GetCommentStats,
   // Comment UI State
   GetCommentUIState,
   // Open Comments
   GetOpenComments,
   // Editable Comments
   GetCommentBeingEdited,
+  // Unread Comments
+  GetUnreadRepliesToMe,
+  GetUnreadComments,
   // Comment Thread View Object
+  DeriveAllThreadedViewObjects,
+  DeriveThreadedViewObjects,
   GetThreadedViewObjects,
   GetThreadedViewObjectsCount,
   GetCOMMENTVOBJS,
@@ -429,10 +533,12 @@ export {
   UpdateComment,
   HandleUpdatedComments,
   RemoveComment,
+  RemoveAllCommentsForCref,
   HandleRemovedComments,
   // PASS THROUGH
   GetUserName,
   GetCommentTypes,
   GetComment,
-  GetReadby
+  GetReadby,
+  GetCrefs
 };

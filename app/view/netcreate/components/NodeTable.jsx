@@ -33,6 +33,7 @@ const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
+const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
 
@@ -68,7 +69,8 @@ class NodeTable extends UNISYS.Component {
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
     this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
-    this.onButtonClick = this.onButtonClick.bind(this);
+    this.onViewButtonClick = this.onViewButtonClick.bind(this);
+    this.onEditButtonClick = this.onEditButtonClick.bind(this);
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
     this.onHighlightRow = this.onHighlightRow.bind(this);
     this.setSortKey = this.setSortKey.bind(this);
@@ -386,13 +388,18 @@ class NodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
-  onButtonClick(event) {
+  onViewButtonClick(event, nodeId) {
     event.preventDefault();
-
-    // REVIEW: For some reason React converts the integer IDs into string
-    // values when returned in event.target.value.  So we have to convert
-    // it here.
-    let nodeID = parseInt(event.target.value);
+    event.stopPropagation();
+    let nodeID = parseInt(nodeId);
+    UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [nodeID] });
+  }
+  /**
+   */
+  onEditButtonClick(event, nodeId) {
+    event.preventDefault();
+    event.stopPropagation();
+    let nodeID = parseInt(nodeId);
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [nodeID] }).then(() => {
       if (DBG) console.error('NodeTable: Calling NODE_EDIT', nodeID);
       UDATA.LocalCall('NODE_EDIT', { nodeID: nodeID });
@@ -569,14 +576,20 @@ class NodeTable extends UNISYS.Component {
                 onMouseOver={() => this.onHighlightRow(node.id)}
               >
                 <td>
-                  <Button
-                    size="sm"
-                    outline
-                    value={node.id}
-                    onClick={this.onButtonClick}
+                  <button
+                    className="small outline"
+                    onClick={event => this.onViewButtonClick(event, node.id)}
                   >
-                    {isLocked ? 'View' : 'Edit'}
-                  </Button>
+                    {ICON_VIEW}
+                  </button>
+                  {!isLocked && (
+                    <button
+                      className="small outline"
+                      onClick={event => this.onEditButtonClick(event, node.id)}
+                  >
+                      {ICON_PENCIL}
+                  </button>
+                  )}
                 </td>
                 <td hidden={!DBG}>{node.id}</td>
                 <td>{node.degrees}</td>
@@ -594,7 +607,7 @@ class NodeTable extends UNISYS.Component {
                 ))}
                 <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={`n${node.id}`} isTable />
+                  <NCCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isLocalHost} style={{ fontSize: '9px' }}>

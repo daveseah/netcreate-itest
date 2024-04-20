@@ -1,0 +1,58 @@
+/* Bootstrap override */
+.nav-item {
+  cursor: pointer;
+}
+
+/* SVG styles */
+svg#netgraph {
+  flex-basis: 100%;
+  min-width: 200px;
+}
+svg#netgraph {
+  cursor: move;
+}
+/* D3SimpleNetGraph redo removes links group...
+svg .links line {
+  stroke: #aaa;
+} 
+... and replaces with .edge */
+svg#netgraph .edge {
+  stroke: #aaa;
+}
+svg#netgraph .edge.selected {
+  stroke: #f00;
+  stroke-width: 5px;
+}
+svg .nodes circle {
+  pointer-events: all;
+}
+svg#netgraph .node {
+  cursor: pointer;
+}
+svg#netgraph .nodes text {
+  color: #999;
+  stroke: #666;
+  stroke-width: 0px;
+}
+.noselect {
+  user-select: none;
+}
+
+/* Tables ------------------------------------------------------------------ */
+.table thead th {
+  z-index: 100; /* override bootstrap, comment buttons */
+}
+
+/* Button Icons ------------------------------------------------------------ */
+button.outline {
+  border: none;
+  color: inherit;
+  background-color: transparent;
+}
+button.small {
+  font-size: 0.75em;
+}
+button svg {
+  width: 16px;
+  height: 16px;
+}

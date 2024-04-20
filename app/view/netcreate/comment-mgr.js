@@ -12,6 +12,7 @@ const ReactDOM = require('react-dom');
 const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
+const { ARROW_RIGHT } = require('system/util/constant');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
 
@@ -114,6 +115,93 @@ MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
+function deconstructCref(cref) {
+  const type = cref.substring(0, 1);
+  const id = cref.substring(1);
+  return { type, id }
+}
+
+/**
+ * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
+ * @param {string} cref
+ * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
+ */
+MOD.GetCREFSourceLabel = cref => {
+  const { type, id } = deconstructCref(cref);
+  let typeLabel;
+  let node, edge, nodes, sourceNode, targetNode;
+  let sourceLabel; // undefined if not found
+  switch (type) {
+    case 'n':
+      typeLabel = 'Node';
+      node = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
+      if (node) sourceLabel = node.label;
+      break;
+    case 'e':
+      typeLabel = 'Edge';
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      nodes = UDATA.AppState('NCDATA').nodes;
+      sourceNode = nodes.find(n => n.id === Number(edge.source));
+      targetNode = nodes.find(n => n.id === Number(edge.target));
+      if (edge && sourceNode && targetNode)
+        sourceLabel = `${sourceNode.label}${ARROW_RIGHT}${targetNode.label}`;
+      break;
+    case 'p':
+      typeLabel = 'Project';
+      sourceLabel = id;
+      break;
+  }
+  return { typeLabel, sourceLabel };
+}
+
+MOD.OpenSource = cref => {
+  const { type, id } = deconstructCref(cref);
+  let edge;
+  switch (type) {
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
+      });
+      break;
+    case 'p':
+      // do something?
+      break;
+  }
+}
+
+MOD.OpenComment = (cref, cid) => {
+  const { type, id } = deconstructCref(cref);
+  let edge;
+  switch (type) {
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
+        UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+          const commentEl = document.getElementById(cid);
+          commentEl.scrollIntoView({ behavior: "smooth" });
+        });
+      });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
+          UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+            const commentEl = document.getElementById(cid);
+            commentEl.scrollIntoView({ behavior: "smooth" });
+          });
+        });
+      });
+      break;
+    case 'p':
+      // do something?
+      break;
+  }
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
 MOD.GetCurrentUserId = () => {
@@ -129,6 +217,19 @@ MOD.GetUserName = (uid) => {
 /// Comment Type
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Global Operations
+MOD.MarkAllRead = () => {
+  const uid = MOD.GetCurrentUserId();
+  const crefs = COMMENT.GetCrefs();
+  crefs.forEach(cref => {
+    m_DBUpdateReadBy(cref, uid);
+    COMMENT.MarkRead(cref, uid);
+  })
+  COMMENT.DeriveAllThreadedViewObjects(uid);
+  m_SetAppStateCommentCollections();
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -153,6 +254,11 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
+}
+
+MOD.GetCommentStats = () => {
+  const uid = MOD.GetCurrentUserId();
+  return COMMENT.GetCommentStats(uid);
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -207,6 +313,12 @@ MOD.GetCommentVObj = (cref, cid) => {
 /// Comments
 MOD.GetComment = (cid) => {
   return COMMENT.GetComment(cid);
+}
+MOD.GetUnreadRepliesToMe = ui => {
+  return COMMENT.GetUnreadRepliesToMe(ui);
+}
+MOD.GetUnreadComments = () => {
+  return COMMENT.GetUnreadComments();
 }
 /**
  *
@@ -286,8 +398,8 @@ MOD.RemoveComment = parms => {
  * @param {Object} parms.uid
  */
 function m_ExecuteRemoveComment(event, parms) {
-  const batch = COMMENT.RemoveComment(parms);
-  m_DBRemoveComment(batch);
+  const queuedActions = COMMENT.RemoveComment(parms);
+  m_DBRemoveComment(queuedActions);
   m_SetAppStateCommentVObjs();
   m_CloseRemoveCommentDialog();
 }
@@ -295,6 +407,21 @@ function m_CloseRemoveCommentDialog() {
   const container = document.getElementById(dialogContainerId);
   ReactDOM.unmountComponentAtNode(container);
 }
+
+/**
+ * Requested when a node/edge is deleted
+ * @param {string} cref
+ */
+MOD.RemoveAllCommentsForCref = cref => {
+  const uid = MOD.GetCurrentUserId();
+  const parms = { uid, collection_ref: cref };
+  const queuedActions = COMMENT.RemoveAllCommentsForCref(parms);
+  m_DBRemoveComment(queuedActions);
+  m_SetAppStateCommentVObjs();
+}
+
+/// EVENT HANDLERS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /**
  * Respond to network COMMENTS_UPDATE Messages
@@ -307,15 +434,25 @@ function m_CloseRemoveCommentDialog() {
  * @param {Object[]} dataArray
  */
 MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
-  if (DBG) console.log('COMMENTS_UPDATE======================');
+  if (DBG) console.log('COMMENTS_UPDATE======================', dataArray);
   const updatedComments = [];
   const removedComments = [];
+  const updatedCrefs = new Map();
   dataArray.forEach(data => {
-    if (data.comment) updatedComments.push(data.comment);
+    if (data.comment) {
+      updatedComments.push(data.comment);
+      updatedCrefs.set(data.comment.collection_ref, 'flag');
+    }
     if (data.commentID) removedComments.push(data.commentID);
+    if (data.collection_ref)
+      updatedCrefs.set(data.collection_ref, 'flag');
   });
-  COMMENT.HandleRemovedComments(removedComments);
-  COMMENT.HandleUpdatedComments(updatedComments);
+  const uid = MOD.GetCurrentUserId();
+  COMMENT.HandleRemovedComments(removedComments, uid);
+  COMMENT.HandleUpdatedComments(updatedComments, uid);
+
+  const crefs = [...updatedCrefs.keys()];
+  crefs.forEach(cref => COMMENT.DeriveThreadedViewObjects(cref, uid));
 
   // and broadcast a state change
   m_SetAppStateCommentCollections();
@@ -327,7 +464,8 @@ MOD.HandleCOMMENTS_UPDATE = (dataArray) => {
  * broadcast across the network.  This a network call that is used to update
  * the local state to match the server's comments.
  * (does not trigger another DB update)
- * @param {*} data
+ * @param {Object} data
+ * @param {Object} data.comment cobj
  */
 MOD.HandleCOMMENT_UPDATE = (data) => {
   if (DBG) console.log('COMMENT_UPDATE======================', data);
@@ -349,8 +487,8 @@ MOD.HandleREADBY_UPDATE = data => {
   // logged in to multiple browsers.
 }
 
+/// DB CALLS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// DB Calls
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,

@@ -50,6 +50,7 @@ const NETWORK = require('unisys/client-network');
 const DATASTORE = require('system/datastore');
 const SESSION = require('unisys/common-session');
 const PROMPTS = require('system/util/prompts');
+const CMTMGR = require('./comment-mgr');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -541,13 +542,21 @@ MOD.Hook('INITIALIZE', () => {
         let pass = false;
         if (edge.source !== nodeID && edge.target !== nodeID) {
           pass = true;
+        } else {
+          // filter out AND also remove comments
+          const cref = CMTMGR.GetEdgeCREF(edge.id);
+          CMTMGR.RemoveAllCommentsForCref(cref);
         }
         return pass;
       });
     }
     NCDATA.edges = edgesToProcess;
 
-    // // Remove node
+    // Remove Comments
+    const cref = CMTMGR.GetNodeCREF(nodeID);
+    CMTMGR.RemoveAllCommentsForCref(cref);
+
+    // Remove node
     let updatedNodes = m_DeleteMatchingNodesByProp({ id: nodeID });
     NCDATA.nodes = updatedNodes;
     UDATA.SetAppState('NCDATA', NCDATA);
@@ -1003,6 +1012,11 @@ function m_DeleteMatchingEdgeByProp(del_me = {}) {
         pass = true;
         break;
       }
+    }
+    if (!pass) {
+      // filter out AND also remove comments
+      const cref = CMTMGR.GetEdgeCREF(edge.id);
+      CMTMGR.RemoveAllCommentsForCref(cref);
     }
     return pass;
   });
