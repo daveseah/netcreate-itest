@@ -451,6 +451,22 @@ function RemoveComment(parms) {
   return queuedActions;
 }
 /**
+ * Processes comment removal triggered by deletion of a source (e.g. node or edge)
+ * @param {Object} parms
+ * @param {Object} parms.collection_ref
+ * @param {Object} parms.uid
+ */
+function RemoveAllCommentsForCref(parms) {
+  if (parms.collection_ref === undefined)
+    throw new Error('RemoveAllCommentsForCref collection_ref is undefined', parms);
+  const queuedActions = DCCOMMENTS.RemoveAllCommentsForCref(parms);
+  DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
+  // Add an action to update the collection_ref, which forces an update after removal
+  // otherwise the comment would have been removed and we no longer have a reference to the cref
+  queuedActions.push({ collection_ref: parms.collection_ref });
+  return queuedActions;
+}
+/**
  * Batch updates a list of removed comment ids
  * This updates the local browser's comment state to match the server.
  * Triggered by COMMENTS_UPDATE network call after someone else on the network removes a comment.
@@ -517,6 +533,7 @@ export {
   UpdateComment,
   HandleUpdatedComments,
   RemoveComment,
+  RemoveAllCommentsForCref,
   HandleRemovedComments,
   // PASS THROUGH
   GetUserName,
