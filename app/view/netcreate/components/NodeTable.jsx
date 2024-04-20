@@ -58,6 +58,7 @@ class NodeTable extends UNISYS.Component {
       nodeDefs: this.AppState('TEMPLATE').nodeDefs,
       nodes: [],
       filteredNodes: [],
+      disableEdit: false,
       isLocked: false,
       isExpanded: true,
       sortkey: 'label'
@@ -66,6 +67,7 @@ class NodeTable extends UNISYS.Component {
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
     this.displayUpdated = this.displayUpdated.bind(this);
     this.updateNodeFilterState = this.updateNodeFilterState.bind(this);
+    this.updateEditState = this.updateEditState.bind(this);
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
     this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
@@ -80,6 +82,8 @@ class NodeTable extends UNISYS.Component {
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
+
+    UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
 
     // SESSION is called by SessionSHell when the ID changes
     //  set system-wide. data: { classId, projId, hashedId, groupId, isValid }
@@ -112,9 +116,14 @@ class NodeTable extends UNISYS.Component {
       let NCDATA = this.AppState('NCDATA');
       this.handleDataUpdate(NCDATA);
     });
+
+    // Request edit state too because the update may have come
+    // while we were hidden
+    this.updateEditState();
   }
 
   componentWillUnmount() {
+    UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
     this.AppStateChangeOff('SESSION', this.onStateChange_SESSION);
     this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
     this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
@@ -135,8 +144,12 @@ class NodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   displayUpdated(nodeEdge) {
     // Prevent error if `meta` info is not defined yet, or not properly imported
-    if (!nodeEdge.meta) return '';
 
+    // this does not ever fire, revert!
+    console.error('NodeTable meta not defined yet', nodeEdge);
+    if (!nodeEdge.meta) {
+      return '';
+    }
     var d = new Date(
       nodeEdge.meta.revision > 0 ? nodeEdge.meta.updated : nodeEdge.meta.created
     );
@@ -178,6 +191,18 @@ class NodeTable extends UNISYS.Component {
       }
     }
     this.setState({ nodes, filteredNodes });
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  updateEditState() {
+    // disable edit if someone else is editing a template, node, or edge
+    let disableEdit = false;
+    UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
+      // someone else might be editing a template or importing or editing node or edge
+      disableEdit =
+        data.templateBeingEdited || data.importActive || data.nodeOrEdgeBeingEdited;
+      this.setState({ disableEdit });
+    });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -455,7 +480,7 @@ class NodeTable extends UNISYS.Component {
    */
   render() {
     if (this.state.nodes === undefined) return '';
-    const { nodeDefs, isLocked } = this.state;
+    const { nodeDefs, disableEdit, isLocked } = this.state;
     const { tableHeight } = this.props;
     const styles = `thead, tbody { font-size: 0.8em }
                   .table {
@@ -576,27 +601,33 @@ class NodeTable extends UNISYS.Component {
                 onMouseOver={() => this.onHighlightRow(node.id)}
               >
                 <td>
-                  <button
-                    className="small outline"
-                    onClick={event => this.onViewButtonClick(event, node.id)}
-                  >
-                    {ICON_VIEW}
-                  </button>
-                  {!isLocked && (
+                  {!disableEdit && (
+                    <button
+                      className="small outline"
+                      onClick={event => this.onViewButtonClick(event, node.id)}
+                    >
+                      {ICON_VIEW}
+                    </button>
+                  )}
+                  {!disableEdit && !isLocked && (
                     <button
                       className="small outline"
                       onClick={event => this.onEditButtonClick(event, node.id)}
-                  >
+                    >
                       {ICON_PENCIL}
-                  </button>
+                    </button>
                   )}
                 </td>
                 <td hidden={!DBG}>{node.id}</td>
                 <td>{node.degrees}</td>
                 <td>
-                  <a href="#" onClick={e => this.selectNode(node.id, e)}>
-                    {node.label}
-                  </a>
+                  {!disableEdit ? (
+                    <a href="#" onClick={e => this.selectNode(node.id, e)}>
+                      {node.label}
+                    </a>
+                  ) : (
+                    node.label
+                  )}
                 </td>
                 {attributes.map(a => (
                   <td hidden={nodeDefs[a].hidden} key={`${node.id}${a}`}>
