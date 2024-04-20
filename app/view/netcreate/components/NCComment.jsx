@@ -13,6 +13,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const { EDITORTYPE } = require('system/util/enum');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
 const SETTINGS = require('settings');
@@ -54,6 +55,7 @@ class NCComment extends React.Component {
     // EVENT HANDLERS
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     this.LoadCommentVObj = this.LoadCommentVObj.bind(this);
+
     // UI HANDLERS
     this.UIOnEdit = this.UIOnEdit.bind(this);
     this.UIOnSave = this.UIOnSave.bind(this);
@@ -79,6 +81,7 @@ class NCComment extends React.Component {
   UpdateCommentVObjs(COMMENTVOBJS) {
     this.LoadCommentVObj();
   }
+
   LoadCommentVObj() {
     const { cref, cid } = this.state;
 
@@ -106,25 +109,40 @@ class NCComment extends React.Component {
       uIsEditable: cvobj.isEditable,
       allowReply: cvobj.allowReply
     });
+
+    // Lock edit upon creation of a new comment or a new reply
+    if (cvobj.isBeingEdited) {
+      UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
+        UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      });
+    }
   }
 
   UIOnEdit(event) {
+    const { cid } = this.state;
     const uViewMode =
       this.state.uViewMode === NCUI.VIEWMODE.EDIT
         ? NCUI.VIEWMODE.VIEW
         : NCUI.VIEWMODE.EDIT;
     this.setState({ uViewMode });
+    UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
+      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+    });
   }
 
   UIOnSave(event) {
     const { uid } = this.props;
-    const { comment_type, commenter_text } = this.state;
+    const { cid, comment_type, commenter_text } = this.state;
 
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
     comment.comment_type = comment_type;
     comment.commenter_text = [...commenter_text]; // clone, not byref
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
+
+    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+    });
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
 
@@ -189,6 +207,10 @@ class NCComment extends React.Component {
         uViewMode: NCUI.VIEWMODE.VIEW
       });
     }
+
+    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+    });
   }
 
   UIOnEditMenuSelect(event) {

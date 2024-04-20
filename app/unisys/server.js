@@ -203,6 +203,21 @@ UNISYS.RegisterHandlers = () => {
     return UDB.PKT_IsEdgeLocked(pkt);
   });
 
+  UNET.HandleMessage('SRV_DBLOCKCOMMENT', function (pkt) {
+    if (DBG) console.log(PR, sprint_message(pkt));
+    return UDB.PKT_RequestLockComment(pkt);
+  });
+
+  UNET.HandleMessage('SRV_DBUNLOCKCOMMENT', function (pkt) {
+    if (DBG) console.log(PR, sprint_message(pkt));
+    return UDB.PKT_RequestUnlockComment(pkt);
+  });
+
+  UNET.HandleMessage('SRV_DBISCOMMENTLOCKED', function (pkt) {
+    if (DBG) console.log(PR, sprint_message(pkt));
+    return UDB.PKT_IsCommentLocked(pkt);
+  });
+
   UNET.HandleMessage('SRV_DBUNLOCKALLNODES', function (pkt) {
     if (DBG) console.log(PR, sprint_message(pkt));
     return UDB.PKT_RequestUnlockAllNodes(pkt);
@@ -211,11 +226,15 @@ UNISYS.RegisterHandlers = () => {
     if (DBG) console.log(PR, sprint_message(pkt));
     return UDB.PKT_RequestUnlockAllEdges(pkt);
   });
+  UNET.HandleMessage('SRV_DBUNLOCKALLCOMMENTS', function (pkt) {
+    if (DBG) console.log(PR, sprint_message(pkt));
+    return UDB.PKT_RequestUnlockAllComments(pkt);
+  });
   UNET.HandleMessage('SRV_DBUNLOCKALL', function (pkt) {
     if (DBG) console.log(PR, sprint_message(pkt));
     const res = UDB.PKT_RequestUnlockAll(pkt);
     // Broadcast Lock State
-    const data = UDB.GetEditStatus();
+    const data = UDB.GetEditStatus(pkt);
     UNET.NetCall('EDIT_PERMISSIONS_UPDATE', data);
     return res;
   });

@@ -260,7 +260,10 @@ class EdgeTable extends UNISYS.Component {
     UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
       // someone else might be editing a template or importing or editing node or edge
       disableEdit =
-        data.templateBeingEdited || data.importActive || data.nodeOrEdgeBeingEdited;
+        data.templateBeingEdited ||
+        data.importActive ||
+        data.nodeOrEdgeBeingEdited ||
+        data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
       this.setState({ disableEdit });
     });
   }

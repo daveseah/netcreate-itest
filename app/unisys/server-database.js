@@ -50,7 +50,8 @@ let EDGES; // loki "edges" collection
 let COMMENTS; // loki "comments" collection
 let READBY; // loki "readby" collection
 let m_locked_nodes; // map key = nodeID, value = uaddr initiating the lock
-let m_locked_edges; // map key = nodeID, value = uaddr initiating the lock
+let m_locked_edges; // map key = edgeID, value = uaddr initiating the lock
+let m_locked_comments; // map key = commentID, value = uaddr initiating the lock
 let TEMPLATE;
 let m_open_editors = []; // array of template, node, or edge editors
 /// formatting
@@ -123,6 +124,7 @@ DB.InitializeDatabase = function (options = {}) {
     if (COMMENTS === null) COMMENTS = m_db.addCollection('comments');
     READBY = m_db.getCollection('readby');
     if (READBY === null) READBY = m_db.addCollection('readby');
+    m_locked_comments = new Map();
 
     // initialize unique set manager
     m_dupe_set = new Set();
@@ -949,6 +951,38 @@ function m_IsInvalidEdge(edgeID) {
   return undefined;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+DB.PKT_RequestLockComment = function (pkt) {
+  let { commentID } = pkt.Data();
+  const uaddr = pkt.s_uaddr;
+  // check if comment is already locked
+  if (m_locked_comments.has(commentID))
+    return m_MakeLockError(`commentID ${commentID} is already locked`);
+  // SUCCESS
+  // single matching comment exists and is not yet locked, so lock it
+  m_locked_comments.set(commentID, uaddr);
+  return { commentID, locked: true };
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+DB.PKT_RequestUnlockComment = function (pkt) {
+  let { commentID } = pkt.Data();
+  const uaddr = pkt.s_uaddr;
+  // check that comment is already locked
+  if (m_locked_comments.has(commentID)) {
+    m_locked_comments.delete(commentID);
+    return { commentID, unlocked: true };
+  }
+  // this is an error because commentID wasn't in the lock table
+  return m_MakeLockError(`commentID ${commentID} was not locked so can't unlock`);
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+DB.PKT_IsCommentLocked = function (pkt) {
+  let { commentID } = pkt.Data();
+  const uaddr = pkt.s_uaddr;
+  const isLocked = m_locked_comments.has(commentID);
+  return { commentID, locked: isLocked };
+};
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 DB.PKT_RequestUnlockAllNodes = function (pkt) {
   m_locked_nodes = new Map();
   return { unlocked: true };
@@ -957,9 +991,14 @@ DB.PKT_RequestUnlockAllEdges = function (pkt) {
   m_locked_edges = new Map();
   return { unlocked: true };
 };
+DB.PKT_RequestUnlockAllComments = function (pkt) {
+  m_locked_comments = new Map();
+  return { unlocked: true };
+};
 DB.PKT_RequestUnlockAll = function (pkt) {
   m_locked_nodes = new Map();
   m_locked_edges = new Map();
+  m_locked_comments = new Map();
   m_open_editors = [];
   return { unlocked: true };
 };
@@ -974,6 +1013,9 @@ DB.RequestUnlock = function (uaddr) {
   m_locked_edges.forEach((value, key) => {
     if (value === uaddr) m_locked_edges.delete(key);
   });
+  m_locked_comments.forEach((value, key) => {
+    if (value === uaddr) m_locked_comments.delete(key);
+  })
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // eslint-disable-next-line complexity
@@ -1656,7 +1698,8 @@ DB.RegenerateDefaultTemplate = () => {
  * @returns {templateBeingEdited:boolean, importActive:boolean, nodeOrEdgeBeingEdited:boolean,
  *           lockedNodes:array, lockedEdges:array }
  */
-DB.GetEditStatus = () => {
+DB.GetEditStatus = pkt => {
+  const my_uaddr = pkt.s_uaddr;
   // If there are any 'template' open editors, then templateBeingEdited is true
   const templateBeingEdited = m_open_editors.includes(EDITORTYPE.TEMPLATE);
   // If there are any 'importers' open editors, then importActive is true
@@ -1666,34 +1709,38 @@ DB.GetEditStatus = () => {
     m_open_editors.length > 0 &&
     (m_open_editors.includes(EDITORTYPE.NODE) ||
       m_open_editors.includes(EDITORTYPE.EDGE));
+  // Used to disable local editing if a comment is being edited, but ignores network comment edits
+  const commentBeingEditedByMe = [...m_locked_comments.values()].find(comment_uaddr => comment_uaddr === my_uaddr);
   return {
     templateBeingEdited,
     importActive,
     nodeOrEdgeBeingEdited,
+    commentBeingEditedByMe,
     lockedNodes: [...m_locked_nodes.keys()],
-    lockedEdges: [...m_locked_edges.keys()]
+    lockedEdges: [...m_locked_edges.keys()],
+    lockedComments: [...m_locked_comments.keys()]
   };
 };
 /**
  * Register a template, import, node or edge as being actively edited.
  * @param {Object} pkt
- * @param {string} pkt.editor - 'template', 'importer', 'node', or 'edge'
- * @returns { templateBeingEdited: boolean, importActive: boolean, nodeOrEdgeBeingEdited: boolean }
+ * @param {string} pkt.editor - 'template', 'importer', 'node', 'edge', or 'comment'
+ * @returns { templateBeingEdited: boolean, importActive: boolean, nodeOrEdgeBeingEdited: boolean, commentBeingEdited: boolean }
  */
 DB.RequestEditLock = pkt => {
   m_open_editors.push(pkt.Data().editor);
-  return DB.GetEditStatus();
+  return DB.GetEditStatus(pkt);
 };
 /**
  * Deregister a template, import, node or edge as being actively edited.
  * @param {Object} pkt
- * @param {string} pkt.editor - 'template', 'importer', 'node', or 'edge'
- * @returns { templateBeingEdited: boolean, importActive: boolean, nodeOrEdgeBeingEdited: boolean }
+ * @param {string} pkt.editor - 'template', 'importer', 'node', 'edge', or 'comment'
+ * @returns { templateBeingEdited: boolean, importActive: boolean, nodeOrEdgeBeingEdited: boolean, commentBeingEdited: boolean }
  */
 DB.ReleaseEditLock = pkt => {
   const i = m_open_editors.findIndex(e => e === pkt.Data().editor);
   if (i > -1) m_open_editors.splice(i, 1);
-  return DB.GetEditStatus();
+  return DB.GetEditStatus(pkt);
 };
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
