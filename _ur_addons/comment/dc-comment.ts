@@ -93,87 +93,28 @@ const DEFAULT_CommentTypes = [
     ]
   },
   {
-    id: 'questionresponse',
-    label: 'Question or response', // comment type label
+    id: 'tellmemore',
+    label: 'Tell me more', // comment type label
     prompts: [
       {
-        prompt: 'Question or response', // prompt label
-        help: 'Use this when replying to another comment.',
+        prompt: 'Please tell me more', // prompt label
+        help: 'Can you tell me more about ... ',
         feedback: ''
       }
     ]
   },
   {
-    id: 'consistent',
-    label: 'Consistent', // comment type label
-    prompts: [
-      {
-        prompt: 'Is this consistent?', // prompt label
-        help: '(yes/no)',
-        feedback: ''
-      },
-      {
-        prompt: 'What makes it consistent?', // prompt label
-        help: '',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'understandable',
-    label: 'Understandable', // comment type label
-    prompts: [
-      {
-        prompt: 'Is this understandable?', // prompt label
-        help: 'If it is not, please offer suggestions for how to improve it.',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'evidence',
-    label: 'Supported by evidence', // comment type label
-    prompts: [
-      {
-        prompt: 'Supported by evidence', // prompt label
-        help: `It is important for a scientific model to be supported by evidence.
-
-Does the evidence we have show that the model works this way?
-Is there any contradictory evidence that says the model doesn't work this way?
-`,
-        feedback: 'Consider pointing out relevant evidence by typing evidence #'
-      }
-    ]
-  },
-  {
-    id: 'changereason',
-    label: 'Change + Reason (👍🏼/👎🏻)', // comment type label
-    prompts: [
-      {
-        prompt: 'Will you change your model?',
-        help: 'yes/no',
-        feedback: ''
-      },
-      {
-        prompt: 'Why',
-        help: 'Why do you want to make that change?',
-        feedback: ''
-      },
-      {
-        prompt: 'How',
-        help: 'How will you change the model?',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'cource',
+    id: 'source',
     label: 'Source', // comment type label
     prompts: [
       {
-        prompt: 'What is the source of this?', // prompt label
-        help: `What is the source / citation, and how might that have informed your analysis?
-`,
+        prompt: 'Is this well sourced?', // prompt label
+        help: 'Yes/No',
+        feedback: ''
+      },
+      {
+        prompt: 'Changes', // prompt label
+        help: 'What about the sourcing could be improved?',
         feedback: ''
       }
     ]
