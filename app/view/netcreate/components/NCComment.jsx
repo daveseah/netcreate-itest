@@ -75,6 +75,13 @@ class NCComment extends React.Component {
   }
 
   componentWillUnmount() {
+    const { cid, uIsBeingEdited } = this.state;
+    if (uIsBeingEdited) {
+      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+      });
+    }
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
@@ -114,6 +121,7 @@ class NCComment extends React.Component {
     if (cvobj.isBeingEdited) {
       UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
         UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
       });
     }
   }
@@ -127,6 +135,7 @@ class NCComment extends React.Component {
     this.setState({ uViewMode });
     UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
       UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
     });
   }
 
@@ -142,6 +151,7 @@ class NCComment extends React.Component {
 
     UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
     });
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
@@ -189,28 +199,35 @@ class NCComment extends React.Component {
       if (t !== '') savedCommentIsEmpty = false;
     });
 
+    const cb = () => {
+      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+      });
+    };
+
     if (savedCommentIsEmpty) {
       // "Cancel" will always remove the comment if the comment is empty
       // - usually because it's a newly created comment
       // - but also if the user clears all the text fields
       // We don't care if the user entered any text
-      CMTMGR.RemoveComment({
-        collection_ref: cref,
-        comment_id: cid,
-        uid,
-        showCancelDialog: true
-      });
+      CMTMGR.RemoveComment(
+        {
+          collection_ref: cref,
+          comment_id: cid,
+          uid,
+          showCancelDialog: true
+        },
+        cb
+      );
     } else {
       // revert to previous text if current text is empty
       this.setState({
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
         uViewMode: NCUI.VIEWMODE.VIEW
       });
+      cb();
     }
-
-    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-    });
   }
 
   UIOnEditMenuSelect(event) {

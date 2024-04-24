@@ -41,12 +41,16 @@ MOD.Hook('INITIALIZE', () => {
    *  @param {Object} data.users
    *  @param {Object} data.commenttypes
    *  @param {Object} data.comments
-   */
+  */
+  // Comment AddOn Handlers
   UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => COMMENT.LoadDB(data));
   /// STATE UPDATES and Message Handlers
   UDATA.HandleMessage('COMMENTS_UPDATE', MOD.HandleCOMMENTS_UPDATE);
   UDATA.HandleMessage('COMMENT_UPDATE', MOD.HandleCOMMENT_UPDATE);
   UDATA.HandleMessage('READBY_UPDATE', MOD.HandleREADBY_UPDATE);
+  // Net.Create Handlers
+  UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', m_UpdatePermissions);
+
   // Currently not used
   // UDATA.OnAppStateChange('COMMENTCOLLECTION', COMMENTCOLLECTION => console.log('comment-mgr.COMMENTCOLLECTION state updated:', COMMENTCOLLECTION));
   // UDATA.OnAppStateChange('COMMENTVOBJS', COMMENTVOBJS => console.error('comment-mgr.COMMENTVOBJS state updated', COMMENTVOBJS));
@@ -106,6 +110,12 @@ function m_UpdateComment(comment) {
   COMMENT.UpdateComment(cobj, uid);
 }
 
+function m_UpdatePermissions(data) {
+  UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
+    // disable comment button if someone is editing a comment
+    UDATA.LocalCall('COMMENT_UPDATE_PERMISSIONS', data);
+  });
+}
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -135,11 +145,13 @@ MOD.GetCREFSourceLabel = cref => {
     case 'n':
       typeLabel = 'Node';
       node = UDATA.AppState('NCDATA').nodes.find(n => n.id === Number(id));
+      if (!node) break; // node might be missing if comment references a node that was removed
       if (node) sourceLabel = node.label;
       break;
     case 'e':
       typeLabel = 'Edge';
       edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      if (!edge) break; // edge might be missing if the comment references an edge that was removed
       nodes = UDATA.AppState('NCDATA').nodes;
       sourceNode = nodes.find(n => n.id === Number(edge.source));
       targetNode = nodes.find(n => n.id === Number(edge.target));
@@ -359,8 +371,9 @@ MOD.UpdateComment = (cobj) => {
  * @param {string} parms.comment_id
  * @param {string} parms.uid
  * @param {boolean} parms.showCancelDialog
+ * @param {function} cb CallBack
  */
-MOD.RemoveComment = parms => {
+MOD.RemoveComment = (parms, cb) => {
   let confirmMessage, okmessage, cancelmessage;
   if (parms.showCancelDialog) {
     // Are you sure you want to cancel?
@@ -369,10 +382,10 @@ MOD.RemoveComment = parms => {
     cancelmessage = "Go Back to Editing";
   } else {
     // Are you sure you want to delete?
-  parms.isAdmin = SETTINGS.IsAdmin();
+    parms.isAdmin = SETTINGS.IsAdmin();
     confirmMessage = parms.isAdmin
-    ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
-    : `Are you sure you want to delete this comment #${parms.comment_id}?`;
+      ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
+      : `Are you sure you want to delete this comment #${parms.comment_id}?`;
     okmessage = 'Delete';
     cancelmessage = "Don't Delete";
   }
@@ -380,7 +393,7 @@ MOD.RemoveComment = parms => {
     <NCDialog
       message={confirmMessage}
       okmessage={okmessage}
-      onOK={event => m_ExecuteRemoveComment(event, parms)}
+      onOK={event => m_ExecuteRemoveComment(event, parms, cb)}
       cancelmessage={cancelmessage}
       onCancel={m_CloseRemoveCommentDialog}
     />
@@ -397,11 +410,12 @@ MOD.RemoveComment = parms => {
  * @param {Object} parms.comment_id
  * @param {Object} parms.uid
  */
-function m_ExecuteRemoveComment(event, parms) {
+function m_ExecuteRemoveComment(event, parms, cb) {
   const queuedActions = COMMENT.RemoveComment(parms);
   m_DBRemoveComment(queuedActions);
   m_SetAppStateCommentVObjs();
   m_CloseRemoveCommentDialog();
+  if (typeof cb === 'function') cb();
 }
 function m_CloseRemoveCommentDialog() {
   const container = document.getElementById(dialogContainerId);

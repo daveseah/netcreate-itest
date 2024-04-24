@@ -38,7 +38,8 @@ const SELECTION_MODE = {
   NORMAL: 'normal', // graph is selectable
   EDGE_EDIT: 'edge_edit', // edge is being edited
   // NODE_EDIT is not necessary b/c the transparent screen prevents clicks
-  SOURCETARGET: 'sourcetarget' // waiting for a source or target
+  SOURCETARGET: 'sourcetarget', // waiting for a source or target
+  COMMENT_EDIT: 'comment_edit' // disable node selection during comment edit
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let m_SelectionMode = SELECTION_MODE.NORMAL; // default
@@ -90,6 +91,9 @@ function m_D3SelectNode(data) {
       console.log(PR, 'm_D3SelectNode: ignoring selection during edge edit mode');
   } else if (m_SelectionMode === SELECTION_MODE.SOURCETARGET) {
     m_SendSourceTargetSelectionUpdate(node);
+  } else if (m_SelectionMode === SELECTION_MODE.COMMENT_EDIT) {
+    // ignore selection during COMMENT edit so that selecting
+    // another node closes the comment
   } else {
     throw `Unknown SELECTION Mode ${m_SelectionMode}`;
   }
