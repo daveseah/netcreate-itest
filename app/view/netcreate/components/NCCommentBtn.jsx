@@ -219,7 +219,7 @@ class NCCommentBtn extends React.Component {
     let css = 'commentbtn ';
     if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
     else if (ccol.hasReadComments) css += 'hasReadComments ';
-    css += ccol.isOpen ? 'isOpen ' : '';
+    css += isOpen ? 'isOpen ' : '';
 
     const label = count > 0 ? count : '';
 
