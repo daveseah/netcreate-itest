@@ -198,6 +198,8 @@ class NCCommentBtn extends React.Component {
     const updatedIsOpen = !this.state.isOpen;
     this.UIOpenComment(updatedIsOpen);
   }
+  }
+
 
   UIOnResize(event) {
     const position = this.GetCommentThreadPosition();
