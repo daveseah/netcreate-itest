@@ -370,7 +370,7 @@ class NCComment extends React.Component {
       CommentComponent = (
         <div
           id={cid}
-          className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
+          className={`comment ${comment.comment_isMarkedDeleted ? 'deleted' : ''}`}
         >
           <div>
             <div className="commenter">{commenter}</div>
