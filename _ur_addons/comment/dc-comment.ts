@@ -83,96 +83,38 @@ const NEXT = new Map(); // Map<comment_id_previous, comment_id> Next comment_id 
 const DEFAULT_CommentTypes = [
   {
     id: 'cmt',
-    label: 'COMMENT', // comment type label
+    label: 'Comment', // comment type label
     prompts: [
       {
-        prompt: 'COMMENT', // prompt label
-        help: '',
+        prompt: 'Comment', // prompt label
+        help: 'Use this for any general comment.',
         feedback: ''
       }
     ]
   },
   {
-    id: 'questionresponse',
-    label: 'Question or response', // comment type label
+    id: 'tellmemore',
+    label: 'Tell me more', // comment type label
     prompts: [
       {
-        prompt: 'Question or response', // prompt label
-        help: '',
+        prompt: 'Please tell me more', // prompt label
+        help: 'Can you tell me more about ... ',
         feedback: ''
       }
     ]
   },
   {
-    id: 'consistent',
-    label: 'Consistent', // comment type label
+    id: 'source',
+    label: 'Source', // comment type label
     prompts: [
       {
-        prompt: 'Consistent', // prompt label
-        help: '',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'understandable',
-    label: 'Understandable', // comment type label
-    prompts: [
-      {
-        prompt: 'Understandable', // prompt label
-        help: '',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'understandable',
-    label: 'Supported by evidence', // comment type label
-    prompts: [
-      {
-        prompt: 'Supported by evidence', // prompt label
-        help: `It is important for a scientific model to be supported by evidence.
-
-Does the evidence we have show that the model works this way?
-Is there any contradictory evidence that says the model doesn't work this way?
-`,
-        feedback: 'Consider pointing out relevant evidence by typing evidence #'
-      }
-    ]
-  },
-  {
-    id: 'changereason',
-    label: 'Change + Reason', // comment type label
-    prompts: [
-      {
-        prompt: 'Change',
-        help: 'What change do you want to make?',
+        prompt: 'Is this well sourced?', // prompt label
+        help: 'Yes/No',
         feedback: ''
       },
       {
-        prompt: 'Reason',
-        help: 'Why do you want to make that change',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    id: 'three',
-    label: 'Three Points', // comment type label
-    prompts: [
-      {
-        prompt: 'Point 1',
-        help: 'What change do you want to make?',
-        feedback: ''
-      },
-      {
-        prompt: 'Point 2',
-        help: 'Why do you want to make that change',
-        feedback: ''
-      },
-      {
-        prompt: 'Point 3',
-        help: 'Why do you want to make that change',
+        prompt: 'Changes', // prompt label
+        help: 'What about the sourcing could be improved?',
         feedback: ''
       }
     ]
