@@ -179,35 +179,24 @@ class NetCreate extends UNISYS.Component {
 
     // note: the navbar is in init-appshell.jsx
     return (
-      <div
-        className="--NetCreate"
-        style={{ display: 'flex', flexFlow: 'column', height: '100%' }}
-      >
+      <div className="--NetCreate nc-base">
         <div
-          className="--NetCreate_Fixed_Top"
+          className="--NetCreate_Fixed_Top_SaveAlert nc-savealert"
           hidden={this.state.isConnected}
-          style={{
-            width: '100%',
-            height: '38px',
-            position: 'fixed',
-            backgroundColor: 'rgba(256,0,0,0.5',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-evenly',
-            alignItems: 'center',
-            zIndex: '3000'
-          }}
         >
-          <div
-            className="--NetCreate_Fixed_Top_SaveAlert"
-            style={{ color: '#fff', width: '100%', textAlign: 'center' }}
-          >
+          <div>
             <b>{disconnectMsg}!</b> Your changes will not be saved! Please report
             &quot;
             {disconnectMsg}&quot; to your administrator to restart the graph.
           </div>
         </div>
-        <SessionShell />
+        <div className="--NetCreate_Fixed_Top nc-navbar">
+          <SessionShell />
+          <NCCommentStatus
+            message={commentStatusMessage}
+            handleMessageUpdate={handleMessageUpdate}
+          />
+        </div>
 
         <div
           className="--NetCreate_Rows"
@@ -322,10 +311,6 @@ class NetCreate extends UNISYS.Component {
           accessible format.
         </div>
         <div id="dialog-container"></div>
-        <NCCommentStatus
-          message={commentStatusMessage}
-          handleMessageUpdate={handleMessageUpdate}
-        />
       </div>
     ); // end return
   } // end render()

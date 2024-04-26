@@ -95,9 +95,7 @@ const LABEL_STYLE = {
 };
 /// Move login to navbar
 const NAV_LOGIN_STYLE = {
-  position: 'fixed',
-  top: '7px',
-  right: '20px',
+  margin: '8px 10px 0 20px',
   zIndex: '2000'
 };
 const NAV_LOGIN_FEEDBACK_STYLE = {

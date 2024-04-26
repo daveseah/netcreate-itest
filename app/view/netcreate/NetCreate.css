@@ -1,3 +1,34 @@
+/* Base App: NetCrate.jsx */
+.nc-base {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+.nc-savealert {
+  position: fixed;
+  top: 0px;
+  flex-grow: 1;
+  background-color: rgba(256, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  z-index: 3000;
+}
+.nc-savealert > div {
+  color: #fff;
+  width: 100%;
+  text-align: center;
+}
+.nc-navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 38px;
+  display: flex;
+  flex-flow: row-reverse;
+  z-index: 2000;
+}
 /* Bootstrap override */
 .nav-item {
   cursor: pointer;

@@ -8,11 +8,7 @@
 
 /* Comment Bar ------------------------------------------------------------- */
 #comment-bar {
-  position: absolute;
-  top: 0px;
-  right: 200px;
   display: flex;
-  align-items: center;
   margin-top: 6px;
   font-size: 0.8rem;
   z-index: 2000;
