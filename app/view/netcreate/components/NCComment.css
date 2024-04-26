@@ -359,8 +359,11 @@ svg#comment-icon {
 /* control bars */
 .commentThread .topbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding-bottom: 2px;
+}
+.commentThread .topbar .commentTitle {
+  color: var(--comment-system-font-color);
 }
 .commentThread .topbar .closeBtn {
   /* content: 'X'; */

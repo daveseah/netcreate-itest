@@ -104,6 +104,8 @@ class NCCommentThread extends React.Component {
     const windowHeight = Math.min(screen.height, window.innerHeight); // handle Safari and FireFox differences
     const commentMaxHeight = `${windowHeight - y - 100}px`;
 
+    const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
+
     return (
       <Draggable>
         <div
@@ -112,6 +114,9 @@ class NCCommentThread extends React.Component {
           onClick={e => e.stopPropagation()} // prevent edge deselect
         >
           <div className="topbar">
+            <div className="commentTitle">
+              Comments on {typeLabel} {sourceLabel}
+            </div>
             <div className="closeBtn" onClick={this.UIOnClose}>
               X
             </div>
