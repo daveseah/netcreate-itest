@@ -389,6 +389,7 @@ svg#comment-icon {
 
 .commentbar {
   display: flex;
+  flex-direction: row-reverse;
   justify-content: space-between;
 }
 .editbar {

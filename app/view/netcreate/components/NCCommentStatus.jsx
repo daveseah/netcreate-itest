@@ -237,11 +237,11 @@ class NCCommentStatus extends React.Component {
               {UnreadButtonJSX}
               <div className="comment-status-body">{unreadCommentItems}</div>
               <div className="commentbar">
-                <button className="small" onClick={this.UIMarkAllRead}>
-                  Mark All Read
-                </button>
                 <button className="small" onClick={this.UIClose}>
                   Close
+                </button>
+                <button className="small" onClick={this.UIMarkAllRead}>
+                  Mark All Read
                 </button>
               </div>
             </div>
