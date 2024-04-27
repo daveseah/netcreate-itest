@@ -188,6 +188,7 @@ class NCNode extends UNISYS.Component {
       uIsLockedByDB: false, // shows db lock message next to Edit Node button
       uIsLockedByTemplate: false,
       uIsLockedByImport: false,
+      uIsLockedByComment: false,
       uEditLockMessage: '',
       uHideDeleteNodeButton: TEMPLATE.hideDeleteNodeButton,
       uReplacementNodeId: '',
@@ -238,20 +239,29 @@ class NCNode extends UNISYS.Component {
     this.LoadEdges(this.state.id);
   }
   SetPermissions(data) {
+    UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
+      // someone else might be editing a template or importing or editing node or edge
     const { id } = this.state;
     const nodeIsLocked = data.lockedNodes.includes(id);
     this.setState(
       {
         uIsLockedByDB: nodeIsLocked,
         uIsLockedByTemplate: data.templateBeingEdited,
-        uIsLockedByImport: data.importActive
+          uIsLockedByImport: data.importActive,
+          uIsLockedByComment: data.commentBeingEditedByMe
       },
       () => this.UpdatePermissions()
     );
+    });
   }
   UpdatePermissions() {
-    const { isLoggedIn, uIsLockedByDB, uIsLockedByTemplate, uIsLockedByImport } =
-      this.state;
+    const {
+      isLoggedIn,
+      uIsLockedByDB,
+      uIsLockedByTemplate,
+      uIsLockedByImport,
+      uIsLockedByComment
+    } = this.state;
     const TEMPLATE = UDATA.AppState('TEMPLATE');
     let uEditLockMessage = '';
     let uEditBtnDisable = false;
@@ -268,6 +278,10 @@ class NCNode extends UNISYS.Component {
     if (uIsLockedByImport) {
       uEditBtnDisable = true;
       uEditLockMessage += TEMPLATE.importIsLockedMessage;
+    }
+    if (uIsLockedByComment) {
+      uEditBtnDisable = true;
+      uEditLockMessage += '';
     }
     this.setState({ uEditBtnDisable, uEditBtnHide, uEditLockMessage });
   }
@@ -778,8 +792,14 @@ class NCNode extends UNISYS.Component {
   }
 
   RenderEdit() {
-    const { uSelectedTab, uBackgroundColor, uShowMatchlist, matchingNodes, label } =
-      this.state;
+    const {
+      uSelectedTab,
+      uBackgroundColor,
+      uShowMatchlist,
+      matchingNodes,
+      label,
+      id
+    } = this.state;
     const defs = UDATA.AppState('TEMPLATE').nodeDefs;
     const bgcolor = uBackgroundColor + '66'; // hack opacity
     const matchList = matchingNodes

@@ -488,6 +488,12 @@ function GetUserName(uid) {
 function GetCommentTypes() {
   return DCCOMMENTS.GetCommentTypes();
 }
+function GetCommentType(typeid) {
+  return DCCOMMENTS.GetCommentType(typeid);
+}
+function GetDefaultCommentType() {
+  return DCCOMMENTS.GetDefaultCommentType();
+}
 function GetComment(cid) {
   return DCCOMMENTS.GetComment(cid);
 }
@@ -538,6 +544,8 @@ export {
   // PASS THROUGH
   GetUserName,
   GetCommentTypes,
+  GetCommentType,
+  GetDefaultCommentType,
   GetComment,
   GetReadby,
   GetCrefs

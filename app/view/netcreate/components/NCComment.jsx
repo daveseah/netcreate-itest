@@ -13,6 +13,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const { EDITORTYPE } = require('system/util/enum');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
 const SETTINGS = require('settings');
@@ -29,31 +30,12 @@ let UDATA;
 class NCComment extends React.Component {
   constructor(props) {
     super(props);
-
-    const cvobj = props.cvobj;
-    const comment = CMTMGR.GetComment(cvobj.comment_id);
-
-    this.state = {
-      // Data
-      cref: comment.collection_ref,
-      cid: comment.comment_id,
-      comment_id_parent: comment.comment_id_parent,
-      commenter: CMTMGR.GetUserName(comment.commenter_id),
-      comment_type: comment.comment_type,
-      commenter_text: [...comment.commenter_text],
-      createtime_string: cvobj.createtime_string,
-      modifytime_string: cvobj.modifytime_string,
-      // UI State
-      uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
-      uIsSelected: cvobj.isSelected,
-      uIsBeingEdited: cvobj.isBeingEdited,
-      uIsEditable: cvobj.isEditable,
-      allowReply: cvobj.allowReply
-    };
+    this.state = {}; // see LoadCommentVObj
 
     // EVENT HANDLERS
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     this.LoadCommentVObj = this.LoadCommentVObj.bind(this);
+
     // UI HANDLERS
     this.UIOnEdit = this.UIOnEdit.bind(this);
     this.UIOnSave = this.UIOnSave.bind(this);
@@ -72,22 +54,41 @@ class NCComment extends React.Component {
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
+  componentDidMount() {
+    this.LoadCommentVObj();
+  }
+
   componentWillUnmount() {
+    const { cid, uIsBeingEdited } = this.state;
+    if (uIsBeingEdited) {
+      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+      });
+    }
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
     this.LoadCommentVObj();
   }
-  LoadCommentVObj() {
-    const { cref, cid } = this.state;
 
-    const cvobj = CMTMGR.GetCommentVObj(cref, cid);
-    const comment = CMTMGR.GetComment(cid);
+  LoadCommentVObj() {
+    const { cvobj } = this.props;
+    const comment = CMTMGR.GetComment(cvobj.comment_id);
 
     // When deleting, COMMENTVOBJS state change will trigger a load and render
     // before the component is unmounted.  So catch it and skip the state update.
     if (!cvobj || !comment) return;
+
+    // Error check: verify that comment types exist, if not, fall back gracefully to default type
+    let comment_type = comment.comment_type;
+    let comment_error = '';
+    if (!CMTMGR.GetCommentType(comment_type)) {
+      const defaultTypeObject = CMTMGR.GetDefaultCommentType();
+      comment_error = `Comment type "${comment_type}" not found: Using "${defaultTypeObject.label}"`;
+      comment_type = defaultTypeObject.id;
+    }
 
     this.setState({
       // Data
@@ -95,36 +96,58 @@ class NCComment extends React.Component {
       cid: comment.comment_id,
       comment_id_parent: comment.comment_id_parent,
       commenter: CMTMGR.GetUserName(comment.commenter_id),
-      comment_type: comment.comment_type,
+      comment_type,
       commenter_text: [...comment.commenter_text],
       createtime_string: cvobj.createtime_string,
       modifytime_string: cvobj.modifytime_string,
+      // Messaging
+      comment_error,
       // UI State
       uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
       uIsSelected: cvobj.isSelected,
       uIsBeingEdited: cvobj.isBeingEdited,
       uIsEditable: cvobj.isEditable,
-      allowReply: cvobj.allowReply
+      uAllowReply: cvobj.allowReply
     });
+
+    // Lock edit upon creation of a new comment or a new reply
+    if (cvobj.isBeingEdited) {
+      UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment.comment_id }).then(
+        () => {
+          UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+          UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
+        }
+      );
+    }
   }
 
   UIOnEdit(event) {
+    const { cid } = this.state;
     const uViewMode =
       this.state.uViewMode === NCUI.VIEWMODE.EDIT
         ? NCUI.VIEWMODE.VIEW
         : NCUI.VIEWMODE.EDIT;
     this.setState({ uViewMode });
+    UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
+      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
+    });
   }
 
   UIOnSave(event) {
     const { uid } = this.props;
-    const { comment_type, commenter_text } = this.state;
+    const { cid, comment_type, commenter_text } = this.state;
 
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
     comment.comment_type = comment_type;
     comment.commenter_text = [...commenter_text]; // clone, not byref
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
+
+    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+    });
     this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
   }
 
@@ -171,23 +194,34 @@ class NCComment extends React.Component {
       if (t !== '') savedCommentIsEmpty = false;
     });
 
+    const cb = () => {
+      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
+        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+      });
+    };
+
     if (savedCommentIsEmpty) {
       // "Cancel" will always remove the comment if the comment is empty
       // - usually because it's a newly created comment
       // - but also if the user clears all the text fields
       // We don't care if the user entered any text
-      CMTMGR.RemoveComment({
-        collection_ref: cref,
-        comment_id: cid,
-        uid,
-        showCancelDialog: true
-      });
+      CMTMGR.RemoveComment(
+        {
+          collection_ref: cref,
+          comment_id: cid,
+          uid,
+          showCancelDialog: true
+        },
+        cb
+      );
     } else {
       // revert to previous text if current text is empty
       this.setState({
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
         uViewMode: NCUI.VIEWMODE.VIEW
       });
+      cb();
     }
   }
 
@@ -223,8 +257,9 @@ class NCComment extends React.Component {
       cid,
       comment_type,
       commenter_text,
+      comment_error,
       uViewMode,
-      allowReply
+      uAllowReply
     } = this.state;
 
     const isAdmin = SETTINGS.IsAdmin();
@@ -238,17 +273,12 @@ class NCComment extends React.Component {
         );
       return '';
     }
-    // Error check: verify that comment types exist
-    if (!commentTypes.get(comment_type))
-      throw new Error(
-        `NCComment could not find comment type "${comment_type}"!  Did you redefine comment types? Known Comment Types: ${[
-          ...commentTypes.keys()
-        ]}`
-      );
+    if (!commenter) return null; // not ready
 
     // TODO Allow admins
     const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
+    // SUB COMPONENTS
     const EditBtn = (
       <button className="outline small" onClick={this.UIOnEdit}>
         Edit
@@ -259,17 +289,8 @@ class NCComment extends React.Component {
         Delete
       </button>
     );
-    // Alternative three-dot menu approach to hide "Edit" and "Delete"
-    // const EditMenu = (
-    //   <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
-    //     <option>...</option>
-    //     <option value="edit">EDIT</option>
-    //     <option value="delete">DELETE</option>
-    //   </select>
-    // );
-
     const SaveBtn = <button onClick={this.UIOnSave}>Save</button>;
-    const ReplyBtn = allowReply ? (
+    const ReplyBtn = uAllowReply ? (
       <button onClick={this.UIOnReply}>Reply</button>
     ) : (
       <div></div> // leave empty space so Edit and Delete stay in the same place
@@ -290,6 +311,14 @@ class NCComment extends React.Component {
         })}
       </select>
     );
+    // Alternative three-dot menu approach to hide "Edit" and "Delete"
+    // const EditMenu = (
+    //   <select className="editmenu" onChange={this.UIOnEditMenuSelect}>
+    //     <option>...</option>
+    //     <option value="edit">EDIT</option>
+    //     <option value="delete">DELETE</option>
+    //   </select>
+    // );
 
     let CommentComponent;
     if (uViewMode === NCUI.VIEWMODE.EDIT) {
@@ -316,6 +345,7 @@ class NCComment extends React.Component {
                   value={commenter_text[index]}
                 />
                 <div className="feedback">{type.feedback}</div>
+                <div className="error">{comment_error}</div>
               </div>
             ))}
             <div className="editbar">
@@ -331,7 +361,7 @@ class NCComment extends React.Component {
       CommentComponent = (
         <div
           id={cid}
-          className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
+          className={`comment ${comment.comment_isMarkedDeleted ? 'deleted' : ''}`}
         >
           <div>
             <div className="commenter">{commenter}</div>
@@ -354,6 +384,7 @@ class NCComment extends React.Component {
                   {!comment.comment_isMarkedDeleted && commenter_text[index]}
                 </div>
                 <div className="feedback">{type.feedback}</div>
+                <div className="error">{comment_error}</div>
               </div>
             ))}
             {uid && (

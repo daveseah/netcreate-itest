@@ -14,6 +14,15 @@
   * has unread comments (gold color)
   * all comments are read (gray color)
 
+  During Edit
+  While a comment is being edited, we need to catch events to prevent
+  the comment from inadvertently being closed:
+  * prevent NodeTable or EdgeTable view/edit actions from triggering
+    (handled by selection-mgr)
+  * prevent NCNode from being able to click "Edit"
+  * prevent NCCommentBtn close toggles (handled by NCCommentBtn)
+  * prevent NCGraphRenderer events from selecting another node
+    (handled by selection-mgr)
 
   USE:
 
@@ -69,15 +78,18 @@ class NCCommentBtn extends React.Component {
 
     const uid = CMTMGR.GetCurrentUserId();
 
+    const btnid = `${props.cref}${props.isTable ? `-isTable` : ''}`;
     this.state = {
       uid, // empty uid is allowed for non-logged in users
       isOpen: false,
+      isDisabled: false,
       x: '300px',
       y: '120px',
-      commentButtonId: `comment-button-${props.cref}-${props.isTable}`
+      commentButtonId: `comment-button-${btnid}`
     };
 
     // EVENT HANDLERS
+    this.UpdatePermissions = this.UpdatePermissions.bind(this);
     this.GetCommentThreadPosition = this.GetCommentThreadPosition.bind(this);
     this.UpdateCommentCollection = this.UpdateCommentCollection.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
@@ -94,6 +106,7 @@ class NCCommentBtn extends React.Component {
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTCOLLECTION', this.UpdateCommentCollection);
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
     UDATA.HandleMessage('COMMENT_SELECT', this.HandleCOMMENT_SELECT);
     window.addEventListener('resize', this.UIOnResize);
   }
@@ -105,7 +118,13 @@ class NCCommentBtn extends React.Component {
   componentWillUnmount() {
     UDATA.AppStateChangeOff('COMMENTCOLLECTION', this.UpdateCommentCollection);
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
+    UDATA.UnhandleMessage('COMMENT_SELECT', this.HandleCOMMENT_SELECT);
     window.removeEventListener('resize', this.UIOnResize);
+  }
+
+  UpdatePermissions(data) {
+    this.setState({ isDisabled: data.commentBeingEditedByMe });
   }
 
   GetCommentThreadPosition() {
@@ -173,9 +192,14 @@ class NCCommentBtn extends React.Component {
 
   UIOnClick(event) {
     event.stopPropagation(); // prevent Edge deselect
+    const { isDisabled } = this.state;
+    // disable open toggle if comment is being edited
+    if (!isDisabled) {
     const updatedIsOpen = !this.state.isOpen;
     this.UIOpenComment(updatedIsOpen);
   }
+  }
+
 
   UIOnResize(event) {
     const position = this.GetCommentThreadPosition();
@@ -195,7 +219,7 @@ class NCCommentBtn extends React.Component {
     let css = 'commentbtn ';
     if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
     else if (ccol.hasReadComments) css += 'hasReadComments ';
-    css += ccol.isOpen ? 'isOpen ' : '';
+    css += isOpen ? 'isOpen ' : '';
 
     const label = count > 0 ? count : '';
 

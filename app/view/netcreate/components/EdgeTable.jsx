@@ -58,6 +58,7 @@ class EdgeTable extends UNISYS.Component {
       edges: [],
       filteredEdges: [],
       nodes: [], // needed for dereferencing source/target
+      disableEdit: false,
       isLocked: false,
       isExpanded: true,
       sortkey: 'Relationship'
@@ -67,6 +68,7 @@ class EdgeTable extends UNISYS.Component {
     this.updateEdgeFilterState = this.updateEdgeFilterState.bind(this);
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
+    this.updateEditState = this.updateEditState.bind(this);
     this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
     this.onViewButtonClick = this.onViewButtonClick.bind(this);
     this.onEditButtonClick = this.onEditButtonClick.bind(this);
@@ -83,6 +85,8 @@ class EdgeTable extends UNISYS.Component {
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
+
+    UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
 
     // SESSION is called by SessionSHell when the ID changes
     //  set system-wide. data: { classId, projId, hashedId, groupId, isValid }
@@ -113,9 +117,14 @@ class EdgeTable extends UNISYS.Component {
       let NCDATA = this.AppState('NCDATA');
       this.handleDataUpdate(NCDATA);
     });
+
+    // Request edit state too because the update may have come
+    // while we were hidden
+    this.updateEditState();
   }
 
   componentWillUnmount() {
+    UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
     this.AppStateChangeOff('SESSION', this.onStateChange_SESSION);
     this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
     this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
@@ -242,6 +251,21 @@ class EdgeTable extends UNISYS.Component {
         );
       }
     }
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  updateEditState() {
+    // disable edit if someone else is editing a template, node, or edge
+    let disableEdit = false;
+    UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
+      // someone else might be editing a template or importing or editing node or edge
+      disableEdit =
+        data.templateBeingEdited ||
+        data.importActive ||
+        data.nodeOrEdgeBeingEdited ||
+        data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
+      this.setState({ disableEdit });
+    });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -536,7 +560,7 @@ class EdgeTable extends UNISYS.Component {
   /**
    */
   render() {
-    let { edgeDefs, isLocked } = this.state;
+    let { edgeDefs, disableEdit, isLocked } = this.state;
     if (edgeDefs.category === undefined) {
       // for backwards compatability
       edgeDefs.category = {};
@@ -699,13 +723,15 @@ class EdgeTable extends UNISYS.Component {
                 <td hidden={!DBG}>{edge.id}</td>
                 <td hidden={!DBG}>{edge.size}</td>
                 <td>
-                  <button
-                    className="small outline"
-                    onClick={event => this.onViewButtonClick(event, edge.id)}
-                  >
-                    {ICON_VIEW}
-                  </button>
-                  {!isLocked && (
+                  {!disableEdit && (
+                    <button
+                      className="small outline"
+                      onClick={event => this.onViewButtonClick(event, edge.id)}
+                    >
+                      {ICON_VIEW}
+                    </button>
+                  )}
+                  {!disableEdit && !isLocked && (
                     <button
                       className="small outline"
                       onClick={event => this.onEditButtonClick(event, edge.id)}
@@ -717,25 +743,33 @@ class EdgeTable extends UNISYS.Component {
                 {/* Cast to string for edge.target where target is undefined */}
                 <td hidden={!DBG}>{String(edge.source)}</td>
                 <td>
-                  <a
-                    href="#"
-                    onClick={e => this.selectNode(edge.source, e)}
-                    onMouseOver={() => this.onHighlightNode(edge.source)}
-                  >
-                    {edge.sourceLabel}
-                  </a>
+                  {!disableEdit ? (
+                    <a
+                      href="#"
+                      onClick={e => this.selectNode(edge.source, e)}
+                      onMouseOver={() => this.onHighlightNode(edge.source)}
+                    >
+                      {edge.sourceLabel}
+                    </a>
+                  ) : (
+                    edge.sourceLabel
+                  )}
                 </td>
                 {hasTypeField && <td hidden={edgeDefs.type.hidden}>{edge.type}</td>}
                 {/* Cast to string for edge.target where target is undefined */}
                 <td hidden={!DBG}>{String(edge.target)}</td>
                 <td>
-                  <a
-                    href="#"
-                    onClick={e => this.selectNode(edge.target, e)}
-                    onMouseOver={() => this.onHighlightNode(edge.target)}
-                  >
-                    {edge.targetLabel}
-                  </a>
+                  {!disableEdit ? (
+                    <a
+                      href="#"
+                      onClick={e => this.selectNode(edge.target, e)}
+                      onMouseOver={() => this.onHighlightNode(edge.target)}
+                    >
+                      {edge.targetLabel}
+                    </a>
+                  ) : (
+                    edge.targetLabel
+                  )}
                 </td>
                 {attributes.map(a => (
                   <td hidden={edgeDefs[a].hidden} key={`${edge.id}${a}`}>
