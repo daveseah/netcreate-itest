@@ -230,6 +230,12 @@ MOD.GetUserName = (uid) => {
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
 }
+MOD.GetCommentType = typeid => {
+  return COMMENT.GetCommentType(typeid);
+}
+MOD.GetDefaultCommentType = () => {
+  return COMMENT.GetDefaultCommentType();
+}
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Global Operations

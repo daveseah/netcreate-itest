@@ -186,6 +186,12 @@ function GetCommentTypes() {
 function GetCommentType(typeid) {
   return COMMENTTYPES.get(typeid);
 }
+function GetDefaultCommentType() {
+  // returns the first comment type object
+  if (DEFAULT_CommentTypes.length < 1)
+    throw new Error('dc-comments: No comment types defined!');
+  return GetCommentType(DEFAULT_CommentTypes[0].id);
+}
 
 function GetComments() {
   return COMMENTS;
@@ -661,6 +667,7 @@ export default {
   // COMMENT TYPES
   GetCommentTypes,
   GetCommentType,
+  GetDefaultCommentType,
   // COMMENTS
   GetComments,
   GetComment,

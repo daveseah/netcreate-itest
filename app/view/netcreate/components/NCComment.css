@@ -2,7 +2,7 @@
   --comment-bg: #ffd700;
   --comment-bg-light: #f1e9c5ee;
   --comment-bg-new: #d84a00;
-  --comment-statust-font-color: #d84a0088;
+  --comment-status-font-color: #d84a0088;
   --comment-system-font-color: #0003;
 }
 
@@ -15,7 +15,7 @@
 }
 #comment-bar h3 {
   display: inline-block;
-  color: var(--comment-statust-font-color);
+  color: var(--comment-status-font-color);
   margin: 3px 0 5px 0;
   font-size: 10px;
   width: 1px;
@@ -71,7 +71,7 @@
 /* Comment Summary */
 #comment-summary {
   display: flex;
-  color: var(--comment-statust-font-color);
+  color: var(--comment-status-font-color);
   background-color: var(--comment-bg-light);
   border-radius: 15px;
   height: 1.8rem;
@@ -331,15 +331,22 @@ svg#comment-icon {
 .comment .comment-item {
   margin-bottom: 5px;
 }
-.comment .feedback {
-  color: #0007; /* emulate nccomponent help */
+.comment .feedback,
+.comment .error {
   opacity: 0.8;
   font-size: 12px;
   line-height: 14px;
 }
+.comment .feedback {
+  color: #0007; /* emulate nccomponent help */
+}
+.comment .error {
+  color: var(--comment-status-font-color);
+}
 .comment .commenttext {
   background-color: #fff5;
   padding-left: 3px;
+  margin-bottom: 3px;
 }
 
 .comment .commentId {
