@@ -202,8 +202,8 @@ class NCNode extends UNISYS.Component {
   /// EVENT HANDLERS
   ///
   CheckUnload(event) {
-    event.preventDefault();
     if (this.state.uViewMode === NCUI.VIEWMODE.EDIT) {
+      event.preventDefault();
       (event || window.event).returnValue = null;
     } else {
       Reflect.deleteProperty(event, 'returnValue');
