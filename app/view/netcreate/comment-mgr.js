@@ -332,8 +332,8 @@ MOD.GetCommentVObj = (cref, cid) => {
 MOD.GetComment = (cid) => {
   return COMMENT.GetComment(cid);
 }
-MOD.GetUnreadRepliesToMe = ui => {
-  return COMMENT.GetUnreadRepliesToMe(ui);
+MOD.GetUnreadRepliesToMe = uid => {
+  return COMMENT.GetUnreadRepliesToMe(uid);
 }
 MOD.GetUnreadComments = () => {
   return COMMENT.GetUnreadComments();

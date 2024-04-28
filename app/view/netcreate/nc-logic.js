@@ -223,6 +223,7 @@ MOD.Hook('LOADASSETS', () => {
         console.log(NCDATA, TEMPLATE);
         if (!TEMPLATE) reject(Error("couldn't get TEMPLATE from Local Store"));
         UDATA.SetAppState('TEMPLATE', TEMPLATE);
+        console.warn('USE_CACHE does not support Comments!'); // See non cached version with LOAD_COMMENT_DATACORE
         resolve();
       });
     }
@@ -245,6 +246,8 @@ MOD.Hook('LOADASSETS', () => {
             UDATA.SetAppState('NCDATA', d3data);
             // Save off local reference because we don't have NCDATA AppStateChange handler
             NCDATA = d3data;
+            // Load Comment Data
+            UDATA.LocalCall('LOAD_COMMENT_DATACORE', d3data);
           }
         );
         // load template

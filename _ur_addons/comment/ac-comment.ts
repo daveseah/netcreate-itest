@@ -88,6 +88,7 @@ import DCCOMMENTS from './dc-comment.ts';
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
+const PR = 'ac-comments';
 
 const COMMENTCOLLECTION = new Map(); // Map<cref, ccol>
 const COMMENTUISTATE = new Map(); // Map<uiref, {cref, isOpen}>
@@ -107,6 +108,7 @@ function Init() {
 }
 
 function LoadDB(data) {
+  if (DBG) console.log(PR, 'LoadDB', data);
   DCCOMMENTS.LoadDB(data);
 }
 
