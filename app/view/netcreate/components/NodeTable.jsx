@@ -619,6 +619,7 @@ class NodeTable extends UNISYS.Component {
                   onClick={() => this.setSortKey('commentbtn')}
                 >
                   {CMTMGR.COMMENTICON}
+                  {this.sortSymbol('commentbtn')}
                 </div>
               </th>
               {/*
