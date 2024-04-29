@@ -121,11 +121,13 @@ function m_UpdatePermissions(data) {
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Collection Reference Generators
+/// e.g. converts node id to "n32"
 MOD.GetNodeCREF = nodeId => `n${nodeId}`;
 MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
-function deconstructCref(cref) {
+/// deconstructs "n32" into {type: "n", id: 32}
+MOD.DeconstructCref = cref => {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
   return { type, id }
@@ -133,11 +135,12 @@ function deconstructCref(cref) {
 
 /**
  * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
- * @param {string} cref
+* e.g. "n32" becomes {typeLabel "Node", sourceLabel: "32"}
+* @param {string} cref
  * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
  */
 MOD.GetCREFSourceLabel = cref => {
-  const { type, id } = deconstructCref(cref);
+  const { type, id } = MOD.DeconstructCref(cref);
   let typeLabel;
   let node, edge, nodes, sourceNode, targetNode;
   let sourceLabel; // undefined if not found
@@ -166,8 +169,10 @@ MOD.GetCREFSourceLabel = cref => {
   return { typeLabel, sourceLabel };
 }
 
-MOD.OpenSource = cref => {
-  const { type, id } = deconstructCref(cref);
+/// Open the object that the comment refers to
+/// e.g. in Net.Create it's a node or edge object
+MOD.OpenReferent = cref => {
+  const { type, id } = MOD.DeconstructCref(cref);
   let edge;
   switch (type) {
     case 'n':
@@ -185,8 +190,9 @@ MOD.OpenSource = cref => {
   }
 }
 
+/// Open comment using a comment id
 MOD.OpenComment = (cref, cid) => {
-  const { type, id } = deconstructCref(cref);
+  const { type, id } = MOD.DeconstructCref(cref);
   let edge;
   switch (type) {
     case 'n':

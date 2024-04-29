@@ -40,7 +40,7 @@ class NCCommentStatus extends React.Component {
     this.UIExpandPanel = this.UIExpandPanel.bind(this);
     this.UIClose = this.UIClose.bind(this);
     this.UIMarkAllRead = this.UIMarkAllRead.bind(this);
-    this.UIOpenSource = this.UIOpenSource.bind(this);
+    this.UIOpenReferent = this.UIOpenReferent.bind(this);
     this.UIOpenComment = this.UIOpenComment.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
@@ -122,7 +122,7 @@ class NCCommentStatus extends React.Component {
         <a
           href="#"
           className="comment-sourcelabel"
-          onClick={event => this.UIOpenSource(event, cref)}
+          onClick={event => this.UIOpenReferent(event, cref)}
         >
           {sourceLabel}
         </a>
@@ -154,10 +154,10 @@ class NCCommentStatus extends React.Component {
     CMTMGR.MarkAllRead();
   }
 
-  UIOpenSource(event, cref) {
+  UIOpenReferent(event, cref) {
     event.preventDefault();
     event.stopPropagation();
-    CMTMGR.OpenSource(cref);
+    CMTMGR.OpenReferent(cref);
   }
 
   UIOpenComment(event, cref, cid) {

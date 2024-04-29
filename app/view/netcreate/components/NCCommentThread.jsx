@@ -51,6 +51,7 @@ class NCCommentThread extends React.Component {
     // UI HANDLERS
     this.UIOnReply = this.UIOnReply.bind(this);
     this.UIOnClose = this.UIOnClose.bind(this);
+    this.UIOnReferentClick = this.UIOnReferentClick.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -105,6 +106,12 @@ class NCCommentThread extends React.Component {
     CMTMGR.CloseCommentCollection(uiref, cref, uid);
   }
 
+  UIOnReferentClick(event, cref) {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenReferent(cref);
+  }
+
   render() {
     const { uiref, cref, uid, x, y } = this.props;
     const { isDisabled } = this.state;
@@ -127,7 +134,10 @@ class NCCommentThread extends React.Component {
         >
           <div className="topbar">
             <div className="commentTitle">
-              Comments on {typeLabel} {sourceLabel}
+              Comments on {typeLabel}{' '}
+              <a href="#" onClick={event => this.UIOnReferentClick(event, cref)}>
+                {sourceLabel}
+              </a>
             </div>
             <div className="closeBtn" onClick={this.UIOnClose}>
               X
