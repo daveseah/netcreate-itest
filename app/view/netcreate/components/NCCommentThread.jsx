@@ -41,7 +41,12 @@ class NCCommentThread extends React.Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      isDisabled: false
+    };
+
     // EVENT HANDLERS
+    this.UpdatePermissions = this.UpdatePermissions.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     // UI HANDLERS
     this.UIOnReply = this.UIOnReply.bind(this);
@@ -53,10 +58,16 @@ class NCCommentThread extends React.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
   }
 
   componentWillUnmount() {
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
+  }
+
+  UpdatePermissions(data) {
+    this.setState({ isDisabled: data.commentBeingEditedByMe });
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
@@ -96,6 +107,7 @@ class NCCommentThread extends React.Component {
 
   render() {
     const { uiref, cref, uid, x, y } = this.props;
+    const { isDisabled } = this.state;
 
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
@@ -125,7 +137,7 @@ class NCCommentThread extends React.Component {
             {commentVObjs.map(cvobj => (
               <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
             ))}
-            {uid && (
+            {!isDisabled && uid && (
               <textarea
                 className="add"
                 placeholder="Click to add a Comment..."
