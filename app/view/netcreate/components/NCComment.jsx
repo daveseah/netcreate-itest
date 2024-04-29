@@ -334,6 +334,7 @@ class NCComment extends React.Component {
             <div className="date">{modifytime_string || createtime_string}</div>
           </div>
           <div>
+            <div className="commentId">#{cid}</div>
             <div>{TypeSelector}</div>
             {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
