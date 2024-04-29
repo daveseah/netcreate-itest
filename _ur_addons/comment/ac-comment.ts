@@ -159,7 +159,7 @@ function CloseCommentCollection(uiref, cref, uid) {
 function MarkRead(cref, uid) {
   // Mark Read
   const commentVObjs = COMMENTVOBJS.get(cref);
-  commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+  commentVObjs.forEach(cvobj => DCCOMMENTS.MarkCommentRead(cvobj.comment_id, uid));
 }
 
 function GetCommentStats(uid) {
