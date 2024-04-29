@@ -54,9 +54,14 @@ class NodeTable extends UNISYS.Component {
   constructor(props) {
     super(props);
 
+    const TEMPLATE = this.AppState('TEMPLATE');
     this.state = {
-      nodeDefs: this.AppState('TEMPLATE').nodeDefs,
+      nodeDefs: TEMPLATE.nodeDefs,
       nodes: [],
+      selectedNodeId: undefined,
+      hilitedNodeId: undefined,
+      selectedNodeColor: TEMPLATE.sourceColor,
+      hilitedNodeColor: TEMPLATE.searchColor,
       filteredNodes: [],
       disableEdit: false,
       isLocked: false,
@@ -65,6 +70,8 @@ class NodeTable extends UNISYS.Component {
     };
 
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
+    this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
+    this.onStateChange_HILITE = this.onStateChange_HILITE.bind(this);
     this.displayUpdated = this.displayUpdated.bind(this);
     this.updateNodeFilterState = this.updateNodeFilterState.bind(this);
     this.updateEditState = this.updateEditState.bind(this);
@@ -98,6 +105,9 @@ class NodeTable extends UNISYS.Component {
 
     // Handle Template updates
     this.OnAppStateChange('TEMPLATE', this.OnTemplateUpdate);
+
+    this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
+    this.OnAppStateChange('HILITE', this.onStateChange_HILITE);
   } // constructor
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -128,9 +138,26 @@ class NodeTable extends UNISYS.Component {
     this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
     this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
     this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
+    this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
+    this.AppStateChangeOff('HILITE', this.onStateChange_HILITE);
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  onStateChange_SELECTION(data) {
+    this.setState({
+      selectedNodeId: data.nodes.length > 0 ? data.nodes[0].id : undefined
+    });
+  }
+
+  onStateChange_HILITE(data) {
+    const { userHighlightNodeId, autosuggestHiliteNodeId } = data; // ignores `tableHiliteNodeId`
+    let hilitedNodeId;
+    if (autosuggestHiliteNodeId !== undefined)
+      hilitedNodeId = autosuggestHiliteNodeId;
+    if (userHighlightNodeId !== undefined) hilitedNodeId = userHighlightNodeId;
+    this.setState({ hilitedNodeId });
+  }
+
   /** Handle change in SESSION data
     Called both by componentWillMount() and AppStateChange handler.
     The 'SESSION' state change is triggered in two places in SessionShell during
@@ -257,7 +284,11 @@ class NodeTable extends UNISYS.Component {
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   OnTemplateUpdate(data) {
-    this.setState({ nodeDefs: data.nodeDefs });
+    this.setState({
+      nodeDefs: data.nodeDefs,
+      selectedNodeColor: data.sourceColor,
+      hilitedNodeColor: data.searchColor
+    });
   }
 
   /// UTILITIES /////////////////////////////////////////////////////////////////
@@ -483,7 +514,16 @@ class NodeTable extends UNISYS.Component {
    */
   render() {
     if (this.state.nodes === undefined) return '';
-    const { nodeDefs, disableEdit, isLocked } = this.state;
+    const {
+      nodeDefs,
+      selectedNodeId,
+      hilitedNodeId,
+      selectedNodeColor,
+      hilitedNodeColor,
+      disableEdit,
+      isLocked
+    } = this.state;
+    console.log('selected node id', selectedNodeId);
     const { tableHeight } = this.props;
     const styles = `thead, tbody { font-size: 0.8em }
                   .table {
@@ -599,7 +639,14 @@ class NodeTable extends UNISYS.Component {
                 key={i}
                 style={{
                   color: node.isFiltered ? 'red' : 'black',
-                  opacity: node.filteredTransparency
+                  opacity: node.filteredTransparency,
+                  border:
+                    (hilitedNodeId === node.id
+                      ? `2px solid ${hilitedNodeColor}`
+                      : false) ||
+                    (selectedNodeId === node.id
+                      ? `2px solid ${selectedNodeColor}`
+                      : 'none')
                 }}
                 onMouseOver={() => this.onHighlightRow(node.id)}
               >

@@ -53,9 +53,12 @@ class EdgeTable extends UNISYS.Component {
   constructor(props) {
     super(props);
 
+    const TEMPLATE = this.AppState('TEMPLATE');
     this.state = {
-      edgeDefs: this.AppState('TEMPLATE').edgeDefs,
+      edgeDefs: TEMPLATE.edgeDefs,
       edges: [],
+      selectedEdgeId: undefined,
+      selectedEdgeColor: TEMPLATE.sourceColor,
       filteredEdges: [],
       nodes: [], // needed for dereferencing source/target
       disableEdit: false,
@@ -65,6 +68,8 @@ class EdgeTable extends UNISYS.Component {
     };
 
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
+    this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
+    this.onEDGE_OPEN = this.onEDGE_OPEN.bind(this);
     this.updateEdgeFilterState = this.updateEdgeFilterState.bind(this);
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
@@ -86,6 +91,7 @@ class EdgeTable extends UNISYS.Component {
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
 
+    UDATA.HandleMessage('EDGE_OPEN', this.onEDGE_OPEN);
     UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
 
     // SESSION is called by SessionSHell when the ID changes
@@ -101,6 +107,8 @@ class EdgeTable extends UNISYS.Component {
 
     // Track Filtered Data Updates too
     this.OnAppStateChange('FILTEREDNCDATA', this.handleFilterDataUpdate);
+
+    this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
   } // constructor
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -124,14 +132,21 @@ class EdgeTable extends UNISYS.Component {
   }
 
   componentWillUnmount() {
+    UDATA.UnhandleMessage('EDGE_OPEN', this.onEDGE_OPEN);
     UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
     this.AppStateChangeOff('SESSION', this.onStateChange_SESSION);
     this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
     this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
     this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
+    this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  onStateChange_SELECTION(data) {
+    this.setState({
+      selectedEdgeId: data.edges.length > 0 ? data.edges[0].id : undefined
+    });
+  }
   /** Handle change in SESSION data
     Called both by componentWillMount() and AppStateChange handler.
     The 'SESSION' state change is triggered in two places in SessionShell during
@@ -161,6 +176,12 @@ class EdgeTable extends UNISYS.Component {
     var tag = <span title={titleString}> {dateTime} </span>;
 
     return tag;
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// User selected edge usu by clicking NCNode's edge item in Edges tab
+  onEDGE_OPEN(data) {
+    this.setState({ selectedEdgeId: data.edge.id });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -270,7 +291,10 @@ class EdgeTable extends UNISYS.Component {
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   OnTemplateUpdate(data) {
-    this.setState({ edgeDefs: data.edgeDefs });
+    this.setState({
+      edgeDefs: data.edgeDefs,
+      selectedEdgeColor: data.sourceColor
+    });
   }
 
   /// UTILITIES /////////////////////////////////////////////////////////////////
@@ -560,7 +584,8 @@ class EdgeTable extends UNISYS.Component {
   /**
    */
   render() {
-    let { edgeDefs, disableEdit, isLocked } = this.state;
+    let { edgeDefs, selectedEdgeId, selectedEdgeColor, disableEdit, isLocked } =
+      this.state;
     if (edgeDefs.category === undefined) {
       // for backwards compatability
       edgeDefs.category = {};
@@ -717,7 +742,11 @@ class EdgeTable extends UNISYS.Component {
                   // edge default transparency is 0.7
                   // but for tables, we want to show opaque unless the edge has been Faded via filter
                   opacity:
-                    edge.filteredTransparency > 0.5 ? 1 : edge.filteredTransparency
+                    edge.filteredTransparency > 0.5 ? 1 : edge.filteredTransparency,
+                  border:
+                    selectedEdgeId === edge.id
+                      ? `2px solid ${selectedEdgeColor}`
+                      : 'none'
                 }}
               >
                 <td hidden={!DBG}>{edge.id}</td>
