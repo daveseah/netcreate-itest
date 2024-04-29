@@ -25,7 +25,8 @@
   overflow: hidden;
   transition: all 0.1s ease-in;
 }
-#comment-bar:hover h3 {
+#comment-bar:hover h3,
+#comment-panel.expanded h3 {
   width: auto;
   max-width: 120px;
   transition: all 0.1s ease-in;
