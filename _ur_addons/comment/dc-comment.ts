@@ -63,11 +63,11 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-/// TYPE DEFINITIONS //////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
 const PR = 'dc-comments';
 
+/// TYPE DEFINITIONS //////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ///
 type TUserID = string;
 type TUserName = string;
@@ -76,22 +76,26 @@ type TUserObject = {
   name: TUserName;
 };
 
-type CType = 'cmt' | 'tellmemore' | 'source';
+type CType = 'cmt' | 'tellmemore' | 'source' | 'demo';
+type CFormat = 'text' | 'dropdown' | 'checkbox' | 'radio' | 'stacked';
 type TCommentID = string;
-type TCommentPrompt = {
-  prompt: string;
-  help: string;
-  feedback: string;
-};
 type TCommentType = {
   id: CType;
   label: string;
   prompts: TCommentPrompt[];
 };
+type TCommentPrompt = {
+  format: CFormat;
+  prompt: string;
+  options?: string[];
+  help: string;
+  feedback: string;
+};
 
+type TCollectionRef = any;
 type TComment = {
-  collection_ref: any;
-  comment_id: any;
+  collection_ref: TCollectionRef; // aka 'cref'
+  comment_id: TCommentID;
   comment_id_parent: any;
   comment_id_previous: any;
   comment_type: string;
@@ -115,6 +119,20 @@ type TLokiData = {
   commenttypes?: TCommentType[];
   comments?: TComment[];
   readby?: TReadByObject[];
+};
+
+type TCommentQueueActions =
+  | TCommentQueueActionRemoveCommentID
+  | TCommentQueueActionRemoveCollectionRef
+  | TCommentQueueActionUpdate;
+type TCommentQueueActionRemoveCommentID = {
+  commentID: TCommentID;
+};
+type TCommentQueueActionRemoveCollectionRef = {
+  collection_ref: TCollectionRef;
+};
+type TCommentQueueActionUpdate = {
+  comment: TComment;
 };
 
 type TUserMap = Map<TUserID, TUserName>;
@@ -144,7 +162,8 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     label: 'Comment', // comment type label
     prompts: [
       {
-        prompt: 'TComment', // prompt label
+        format: 'text',
+        prompt: 'Comment', // prompt label
         help: 'Use this for any general comment.',
         feedback: ''
       }
@@ -278,7 +297,7 @@ function m_DeriveValues() {
   if (DBG) console.log('NEXT', NEXT);
 }
 
-function AddComment(data) {
+function AddComment(data): TComment {
   if (data.cref === undefined)
     throw new Error('Comments must have a collection ref!');
 
@@ -307,19 +326,19 @@ function AddComment(data) {
 
 /**
  * API Call to processes a single update
- * @param {Object} cobj commentObject
+ * @param {Object} cobj TComment
  */
-function UpdateComment(cobj) {
+function UpdateComment(cobj: TComment) {
   m_UpdateComment(cobj);
   m_DeriveValues();
 }
 /**
  * Processes a single update
- * @param {Object} cobj commentObject
+ * @param {Object} cobj TComment
  */
-function m_UpdateComment(cobj) {
+function m_UpdateComment(cobj: TComment) {
   // Fake modify date until we get DB roundtrip
-  cobj.comment_modifytime = new Date();
+  cobj.comment_modifytime = new Date().getTime();
   console.log(
     'REVIEW: UpdateComment...modify time should use loki time???',
     cobj.comment_modifytime
@@ -328,9 +347,9 @@ function m_UpdateComment(cobj) {
 }
 /**
  * API Call to batch updates an array of updated comments
- * @param {Object[]} cobjs cobj[]
+ * @param {Object[]} cobjs TComment[]
  */
-function HandleUpdatedComments(cobjs) {
+function HandleUpdatedComments(cobjs: TComment[]) {
   cobjs.forEach(cobj => m_UpdateComment(cobj));
   m_DeriveValues();
 }
@@ -344,7 +363,7 @@ function HandleUpdatedComments(cobjs) {
  * @returns {(any|Array)} if {comment: cobj} updates the comment
  *                        if {commentID: id} deletes the comment
  */
-function RemoveComment(parms) {
+function RemoveComment(parms): TCommentQueueActions[] {
   const { collection_ref, comment_id, uid, isAdmin } = parms;
   const queuedActions = [];
 
@@ -537,7 +556,7 @@ function RemoveComment(parms) {
  * @returns {(any|Array)} if {comment: cobj} updates the comment
  *                        if {comment_id: id} deletes the comment
  */
-function RemoveAllCommentsForCref(parms) {
+function RemoveAllCommentsForCref(parms): TCommentQueueActions[] {
   const { collection_ref } = parms;
   const queuedActions = [];
   const cids = COMMENTS.forEach(cobj => {
@@ -558,7 +577,7 @@ function RemoveAllCommentsForCref(parms) {
  * @param {string} rootCommentId NOT a comment thread
  * @returns {boolean}
  */
-function m_AllAreMarkedDeleted(rootCommentId) {
+function m_AllAreMarkedDeleted(rootCommentId: TCommentID): boolean {
   const allCommentIdsInThread = [rootCommentId, ...m_GetReplies(rootCommentId)];
   const allCommentsInThread = allCommentIdsInThread.map(cid => COMMENTS.get(cid));
   let allAreMarkedDeleted = true;
@@ -573,37 +592,36 @@ function m_AllAreMarkedDeleted(rootCommentId) {
  * Batch updates an array of removed comment ids
  * @param {number[]} comment_ids
  */
-function HandleRemovedComments(comment_ids) {
+function HandleRemovedComments(comment_ids: TCommentID[]) {
   comment_ids.forEach(comment_id => {
     if (DBG) console.log('...removing', comment_id);
     COMMENTS.delete(comment_id);
   });
-  console.log('...remaining COMMENTS', COMMENTS);
   m_DeriveValues();
 }
 
 /**
  * `uid` can be undefined if user is not logged in
  */
-function MarkCommentRead(cid, uid) {
+function MarkCommentRead(cid: TCommentID, uid: TUserID) {
   // Mark the comment read
   const readby = READBY.get(cid) || [];
   if (!readby.includes(uid)) readby.push(uid);
   READBY.set(cid, readby);
 }
-function MarkCommentUnread(cid, uid) {
+function MarkCommentUnread(cid: TCommentID, uid: TUserID) {
   // Mark the comment NOT read
   const readby = READBY.get(cid) || [];
   const updatedReadby = readby.filter(readByUid => readByUid !== uid);
   READBY.set(cid, updatedReadby);
 }
 
-function IsMarkedRead(cid, uid) {
+function IsMarkedRead(cid: TCommentID, uid: TUserID): boolean {
   const readby = READBY.get(cid) || [];
   return readby.includes(uid);
 }
 
-function IsMarkedDeleted(cid) {
+function IsMarkedDeleted(cid: TCommentID): boolean {
   return COMMENTS.get(cid).comment_isMarkedDeleted;
 }
 
@@ -611,7 +629,7 @@ function IsMarkedDeleted(cid) {
  *  Ignores child threads
  *  @returns {string[]} comment_ids
  */
-function m_GetNexts(cid) {
+function m_GetNexts(cid: TCommentID): TCommentID[] {
   const results = [];
   const nextId = NEXT.get(cid);
   // if there are next comments, then recursively find next reply
@@ -624,7 +642,7 @@ function m_GetNexts(cid) {
  *  @param {string} rootCid root comment id
  *  @returns {string[]} comment_ids
  */
-function m_GetReplies(rootCid) {
+function m_GetReplies(rootCid: TCommentID): TCommentID[] {
   const results = [];
   const replyRootId = REPLY_ROOTS.get(rootCid);
   // if there are replies under the root, then recursively find next replies
@@ -637,7 +655,7 @@ function m_GetReplies(rootCid) {
  * 2. Then adds the next younger sibling
  * Does NOT include the passed cid
  */
-function m_GetRepliesAndNext(cid) {
+function m_GetRepliesAndNext(cid: TCommentID): TCommentID[] {
   const results = [];
 
   // are there "replies"?
@@ -664,7 +682,7 @@ function m_GetRepliesAndNext(cid) {
  * @param {string} cref collection_ref id
  * @returns comment_id[]
  */
-function GetThreadedCommentIds(cref) {
+function GetThreadedCommentIds(cref: TCollectionRef): TCommentID[] {
   const all_comments_ids = [];
 
   // 1. Start with Roots
@@ -682,9 +700,9 @@ if (DBG) console.log('GetThreadedView', GetThreadedCommentIds('2'));
  * [Currently not used]
  * Get all the comments related to a particular collection_ref
  * @param {string} cref collection_ref id
- * @returns {Object[]} commentObject[]
+ * @returns {Object[]} TComment[]
  */
-function GetThreadedCommentData(cref) {
+function GetThreadedCommentData(cref: TCollectionRef): TComment[] {
   const threaded_comments_ids = GetThreadedCommentIds(cref);
   // convert ids to comment objects
   return threaded_comments_ids.map(cid => COMMENTS.get(cid));
@@ -704,11 +722,11 @@ function GetThreadedCommentData(cref) {
 //   return threaded_comments_ids.map(cid => COMMENTS.get(cid));
 // }
 
-function GetReadby(cid) {
+function GetReadby(cid: TCommentID): TUserID[] {
   return READBY.get(cid);
 }
 
-function GetCrefs() {
+function GetCrefs(): TCollectionRef[] {
   return [...ROOTS.keys()];
 }
 
