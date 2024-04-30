@@ -334,6 +334,7 @@ class NCComment extends React.Component {
             <div className="date">{modifytime_string || createtime_string}</div>
           </div>
           <div>
+            <div className="commentId">#{cid}</div>
             <div>{TypeSelector}</div>
             {commentTypes.get(comment_type).prompts.map((type, index) => (
               <div key={index}>
@@ -389,13 +390,13 @@ class NCComment extends React.Component {
             ))}
             {uid && (
               <div className="commentbar">
-                {(((isAllowedToEditOwnComment && !comment.comment_isMarkedDeleted) ||
-                  isAdmin) &&
-                  DeleteBtn) || <div></div>}
+                {!comment.comment_isMarkedDeleted && ReplyBtn}
                 {(isAllowedToEditOwnComment &&
                   !comment.comment_isMarkedDeleted &&
                   EditBtn) || <div></div>}
-                {!comment.comment_isMarkedDeleted && ReplyBtn}
+                {(((isAllowedToEditOwnComment && !comment.comment_isMarkedDeleted) ||
+                  isAdmin) &&
+                  DeleteBtn) || <div></div>}
               </div>
             )}
           </div>

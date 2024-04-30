@@ -25,7 +25,8 @@
   overflow: hidden;
   transition: all 0.1s ease-in;
 }
-#comment-bar:hover h3 {
+#comment-bar:hover h3,
+#comment-panel.expanded h3 {
   width: auto;
   max-width: 120px;
   transition: all 0.1s ease-in;
@@ -227,7 +228,7 @@ svg#comment-icon {
   left: 380px;
   width: 400px;
   height: min-content;
-  min-height: 100px;
+  min-height: 150px;
   max-height: calc(80% - 35px);
   font-size: 14px;
   cursor: move;
@@ -389,6 +390,7 @@ svg#comment-icon {
 
 .commentbar {
   display: flex;
+  flex-direction: row-reverse;
   justify-content: space-between;
 }
 .editbar {

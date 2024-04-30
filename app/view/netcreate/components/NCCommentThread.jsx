@@ -41,11 +41,17 @@ class NCCommentThread extends React.Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      isDisabled: false
+    };
+
     // EVENT HANDLERS
+    this.UpdatePermissions = this.UpdatePermissions.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     // UI HANDLERS
     this.UIOnReply = this.UIOnReply.bind(this);
     this.UIOnClose = this.UIOnClose.bind(this);
+    this.UIOnReferentClick = this.UIOnReferentClick.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -53,10 +59,16 @@ class NCCommentThread extends React.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
   }
 
   componentWillUnmount() {
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
+  }
+
+  UpdatePermissions(data) {
+    this.setState({ isDisabled: data.commentBeingEditedByMe });
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
@@ -94,8 +106,15 @@ class NCCommentThread extends React.Component {
     CMTMGR.CloseCommentCollection(uiref, cref, uid);
   }
 
+  UIOnReferentClick(event, cref) {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenReferent(cref);
+  }
+
   render() {
     const { uiref, cref, uid, x, y } = this.props;
+    const { isDisabled } = this.state;
 
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
@@ -115,7 +134,10 @@ class NCCommentThread extends React.Component {
         >
           <div className="topbar">
             <div className="commentTitle">
-              Comments on {typeLabel} {sourceLabel}
+              Comments on {typeLabel}{' '}
+              <a href="#" onClick={event => this.UIOnReferentClick(event, cref)}>
+                {sourceLabel}
+              </a>
             </div>
             <div className="closeBtn" onClick={this.UIOnClose}>
               X
@@ -125,7 +147,7 @@ class NCCommentThread extends React.Component {
             {commentVObjs.map(cvobj => (
               <NCComment key={cvobj.comment_id} cvobj={cvobj} uid={uid} />
             ))}
-            {uid && (
+            {!isDisabled && uid && (
               <textarea
                 className="add"
                 placeholder="Click to add a Comment..."

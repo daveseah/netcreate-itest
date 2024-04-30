@@ -66,6 +66,7 @@
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
+const PR = 'dc-comments';
 
 /// CORE DATA
 const USERS = new Map(); // Map<uid, name>
@@ -139,7 +140,7 @@ function m_LoadReadBy(readby) {
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Init() {
-  console.log('dc-comments Init');
+  if (DBG) console.log(PR, 'Init');
   // Load Defaults
   m_LoadCommentTypes(DEFAULT_CommentTypes);
 }
@@ -152,6 +153,7 @@ function Init() {
  * @param {Object} data.readby
  */
 function LoadDB(data) {
+  if (DBG) console.log(PR, 'LoadDB');
   // Load Data!
   if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
   if (data.users) m_LoadUsers(data.users);

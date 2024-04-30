@@ -88,6 +88,7 @@ import DCCOMMENTS from './dc-comment.ts';
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = true;
+const PR = 'ac-comments';
 
 const COMMENTCOLLECTION = new Map(); // Map<cref, ccol>
 const COMMENTUISTATE = new Map(); // Map<uiref, {cref, isOpen}>
@@ -107,6 +108,7 @@ function Init() {
 }
 
 function LoadDB(data) {
+  if (DBG) console.log(PR, 'LoadDB', data);
   DCCOMMENTS.LoadDB(data);
 }
 
@@ -157,7 +159,7 @@ function CloseCommentCollection(uiref, cref, uid) {
 function MarkRead(cref, uid) {
   // Mark Read
   const commentVObjs = COMMENTVOBJS.get(cref);
-  commentVObjs.forEach(c => DCCOMMENTS.MarkCommentRead(c.comment_id, uid));
+  commentVObjs.forEach(cvobj => DCCOMMENTS.MarkCommentRead(cvobj.comment_id, uid));
 }
 
 function GetCommentStats(uid) {

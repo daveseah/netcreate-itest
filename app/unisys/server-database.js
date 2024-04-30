@@ -1533,7 +1533,9 @@ DB.WriteDbJSON = function (filePath) {
         if (DBG) console.log(PR, `writing { nodes, edges } to '${filePath}'`);
         let nodes = db.getCollection('nodes').chain().data({ removeMeta: false });
         let edges = db.getCollection('edges').chain().data({ removeMeta: false });
-        let data = { nodes, edges };
+        const comments = db.getCollection('comments').chain().data({ removeMeta: false });
+        const readby = db.getCollection('readby').chain().data({ removeMeta: false });
+        let data = { nodes, edges, comments, readby };
         let json = JSON.stringify(data);
         if (DBG) console.log(PR, `ensuring DIR ${PATH.dirname(filePath)}`);
         FS.ensureDirSync(PATH.dirname(filePath));
