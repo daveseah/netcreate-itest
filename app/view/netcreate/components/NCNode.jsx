@@ -901,7 +901,7 @@ class NCNode extends UNISYS.Component {
                 <button
                   className="edgebutton"
                   onClick={() => this.UIViewEdge(e.id)}
-                  style={{ uBackgroundColor: bgcolor }}
+                  style={{ backgroundColor: bgcolor }}
                 >
                   {id === e.source ? me : sourceNode.label}
                   &nbsp;<span title={e.type}>{ARROW_RIGHT}</span>&nbsp;
