@@ -83,7 +83,16 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-import DCCOMMENTS from './dc-comment.ts';
+import DCCOMMENTS, {
+  TComment,
+  TCollectionRef,
+  TCommentID,
+  TUserID,
+  CType,
+  TCommentType,
+  TCommentTypeMap,
+  TCommentQueueActions
+} from './dc-comment.ts';
 
 const DBG = true;
 const PR = 'ac-comments';
@@ -97,7 +106,7 @@ type TCommentCollection = {
   hasReadComments?: boolean;
 };
 
-type TCommentUIRef = string; // comment button id, e.g. `n32-isTable`
+type TCommentUIRef = string; // comment button id, e.g. `n32-isTable`, not just TCollectionRef
 type TCommentOpenState = {
   cref: TCollectionRef;
   isOpen: boolean;
@@ -120,7 +129,7 @@ type TCommentVisualObject = {
 type TCommentCollectionMap = Map<TCollectionRef, TCommentCollection>;
 type TCommentUIStateMap = Map<TCommentUIRef, TCommentOpenState>;
 type TOpenCommentsMap = Map<TCollectionRef, TCommentUIRef>;
-type TCommentsBeingEditedMap = Map<TCommentId, TCommentId>;
+type TCommentsBeingEditedMap = Map<TCommentID, TCommentID>;
 type TCommentVisualObjectsMap = Map<TCollectionRef, TCommentVisualObject[]>;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -142,6 +151,9 @@ function Init() {
   DCCOMMENTS.Init();
 }
 
+/**
+ * @param {any} data JSON data
+ */
 function LoadDB(data) {
   if (DBG) console.log(PR, 'LoadDB', data);
   DCCOMMENTS.LoadDB(data);
@@ -362,9 +374,12 @@ function DeriveThreadedViewObjects(
 
 /**
  * @param {string} cref
- * @param {string} uid -- User ID is needed to determine read/unread status
+ * @param {string} uid -- User ID is used to determine read/unread status
  */
-function GetThreadedViewObjects(cref: TCollectionRef, uid: TUserID) {
+function GetThreadedViewObjects(
+  cref: TCollectionRef,
+  uid: TUserID
+): TCommentVisualObject[] {
   const commentVObjs = COMMENTVOBJS.get(cref);
   return commentVObjs === undefined
     ? DeriveThreadedViewObjects(cref, uid)
@@ -373,18 +388,18 @@ function GetThreadedViewObjects(cref: TCollectionRef, uid: TUserID) {
 
 /**
  * @param {string} cref
- * @param {string} uid -- User ID is needed to determine read/unread status
+ * @param {string} uid -- User ID is used to determine read/unread status
  * @returns {number} Returns the number of comments in a collection
  */
-function GetThreadedViewObjectsCount(cref: TCollectionRef, uid: TUserID) {
+function GetThreadedViewObjectsCount(cref: TCollectionRef, uid: TUserID): number {
   return GetThreadedViewObjects(cref, uid).length;
 }
 
-function GetCOMMENTVOBJS() {
+function GetCOMMENTVOBJS(): TCommentVisualObjectsMap {
   return COMMENTVOBJS;
 }
 
-function GetCommentVObj(cref: TCollectionRef, cid: TCommentID) {
+function GetCommentVObj(cref: TCollectionRef, cid: TCommentID): TCommentVisualObject {
   const thread = COMMENTVOBJS.get(cref);
   const cvobj = thread.find(c => c.comment_id === cid);
   return cvobj;
@@ -399,7 +414,7 @@ function GetCommentVObj(cref: TCollectionRef, cid: TCommentID) {
  * @param {Object} data.commenter_id
  * @returns {Object} commentObject
  */
-function AddComment(data) {
+function AddComment(data): TComment {
   if (data.cref === undefined)
     throw new Error('Comments must have a collection ref!');
 
@@ -439,7 +454,7 @@ function AddComment(data) {
  */
 function UpdateComment(cobj: TComment, uid: TUserID) {
   if (cobj.collection_ref === undefined)
-    throw new Error('UpdateComment cref is undefined', cobj);
+    throw new Error(`UpdateComment cref is undefined ${cobj}`);
 
   DCCOMMENTS.UpdateComment(cobj);
   DeriveThreadedViewObjects(cobj.collection_ref, uid);
@@ -486,7 +501,7 @@ function HandleUpdatedComments(comments: TComment[]) {
  * @param {Object} parms.isAdmin
  * @returns {Object[]} queuedActions
  */
-function RemoveComment(parms): TCommentQueueActions {
+function RemoveComment(parms): TCommentQueueActions[] {
   if (parms.collection_ref === undefined)
     throw new Error('RemoveComment collection_ref is undefined', parms);
   const queuedActions = DCCOMMENTS.RemoveComment(parms);
@@ -502,7 +517,7 @@ function RemoveComment(parms): TCommentQueueActions {
  * @param {Object} parms.collection_ref
  * @param {Object} parms.uid
  */
-function RemoveAllCommentsForCref(parms): TCommentQueueActions {
+function RemoveAllCommentsForCref(parms): TCommentQueueActions[] {
   if (parms.collection_ref === undefined)
     throw new Error('RemoveAllCommentsForCref collection_ref is undefined', parms);
   const queuedActions = DCCOMMENTS.RemoveAllCommentsForCref(parms);

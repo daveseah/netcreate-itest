@@ -69,31 +69,37 @@ const PR = 'dc-comments';
 /// TYPE DEFINITIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ///
-type TUserID = string;
+export type TUserID = string;
 type TUserName = string;
 type TUserObject = {
   id: TUserID;
   name: TUserName;
 };
 
-type CType = 'cmt' | 'tellmemore' | 'source' | 'demo';
-type CFormat = 'text' | 'dropdown' | 'checkbox' | 'radio' | 'stacked';
-type TCommentID = string;
-type TCommentType = {
+export type CType = 'cmt' | 'tellmemore' | 'source' | 'demo';
+type CPromptFormat =
+  | 'text'
+  | 'dropdown'
+  | 'checkbox'
+  | 'radio'
+  | 'likert'
+  | 'discrete-slider';
+export type TCommentID = string;
+export type TCommentType = {
   id: CType;
   label: string;
   prompts: TCommentPrompt[];
 };
 type TCommentPrompt = {
-  format: CFormat;
+  format: CPromptFormat;
   prompt: string;
   options?: string[];
   help: string;
   feedback: string;
 };
 
-type TCollectionRef = any;
-type TComment = {
+export type TCollectionRef = any;
+export type TComment = {
   collection_ref: TCollectionRef; // aka 'cref'
   comment_id: TCommentID;
   comment_id_parent: any;
@@ -121,22 +127,22 @@ type TLokiData = {
   readby?: TReadByObject[];
 };
 
-type TCommentQueueActions =
-  | TCommentQueueActionRemoveCommentID
-  | TCommentQueueActionRemoveCollectionRef
-  | TCommentQueueActionUpdate;
-type TCommentQueueActionRemoveCommentID = {
+export type TCommentQueueActions =
+  | TCommentQueueAction_RemoveCommentID
+  | TCommentQueueAction_RemoveCollectionRef
+  | TCommentQueueAction_Update;
+type TCommentQueueAction_RemoveCommentID = {
   commentID: TCommentID;
 };
-type TCommentQueueActionRemoveCollectionRef = {
+type TCommentQueueAction_RemoveCollectionRef = {
   collection_ref: TCollectionRef;
 };
-type TCommentQueueActionUpdate = {
+type TCommentQueueAction_Update = {
   comment: TComment;
 };
 
 type TUserMap = Map<TUserID, TUserName>;
-type TCommentTypeMap = Map<CType, TCommentType>;
+export type TCommentTypeMap = Map<CType, TCommentType>;
 type TCommentMap = Map<TCommentID, TComment>;
 type TReadByMap = Map<TCommentID, TUserID[]>;
 
