@@ -241,17 +241,17 @@ class NCNode extends UNISYS.Component {
   SetPermissions(data) {
     UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
       // someone else might be editing a template or importing or editing node or edge
-    const { id } = this.state;
-    const nodeIsLocked = data.lockedNodes.includes(id);
-    this.setState(
-      {
-        uIsLockedByDB: nodeIsLocked,
-        uIsLockedByTemplate: data.templateBeingEdited,
+      const { id } = this.state;
+      const nodeIsLocked = data.lockedNodes.includes(id);
+      this.setState(
+        {
+          uIsLockedByDB: nodeIsLocked,
+          uIsLockedByTemplate: data.templateBeingEdited,
           uIsLockedByImport: data.importActive,
           uIsLockedByComment: data.commentBeingEditedByMe
-      },
-      () => this.UpdatePermissions()
-    );
+        },
+        () => this.UpdatePermissions()
+      );
     });
   }
   UpdatePermissions() {
@@ -901,7 +901,7 @@ class NCNode extends UNISYS.Component {
                 <button
                   className="edgebutton"
                   onClick={() => this.UIViewEdge(e.id)}
-                  style={{ uBackgroundColor: bgcolor }}
+                  style={{ backgroundColor: bgcolor }}
                 >
                   {id === e.source ? me : sourceNode.label}
                   &nbsp;<span title={e.type}>{ARROW_RIGHT}</span>&nbsp;
