@@ -232,7 +232,7 @@ svg#comment-icon {
   max-height: calc(80% - 35px);
   font-size: 14px;
   cursor: move;
-  z-index: 100;
+  z-index: 2500;
   /* end floating */
 }
 .commentThread textarea.add {

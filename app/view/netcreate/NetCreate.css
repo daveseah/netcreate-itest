@@ -1,3 +1,26 @@
+/* Z-Index
+
+      5000  NCDialog
+      3000  nc-savelert
+      2010  NCDialog .dialogWindow
+      2001  NCDialog .screen ==========
+      2000  comment-bar
+      1030  bootstrap .fixed-top
+       100  commentThread
+        15  NCAutoSuggest .matchlist
+        15  NCNode .ncedge
+        10  NCNode .nccomponent
+         1  NCNode .screen ============
+         1  ToolTip .modal, .tooltiptextabove, .tooltiptext
+         1  nc-navbar
+         0  NetCreate
+*/
+
+/* override bootstrap */
+nav.fixed-top {
+  z-index: inherit;
+}
+
 /* Base App: NetCrate.jsx */
 .nc-base {
   display: flex;
@@ -27,7 +50,7 @@
   height: 38px;
   display: flex;
   flex-flow: row-reverse;
-  z-index: 2000;
+  z-index: 1;
 }
 /* Bootstrap override */
 .nav-item {
