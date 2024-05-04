@@ -63,7 +63,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-const DBG = true;
+const DBG = false;
 const PR = 'dc-comments';
 
 /// TYPE DEFINITIONS //////////////////////////////////////////////////////////
@@ -164,6 +164,58 @@ const NEXT: Map<TCommentID, TCommentID> = new Map(); // Map<comment_id_previous,
 
 const DEFAULT_CommentTypes: Array<TCommentType> = [
   {
+    id: 'demo',
+    label: 'Demo',
+    prompts: [
+      {
+        format: 'text',
+        prompt: 'Comment', // prompt label
+        help: 'Use this for any general comment.',
+        feedback: 'Just enter text'
+      },
+      {
+        format: 'dropdown',
+        prompt: 'How often did you use "Dropdown"', // prompt label
+        options: ['🥲 No', '🤔 A little', '😀 A lot'],
+        help: 'Select one.',
+        feedback: 'Single selection via dropdown menu'
+      },
+      {
+        format: 'checkbox',
+        prompt: 'What types of fruit did you "Checkbox"?', // prompt label
+        options: ['Apple Pie', 'Orange, Lime', 'Banana'],
+        help: 'Select as many as you want.',
+        feedback: 'Supports multiple selections'
+      },
+      {
+        format: 'radio',
+        prompt: 'What do you think "Radio"?', // prompt label
+        options: [
+          'It makes sense',
+          'I disagree',
+          "I don't know",
+          'Handle, comma, please'
+        ],
+        help: 'Select only one.',
+        feedback: 'Mutually exclusive single selections'
+      },
+      {
+        format: 'likert',
+        prompt: 'How did you like it "likert"?', // prompt label
+        options: ['💙', '💚', '💛', '🧡', '🩷'],
+        help: 'Select one of a series listed horizontally',
+        feedback: 'Select with a single click.  Supports emojis.'
+      },
+      {
+        format: 'discrete-slider',
+        prompt: 'Star Rating "discrete-slider"?', // prompt label
+        options: ['★', '★', '★', '★', '★'],
+        help: 'Select one of a series stacked horizontally',
+        feedback: 'Select with a single click.  Supports emojis.'
+      }
+    ]
+  },
+  {
     id: 'cmt',
     label: 'Comment', // comment type label
     prompts: [
@@ -180,6 +232,7 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     label: 'Tell me more', // comment type label
     prompts: [
       {
+        format: 'text',
         prompt: 'Please tell me more', // prompt label
         help: 'Can you tell me more about ... ',
         feedback: ''
@@ -191,11 +244,13 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     label: 'Source', // comment type label
     prompts: [
       {
+        format: 'text',
         prompt: 'Is this well sourced?', // prompt label
         help: 'Yes/No',
         feedback: ''
       },
       {
+        format: 'text',
         prompt: 'Changes', // prompt label
         help: 'What about the sourcing could be improved?',
         feedback: ''

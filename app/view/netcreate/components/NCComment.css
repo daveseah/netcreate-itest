@@ -316,6 +316,9 @@ svg#comment-icon {
   color: #0008;
   font-size: 0.8em;
 }
+.comment .label {
+  margin-top: 10px;
+}
 .commentThread .comment .help {
   /* override nccomponent */
   font-style: italic; /* emulate nccomponent */
@@ -334,12 +337,13 @@ svg#comment-icon {
 }
 .comment .feedback,
 .comment .error {
-  opacity: 0.8;
+  opacity: 0.7;
   font-size: 12px;
   line-height: 14px;
 }
 .comment .feedback {
-  color: #0007; /* emulate nccomponent help */
+  color: #0008; /* emulate nccomponent help */
+  font-style: italic;
 }
 .comment .error {
   color: var(--comment-status-font-color);
@@ -454,15 +458,55 @@ svg#comment-icon {
   background-color: #fff8;
   margin-bottom: 5px;
 }
-/* emulate nccomponent */
-.comment textarea {
+/* emulate nccomponent and override */
+.comment div textarea {
   width: 100%;
   border-radius: 2px;
   border-color: #0006;
   border-width: 1px;
   border-style: solid;
   background-color: #fff8;
-  margin-bottom: 5px;
+  margin: 0; /* override nccomponent */
   padding: 0 5px;
   resize: none;
+}
+
+.comment label {
+  display: block;
+  margin-right: 1rem;
+  margin-bottom: 0;
+}
+.comment label input {
+  display: inline;
+  width: fit-content;
+  margin-right: 0.25rem;
+}
+
+/* prompt format */
+.comment .prompt input[type='checkbox'] {
+  opacity: 1;
+}
+.comment .prompt input[type='checkbox'].readonly {
+  opacity: 0.5;
+}
+.comment .prompt button {
+  border: none;
+  margin-left: 0; /* override nccomponent */
+}
+.comment .prompt button:disabled {
+}
+.comment .prompt button:disabled:hover {
+  background-color: #0003;
+}
+.comment .prompt button:hover {
+  background-color: #fff8;
+}
+.comment .prompt button.selected {
+  background-color: #fff;
+  color: #000;
+  border: 1px solid;
+  border-color: var(--comment-status-font-color);
+}
+.comment .prompt button.notselected {
+  opacity: 0.5;
 }
