@@ -78,7 +78,7 @@ class NCCommentPrompt extends React.Component {
    * @returns {string[]}
    */
   SplitCheckboxCommentText(commenterTextString) {
-    if (commenterTextString === undefined) return [];
+    if (!commenterTextString) return [];
     return commenterTextString.split(CHECKBOX_DELIMITER);
   }
 
