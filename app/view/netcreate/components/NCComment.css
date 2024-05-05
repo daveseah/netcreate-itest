@@ -493,11 +493,18 @@ svg#comment-icon {
   border: none;
   margin-left: 0; /* override nccomponent */
 }
-.comment .prompt button:disabled {
-  cursor: default; /* override nccomponent */
+.comment .prompt button:hover:disabled.notselected {
+  background-color: inherit;
+  border: none;
 }
 .comment .prompt button:hover {
-  background-color: #fff8;
+  background-color: #fff9;
+  opacity: 0.8;
+  border: 1px solid;
+  border-color: var(--comment-status-font-color);
+}
+.comment .prompt button:disabled {
+  cursor: default; /* override nccomponent */
 }
 .comment .prompt button.selected {
   background-color: #fff;
