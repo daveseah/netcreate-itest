@@ -38,6 +38,7 @@
       cvobj={cvobj}
       viewMode={uViewMode}
       onChange={this.UIOnInputUpdate}
+      errorMessage={comment_error}
     />
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
@@ -130,10 +131,10 @@ class NCCommentPrompt extends React.Component {
   }
 
   RenderEditMode() {
-    const { commentType, comment, cvobj, viewMode, onChange } = this.props;
+    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
+      this.props;
     const commentTypes = CMTMGR.GetCommentTypes();
     const commenterText = comment.commenter_text;
-    const comment_error = 'placeholder';
 
     let promptsJSX = [];
     commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
@@ -258,7 +259,7 @@ class NCCommentPrompt extends React.Component {
           <div className="help">{prompt.help}</div>
           {inputJSX}
           <div className="feedback">{prompt.feedback}</div>
-          <div className="error">{comment_error}</div>
+          <div className="error">{errorMessage}</div>
           <hr />
         </div>
       );
@@ -268,11 +269,11 @@ class NCCommentPrompt extends React.Component {
   }
 
   RenderViewMode() {
-    const { commentType, comment, cvobj, viewMode, onChange } = this.props;
+    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
+      this.props;
     const commentTypes = CMTMGR.GetCommentTypes();
     const commenterText = comment.commenter_text;
 
-    const comment_error = 'placeholder';
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
     let promptsJSX = [];
@@ -367,7 +368,7 @@ class NCCommentPrompt extends React.Component {
           <div className="help">{prompt.help}</div>
           {displayJSX}
           <div className="feedback">{prompt.feedback}</div>
-          <div className="error">{comment_error}</div>
+          <div className="error">{errorMessage}</div>
           <hr />
         </div>
       );

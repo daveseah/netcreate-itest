@@ -347,6 +347,7 @@ class NCComment extends React.Component {
               cvobj={cvobj}
               viewMode={NCUI.VIEWMODE.EDIT}
               onChange={this.UIOnInputUpdate}
+              errorMessage={comment_error}
             />
             <div className="editbar">
               {CancelBtn}
@@ -375,6 +376,7 @@ class NCComment extends React.Component {
               cvobj={cvobj}
               viewMode={NCUI.VIEWMODE.VIEW}
               onChange={this.UIOnInputUpdate}
+              errorMessage={comment_error}
             />
             {uid && (
               <div className="commentbar">
