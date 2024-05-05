@@ -61,6 +61,7 @@ class NCCommentPrompt extends React.Component {
     this.state = {};
 
     // DATA PROCESSORS
+    this.IsEmpty = this.IsEmpty.bind(this);
     this.SplitCheckboxCommentText = this.SplitCheckboxCommentText.bind(this);
     this.SelectedIndex2CommentText = this.SelectedIndex2CommentText.bind(this);
 
@@ -72,6 +73,9 @@ class NCCommentPrompt extends React.Component {
     this.UIOnCheck = this.UIOnCheck.bind(this);
   }
 
+  IsEmpty(commentText) {
+    return commentText === undefined || commentText === null || commentText === '';
+  }
   /**
    * Converts "Apple Pie\nApple Fritter" into ["Apple Pie", "Apple Fritter"]
    * @param {string} commenterTextString newline delimited string, e.g. "Apple Pie\nApple Fritter"
@@ -281,7 +285,7 @@ class NCCommentPrompt extends React.Component {
           displayJSX = (
             <div className="commenttext">
               {!comment.comment_isMarkedDeleted && commenterText[promptIndex]}
-              {commenterText[promptIndex] === undefined && NOTHING_SELECTED}
+              {this.IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
             </div>
           );
           break;
