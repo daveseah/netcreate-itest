@@ -4,7 +4,7 @@
 
   In edit mode, displays input widgets for entering prompts.
   In view mode, displays static comment prompt.
-  A comment can contain one ore more comment prompts.
+  A comment can contain one or more comment prompts.
   Each prompt can use a different prompt format.
 
   PROMPT FORMATS:
@@ -51,7 +51,6 @@ const CMTMGR = require('../comment-mgr');
 const DBG = false;
 const PR = 'NCCommentPrompt';
 
-const OPTION_DELIMITER = '::::';
 const CHECKBOX_DELIMITER = /\n/;
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
@@ -62,8 +61,8 @@ class NCCommentPrompt extends React.Component {
     this.state = {};
 
     // DATA PROCESSORS
-    this.SplitCheckboxText = this.SplitCheckboxText.bind(this);
-    this.Stacked2Text = this.Stacked2Text.bind(this);
+    this.SplitCheckboxCommentText = this.SplitCheckboxCommentText.bind(this);
+    this.SelectedIndex2CommentText = this.SelectedIndex2CommentText.bind(this);
 
     // RENDERERS
     this.RenderEditMode = this.RenderEditMode.bind(this);
@@ -71,7 +70,6 @@ class NCCommentPrompt extends React.Component {
 
     // UI HANDLERS
     this.UIOnCheck = this.UIOnCheck.bind(this);
-    // this.UIOnRating = this.UIOnRating.bind(this);
   }
 
   /**
@@ -79,29 +77,26 @@ class NCCommentPrompt extends React.Component {
    * @param {string} commenterTextString newline delimited string, e.g. "Apple Pie\nApple Fritter"
    * @returns {string[]}
    */
-  SplitCheckboxText(commenterTextString) {
+  SplitCheckboxCommentText(commenterTextString) {
     if (commenterTextString === undefined) return [];
     return commenterTextString.split(CHECKBOX_DELIMITER);
   }
 
   /**
-   * Converts a selection index into a stacked discrete slider string,
-   * e.g. 2 becomes `★★★`
+   * Converts a selection index into a stacked discrete slider string
+   * to save as comment text, e.g. 2 becomes `★★★`
    * Each option can have a different value
    * @param {number} index the selected item index (0-based)
    * @param {string[]} options e.g.  ['💙', '💚', '💛', '🧡', '🩷']
    * @returns {string} e.g. 2 returns '💙💚💛'
    */
-  Stacked2Text(index, options) {
-    let result = '';
-    for (let i = 0; i < options.length; i++) {
-      if (i <= index) result += options[i];
-    }
-    return result;
+  SelectedIndex2CommentText(index, options) {
+    return options.map((o, i) => (i <= index ? o : '')).join('');
   }
 
   /**
-   * Combines all checkbox items into a single string
+   * Triggers onChange handler with derived data
+   * Combines all checkbox items into a single newline-delimited string
    * e.g. "Apple\nBanana"
    * @param {*} promptIndex
    * @param {*} optionIndex
@@ -111,7 +106,7 @@ class NCCommentPrompt extends React.Component {
   UIOnCheck(promptIndex, optionIndex, options, event) {
     const { comment, onChange } = this.props;
     // e.g. selectedCheckboxes =  ["Apple Pie", "Apple Fritter"]
-    const selectedCheckboxes = this.SplitCheckboxText(
+    const selectedCheckboxes = this.SplitCheckboxCommentText(
       comment.commenter_text[promptIndex]
     );
     let items = [];
@@ -165,7 +160,7 @@ class NCCommentPrompt extends React.Component {
           break;
         case 'checkbox': {
           // converts commment text into ["Apple", "Banana"]
-          const selectedCheckboxes = this.SplitCheckboxText(
+          const selectedCheckboxes = this.SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           inputJSX = (
@@ -235,7 +230,10 @@ class NCCommentPrompt extends React.Component {
               {prompt.options.map((option, index) => (
                 <button
                   key={index}
-                  value={[index, this.Stacked2Text(index, prompt.options)]} // {option}
+                  value={[
+                    index,
+                    this.SelectedIndex2CommentText(index, prompt.options)
+                  ]}
                   className={
                     String(index) <= commenterText[promptIndex]
                       ? 'selected'
@@ -287,7 +285,7 @@ class NCCommentPrompt extends React.Component {
           break;
         case 'checkbox': {
           // converts commment text into ["Apple", "Banana"]
-          const selectedCheckboxes = this.SplitCheckboxText(
+          const selectedCheckboxes = this.SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           displayJSX = (
