@@ -705,7 +705,7 @@ class EdgeTable extends UNISYS.Component {
                   {edgeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
                 </Button>
               </th>
-              <th>
+              <th style={{ zIndex: 1 }}>
                 <div
                   className="comment-icon-inline comment-intable"
                   onClick={() => this.setSortKey('commentbtn')}
@@ -746,7 +746,7 @@ class EdgeTable extends UNISYS.Component {
                     edge.filteredTransparency > 0.5 ? 1 : edge.filteredTransparency,
                   border:
                     selectedEdgeId === edge.id
-                      ? `2px solid ${selectedEdgeColor}`
+                      ? `3px solid ${selectedEdgeColor}`
                       : 'none'
                 }}
               >

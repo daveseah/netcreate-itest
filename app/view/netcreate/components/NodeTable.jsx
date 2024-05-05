@@ -613,7 +613,7 @@ class NodeTable extends UNISYS.Component {
                   {nodeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
                 </Button>
               </th>
-              <th>
+              <th style={{ zIndex: 1 }}>
                 <div
                   className="comment-icon-inline comment-intable"
                   onClick={() => this.setSortKey('commentbtn')}
@@ -643,10 +643,10 @@ class NodeTable extends UNISYS.Component {
                   opacity: node.filteredTransparency,
                   border:
                     (hilitedNodeId === node.id
-                      ? `2px solid ${hilitedNodeColor}`
+                      ? `3px solid ${hilitedNodeColor}`
                       : false) ||
                     (selectedNodeId === node.id
-                      ? `2px solid ${selectedNodeColor}`
+                      ? `3px solid ${selectedNodeColor}`
                       : 'none')
                 }}
                 onMouseOver={() => this.onHighlightRow(node.id)}
