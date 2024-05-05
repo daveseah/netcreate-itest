@@ -269,6 +269,7 @@ class NCCommentPrompt extends React.Component {
     const commenterText = comment.commenter_text;
 
     const comment_error = 'placeholder';
+    const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
     let promptsJSX = [];
     commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
@@ -280,6 +281,7 @@ class NCCommentPrompt extends React.Component {
           displayJSX = (
             <div className="commenttext">
               {!comment.comment_isMarkedDeleted && commenterText[promptIndex]}
+              {commenterText[promptIndex] === undefined && NOTHING_SELECTED}
             </div>
           );
           break;
@@ -309,7 +311,6 @@ class NCCommentPrompt extends React.Component {
           break;
         }
         case 'likert':
-          if (commenterText[promptIndex] === undefined) break;
           displayJSX = (
             <div className="prompt">
               {prompt.options.map((option, index) => (
@@ -328,7 +329,6 @@ class NCCommentPrompt extends React.Component {
           );
           break;
         case 'discrete-slider':
-          if (commenterText[promptIndex] === undefined) break;
           displayJSX = (
             <div className="prompt">
               {prompt.options.map((option, index) => (

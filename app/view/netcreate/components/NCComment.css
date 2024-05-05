@@ -494,9 +494,7 @@ svg#comment-icon {
   margin-left: 0; /* override nccomponent */
 }
 .comment .prompt button:disabled {
-}
-.comment .prompt button:disabled:hover {
-  background-color: #0003;
+  cursor: default; /* override nccomponent */
 }
 .comment .prompt button:hover {
   background-color: #fff8;
