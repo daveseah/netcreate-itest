@@ -145,14 +145,14 @@ class NCCommentPrompt extends React.Component {
             <textarea
               autoFocus
               onChange={event => onChange(promptIndex, event)}
-              value={commenterText[promptIndex]}
+              value={commenterText[promptIndex] || ''}
             />
           );
           break;
         case 'dropdown':
           inputJSX = (
             <select
-              value={commenterText[promptIndex]}
+              value={commenterText[promptIndex] || ''}
               onChange={event => onChange(promptIndex, event)}
             >
               {prompt.options.map((option, index) => (
