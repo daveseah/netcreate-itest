@@ -35,10 +35,12 @@ class NCSearch extends UNISYS.Component {
 
     this.state = {
       isLoggedIn: false,
+      uIsLockedByComment: false,
       value: ''
     }; // initialized on componentDidMount and clearSelection
 
     this.UpdateSession = this.UpdateSession.bind(this);
+    this.SetPermissions = this.SetPermissions.bind(this);
     this.UIOnChange = this.UIOnChange.bind(this);
     this.UIOnSelect = this.UIOnSelect.bind(this);
     this.UINewNode = this.UINewNode.bind(this);
@@ -48,10 +50,12 @@ class NCSearch extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('SESSION', this.UpdateSession);
+    UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
   }
 
   componentWillUnmount() {
     UDATA.AppStateChangeOff('SESSION', this.UpdateSession);
+    UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.SetPermissions);
   }
 
   /**
@@ -67,6 +71,13 @@ class NCSearch extends UNISYS.Component {
     this.setState({ isLoggedIn: decoded.isValid });
   }
 
+  SetPermissions(data) {
+    UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
+      this.setState({
+        uIsLockedByComment: data.commentBeingEditedByMe
+      });
+    });
+  }
   /**
    * The callback function (cb) is used to restore the selection point
    * otherwise the `value` state update will leave the cursor at the end of the field.
@@ -112,8 +123,8 @@ class NCSearch extends UNISYS.Component {
   /// MAIN RENDER
   ///
   render() {
-    const { value, isLoggedIn } = this.state;
-    const newNodeBtnHidden = !isLoggedIn;
+    const { value, isLoggedIn, uIsLockedByComment } = this.state;
+    const newNodeBtnHidden = !isLoggedIn || uIsLockedByComment;
     const newNodeBtnDisabled = value === '';
     const key = 'search'; // used for search/source/target, placeholder for search
     return (
