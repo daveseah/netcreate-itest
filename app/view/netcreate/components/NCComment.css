@@ -4,6 +4,7 @@
   --comment-bg-new: #d84a00;
   --comment-status-font-color: #d84a0088;
   --comment-system-font-color: #0003;
+  --disabled-opacity: 0.5;
 }
 
 /* Comment Bar ------------------------------------------------------------- */
@@ -264,6 +265,10 @@ svg#comment-icon {
   text-transform: uppercase;
   font-size: 0.9em;
 }
+.commentThread button:disabled {
+  cursor: default;
+  opacity: var(--disabled-opacity);
+}
 
 /* Comment */
 .comment {
@@ -505,6 +510,7 @@ svg#comment-icon {
 }
 .comment .prompt button:disabled {
   cursor: default; /* override nccomponent */
+  opacity: var(--disabled-opacity);
 }
 .comment .prompt button.selected {
   background-color: #fff;
