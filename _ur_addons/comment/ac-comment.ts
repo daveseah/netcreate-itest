@@ -432,11 +432,6 @@ function AddComment(data: {
   );
   COMMENTVOBJS.set(data.cref, commentVObjs);
 
-  // Mark it Open
-  let ccol = GetCommentCollection(data.cref);
-  ccol.isOpen = true;
-  COMMENTCOLLECTION.set(data.cref, ccol);
-
   return comment;
 }
 
