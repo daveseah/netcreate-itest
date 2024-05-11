@@ -13,9 +13,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
-const { EDITORTYPE } = require('system/util/enum');
 const SETTINGS = require('settings');
-const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
 const NCCommentPrompt = require('./NCCommentPrompt');
 
@@ -61,12 +59,7 @@ class NCComment extends React.Component {
 
   componentWillUnmount() {
     const { cid, uIsBeingEdited } = this.state;
-    if (uIsBeingEdited) {
-      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-      });
-    }
+    if (uIsBeingEdited) CMTMGR.UnlockComment(cid);
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
@@ -104,7 +97,7 @@ class NCComment extends React.Component {
       // Messaging
       comment_error,
       // UI State
-      uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
+      uViewMode: cvobj.isBeingEdited ? CMTMGR.VIEWMODE.EDIT : CMTMGR.VIEWMODE.VIEW,
       uIsSelected: cvobj.isSelected,
       uIsBeingEdited: cvobj.isBeingEdited,
       uIsEditable: cvobj.isEditable,
@@ -112,27 +105,17 @@ class NCComment extends React.Component {
     });
 
     // Lock edit upon creation of a new comment or a new reply
-    if (cvobj.isBeingEdited) {
-      UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment.comment_id }).then(
-        () => {
-          UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-          UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
-        }
-      );
-    }
+    if (cvobj.isBeingEdited) CMTMGR.LockComment(comment.comment_id);
   }
 
   UIOnEdit(event) {
     const { cid } = this.state;
     const uViewMode =
-      this.state.uViewMode === NCUI.VIEWMODE.EDIT
-        ? NCUI.VIEWMODE.VIEW
-        : NCUI.VIEWMODE.EDIT;
+      this.state.uViewMode === CMTMGR.VIEWMODE.EDIT
+        ? CMTMGR.VIEWMODE.VIEW
+        : CMTMGR.VIEWMODE.EDIT;
     this.setState({ uViewMode });
-    UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
-      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
-    });
+    CMTMGR.LockComment(cid);
   }
 
   UIOnSave(event) {
@@ -145,11 +128,8 @@ class NCComment extends React.Component {
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
 
-    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-    });
-    this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
+    CMTMGR.UnlockComment(cid);
+    this.setState({ uViewMode: CMTMGR.VIEWMODE.VIEW });
   }
 
   UIOnReply(event) {
@@ -195,12 +175,7 @@ class NCComment extends React.Component {
       if (t !== '') savedCommentIsEmpty = false;
     });
 
-    const cb = () => {
-      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-      });
-    };
+    const cb = () => CMTMGR.UnlockComment(cid);
 
     if (savedCommentIsEmpty) {
       // "Cancel" will always remove the comment if the comment is empty
@@ -220,7 +195,7 @@ class NCComment extends React.Component {
       // revert to previous text if current text is empty
       this.setState({
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
-        uViewMode: NCUI.VIEWMODE.VIEW
+        uViewMode: CMTMGR.VIEWMODE.VIEW
       });
       cb();
     }
@@ -326,7 +301,7 @@ class NCComment extends React.Component {
     // );
 
     let CommentComponent;
-    if (uViewMode === NCUI.VIEWMODE.EDIT) {
+    if (uViewMode === CMTMGR.VIEWMODE.EDIT) {
       // EDIT mode
       CommentComponent = (
         <div
@@ -345,7 +320,7 @@ class NCComment extends React.Component {
               commentType={selected_comment_type}
               comment={comment}
               cvobj={cvobj}
-              viewMode={NCUI.VIEWMODE.EDIT}
+              viewMode={CMTMGR.VIEWMODE.EDIT}
               onChange={this.UIOnInputUpdate}
               errorMessage={comment_error}
             />
@@ -374,7 +349,7 @@ class NCComment extends React.Component {
               commentType={selected_comment_type}
               comment={comment}
               cvobj={cvobj}
-              viewMode={NCUI.VIEWMODE.VIEW}
+              viewMode={CMTMGR.VIEWMODE.VIEW}
               onChange={this.UIOnInputUpdate}
               errorMessage={comment_error}
             />

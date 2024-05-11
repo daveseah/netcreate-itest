@@ -44,7 +44,6 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
-const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -378,7 +377,7 @@ class NCCommentPrompt extends React.Component {
   }
 
   render() {
-    if (this.props.viewMode === NCUI.VIEWMODE.EDIT) {
+    if (this.props.viewMode === CMTMGR.VIEWMODE.EDIT) {
       return this.RenderEditMode();
     } else {
       return this.RenderViewMode();

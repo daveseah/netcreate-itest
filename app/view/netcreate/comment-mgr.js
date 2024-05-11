@@ -13,6 +13,8 @@ const UNISYS = require('unisys/client');
 const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
 const { ARROW_RIGHT } = require('system/util/constant');
+const { EDITORTYPE } = require('system/util/enum');
+const NCUI = require('./nc-ui');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
 
@@ -115,6 +117,10 @@ function m_UpdatePermissions(data) {
 }
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// CONSTANTS
+MOD.VIEWMODE = NCUI.VIEWMODE;
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Collection Reference Generators
@@ -510,6 +516,21 @@ MOD.HandleREADBY_UPDATE = data => {
 
 /// DB CALLS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.LockComment = comment_id => {
+  UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment_id }).then(
+    () => {
+      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
+    }
+  );
+}
+MOD.UnlockComment = comment_id => {
+  UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: comment_id }).then(() => {
+    UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+    UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
+  });
+}
+
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,
