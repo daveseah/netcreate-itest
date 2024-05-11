@@ -163,7 +163,7 @@ function LoadDB(data) {
  *  @param {number} ms
  *  @returns string "MM/DD/YY, HH:MM:SS: PM"
  */
-function GetDateString(ms) {
+function GetDateString(ms): string {
   return new Date(ms).toLocaleString();
 }
 
@@ -179,17 +179,10 @@ function GetCommentCollection(cref: TCollectionRef): TCommentCollection {
   return collection;
 }
 
-/**
- *
- * @param {Object} data
- * @param {Object} data.uiref
- * @param {Object} data.cref
- * @param {Object} data.isOpen
- */
-function UpdateCommentUIState(data) {
-  if (!data.uiref) throw new Error('UpdateCommentUIState "uiref" must be defined!');
-  COMMENTUISTATE.set(data.uiref, { cref: data.cref, isOpen: data.isOpen });
-  OPENCOMMENTS.set(data.cref, data.uiref);
+function UpdateCommentUIState(uiref: TCommentUIRef, openState: TCommentOpenState) {
+  if (!uiref) throw new Error('UpdateCommentUIState "uiref" must be defined!');
+  COMMENTUISTATE.set(uiref, { cref: openState.cref, isOpen: openState.isOpen });
+  OPENCOMMENTS.set(openState.cref, uiref);
 }
 
 function CloseCommentCollection(
@@ -213,7 +206,10 @@ function MarkRead(cref: TCollectionRef, uid: TUserID) {
   commentVObjs.forEach(cvobj => DCCOMMENTS.MarkCommentRead(cvobj.comment_id, uid));
 }
 
-function GetCommentStats(uid: TUserID): { countRepliesToMe; countUnread } {
+function GetCommentStats(uid: TUserID): {
+  countRepliesToMe: number;
+  countUnread: number;
+} {
   let countRepliesToMe = 0;
   let countUnread = 0;
   DeriveAllThreadedViewObjects(uid);
@@ -405,16 +401,13 @@ function GetCommentVObj(cref: TCollectionRef, cid: TCommentID): TCommentVisualOb
   return cvobj;
 }
 
-/**
- * Add a new comment and trigger COMMENTVOBJS state change
- * @param {Object} data
- * @param {Object} data.cref // collection_ref
- * @param {Object} data.comment_id_parent
- * @param {Object} data.comment_id_previous
- * @param {Object} data.commenter_id
- * @returns {Object} commentObject
- */
-function AddComment(data): TComment {
+/// Add a new comment and trigger COMMENTVOBJS state change
+function AddComment(data: {
+  cref: TCollectionRef;
+  comment_id_parent: TCommentID;
+  comment_id_previous: TCommentID;
+  commenter_id: TUserID;
+}): TComment {
   if (data.cref === undefined)
     throw new Error('Comments must have a collection ref!');
 
@@ -484,7 +477,6 @@ function UpdateComment(cobj: TComment, uid: TUserID) {
  * Triggered by COMMENTS_UPDATE network call after someone else on the network removes a comment.
  * Does NOT trigger a database update
  * (Contrast this with UpdateComment above)
- * @param {Object[]} comments cobjs
  */
 function HandleUpdatedComments(comments: TComment[]) {
   DCCOMMENTS.HandleUpdatedComments(comments);
@@ -494,16 +486,15 @@ function HandleUpdatedComments(comments: TComment[]) {
  * Processes the comment removal triggered by the local user, including relinking logic
  * This is called BEFORE the database update.
  * (Contrast this with UpdateRemovedComment below)
- * @param {Object} parms
- * @param {Object} parms.collection_ref
- * @param {Object} parms.comment_id
- * @param {Object} parms.uid
- * @param {Object} parms.isAdmin
- * @returns {Object[]} queuedActions
  */
-function RemoveComment(parms): TCommentQueueActions[] {
+function RemoveComment(parms: {
+  collection_ref: TCollectionRef;
+  comment_id: TCommentID;
+  uid: TUserID;
+  isAdmin: boolean;
+}): TCommentQueueActions[] {
   if (parms.collection_ref === undefined)
-    throw new Error('RemoveComment collection_ref is undefined', parms);
+    throw new Error(`RemoveComment collection_ref is undefined ${parms}`);
   const queuedActions = DCCOMMENTS.RemoveComment(parms);
   DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
   // Add an action to update the collection_ref, which forces an update after removal
@@ -511,15 +502,13 @@ function RemoveComment(parms): TCommentQueueActions[] {
   queuedActions.push({ collection_ref: parms.collection_ref });
   return queuedActions;
 }
-/**
- * Processes comment removal triggered by deletion of a source (e.g. node or edge)
- * @param {Object} parms
- * @param {Object} parms.collection_ref
- * @param {Object} parms.uid
- */
-function RemoveAllCommentsForCref(parms): TCommentQueueActions[] {
+/// Processes comment removal triggered by deletion of a source (e.g. node or edge)
+function RemoveAllCommentsForCref(parms: {
+  collection_ref: TCollectionRef;
+  uid: TUserID;
+}): TCommentQueueActions[] {
   if (parms.collection_ref === undefined)
-    throw new Error('RemoveAllCommentsForCref collection_ref is undefined', parms);
+    throw new Error(`RemoveAllCommentsForCref collection_ref is undefined ${parms}`);
   const queuedActions = DCCOMMENTS.RemoveAllCommentsForCref(parms);
   DeriveThreadedViewObjects(parms.collection_ref, parms.uid);
   // Add an action to update the collection_ref, which forces an update after removal
@@ -535,7 +524,6 @@ function RemoveAllCommentsForCref(parms): TCommentQueueActions[] {
  * should have been handled by UpdateComment
  * Does NOT trigger a database update
  * (Contrast this with RemoveComment above)
- * @param {number[]} comment_ids
  */
 function HandleRemovedComments(comment_ids: TCommentID[]) {
   DCCOMMENTS.HandleRemovedComments(comment_ids);

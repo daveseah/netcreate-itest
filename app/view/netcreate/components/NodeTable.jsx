@@ -523,7 +523,6 @@ class NodeTable extends UNISYS.Component {
       disableEdit,
       isLocked
     } = this.state;
-    console.log('selected node id', selectedNodeId);
     const { tableHeight } = this.props;
     const styles = `thead, tbody { font-size: 0.8em }
                   .table {
