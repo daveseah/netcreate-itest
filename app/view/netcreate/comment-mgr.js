@@ -233,8 +233,8 @@ MOD.GetUserName = uid => {
 MOD.GetCommentTypes = () => {
   return COMMENT.GetCommentTypes();
 };
-MOD.GetCommentType = typeid => {
-  return COMMENT.GetCommentType(typeid);
+MOD.GetCommentType = slug => {
+  return COMMENT.GetCommentType(slug);
 };
 MOD.GetDefaultCommentType = () => {
   return COMMENT.GetDefaultCommentType();
@@ -291,13 +291,11 @@ MOD.GetCommentUIState = uiref => {
 };
 /**
  *
- * @param {Object} data
- * @param {Object} data.uiref
- * @param {Object} data.cref
- * @param {Object} data.isOpen
+ * @param {string} uiref
+ * @param {TCommentOpenState} openState
  */
-MOD.UpdateCommentUIState = data => {
-  COMMENT.UpdateCommentUIState(data);
+MOD.UpdateCommentUIState = (uiref, openState) => {
+  COMMENT.UpdateCommentUIState(uiref, openState);
   m_SetAppStateCommentCollections();
 };
 

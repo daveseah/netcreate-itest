@@ -88,7 +88,7 @@ class NCCommentPrompt extends React.Component {
   }
 
   /**
-   * Converts a selection index into a stacked discrete slider string
+   * Converts a selection 0-based index into a stacked discrete slider string
    * to save as comment text, e.g. 2 becomes `★★★`
    * Each option can have a different value
    * @param {number} index the selected item index (0-based)

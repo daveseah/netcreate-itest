@@ -26,6 +26,7 @@
         commenter_text: string[];
       };
 
+      
     READBY
     ------
     READBY keeps track of which user id has "read" which comment id.
@@ -76,6 +77,9 @@ type TUserObject = {
   name: TUserName;
 };
 
+// REVIEW CType needs to be defined after we figure out how to handle templates
+//        Eventually we will dynamically define them.
+// Comment Template Type Slug
 export type CType = 'cmt' | 'tellmemore' | 'source' | 'demo';
 type CPromptFormat =
   | 'text'
@@ -86,7 +90,7 @@ type CPromptFormat =
   | 'discrete-slider';
 export type TCommentID = string;
 export type TCommentType = {
-  id: CType;
+  slug: CType;
   label: string;
   prompts: TCommentPrompt[];
 };
@@ -162,9 +166,38 @@ const NEXT: Map<TCommentID, TCommentID> = new Map(); // Map<comment_id_previous,
 /// TODO This is temporarily hard-coded until we have a new Template Editor
 /// const DCT = { [key: string]: { label, prompts} }
 
+/** COMMENT TEMPLATE PROMPT TYPES
+    
+    - `text` data is stored as a single string
+    
+    - `dropdown` (menu) -- single-select, single-view
+    
+    - `checkbox` (multi-select) -- multi-select, multi-view
+       data is stored as a single delimited (\n) string so that it is human readable
+       The format is '<optionLabel>\n', e.g.
+          ```
+          Apples\n
+          Banana\n
+          Orange
+          ```
+
+    - `radio` (scale) -- single-select, multi vertical view
+
+    - `likert` -- single-select, multi horizontal view
+
+    - 'discrete-slider' -- single-select, stacked horizontal view
+    
+**/
+export type CPromptFormatOption_TextData = string; // simple string, e.g. "This is my comment."
+export type CPromptFormatOption_DropdownData = string; // selected menu item string, e.g. "A little"
+export type CPromptFormatOption_CheckboxData = string; // selected items <optionLabel>\n, e.g. "Banana\nOrange"
+export type CPromptFormatOption_RadioData = string; // selected item string, e.g. "I agree"
+export type CPromptFormatOption_LikertData = string; // selected item string, e.g. '💚'
+export type CPromptFormatOption_DiscreteSliderData = string; // selected item 0-based index e.g. "2"
+
 const DEFAULT_CommentTypes: Array<TCommentType> = [
   {
-    id: 'demo',
+    slug: 'demo',
     label: 'Demo',
     prompts: [
       {
@@ -216,7 +249,7 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     ]
   },
   {
-    id: 'cmt',
+    slug: 'cmt',
     label: 'Comment', // comment type label
     prompts: [
       {
@@ -228,7 +261,7 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     ]
   },
   {
-    id: 'tellmemore',
+    slug: 'tellmemore',
     label: 'Tell me more', // comment type label
     prompts: [
       {
@@ -240,7 +273,7 @@ const DEFAULT_CommentTypes: Array<TCommentType> = [
     ]
   },
   {
-    id: 'source',
+    slug: 'source',
     label: 'Source', // comment type label
     prompts: [
       {
@@ -265,7 +298,7 @@ function m_LoadUsers(dbUsers: TUserObject[]) {
   dbUsers.forEach(u => USERS.set(u.id, u.name));
 }
 function m_LoadCommentTypes(commentTypes: TCommentType[]) {
-  commentTypes.forEach(t => COMMENTTYPES.set(t.id, t));
+  commentTypes.forEach(t => COMMENTTYPES.set(t.slug, t));
 }
 function m_LoadComments(comments: TComment[]) {
   comments.forEach(c => COMMENTS.set(c.comment_id, c));
@@ -329,7 +362,7 @@ function GetDefaultCommentType(): TCommentType {
   // returns the first comment type object
   if (DEFAULT_CommentTypes.length < 1)
     throw new Error('dc-comments: No comment types defined!');
-  return GetCommentType(DEFAULT_CommentTypes[0].id);
+  return GetCommentType(DEFAULT_CommentTypes[0].slug);
 }
 
 function GetComments(): TCommentMap {

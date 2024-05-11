@@ -532,8 +532,8 @@ function GetUserName(uid: TCommentID): string {
 function GetCommentTypes(): TCommentTypeMap {
   return DCCOMMENTS.GetCommentTypes();
 }
-function GetCommentType(typeid: CType): TCommentType {
-  return DCCOMMENTS.GetCommentType(typeid);
+function GetCommentType(slug: CType): TCommentType {
+  return DCCOMMENTS.GetCommentType(slug);
 }
 function GetDefaultCommentType(): TCommentType {
   return DCCOMMENTS.GetDefaultCommentType();
