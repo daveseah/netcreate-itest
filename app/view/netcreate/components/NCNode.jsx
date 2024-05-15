@@ -502,6 +502,7 @@ class NCNode extends UNISYS.Component {
         });
       }
     );
+    UNISYS.Log('save node', id, label, JSON.stringify(node));
   }
   DeleteNode() {
     const { id, uReplacementNodeId } = this.state;
@@ -548,6 +549,7 @@ class NCNode extends UNISYS.Component {
     const uSelectedTab = event.target.value;
     this.setState({ uSelectedTab });
     if (event.target.value !== TABS.EDGES) UDATA.LocalCall('EDGE_DESELECT');
+    UNISYS.Log('select node tab', uSelectedTab);
   }
 
   /**
@@ -591,7 +593,7 @@ class NCNode extends UNISYS.Component {
   }
 
   UIEnableEditMode() {
-    const { uSelectedTab, label, attributes, provenance } = this.state;
+    const { uSelectedTab, id, label, attributes, provenance } = this.state;
     // If user was on Edges tab while requesting edit (e.g. from Node Table), then
     // switch to Attributes tab first.
     const editableTab = uSelectedTab === TABS.EDGES ? TABS.ATTRIBUTES : uSelectedTab;
@@ -605,10 +607,11 @@ class NCNode extends UNISYS.Component {
       uSelectedTab: editableTab,
       previousState
     });
+    UNISYS.Log('edit node', id, label);
   }
 
   UICancelEditMode() {
-    const { revision, previousState } = this.state;
+    const { id, label, revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved node, delete the node instead
     // Initial Node creation is rev 0, saving it for the first time bumps it to rev 1
@@ -627,6 +630,7 @@ class NCNode extends UNISYS.Component {
       },
       () => this.UIDisableEditMode()
     );
+    UNISYS.Log('cancel edit node', id, label);
   }
 
   UIDisableEditMode() {
