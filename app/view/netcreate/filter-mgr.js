@@ -118,6 +118,7 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('FILTER_DEFINE', data => {
     m_FilterDefine(data);
+    UNISYS.Log('define filter', JSON.stringify(data));
   });
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -125,6 +126,7 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('FILTER_CLEAR', () => {
     m_ClearFilters();
+    UNISYS.Log('clear filters')
   });
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
