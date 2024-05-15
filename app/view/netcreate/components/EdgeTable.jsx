@@ -524,6 +524,7 @@ class EdgeTable extends UNISYS.Component {
       edges,
       sortkey: key
     });
+    UNISYS.Log('sort edge table', key, this.sortDirection);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
