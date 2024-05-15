@@ -364,9 +364,9 @@ class NCCommentPrompt extends React.Component {
             </div>
             {prompt.prompt}
           </div>
-          <div className="help">{prompt.help}</div>
+          {/* <div className="help">{prompt.help}</div> */}
           {displayJSX}
-          <div className="feedback">{prompt.feedback}</div>
+          {/* <div className="feedback">{prompt.feedback}</div> */}
           <div className="error">{errorMessage}</div>
           <hr />
         </div>
