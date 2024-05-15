@@ -182,11 +182,7 @@ class NCCommentBtn extends React.Component {
       y: position.y
     };
     this.setState(updatedState, () => {
-      CMTMGR.UpdateCommentUIState({
-        uiref: commentButtonId,
-        cref,
-        isOpen
-      });
+      CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
     });
   }
 

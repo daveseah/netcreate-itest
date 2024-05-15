@@ -117,7 +117,11 @@ class NCCommentThread extends React.Component {
     const { isDisabled } = this.state;
 
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
-    const CloseBtn = <button onClick={this.UIOnClose}>Close</button>;
+    const CloseBtn = (
+      <button onClick={this.UIOnClose} disabled={isDisabled}>
+        Close
+      </button>
+    );
 
     // HACK: To keep the comment from going off screen:
     const windowHeight = Math.min(screen.height, window.innerHeight); // handle Safari and FireFox differences
@@ -139,9 +143,11 @@ class NCCommentThread extends React.Component {
                 {sourceLabel}
               </a>
             </div>
-            <div className="closeBtn" onClick={this.UIOnClose}>
-              X
-            </div>
+            {!isDisabled && (
+              <div className="closeBtn" onClick={this.UIOnClose}>
+                X
+              </div>
+            )}
           </div>
           <div className="commentScroller">
             {commentVObjs.map(cvobj => (

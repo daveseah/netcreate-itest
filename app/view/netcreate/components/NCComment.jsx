@@ -13,10 +13,9 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
-const { EDITORTYPE } = require('system/util/enum');
-const NCUI = require('../nc-ui');
-const CMTMGR = require('../comment-mgr');
 const SETTINGS = require('settings');
+const CMTMGR = require('../comment-mgr');
+const NCCommentPrompt = require('./NCCommentPrompt');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -60,12 +59,7 @@ class NCComment extends React.Component {
 
   componentWillUnmount() {
     const { cid, uIsBeingEdited } = this.state;
-    if (uIsBeingEdited) {
-      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-      });
-    }
+    if (uIsBeingEdited) CMTMGR.UnlockComment(cid);
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
   }
 
@@ -82,12 +76,13 @@ class NCComment extends React.Component {
     if (!cvobj || !comment) return;
 
     // Error check: verify that comment types exist, if not, fall back gracefully to default type
-    let comment_type = comment.comment_type;
+    let selected_comment_type = comment.comment_type;
     let comment_error = '';
-    if (!CMTMGR.GetCommentType(comment_type)) {
-      const defaultTypeObject = CMTMGR.GetDefaultCommentType();
-      comment_error = `Comment type "${comment_type}" not found: Using "${defaultTypeObject.label}"`;
-      comment_type = defaultTypeObject.id;
+    if (!CMTMGR.GetCommentType(selected_comment_type)) {
+      const defaultCommentTypeObject = CMTMGR.GetDefaultCommentType();
+      comment_error = `Comment type "${selected_comment_type}" not found: Falling back to default  "${defaultCommentTypeObject.label}"`;
+      console.warn(comment_error);
+      selected_comment_type = defaultCommentTypeObject.slug;
     }
 
     this.setState({
@@ -96,14 +91,14 @@ class NCComment extends React.Component {
       cid: comment.comment_id,
       comment_id_parent: comment.comment_id_parent,
       commenter: CMTMGR.GetUserName(comment.commenter_id),
-      comment_type,
+      selected_comment_type,
       commenter_text: [...comment.commenter_text],
       createtime_string: cvobj.createtime_string,
       modifytime_string: cvobj.modifytime_string,
       // Messaging
       comment_error,
       // UI State
-      uViewMode: cvobj.isBeingEdited ? NCUI.VIEWMODE.EDIT : NCUI.VIEWMODE.VIEW,
+      uViewMode: cvobj.isBeingEdited ? CMTMGR.VIEWMODE.EDIT : CMTMGR.VIEWMODE.VIEW,
       uIsSelected: cvobj.isSelected,
       uIsBeingEdited: cvobj.isBeingEdited,
       uIsEditable: cvobj.isEditable,
@@ -111,44 +106,31 @@ class NCComment extends React.Component {
     });
 
     // Lock edit upon creation of a new comment or a new reply
-    if (cvobj.isBeingEdited) {
-      UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment.comment_id }).then(
-        () => {
-          UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-          UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
-        }
-      );
-    }
+    if (cvobj.isBeingEdited) CMTMGR.LockComment(comment.comment_id);
   }
 
   UIOnEdit(event) {
     const { cid } = this.state;
     const uViewMode =
-      this.state.uViewMode === NCUI.VIEWMODE.EDIT
-        ? NCUI.VIEWMODE.VIEW
-        : NCUI.VIEWMODE.EDIT;
+      this.state.uViewMode === CMTMGR.VIEWMODE.EDIT
+        ? CMTMGR.VIEWMODE.VIEW
+        : CMTMGR.VIEWMODE.EDIT;
     this.setState({ uViewMode });
-    UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: cid }).then(() => {
-      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
-    });
+    CMTMGR.LockComment(cid);
   }
 
   UIOnSave(event) {
     const { uid } = this.props;
-    const { cid, comment_type, commenter_text } = this.state;
+    const { cid, selected_comment_type, commenter_text } = this.state;
 
     const comment = CMTMGR.GetComment(this.props.cvobj.comment_id);
-    comment.comment_type = comment_type;
+    comment.comment_type = selected_comment_type;
     comment.commenter_text = [...commenter_text]; // clone, not byref
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
 
-    UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-      UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-    });
-    this.setState({ uViewMode: NCUI.VIEWMODE.VIEW });
+    CMTMGR.UnlockComment(cid);
+    this.setState({ uViewMode: CMTMGR.VIEWMODE.VIEW });
   }
 
   UIOnReply(event) {
@@ -194,12 +176,7 @@ class NCComment extends React.Component {
       if (t !== '') savedCommentIsEmpty = false;
     });
 
-    const cb = () => {
-      UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: cid }).then(() => {
-        UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-        UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
-      });
-    };
+    const cb = () => CMTMGR.UnlockComment(cid);
 
     if (savedCommentIsEmpty) {
       // "Cancel" will always remove the comment if the comment is empty
@@ -219,7 +196,7 @@ class NCComment extends React.Component {
       // revert to previous text if current text is empty
       this.setState({
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
-        uViewMode: NCUI.VIEWMODE.VIEW
+        uViewMode: CMTMGR.VIEWMODE.VIEW
       });
       cb();
     }
@@ -239,7 +216,7 @@ class NCComment extends React.Component {
   }
 
   UIOnSelect(event) {
-    this.setState({ comment_type: event.target.value });
+    this.setState({ selected_comment_type: event.target.value });
   }
 
   UIOnInputUpdate(index, event) {
@@ -255,7 +232,7 @@ class NCComment extends React.Component {
       createtime_string,
       modifytime_string,
       cid,
-      comment_type,
+      selected_comment_type,
       commenter_text,
       comment_error,
       uViewMode,
@@ -264,6 +241,10 @@ class NCComment extends React.Component {
 
     const isAdmin = SETTINGS.IsAdmin();
     const comment = CMTMGR.GetComment(cvobj.comment_id);
+
+    // Only update comment data if we have a valid commenter_text (e.g. from user input)
+    // otherwise we end up clobbering existing comment data
+    if (commenter_text) comment.commenter_text = commenter_text;
     const commentTypes = CMTMGR.GetCommentTypes();
 
     if (!comment) {
@@ -301,7 +282,7 @@ class NCComment extends React.Component {
       </button>
     );
     const TypeSelector = (
-      <select value={comment_type} onChange={this.UIOnSelect}>
+      <select value={selected_comment_type} onChange={this.UIOnSelect}>
         {[...commentTypes.entries()].map(type => {
           return (
             <option key={type[0]} value={type[0]}>
@@ -321,7 +302,7 @@ class NCComment extends React.Component {
     // );
 
     let CommentComponent;
-    if (uViewMode === NCUI.VIEWMODE.EDIT) {
+    if (uViewMode === CMTMGR.VIEWMODE.EDIT) {
       // EDIT mode
       CommentComponent = (
         <div
@@ -336,19 +317,14 @@ class NCComment extends React.Component {
           <div>
             <div className="commentId">#{cid}</div>
             <div>{TypeSelector}</div>
-            {commentTypes.get(comment_type).prompts.map((type, index) => (
-              <div key={index}>
-                <div className="label">{type.prompt}</div>
-                <div className="help">{type.help}</div>
-                <textarea
-                  autoFocus
-                  onChange={event => this.UIOnInputUpdate(index, event)}
-                  value={commenter_text[index]}
-                />
-                <div className="feedback">{type.feedback}</div>
-                <div className="error">{comment_error}</div>
-              </div>
-            ))}
+            <NCCommentPrompt
+              commentType={selected_comment_type}
+              comment={comment}
+              cvobj={cvobj}
+              viewMode={CMTMGR.VIEWMODE.EDIT}
+              onChange={this.UIOnInputUpdate}
+              errorMessage={comment_error}
+            />
             <div className="editbar">
               {CancelBtn}
               {SaveBtn}
@@ -370,24 +346,14 @@ class NCComment extends React.Component {
           </div>
           <div>
             <div className="commentId">#{cid}</div>
-            {commentTypes.get(comment_type).prompts.map((type, index) => (
-              <div key={index} className="comment-item">
-                <div className="label">
-                  <div className="comment-icon-inline">
-                    {!cvobj.isMarkedRead &&
-                      !comment.comment_isMarkedDeleted &&
-                      CMTMGR.COMMENTICON}
-                  </div>
-                  {type.prompt}
-                </div>
-                <div className="help">{type.help}</div>
-                <div className="commenttext">
-                  {!comment.comment_isMarkedDeleted && commenter_text[index]}
-                </div>
-                <div className="feedback">{type.feedback}</div>
-                <div className="error">{comment_error}</div>
-              </div>
-            ))}
+            <NCCommentPrompt
+              commentType={selected_comment_type}
+              comment={comment}
+              cvobj={cvobj}
+              viewMode={CMTMGR.VIEWMODE.VIEW}
+              onChange={this.UIOnInputUpdate}
+              errorMessage={comment_error}
+            />
             {uid && (
               <div className="commentbar">
                 {!comment.comment_isMarkedDeleted && ReplyBtn}
