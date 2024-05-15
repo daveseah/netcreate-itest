@@ -210,6 +210,7 @@ class InfoPanel extends UNISYS.Component {
                 className={classnames({ active: activeTab === '1' })}
                 onClick={() => {
                   this.toggle('1');
+                  UNISYS.Log('toggle graph');
                   this.sendGA('Graph', window.location);
                 }}
               >
@@ -221,6 +222,7 @@ class InfoPanel extends UNISYS.Component {
                 className={classnames({ active: activeTab === '3' })}
                 onClick={() => {
                   this.toggle('3');
+                  UNISYS.Log('toggle nodes table');
                   this.sendGA('Nodes Table', window.location);
                 }}
               >
@@ -232,6 +234,7 @@ class InfoPanel extends UNISYS.Component {
                 className={classnames({ active: activeTab === '4' })}
                 onClick={() => {
                   this.toggle('4');
+                  UNISYS.Log('toggle edges table');
                   this.sendGA('Edges Table', window.location);
                 }}
               >
@@ -243,6 +246,7 @@ class InfoPanel extends UNISYS.Component {
                 className={classnames({ active: activeTab === '6' })}
                 onClick={() => {
                   this.toggle('6');
+                  UNISYS.Log('toggle help');
                   this.sendGA('Help', window.location);
                 }}
               >
