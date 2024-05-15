@@ -79,9 +79,10 @@ class NCComment extends React.Component {
     let selected_comment_type = comment.comment_type;
     let comment_error = '';
     if (!CMTMGR.GetCommentType(selected_comment_type)) {
-      const defaultTypeObject = CMTMGR.GetDefaultCommentType();
-      comment_error = `Comment type "${selected_comment_type}" not found: Using "${defaultTypeObject.label}"`;
-      selected_comment_type = defaultTypeObject.id;
+      const defaultCommentTypeObject = CMTMGR.GetDefaultCommentType();
+      comment_error = `Comment type "${selected_comment_type}" not found: Falling back to default  "${defaultCommentTypeObject.label}"`;
+      console.warn(comment_error);
+      selected_comment_type = defaultCommentTypeObject.slug;
     }
 
     this.setState({
