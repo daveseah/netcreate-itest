@@ -28,7 +28,8 @@ const { EDITORTYPE, BUILTIN_FIELDS_EDGE } = require('system/util/enum');
 const {
   EDGE_NOT_SET_LABEL,
   ARROW_DOWN,
-  ARROW_UPDOWN
+  ARROW_UPDOWN,
+  ARROW_RIGHT
 } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
@@ -99,6 +100,7 @@ class NCEdge extends UNISYS.Component {
     this.SetBackgroundColor = this.SetBackgroundColor.bind(this);
     this.SetSourceTargetNodeColor = this.SetSourceTargetNodeColor.bind(this);
     this.SwapSourceAndTarget = this.SwapSourceAndTarget.bind(this);
+    this.EdgeDisplayName = this.EdgeDisplayName.bind(this);
     // UI MANIPULATION METHODS
     this.EnableEditMode = this.EnableEditMode.bind(this);
     // UI EVENT HANDLERS
@@ -625,6 +627,7 @@ class NCEdge extends UNISYS.Component {
         });
       }
     );
+    UNISYS.Log('save edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
   DeleteEdge() {
     const { id } = this.state;
@@ -682,6 +685,10 @@ class NCEdge extends UNISYS.Component {
       dTargetNodeColor: swappedTargetNodeColor
     });
   }
+  EdgeDisplayName() {
+    const { dSourceNode, dTargetNode } = this.state;
+    return `${dSourceNode.label}${ARROW_RIGHT}${dTargetNode.label}`;
+  }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// UI MANIPULATION METHODS
@@ -690,7 +697,8 @@ class NCEdge extends UNISYS.Component {
    * Save `previousState` so that we can undo/restore data if user cancels
    */
   EnableEditMode() {
-    const { uSelectedTab, sourceId, targetId, attributes, provenance } = this.state;
+    const { uSelectedTab, id, sourceId, targetId, attributes, provenance } =
+      this.state;
     const previousState = {
       sourceId,
       targetId,
@@ -703,6 +711,7 @@ class NCEdge extends UNISYS.Component {
       previousState
     });
     UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'edge_edit' });
+    UNISYS.Log('edit edge', id, this.EdgeDisplayName());
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -723,7 +732,7 @@ class NCEdge extends UNISYS.Component {
   }
 
   UICancelEditMode() {
-    const { revision, previousState } = this.state;
+    const { id, revision, previousState } = this.state;
 
     // if user is cancelling a newly created unsaved edge, delete the edge instead
     if (revision < 1) {
@@ -746,6 +755,7 @@ class NCEdge extends UNISYS.Component {
         this.UIDisableEditMode();
       }
     );
+    UNISYS.Log('cancel edit edge', id, this.EdgeDisplayName());
   }
   UIDisableEditMode() {
     this.UnlockEdge(() => {
