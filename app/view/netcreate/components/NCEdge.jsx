@@ -627,6 +627,7 @@ class NCEdge extends UNISYS.Component {
         });
       }
     );
+    UNISYS.Log('click save edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
   DeleteEdge() {
     const { id } = this.state;
@@ -726,7 +727,9 @@ class NCEdge extends UNISYS.Component {
   ///
   UISelectTab(event) {
     event.stopPropagation();
+    const { id } = this.state;
     this.setState({ uSelectedTab: event.target.value });
+    UNISYS.Log('select edge tab', id, this.EdgeDisplayName(), event.target.value);
   }
 
   UIRequestEditEdge(event) {

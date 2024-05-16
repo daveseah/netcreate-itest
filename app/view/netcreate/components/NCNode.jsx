@@ -502,6 +502,7 @@ class NCNode extends UNISYS.Component {
         });
       }
     );
+    UNISYS.Log('click save node', id, label, JSON.stringify(node));
   }
   DeleteNode() {
     const { id, uReplacementNodeId } = this.state;
