@@ -606,7 +606,14 @@ class NCNode extends UNISYS.Component {
       uSelectedTab: editableTab,
       previousState
     });
-    UNISYS.Log('edit node', id, label);
+
+    const node = {
+      id,
+      label,
+      provenance
+    };
+    Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
+    UNISYS.Log('edit node', id, label, JSON.stringify(node));
   }
 
   UICancelEditMode() {

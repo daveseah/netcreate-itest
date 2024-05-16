@@ -710,7 +710,15 @@ class NCEdge extends UNISYS.Component {
       previousState
     });
     UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'edge_edit' });
-    UNISYS.Log('edit edge', id, this.EdgeDisplayName());
+
+    const edge = {
+      id,
+      source: sourceId,
+      target: targetId,
+      provenance
+    };
+    Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+    UNISYS.Log('edit edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
