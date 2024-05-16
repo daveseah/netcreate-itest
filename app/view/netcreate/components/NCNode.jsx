@@ -546,10 +546,11 @@ class NCNode extends UNISYS.Component {
   /// UI EVENT HANDLERS
 
   UISelectTab(event) {
+    const { id, label } = this.state;
     const uSelectedTab = event.target.value;
     this.setState({ uSelectedTab });
     if (event.target.value !== TABS.EDGES) UDATA.LocalCall('EDGE_DESELECT');
-    UNISYS.Log('select node tab', uSelectedTab);
+    UNISYS.Log('select node tab', id, label, uSelectedTab);
   }
 
   /**
