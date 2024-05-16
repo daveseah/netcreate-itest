@@ -53,12 +53,22 @@ const PR = 'NCCommentPrompt';
 
 const CHECKBOX_DELIMITER = /\n/;
 
+/// HELPERS ///////////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Converts `index` into "prompt-<index>" for use in HTML id attributes
+function m_TextareaId(cref, index) {
+  return `prompt-${cref}-${index}`;
+}
+
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class NCCommentPrompt extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      firstUpdate: true
+    };
 
     // DATA PROCESSORS
     this.IsEmpty = this.IsEmpty.bind(this);
@@ -71,6 +81,31 @@ class NCCommentPrompt extends React.Component {
 
     // UI HANDLERS
     this.UIOnCheck = this.UIOnCheck.bind(this);
+  }
+
+  componentDidUpdate() {
+    const { firstUpdate } = this.state;
+    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
+      this.props;
+    if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
+      const commentTypes = CMTMGR.GetCommentTypes();
+      const commenterText = comment.commenter_text;
+      // find the first empty `text` prompt
+      let foundIndex = -1;
+      commentTypes.get(commentType).prompts.find((prompt, promptIndex) => {
+        if (prompt.format === 'text' && !commenterText[promptIndex]) {
+          foundIndex = promptIndex;
+          return true;
+        }
+      });
+      // set focus to the found element
+      const foundTextArea = document.getElementById(
+        m_TextareaId(comment.collection_ref, foundIndex)
+      );
+      if (foundTextArea) foundTextArea.focus();
+
+      this.setState({ firstUpdate: false });
+    }
   }
 
   IsEmpty(commentText) {
@@ -142,6 +177,7 @@ class NCCommentPrompt extends React.Component {
         case 'text':
           inputJSX = (
             <textarea
+              id={`${m_TextareaId(comment.collection_ref, promptIndex)}`}
               autoFocus
               onChange={event => onChange(promptIndex, event)}
               value={commenterText[promptIndex] || ''}
