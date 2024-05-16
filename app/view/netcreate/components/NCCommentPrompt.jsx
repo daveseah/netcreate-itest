@@ -98,12 +98,11 @@ class NCCommentPrompt extends React.Component {
           return true;
         }
       });
-      // set focus to the found element
+      // set focus to the found empty 'text' prompt
       const foundTextArea = document.getElementById(
         m_TextareaId(comment.collection_ref, foundIndex)
       );
       if (foundTextArea) foundTextArea.focus();
-
       this.setState({ firstUpdate: false });
     }
   }
