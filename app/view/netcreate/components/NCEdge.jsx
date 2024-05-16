@@ -627,7 +627,6 @@ class NCEdge extends UNISYS.Component {
         });
       }
     );
-    UNISYS.Log('save edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
   DeleteEdge() {
     const { id } = this.state;
