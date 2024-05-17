@@ -29,6 +29,12 @@ var DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var UDATA = null;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const TABS = {
+  GRAPH: 'Graph',
+  NODESTABLE: 'Nodes Table',
+  EDGESTABLE: 'Edges Table',
+  MORE: 'Help'
+};
 const defaultTabPanelHeight = 42; // show only tab buttons, no gap
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
@@ -39,7 +45,7 @@ class InfoPanel extends UNISYS.Component {
     super(props);
 
     this.state = {
-      activeTab: '1',
+      activeTab: TABS.GRAPH,
       tabpanelTop: '0',
       draggerMouseOffsetY: '0', // Mouse click position inside dragger
       // Allows user to grab dragger from the middle
@@ -92,29 +98,36 @@ class InfoPanel extends UNISYS.Component {
    */
   toggle(tab) {
     window.event.stopPropagation();
+    let activeTab;
     if (this.state.activeTab !== tab) {
-      this.setState({ activeTab: tab });
-      if (tab === `1` || tab === '6') {
+      activeTab = tab;
+      if (tab === TABS.GRAPH || tab === TABS.MORE) {
         // graph or help
         this.setState({
+          activeTab,
           tabpanelHeight: `${defaultTabPanelHeight}px`, // show only tab buttons
           hideDragger: true
         });
       } else {
         this.setState({
+          activeTab,
           tabpanelHeight: this.state.savedTabpanelHeight,
           hideDragger: false
         });
       }
+      UNISYS.Log(`select tab ${tab}`);
     } else {
       // Second click on currently open tab
       // so select tab 1
-      this.setState({ activeTab: `1` });
+      activeTab = TABS.GRAPH;
       this.setState({
+        activeTab,
         tabpanelHeight: `${defaultTabPanelHeight}px`, // show only tab buttons
         hideDragger: true
       });
+      UNISYS.Log(`deselect tab ${tab}, reverting to ${TABS.GRAPH}`);
     }
+    this.sendGA(tab, window.location);
   }
 
   handleMouseDown(e) {
@@ -207,48 +220,32 @@ class InfoPanel extends UNISYS.Component {
           <Nav tabs className="">
             <NavItem>
               <NavLink
-                className={classnames({ active: activeTab === '1' })}
-                onClick={() => {
-                  this.toggle('1');
-                  UNISYS.Log('toggle graph');
-                  this.sendGA('Graph', window.location);
-                }}
+                className={classnames({ active: activeTab === TABS.GRAPH })}
+                onClick={() => this.toggle(TABS.GRAPH)}
               >
                 Graph
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
-                className={classnames({ active: activeTab === '3' })}
-                onClick={() => {
-                  this.toggle('3');
-                  UNISYS.Log('toggle nodes table');
-                  this.sendGA('Nodes Table', window.location);
-                }}
+                className={classnames({ active: activeTab === TABS.NODESTABLE })}
+                onClick={() => this.toggle(TABS.NODESTABLE)}
               >
                 Nodes Table
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
-                className={classnames({ active: activeTab === '4' })}
-                onClick={() => {
-                  this.toggle('4');
-                  UNISYS.Log('toggle edges table');
-                  this.sendGA('Edges Table', window.location);
-                }}
+                className={classnames({ active: activeTab === TABS.EDGESTABLE })}
+                onClick={() => this.toggle(TABS.EDGESTABLE)}
               >
                 Edges Table
               </NavLink>
             </NavItem>
             <NavItem>
               <NavLink
-                className={classnames({ active: activeTab === '6' })}
-                onClick={() => {
-                  this.toggle('6');
-                  UNISYS.Log('toggle help');
-                  this.sendGA('Help', window.location);
-                }}
+                className={classnames({ active: activeTab === TABS.MORE })}
+                onClick={() => this.toggle(TABS.MORE)}
               >
                 More...
               </NavLink>
@@ -262,22 +259,26 @@ class InfoPanel extends UNISYS.Component {
               backgroundColor: 'rgba(0,0,0,0.1)'
             }}
           >
-            <TabPane tabId="1"></TabPane>
-            <TabPane tabId="3">
+            <TabPane tabId={TABS.GRAPH}></TabPane>
+            <TabPane tabId={TABS.NODESTABLE}>
               <Row>
                 <Col sm="12">
-                  {activeTab === '3' && <NodeTable tableHeight={tableHeight} />}
+                  {activeTab === TABS.NODESTABLE && (
+                    <NodeTable tableHeight={tableHeight} />
+                  )}
                 </Col>
               </Row>
             </TabPane>
-            <TabPane tabId="4">
+            <TabPane tabId={TABS.EDGESTABLE}>
               <Row>
                 <Col sm="12">
-                  {activeTab === '4' && <EdgeTable tableHeight={tableHeight} />}
+                  {activeTab === TABS.EDGESTABLE && (
+                    <EdgeTable tableHeight={tableHeight} />
+                  )}
                 </Col>
               </Row>
             </TabPane>
-            <TabPane tabId="6">
+            <TabPane tabId={TABS.MORE}>
               <More />
             </TabPane>
           </TabContent>
