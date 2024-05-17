@@ -227,7 +227,7 @@ MOD.OpenComment = (cref, cid) => {
 /// User Id
 MOD.GetCurrentUserId = () => {
   const session = UDATA.AppState('SESSION');
-  const uid = session.token;
+  const uid = String(session.token).toLowerCase();
   return uid;
 };
 MOD.GetUserName = uid => {
