@@ -552,46 +552,6 @@ MOD.TEMPLATE = {
             }
           }
         },
-        'comments': {
-          // Comments
-          type: 'object',
-          description: 'User comments on the node',
-          properties: {
-            'type': {
-              type: 'string',
-              description: '"comments" data type',
-              default: 'string'
-            },
-            'displayLabel': {
-              type: 'string',
-              description: 'Label to use for system display',
-              default: 'Comments'
-            },
-            'exportLabel': {
-              type: 'string',
-              description: 'Label to use for exported csv file field name',
-              default: 'Comments'
-            },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Node Editor form',
-              default: 'Enter "<comment> -- <name> <date>"'
-            },
-            'includeInGraphTooltip': {
-              type: 'boolean',
-              format: 'checkbox',
-              description: 'Show "comments" value in tooltip on graph',
-              default: true
-            },
-            'hidden': {
-              type: 'boolean',
-              format: 'checkbox',
-              description:
-                'Hides "comments" from Node Editor, Nodes Table, and exports',
-              default: false
-            }
-          }
-        },
         'degrees': {
           type: 'object',
           description: 'Number of edges connected to this node (auto-calculated)',
@@ -1032,46 +992,7 @@ MOD.TEMPLATE = {
             }
           }
         },
-        'comments': {
-          // Comments
-          type: 'object',
-          description: 'Comments on the edge',
-          properties: {
-            'type': {
-              type: 'string',
-              description: '"comments" data type',
-              default: 'string'
-            },
-            'displayLabel': {
-              type: 'string',
-              description: 'Label to use for system display',
-              default: 'Comments'
-            },
-            'exportLabel': {
-              type: 'string',
-              description: 'Label to use for exported csv file field name',
-              default: 'Comments'
-            },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Edge Editor form',
-              default: 'Enter "<comment> -- <name> <date>"'
-            },
-            'includeInGraphTooltip': {
-              type: 'boolean',
-              format: 'checkbox',
-              description: 'Show "comments" value in tooltip on graph',
-              default: true
-            },
-            'hidden': {
-              type: 'boolean',
-              format: 'checkbox',
-              description:
-                'Hides "comments" from Edge Editor, Edges Table, and exports',
-              default: false
-            }
-          }
-        },
+
         'citation': {
           type: 'object',
           description: 'Source of the edge',
