@@ -14,6 +14,7 @@ const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
 const { ARROW_RIGHT } = require('system/util/constant');
 const { EDITORTYPE } = require('system/util/enum');
+const NCLOGIC = require('./nc-logic');
 const NCUI = require('./nc-ui');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
@@ -226,9 +227,7 @@ MOD.OpenComment = (cref, cid) => {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
 MOD.GetCurrentUserId = () => {
-  const session = UDATA.AppState('SESSION');
-  const uid = String(session.token).toLowerCase();
-  return uid;
+  return NCLOGIC.GetCurrentUserId();
 };
 MOD.GetUserName = uid => {
   return COMMENT.GetUserName(uid);

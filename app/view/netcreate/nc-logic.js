@@ -846,6 +846,18 @@ MOD.Hook('APP_READY', function (info) {
   });
 }); // end UNISYS_READY
 
+/// GLOBAL HELPERS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+MOD.GetCurrentUserId = () => {
+  const session = UDATA.AppState('SESSION');
+  console.log('session', session)
+  // match upper case conversion of login form -- this is necessary because
+  // the token can be defined via the URL, which might be lower case
+  const uid = String(session.token).toUpperCase();
+  return uid;
+};
+
 /// OBJECT HELPERS ////////////////////////////////////////////////////////////
 /// these probably should go into a utility class
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
