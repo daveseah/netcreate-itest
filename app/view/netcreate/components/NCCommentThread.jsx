@@ -42,6 +42,7 @@ class NCCommentThread extends React.Component {
     super(props);
 
     this.state = {
+      firstUpdate: true,
       isDisabled: false
     };
 
@@ -65,6 +66,21 @@ class NCCommentThread extends React.Component {
   componentWillUnmount() {
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
     UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
+  }
+
+  componentDidUpdate() {
+    const { firstUpdate } = this.state;
+    const { cref, uid } = this.props;
+    if (firstUpdate) {
+      // scroll the last comment into view
+      const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
+      const lastCVObj = commentVObjs[commentVObjs.length - 1];
+      if (lastCVObj) {
+        const lastCommentEl = document.getElementById(lastCVObj.comment_id);
+        if (lastCommentEl) lastCommentEl.scrollIntoView({ behavior: 'smooth' });
+      }
+      this.setState({ firstUpdate: false });
+    }
   }
 
   UpdatePermissions(data) {

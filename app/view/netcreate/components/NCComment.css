@@ -153,6 +153,9 @@
 /* Comments Unread */
 .comments-unread {
   padding: 5px 10px;
+  position: relative; /* allow comment-icons to scroll */
+  max-height: 300px;
+  overflow-y: scroll;
 }
 .comments-unread .comment-item {
   display: block;
