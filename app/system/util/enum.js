@@ -19,20 +19,22 @@ ENUM.EDITORTYPE = {
 ENUM.BUILTIN_FIELDS_NODE = [
   'id',
   'label',
-  'provenance',
   'degrees',
   'created',
+  'createdBy',
   'updated',
+  'updatedBy',
   'revision'
 ];
 ENUM.BUILTIN_FIELDS_EDGE = [
   'id',
   'source',
   'target',
-  'provenance',
   'degrees',
   'created',
+  'createdBy',
   'updated',
+  'updatedBy',
   'revision',
   'sourceLabel', // used internally for filters
   'targetLabel' // used internally for filters
