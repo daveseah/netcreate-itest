@@ -191,11 +191,10 @@ class NCCommentBtn extends React.Component {
     const { isDisabled } = this.state;
     // disable open toggle if comment is being edited
     if (!isDisabled) {
-    const updatedIsOpen = !this.state.isOpen;
-    this.UIOpenComment(updatedIsOpen);
+      const updatedIsOpen = !this.state.isOpen;
+      this.UIOpenComment(updatedIsOpen);
+    }
   }
-  }
-
 
   UIOnResize(event) {
     const position = this.GetCommentThreadPosition();
