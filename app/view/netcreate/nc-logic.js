@@ -510,10 +510,12 @@ MOD.Hook('INITIALIZE', () => {
     const session = UDATA.AppState('SESSION');
     const timestamp = new Date().toLocaleString('en-US');
     const provenance = `Added by ${session.token} on ${timestamp}`;
+    const createdBy = MOD.GetCurrentUserId();
+    const updatedBy = createdBy;
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
       const node = {
-        id: newNodeID, label: data.label, provenance
+        id: newNodeID, label: data.label, provenance, createdBy, updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);

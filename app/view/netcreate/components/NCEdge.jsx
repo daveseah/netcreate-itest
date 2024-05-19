@@ -83,6 +83,7 @@ class NCEdge extends UNISYS.Component {
     this.LoadEdge = this.LoadEdge.bind(this);
     this.DeleteEdge = this.DeleteEdge.bind(this);
     this.LoadAttributes = this.LoadAttributes.bind(this);
+    this.LoadProvenance = this.LoadProvenance.bind(this);
     this.LockEdge = this.LockEdge.bind(this);
     this.UnlockEdge = this.UnlockEdge.bind(this);
     this.IsEdgeLocked = this.IsEdgeLocked.bind(this);
@@ -319,13 +320,14 @@ class NCEdge extends UNISYS.Component {
 
     // Load the edge
     const attributes = this.LoadAttributes(edge);
+    const provenance = this.LoadProvenance(edge);
     this.setState(
       {
         id: edge.id,
         sourceId: edge.source,
         targetId: edge.target,
         attributes: attributes,
-        provenance: edge.provenance,
+        provenance: provenance,
         created: edge.meta ? new Date(edge.meta.created).toLocaleString() : '',
         updated: edge.meta ? new Date(edge.meta.updated).toLocaleString() : '',
         revision: edge.meta ? edge.meta.revision : ''
@@ -349,9 +351,31 @@ class NCEdge extends UNISYS.Component {
       if (BUILTIN_FIELDS_EDGE.includes(k)) return; // skip built-in fields
       const attr_def = EDGEDEFS[k];
       if (attr_def.hidden) return; // skip hidden fields
+      if (attr_def.isProvenance) return; // skip fields that are marked as provenance
       attributes[k] = edge[k];
     });
     return attributes;
+  }
+  /**
+   * Loads up the `provenance` object defined by the TEMPLATE
+   * Will skip
+   *   * BUILTIN fields
+   *   * attributes that are `hidden` by the template
+   * REVIEW: Currently the parameters will show up in random object order.
+   * @param {Object} edge
+   * @returns {Object} { ...attr-key: attr-value }
+   */
+  LoadProvenance(edge) {
+    const EDGEDEFS = UDATA.AppState('TEMPLATE').edgeDefs;
+    const provenance = {};
+    Object.keys(EDGEDEFS).forEach(k => {
+      if (BUILTIN_FIELDS_EDGE.includes(k)) return; // skip built-in fields
+      const provenance_def = EDGEDEFS[k];
+      if (provenance_def.hidden) return; // skip hidden fields
+      if (!provenance_def.isProvenance) return; // skip fields that are not marked as provenance
+      provenance[k] = edge[k];
+    });
+    return provenance;
   }
 
   /**
@@ -603,10 +627,10 @@ class NCEdge extends UNISYS.Component {
     const edge = {
       id,
       source: sourceId,
-      target: targetId,
-      provenance
+      target: targetId
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (edge[k] = provenance[k]));
 
     this.setState(
       {
@@ -719,6 +743,7 @@ class NCEdge extends UNISYS.Component {
       provenance
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (edge[k] = provenance[k]));
     UNISYS.Log('edit edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
 

@@ -43,6 +43,7 @@ const EDGEMGR = require('../edge-mgr'); // handles edge synthesis
 const CMTMGR = require('../comment-mgr');
 const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const { EDGE_NOT_SET_LABEL, ARROW_RIGHT } = require('system/util/constant');
+const NCLOGIC = require('../nc-logic');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
 const NCCommentBtn = require('./NCCommentBtn');
@@ -113,6 +114,7 @@ class NCNode extends UNISYS.Component {
     this.UICancelEditMode = this.UICancelEditMode.bind(this);
     this.UIDisableEditMode = this.UIDisableEditMode.bind(this);
     this.UIInputUpdate = this.UIInputUpdate.bind(this);
+    this.UIProvenanceInputUpdate = this.UIProvenanceInputUpdate.bind(this);
     this.UILabelInputUpdate = this.UILabelInputUpdate.bind(this);
     this.UIViewEdge = this.UIViewEdge.bind(this);
     this.UIEditEdge = this.UIEditEdge.bind(this);
@@ -170,7 +172,9 @@ class NCNode extends UNISYS.Component {
       attributes: [],
       provenance: [],
       created: undefined,
+      createdBy: undefined,
       updated: undefined,
+      updatedBy: undefined,
       revision: 0,
       // EDGES
       edges: [], // selected nodes' edges not ALL edges
@@ -346,15 +350,18 @@ class NCNode extends UNISYS.Component {
 
     // Load the node
     const attributes = this.LoadAttributes(node);
+    const provenance = this.LoadProvenance(node);
     this.setState(
       {
         id: node.id,
         label: node.label,
         degrees: node.degrees,
         attributes: attributes,
-        provenance: node.provenance,
+        provenance: provenance,
         created: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        createdBy: node.createdBy,
         updated: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        updatedBy: node.updatedBy,
         revision: node.meta ? node.meta.revision : ''
       },
       () => {
@@ -408,9 +415,31 @@ class NCNode extends UNISYS.Component {
       if (BUILTIN_FIELDS_NODE.includes(k)) return; // skip built-in fields
       const attr_def = NODEDEFS[k];
       if (attr_def.hidden) return; // skip hidden fields
+      if (attr_def.isProvenance) return; // skip fields that are marked as provenance
       attributes[k] = node[k];
     });
     return attributes;
+  }
+  /**
+   * Loads up the `provenance` object defined by the TEMPLATE
+   * Will skip
+   *   * BUILTIN fields
+   *   * attributes that are `hidden` by the template
+   * REVIEW: Currently the parameters will show up in random object order.
+   * @param {Object} node
+   * @returns {Object} { ...attr-key: attr-value }
+   */
+  LoadProvenance(node) {
+    const NODEDEFS = UDATA.AppState('TEMPLATE').nodeDefs;
+    const provenance = {};
+    Object.keys(NODEDEFS).forEach(k => {
+      if (BUILTIN_FIELDS_NODE.includes(k)) return; // skip built-in fields
+      const provenance_def = NODEDEFS[k];
+      if (provenance_def.hidden) return; // skip hidden fields
+      if (!provenance_def.isProvenance) return; // skip fields that are not marked as provenance
+      provenance[k] = node[k];
+    });
+    return provenance;
   }
 
   /**
@@ -475,13 +504,14 @@ class NCNode extends UNISYS.Component {
   SaveNode() {
     const { id, label, attributes, provenance, created, updated, revision } =
       this.state;
-
+    const uid = NCLOGIC.GetCurrentUserId();
     const node = {
       id,
       label,
-      provenance
+      updatedBy: uid
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (node[k] = provenance[k]));
 
     // Exit Edit mode first, then send the update
     // (This is necessary otherwise the db update will trigger a
@@ -615,6 +645,7 @@ class NCNode extends UNISYS.Component {
       provenance
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (node[k] = provenance[k]));
     UNISYS.Log('edit node', id, label, JSON.stringify(node));
   }
 
@@ -659,6 +690,17 @@ class NCNode extends UNISYS.Component {
       const { attributes } = this.state;
       attributes[key] = value;
       this.setState({ attributes }, () => this.SetBackgroundColor());
+    }
+  }
+  UIProvenanceInputUpdate(key, value) {
+    if (BUILTIN_FIELDS_NODE.includes(key)) {
+      const data = {};
+      data[key] = value;
+      this.setState(data);
+    } else {
+      const { provenance } = this.state;
+      provenance[key] = value;
+      this.setState({ provenance }, () => this.SetBackgroundColor());
     }
   }
   UILabelInputUpdate(key, value) {
@@ -860,7 +902,11 @@ class NCNode extends UNISYS.Component {
                   NCUI.RenderAttributesTabEdit(this.state, defs, this.UIInputUpdate)}
                 {uSelectedTab === TABS.EDGES && this.RenderEdgesTab()}
                 {uSelectedTab === TABS.PROVENANCE &&
-                  NCUI.RenderProvenanceTabEdit(this.state, defs, this.UIInputUpdate)}
+                  NCUI.RenderProvenanceTabEdit(
+                    this.state,
+                    defs,
+                    this.UIProvenanceInputUpdate
+                  )}
               </div>
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}
