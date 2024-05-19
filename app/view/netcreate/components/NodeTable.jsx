@@ -603,16 +603,6 @@ class NodeTable extends UNISYS.Component {
                   </Button>
                 </th>
               ))}
-              <th width="10%" hidden={nodeDefs.provenance.hidden}>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    this.setSortKey('provenance', nodeDefs.provenance.type)
-                  }
-                >
-                  {nodeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
-                </Button>
-              </th>
               <th style={{ zIndex: 1 }}>
                 <div
                   className="comment-icon-inline comment-intable"
@@ -687,7 +677,6 @@ class NodeTable extends UNISYS.Component {
                       : node[a]}
                   </td>
                 ))}
-                <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
                 <td>
                   <NCCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
                 </td>
