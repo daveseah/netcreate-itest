@@ -416,20 +416,20 @@ function m_LoadTOMLTemplate(templateFilePath) {
 
       const DEFAULT_TEMPLATE = TEMPLATE_SCHEMA.ParseTemplateSchema();
       const NODEDEFS = DEFAULT_TEMPLATE.nodeDefs;
-      if (json.nodeDefs.provenance === undefined) {
+      if (json.nodeDefs.provenance === undefined && NODEDEFS.provenance) {
         json.nodeDefs.provenance = NODEDEFS.provenance;
         json.nodeDefs.provenance.hidden = true;
       }
-      if (json.nodeDefs.comments === undefined) {
+      if (json.nodeDefs.comments === undefined && NODEDEFS.coments) {
         json.nodeDefs.comments = NODEDEFS.comments;
         json.nodeDefs.comments.hidden = true;
       }
       const EDGEDEFS = DEFAULT_TEMPLATE.edgeDefs;
-      if (json.edgeDefs.provenance === undefined) {
+      if (json.edgeDefs.provenance === undefined && EDGEDEFS.provenance) {
         json.edgeDefs.provenance = EDGEDEFS.provenance;
         json.edgeDefs.provenance.hidden = true;
       }
-      if (json.edgeDefs.comments === undefined) {
+      if (json.edgeDefs.comments === undefined && EDGEDEFS.comments) {
         json.edgeDefs.comments = EDGEDEFS.comments;
         json.edgeDefs.comments.hidden = true;
       }
