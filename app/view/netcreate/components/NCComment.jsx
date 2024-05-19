@@ -29,9 +29,12 @@ let UDATA;
 class NCComment extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {}; // see LoadCommentVObj
+    this.state = {
+      isDisabled: false
+    }; // see LoadCommentVObj
 
     // EVENT HANDLERS
+    this.UpdatePermissions = this.UpdatePermissions.bind(this);
     this.UpdateCommentVObjs = this.UpdateCommentVObjs.bind(this);
     this.LoadCommentVObj = this.LoadCommentVObj.bind(this);
 
@@ -51,6 +54,7 @@ class NCComment extends React.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
   }
 
   componentDidMount() {
@@ -61,6 +65,11 @@ class NCComment extends React.Component {
     const { cid, uIsBeingEdited } = this.state;
     if (uIsBeingEdited) CMTMGR.UnlockComment(cid);
     UDATA.AppStateChangeOff('COMMENTVOBJS', this.UpdateCommentVObjs);
+    UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', this.UpdatePermissions);
+  }
+
+  UpdatePermissions(data) {
+    this.setState({ isDisabled: data.commentBeingEditedByMe });
   }
 
   UpdateCommentVObjs(COMMENTVOBJS) {
@@ -236,7 +245,8 @@ class NCComment extends React.Component {
       commenter_text,
       comment_error,
       uViewMode,
-      uAllowReply
+      uAllowReply,
+      isDisabled
     } = this.state;
 
     const isAdmin = SETTINGS.IsAdmin();
@@ -356,11 +366,14 @@ class NCComment extends React.Component {
             />
             {uid && (
               <div className="commentbar">
-                {!comment.comment_isMarkedDeleted && ReplyBtn}
-                {(isAllowedToEditOwnComment &&
+                {!isDisabled && !comment.comment_isMarkedDeleted && ReplyBtn}
+                {(!isDisabled &&
+                  isAllowedToEditOwnComment &&
                   !comment.comment_isMarkedDeleted &&
                   EditBtn) || <div></div>}
-                {(((isAllowedToEditOwnComment && !comment.comment_isMarkedDeleted) ||
+                {(((!isDisabled &&
+                  isAllowedToEditOwnComment &&
+                  !comment.comment_isMarkedDeleted) ||
                   isAdmin) &&
                   DeleteBtn) || <div></div>}
               </div>

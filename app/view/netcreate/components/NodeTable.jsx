@@ -488,6 +488,7 @@ class NodeTable extends UNISYS.Component {
 
     const nodes = this.sortTable(key, this.state.nodes, type);
     this.setState({ sortkey: key, nodes });
+    UNISYS.Log('sort node table', key, this.sortDirection);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
