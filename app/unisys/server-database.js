@@ -394,54 +394,9 @@ function m_LoadTOMLTemplate(templateFilePath) {
   return new Promise((resolve, reject) => {
     const templateFile = FS.readFile(templateFilePath, 'utf8', (err, data) => {
       if (err) throw err;
-      // Read TOML
       const json = TOML.parse(data);
-      // Ensure key fields are present, else default to schema
-      const SCHEMA = TEMPLATE_SCHEMA.TEMPLATE.properties;
-      json.duplicateWarning =
-        json.duplicateWarning || SCHEMA.duplicateWarning.default;
-      json.nodeIsLockedMessage =
-        json.nodeIsLockedMessage || SCHEMA.nodeIsLockedMessage.default;
-      json.edgeIsLockedMessage =
-        json.edgeIsLockedMessage || SCHEMA.edgeIsLockedMessage.default;
-      json.templateIsLockedMessage =
-        json.templateIsLockedMessage || SCHEMA.templateIsLockedMessage.default;
-      json.importIsLockedMessage =
-        json.importIsLockedMessage || SCHEMA.importIsLockedMessage.default;
-
-      // Migrate v1.4 to v2.0
-      // v2.0 added `provenance` and `comments` -- so we add the template definitions if the toml template does not already have them
-      // hides them by default if they were not previously added
-      // HACK: There is related migration code in m_MigrateTemplate() that needs to be merged...if possible
-
-      const DEFAULT_TEMPLATE = TEMPLATE_SCHEMA.ParseTemplateSchema();
-      const NODEDEFS = DEFAULT_TEMPLATE.nodeDefs;
-      if (json.nodeDefs.provenance === undefined && NODEDEFS.provenance) {
-        json.nodeDefs.provenance = NODEDEFS.provenance;
-        json.nodeDefs.provenance.hidden = true;
-      }
-      if (json.nodeDefs.comments === undefined && NODEDEFS.coments) {
-        json.nodeDefs.comments = NODEDEFS.comments;
-        json.nodeDefs.comments.hidden = true;
-      }
-      const EDGEDEFS = DEFAULT_TEMPLATE.edgeDefs;
-      if (json.edgeDefs.provenance === undefined && EDGEDEFS.provenance) {
-        json.edgeDefs.provenance = EDGEDEFS.provenance;
-        json.edgeDefs.provenance.hidden = true;
-      }
-      if (json.edgeDefs.comments === undefined && EDGEDEFS.comments) {
-        json.edgeDefs.comments = EDGEDEFS.comments;
-        json.edgeDefs.comments.hidden = true;
-      }
-      if (json.edgeDefs.weight === undefined) {
-        json.edgeDefs.weight = EDGEDEFS.weight;
-        json.edgeDefs.weight.hidden = true;
-      }
-      // NOTE: We are not modifying the template permanently, only temporarily inserting definitions so the system can validate
-
       TEMPLATE = json;
       console.log(PR, 'template loaded', BL(templateFilePath));
-
       resolve({ Loaded: true });
     });
   });
@@ -463,7 +418,7 @@ async function m_LoadTemplate() {
     // 1. If TOML exists, load it
     await m_LoadTOMLTemplate(TOMLtemplateFilePath);
   } else {
-    // 2/ Try falling back to JSON template
+    // 2. Try falling back to JSON template
     const JSONTemplatePath = RUNTIMEPATH + NC_CONFIG.dataset + '.template';
     // Does the JSON template exist?
     if (FS.existsSync(JSONTemplatePath)) {
@@ -487,17 +442,30 @@ async function m_LoadTemplate() {
     Updates older templates to the current template-schema specification by
     inserting missing properties needed by the UI.
     Any changes to template-schema should be reflected here.
-
-    FIXME: There is code in m_LoadTOMLTemplate() that also does migration that
-    needs to be moved here!
  */
 function m_MigrateTemplate() {
-  // 2023-0628 BASE Defaults -- these should have been previously defined
+  // Ensure key fields are present, else default to schema
+  // NOTE: We are not modifying the template permanently, only temporarily inserting definitions so the system can validate
+  const SCHEMA = TEMPLATE_SCHEMA.TEMPLATE.properties;
+  const DEFAULT_TEMPLATE = TEMPLATE_SCHEMA.ParseTemplateSchema();
+  const NODEDEFS = DEFAULT_TEMPLATE.nodeDefs;
+  const EDGEDEFS = DEFAULT_TEMPLATE.edgeDefs;
+
+  // Migrate 1.0 to 1.1
+  // -- Make sure required core preferences have been created
+  TEMPLATE.duplicateWarning = TEMPLATE.duplicateWarning || SCHEMA.duplicateWarning.default;
+  TEMPLATE.nodeIsLockedMessage = TEMPLATE.nodeIsLockedMessage || SCHEMA.nodeIsLockedMessage.default;
+  TEMPLATE.edgeIsLockedMessage = TEMPLATE.edgeIsLockedMessage || SCHEMA.edgeIsLockedMessage.default;
+  TEMPLATE.templateIsLockedMessage = TEMPLATE.templateIsLockedMessage || SCHEMA.templateIsLockedMessage.default;
+  TEMPLATE.importIsLockedMessage = TEMPLATE.importIsLockedMessage || SCHEMA.importIsLockedMessage.default;
+
+  // Migrate v1.4 to 1.5 Core Preferences
+  // -- v1.5 core defaults -- added 2023-0628 #31
   if (TEMPLATE.searchColor === undefined)
     TEMPLATE.searchColor = TEMPLATE_SCHEMA.TEMPLATE.properties.searchColor.default;
   if (TEMPLATE.sourceColor === undefined)
     TEMPLATE.sourceColor = TEMPLATE_SCHEMA.TEMPLATE.properties.sourceColor.default;
-  // 2023-0602 Filter Labels
+  // -- v1.5 Filter Labels -- added 2023-0602 #117
   // See branch `dev-bl/template-filter-labels`, and fb28fa68ee42deffc778c1be013acea7dae85258
   if (TEMPLATE.filterFade === undefined)
     TEMPLATE.filterFade = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFade.default;
@@ -506,26 +474,58 @@ function m_MigrateTemplate() {
   if (TEMPLATE.filterFocus === undefined)
     TEMPLATE.filterFocus = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocus.default;
   if (TEMPLATE.filterFadeHelp === undefined)
-    TEMPLATE.filterFadeHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFadeHelp.default;
+    TEMPLATE.filterFadeHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFadeHelp.default;
   if (TEMPLATE.filterReduceHelp === undefined)
-    TEMPLATE.filterReduceHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduceHelp.default;
+    TEMPLATE.filterReduceHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduceHelp.default;
   if (TEMPLATE.filterFocusHelp === undefined)
-    TEMPLATE.filterFocusHelp =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocusHelp.default;
-  // 2023-0605 Max Sizes
+    TEMPLATE.filterFocusHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocusHelp.default;
+  // -- v1.5 max sizes -- added 2023-0605 #117
   // See branch `dev-bl/max-size
   if (TEMPLATE.nodeSizeDefault === undefined)
-    TEMPLATE.nodeSizeDefault =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeDefault.default;
+    TEMPLATE.nodeSizeDefault = TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeDefault.default;
   if (TEMPLATE.nodeSizeMax === undefined)
     TEMPLATE.nodeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeMax.default;
   if (TEMPLATE.edgeSizeDefault === undefined)
-    TEMPLATE.edgeSizeDefault =
-      TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeDefault.default;
+    TEMPLATE.edgeSizeDefault = TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeDefault.default;
   if (TEMPLATE.edgeSizeMax === undefined)
     TEMPLATE.edgeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeMax.default;
+
+  // Migrate v1.4 to v1.5 Nodes and Edges
+  // -- hides them by default if they were not previously added
+  //
+  // -- Built-in Fields
+  // -- v1.5 added 'weight
+  if (TEMPLATE.edgeDefs.weight === undefined) {
+    TEMPLATE.edgeDefs.weight = EDGEDEFS.weight;
+    TEMPLATE.edgeDefs.weight.hidden = true;
+  }
+  //
+  // -- v1.5 added `provenance` and `comments` -- so we add the template definitions if the toml template does not already have them
+  if (TEMPLATE.nodeDefs.provenance === undefined && NODEDEFS.provenance) {
+    TEMPLATE.nodeDefs.provenance = NODEDEFS.provenance;
+    TEMPLATE.nodeDefs.provenance.hidden = true;
+  }
+  if (TEMPLATE.nodeDefs.comments === undefined && NODEDEFS.coments) {
+    TEMPLATE.nodeDefs.comments = NODEDEFS.comments;
+    TEMPLATE.nodeDefs.comments.hidden = true;
+  }
+  if (TEMPLATE.edgeDefs.provenance === undefined && EDGEDEFS.provenance) {
+    TEMPLATE.edgeDefs.provenance = EDGEDEFS.provenance;
+    TEMPLATE.edgeDefs.provenance.hidden = true;
+  }
+  if (TEMPLATE.edgeDefs.comments === undefined && EDGEDEFS.comments) {
+    TEMPLATE.edgeDefs.comments = EDGEDEFS.comments;
+    TEMPLATE.edgeDefs.comments.hidden = true;
+  }
+
+  // Migrate 1.5 to 2.0 Template Version
+  TEMPLATE.version = TEMPLATE.version || SCHEMA.version;
+
+  // TO DO
+  // Make sure built-in fields are not being defined in the template.
+  // e.g. it's easy to define another "Source" field for "Provenance" but that conflicts with
+  // the edge's "Source" field.
+
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -537,6 +537,7 @@ function m_MigrateTemplate() {
 // eslint-disable-next-line complexity
 function m_ValidateTemplate() {
   try {
+    // 1. Validate built-in fields
     // nodeDefs
     let nodeDefs = TEMPLATE.nodeDefs;
     if (nodeDefs === undefined) {
@@ -544,6 +545,19 @@ function m_ValidateTemplate() {
     }
     if (nodeDefs.label === undefined)
       throw 'Missing `nodeDefs.label` label=' + nodeDefs.label;
+    // edgeDefs
+    let edgeDefs = TEMPLATE.edgeDefs;
+    if (edgeDefs === undefined) throw 'Missing `edgeDefs` edgeDefs=' + edgeDefs;
+    if (edgeDefs.source === undefined)
+      throw 'Missing `edgeDefs.source` source=' + edgeDefs.source;
+    if (edgeDefs.target === undefined)
+      throw 'Missing `edgeDefs.target` label=' + edgeDefs.target;
+
+    // 2. Validate deprecated fields
+    //    `TEMPLATE.version` was added after 2.0.
+    if (!TEMPLATE.version) {
+
+      // nodeDefs
     if (nodeDefs.type === undefined)
       throw 'Missing `nodeDefs.type` type= ' + nodeDefs.type;
     if (
@@ -556,17 +570,13 @@ function m_ValidateTemplate() {
       throw 'Missing `nodeDefs.notes` notes=' + nodeDefs.notes;
     if (nodeDefs.info === undefined)
       throw 'Missing `nodeDefs.info` info=' + nodeDefs.info;
-    // Version 2.x Fields
+      // Version 1.5+ Fields
     if (nodeDefs.provenance === undefined)
       throw 'Missing `nodeDefs.provenance` provenance=' + nodeDefs.provenance;
     if (nodeDefs.comments === undefined)
       throw 'Missing `nodeDefs.comments` comments=' + nodeDefs.comments;
 
     // edgeDefs
-    let edgeDefs = TEMPLATE.edgeDefs;
-    if (edgeDefs === undefined) throw 'Missing `edgeDefs` edgeDefs=' + edgeDefs;
-    if (edgeDefs.source === undefined)
-      throw 'Missing `edgeDefs.source` source=' + edgeDefs.source;
     if (edgeDefs.type === undefined)
       throw 'Missing `edgeDefs.type` type= ' + edgeDefs.type;
     if (
@@ -575,22 +585,28 @@ function m_ValidateTemplate() {
     ) {
       throw 'Missing or bad `edgeDefs.type.options` options=' + edgeDefs.type.options;
     }
-    if (edgeDefs.target === undefined)
-      throw 'Missing `edgeDefs.target` label=' + edgeDefs.target;
     if (edgeDefs.notes === undefined)
       throw 'Missing `edgeDefs.notes` notes=' + edgeDefs.notes;
     if (edgeDefs.info === undefined)
       throw 'Missing `edgeDefs.info` info=' + edgeDefs.info;
-    // Version 2.x Fields
+      // Version 1.5+ Fields
     if (edgeDefs.provenance === undefined)
       throw 'Missing `edgeDefs.provenance` provenance=' + edgeDefs.provenance;
     if (edgeDefs.comments === undefined)
       throw 'Missing `edgeDefs.comments` comments=' + edgeDefs.comments;
-    // -- End 2.x
+      // -- End 1.5+
     if (edgeDefs.citation === undefined)
       throw 'Missing `edgeDefs.citation` info=' + edgeDefs.citation;
     if (edgeDefs.category === undefined)
       throw 'Missing `edgeDefs.category` info=' + edgeDefs.category;
+
+    } else {
+      // Placeholder for future version checks
+      // if (TEMPLATE.version <= "2.0") {
+      //   // do something
+      // }
+    }
+
   } catch (error) {
     const templateFileName = m_GetTemplateTOMLFilePath();
     console.error('Error loading template `', templateFileName, '`::::', error);
