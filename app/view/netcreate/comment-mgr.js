@@ -233,6 +233,9 @@ MOD.GetCurrentUserId = () => {
 MOD.GetUserName = uid => {
   return COMMENT.GetUserName(uid);
 };
+MOD.IsAdmin = () => {
+  return SETTINGS.IsAdmin();
+}
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment Type

@@ -13,7 +13,6 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
-const SETTINGS = require('settings');
 const CMTMGR = require('../comment-mgr');
 const NCCommentPrompt = require('./NCCommentPrompt');
 
@@ -249,7 +248,7 @@ class NCComment extends React.Component {
       isDisabled
     } = this.state;
 
-    const isAdmin = SETTINGS.IsAdmin();
+    const isAdmin = CMTMGR.IsAdmin();
     const comment = CMTMGR.GetComment(cvobj.comment_id);
 
     // Only update comment data if we have a valid commenter_text (e.g. from user input)
