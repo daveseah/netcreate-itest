@@ -138,7 +138,7 @@ MOD.EDGETYPEOPTIONS = {
  */
 MOD.TEMPLATE = {
   title: 'NetCreate Template',
-  version: '3.0 May 2024',
+  version: 2.0, // match github Release number
   type: 'object',
   properties: {
     'name': {
@@ -1572,7 +1572,7 @@ MOD.ParseTemplateSchema = () => {
     });
     return currJson;
   }
-  let json = {};
+  let json = { version: MOD.TEMPLATE.version };  // Insert template version
   u_ParseProperties(MOD.TEMPLATE.properties, json);
   return json;
 };
