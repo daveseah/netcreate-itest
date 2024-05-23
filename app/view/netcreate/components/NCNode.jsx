@@ -360,7 +360,7 @@ class NCNode extends UNISYS.Component {
         provenance: provenance,
         created: node.meta ? new Date(node.meta.created).toLocaleString() : '',
         createdBy: node.createdBy,
-        updated: node.meta ? new Date(node.meta.created).toLocaleString() : '',
+        updated: node.meta ? new Date(node.meta.updated).toLocaleString() : '',
         updatedBy: node.updatedBy,
         revision: node.meta ? node.meta.revision : ''
       },
