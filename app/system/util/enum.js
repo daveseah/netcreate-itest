@@ -30,6 +30,7 @@ ENUM.BUILTIN_FIELDS_EDGE = [
   'id',
   'source',
   'target',
+  'weight',
   'degrees',
   'created',
   'createdBy',

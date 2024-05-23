@@ -313,7 +313,8 @@ function RenderProvenanceTabEdit(state, defs, onchange) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceByline(author, date) {
-  return `${author}, ${date}`;
+  const by = author ? `${author}` : `(not recorded)`;
+  return `${by}, ${date}`; // leave author blank for older templates
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
