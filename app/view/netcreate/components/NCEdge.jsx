@@ -113,6 +113,7 @@ class NCEdge extends UNISYS.Component {
     this.UIDisableEditMode = this.UIDisableEditMode.bind(this);
     this.UIDeleteEdge = this.UIDeleteEdge.bind(this);
     this.UIInputUpdate = this.UIInputUpdate.bind(this);
+    this.UIProvenanceInputUpdate = this.UIProvenanceInputUpdate.bind(this);
     this.UIEnableSourceTargetSelect = this.UIEnableSourceTargetSelect.bind(this);
     this.UISourceTargetInputUpdate = this.UISourceTargetInputUpdate.bind(this);
     this.UISourceTargetInputSelect = this.UISourceTargetInputSelect.bind(this);
@@ -330,7 +331,9 @@ class NCEdge extends UNISYS.Component {
         attributes: attributes,
         provenance: provenance,
         created: edge.meta ? new Date(edge.meta.created).toLocaleString() : '',
+        createdBy: edge.createdBy,
         updated: edge.meta ? new Date(edge.meta.updated).toLocaleString() : '',
+        updatedBy: edge.updatedBy,
         revision: edge.meta ? edge.meta.revision : ''
       },
       () => this.UpdateDerivedValues()
@@ -628,7 +631,8 @@ class NCEdge extends UNISYS.Component {
     const edge = {
       id,
       source: sourceId,
-      target: targetId
+      target: targetId,
+      updatedBy: uid
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
     Object.keys(provenance).forEach(k => (edge[k] = provenance[k]));
@@ -822,6 +826,17 @@ class NCEdge extends UNISYS.Component {
       const { attributes } = this.state;
       attributes[key] = value;
       this.setState({ attributes }, () => this.SetBackgroundColor());
+    }
+  }
+  UIProvenanceInputUpdate(key, value) {
+    if (BUILTIN_FIELDS_EDGE.includes(key)) {
+      const data = {};
+      data[key] = value;
+      this.setState(data);
+    } else {
+      const { provenance } = this.state;
+      provenance[key] = value;
+      this.setState({ provenance }, () => this.SetBackgroundColor());
     }
   }
 
@@ -1048,7 +1063,11 @@ class NCEdge extends UNISYS.Component {
                 {uSelectedTab === TABS.ATTRIBUTES &&
                   NCUI.RenderAttributesTabEdit(this.state, defs, this.UIInputUpdate)}
                 {uSelectedTab === TABS.PROVENANCE &&
-                  NCUI.RenderProvenanceTabEdit(this.state, defs, this.UIInputUpdate)}
+                  NCUI.RenderProvenanceTabEdit(
+                    this.state,
+                    defs,
+                    this.UIProvenanceInputUpdate
+                  )}
               </div>
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}
