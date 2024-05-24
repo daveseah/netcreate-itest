@@ -515,7 +515,7 @@ MOD.Hook('INITIALIZE', () => {
     // provenance
     const session = UDATA.AppState('SESSION');
     const timestamp = new Date().toLocaleString('en-US');
-    const provenance = `Added by ${session.token} on ${timestamp}`;
+    const provenance = [];
     const createdBy = MOD.GetCurrentUserId();
     const updatedBy = createdBy;
 
@@ -644,7 +644,9 @@ MOD.Hook('INITIALIZE', () => {
     // provenance
     const session = UDATA.AppState('SESSION');
     const timestamp = new Date().toLocaleString('en-US');
-    const provenance = `Added by ${session.token} on ${timestamp}`;
+    const provenance = [];
+    const createdBy = MOD.GetCurrentUserId();
+    const updatedBy = createdBy;
 
     // call server to retrieve an unused edge ID
     return DATASTORE.PromiseNewEdgeID().then(newEdgeID => {
@@ -654,7 +656,9 @@ MOD.Hook('INITIALIZE', () => {
         source: data.nodeId,
         target: undefined,
         attributes: {},
-        provenance
+        provenance,
+        createdBy,
+        updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { edge }).then(() => {
         console.log('...DB_UPDATE node is now', edge);
