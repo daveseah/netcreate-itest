@@ -397,7 +397,7 @@ class NodeTable extends UNISYS.Component {
    */
   sortByComment(nodes) {
     // stuff the count into nodes for calculation
-    const uid = CMTMGR.GetCurrentUserId();
+    const uid = NCLOGIC.GetCurrentUserId();
     const countednodes = nodes.map(n => {
       const cref = CMTMGR.GetNodeCREF(n.id);
       n.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);

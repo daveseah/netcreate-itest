@@ -292,6 +292,12 @@ MOD.Hook('DISCONNECT', () => {
  */
 MOD.Hook('INITIALIZE', () => {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
+  UDATA.OnAppStateChange('SESSION', session => {
+    const { userId } = session;
+    // Push updates to sub modules
+    CMTMGR.SetCurrentUserId(userId);
+  });
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
   /** RELOAD_DB
    *  Called by importexport-mgr.js.MOD.Import:818
    *  During import, DB_MERGE will be called to merge the import data
@@ -852,12 +858,10 @@ MOD.Hook('APP_READY', function (info) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 MOD.GetCurrentUserId = () => {
+  // always get the current session value because it might change at any time
   const session = UDATA.AppState('SESSION');
-  console.log('session', session)
-  // match upper case conversion of login form -- this is necessary because
-  // the token can be defined via the URL, which might be lower case
-  const uid = String(session.token).toUpperCase();
-  return uid;
+  const { userId } = session;
+  return userId;
 };
 
 /// OBJECT HELPERS ////////////////////////////////////////////////////////////

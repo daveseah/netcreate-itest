@@ -14,7 +14,6 @@ const { COMMENT } = require('@ursys/addons');
 const DATASTORE = require('system/datastore');
 const { ARROW_RIGHT } = require('system/util/constant');
 const { EDITORTYPE } = require('system/util/enum');
-const NCLOGIC = require('./nc-logic');
 const NCUI = require('./nc-ui');
 const NCDialog = require('./components/NCDialog');
 const SETTINGS = require('settings');
@@ -29,6 +28,8 @@ const PR = 'comment-mgr: ';
 let MOD = UNISYS.NewModule(module.id);
 let UDATA = UNISYS.NewDataLink(MOD);
 const dialogContainerId = 'dialog-container'; // used to inject dialogs into NetCreate.jsx
+
+let UID; // user id, cached.  nc-logic updates this on INITIALIZE and SESSION
 
 /// UNISYS LIFECYCLE HOOKS ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -226,9 +227,8 @@ MOD.OpenComment = (cref, cid) => {
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
-MOD.GetCurrentUserId = () => {
-  return NCLOGIC.GetCurrentUserId();
-};
+MOD.SetCurrentUserId = uid => UID = uid;
+MOD.GetCurrentUserId = () => UID; // called by other comment classes
 MOD.GetUserName = uid => {
   return COMMENT.GetUserName(uid);
 };

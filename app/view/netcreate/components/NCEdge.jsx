@@ -33,6 +33,7 @@ const {
 } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
+const NCLOGIC = require('../nc-logic');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
 const NCCommentBtn = require('./NCCommentBtn');
@@ -623,7 +624,7 @@ class NCEdge extends UNISYS.Component {
   ///
   SaveEdge() {
     const { id, sourceId, targetId, attributes, provenance } = this.state;
-
+    const uid = NCLOGIC.GetCurrentUserId();
     const edge = {
       id,
       source: sourceId,

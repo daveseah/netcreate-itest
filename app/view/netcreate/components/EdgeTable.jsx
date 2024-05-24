@@ -415,7 +415,7 @@ class EdgeTable extends UNISYS.Component {
    */
   sortByComment(edges) {
     // stuff the count into edges for calculation
-    const uid = CMTMGR.GetCurrentUserId();
+    const uid = NCLOGIC.GetCurrentUserId();
     const countededges = edges.map(e => {
       const cref = CMTMGR.GetEdgeCREF(e.id);
       e.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
