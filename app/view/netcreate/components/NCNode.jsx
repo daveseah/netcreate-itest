@@ -952,7 +952,7 @@ class NCNode extends UNISYS.Component {
           const color = EDGEMGR.LookupEdgeColor(e, TEMPLATE);
           const bgcolor = color + '33'; // opacity hack
           if (e.id === selectedEdgeId) {
-            return <NCEdge key={e.id} edge={e} parentNodeId={id} />;
+            return <NCEdge edgeId={e.id} parentNodeId={id} key={e.id} />;
           } else {
             return (
               <div key={e.id}>

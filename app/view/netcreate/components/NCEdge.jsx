@@ -8,7 +8,7 @@
 
     USAGE
 
-      <NCNEdge key={e.id} edge={edge} parentNodeId={nodeId}/>
+      <NCNEdge edgeId={edgeId} parentNodeId={nodeId} key={e.id} />
 
     This is designed to be embedded in an <NCNode> object.
     There should only be one open NCEdge component at a time.
@@ -70,6 +70,7 @@ class NCEdge extends UNISYS.Component {
     // STATE MANAGEMENT
     this.ResetState = this.ResetState.bind(this);
     this.UpdateSession = this.UpdateSession.bind(this);
+    this.UpdateNCData = this.UpdateNCData.bind(this);
     this.IsLoggedIn = this.IsLoggedIn.bind(this);
     this.SetPermissions = this.SetPermissions.bind(this);
     this.UpdatePermissions = this.UpdatePermissions.bind(this);
@@ -131,6 +132,7 @@ class NCEdge extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('SESSION', this.UpdateSession);
+    UDATA.OnAppStateChange('NCDATA', this.UpdateNCData);
     UDATA.OnAppStateChange('SELECTION', this.UpdateSelection);
     UDATA.HandleMessage('EDGE_OPEN', this.ReqLoadEdge);
     UDATA.HandleMessage('EDGE_DESELECT', this.ClearSelection);
@@ -142,7 +144,8 @@ class NCEdge extends UNISYS.Component {
   componentDidMount() {
     this.ResetState(); // Initialize State
 
-    const { edge } = this.props;
+    const { edgeId } = this.props;
+    const edge = UDATA.AppState('NCDATA').edges.find(e => e.id === edgeId);
     this.LoadEdge(edge);
 
     window.addEventListener('beforeunload', this.CheckUnload);
@@ -150,6 +153,7 @@ class NCEdge extends UNISYS.Component {
   }
   componentWillUnmount() {
     UDATA.AppStateChangeOff('SESSION', this.UpdateSession);
+    UDATA.AppStateChangeOff('NCDATA', this.UpdateNCData);
     UDATA.AppStateChangeOff('SELECTION', this.UpdateSelection);
     UDATA.UnhandleMessage('EDGE_OPEN', this.ReqLoadEdge);
     UDATA.UnhandleMessage('EDGE_DESELECT', this.ClearSelection);
@@ -232,6 +236,14 @@ class NCEdge extends UNISYS.Component {
    */
   UpdateSession(decoded) {
     this.setState({ isLoggedIn: decoded.isValid }, () => this.UpdatePermissions());
+  }
+  /*
+      Called by NCDATA AppState updates
+  */
+  UpdateNCData(data) {
+    // If NCDATA is updated, reload the edge b/c db has changed
+    const updatedEdge = data.edges.find(e => e.id === this.props.edgeId);
+    this.LoadEdge(updatedEdge);
   }
   /**
    * Checks current SESSION state to see if user is logged in.
