@@ -239,6 +239,7 @@ class NCComment extends React.Component {
       commenter,
       createtime_string,
       modifytime_string,
+      cref,
       cid,
       selected_comment_type,
       commenter_text,
@@ -328,7 +329,9 @@ class NCComment extends React.Component {
             <div>{TypeSelector}</div>
             <NCCommentPrompt
               commentType={selected_comment_type}
-              comment={comment}
+              cref={cref}
+              commenterText={commenter_text}
+              isMarkedDeleted={comment.comment_isMarkedDeleted}
               cvobj={cvobj}
               viewMode={CMTMGR.VIEWMODE.EDIT}
               onChange={this.UIOnInputUpdate}
@@ -357,7 +360,9 @@ class NCComment extends React.Component {
             <div className="commentId">#{cid}</div>
             <NCCommentPrompt
               commentType={selected_comment_type}
-              comment={comment}
+              cref={cref}
+              commenterText={commenter_text}
+              isMarkedDeleted={comment.comment_isMarkedDeleted}
               cvobj={cvobj}
               viewMode={CMTMGR.VIEWMODE.VIEW}
               onChange={this.UIOnInputUpdate}

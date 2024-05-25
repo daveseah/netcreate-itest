@@ -34,7 +34,9 @@
 
     <NCCommentPrompt
       commentType={comment_type} // currently selected comment type, not stored comment.comment_type
-      comment={comment}
+      cref={cref}
+      commenterText={commenter_text}
+      isMarkedDeleted={comment.comment_isMarkedDeleted}
       cvobj={cvobj}
       viewMode={uViewMode}
       onChange={this.UIOnInputUpdate}
@@ -85,11 +87,18 @@ class NCCommentPrompt extends React.Component {
 
   componentDidUpdate() {
     const { firstUpdate } = this.state;
-    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
-      this.props;
+    const {
+      commentType,
+      cref,
+      commenterText,
+      isMarkedDeleted,
+      cvobj,
+      viewMode,
+      onChange,
+      errorMessage
+    } = this.props;
     if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
       const commentTypes = CMTMGR.GetCommentTypes();
-      const commenterText = comment.commenter_text;
       // find the first empty `text` prompt
       let foundIndex = -1;
       commentTypes.get(commentType).prompts.find((prompt, promptIndex) => {
@@ -100,7 +109,7 @@ class NCCommentPrompt extends React.Component {
       });
       // set focus to the found empty 'text' prompt
       const foundTextArea = document.getElementById(
-        m_TextareaId(comment.collection_ref, foundIndex)
+        m_TextareaId(cref, foundIndex)
       );
       if (foundTextArea) foundTextArea.focus();
       this.setState({ firstUpdate: false });
@@ -142,10 +151,10 @@ class NCCommentPrompt extends React.Component {
    * @param {*} event
    */
   UIOnCheck(promptIndex, optionIndex, options, event) {
-    const { comment, onChange } = this.props;
+    const { commenterText, onChange } = this.props;
     // e.g. selectedCheckboxes =  ["Apple Pie", "Apple Fritter"]
     const selectedCheckboxes = this.SplitCheckboxCommentText(
-      comment.commenter_text[promptIndex]
+      commenterText[promptIndex]
     );
     let items = [];
     options.forEach((o, index) => {
@@ -164,10 +173,17 @@ class NCCommentPrompt extends React.Component {
   }
 
   RenderEditMode() {
-    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
-      this.props;
+    const {
+      commentType,
+      cref,
+      commenterText,
+      isMarkedDeleted,
+      cvobj,
+      viewMode,
+      onChange,
+      errorMessage
+    } = this.props;
     const commentTypes = CMTMGR.GetCommentTypes();
-    const commenterText = comment.commenter_text;
 
     let promptsJSX = [];
     commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
@@ -176,7 +192,7 @@ class NCCommentPrompt extends React.Component {
         case 'text':
           inputJSX = (
             <textarea
-              id={`${m_TextareaId(comment.collection_ref, promptIndex)}`}
+              id={`${m_TextareaId(cref, promptIndex)}`}
               autoFocus
               onChange={event => onChange(promptIndex, event)}
               value={commenterText[promptIndex] || ''}
@@ -303,10 +319,17 @@ class NCCommentPrompt extends React.Component {
   }
 
   RenderViewMode() {
-    const { commentType, comment, cvobj, viewMode, onChange, errorMessage } =
-      this.props;
+    const {
+      commentType,
+      cref,
+      commenterText,
+      isMarkedDeleted,
+      cvobj,
+      viewMode,
+      onChange,
+      errorMessage
+    } = this.props;
     const commentTypes = CMTMGR.GetCommentTypes();
-    const commenterText = comment.commenter_text;
 
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
@@ -319,7 +342,7 @@ class NCCommentPrompt extends React.Component {
         case 'radio':
           displayJSX = (
             <div className="commenttext">
-              {!comment.comment_isMarkedDeleted && commenterText[promptIndex]}
+              {!isMarkedDeleted && commenterText[promptIndex]}
               {this.IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
             </div>
           );
@@ -394,7 +417,7 @@ class NCCommentPrompt extends React.Component {
           <div className="label">
             <div className="comment-icon-inline">
               {!cvobj.isMarkedRead &&
-                !comment.comment_isMarkedDeleted &&
+                !isMarkedDeleted &&
                 CMTMGR.COMMENTICON}
             </div>
             {prompt.prompt}
