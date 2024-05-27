@@ -52,7 +52,6 @@ const { Button } = ReactStrap;
 const NCSearch = require('./components/NCSearch');
 const NCNode = require('./components/NCNode');
 const NCGraph = require('./components/NCGraph');
-const NCCommentStatus = require('./components/NCCommentStatus');
 const InfoPanel = require('./components/InfoPanel');
 const FiltersPanel = require('./components/filter/FiltersPanel');
 const NCLOGIC = require('./nc-logic'); // require to bootstrap data loading
@@ -62,6 +61,7 @@ const SELECTIONMGR = require('./selection-mgr'); // handles UI selection events
 const HILITEMGR = require('./hilite-mgr'); // handles UI hilite events
 const CMTMGR = require('./comment-mgr');
 const FILTER = require('./components/filter/FilterEnums');
+import URCommentStatus from './components/URCommentStatus';
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -192,7 +192,7 @@ class NetCreate extends UNISYS.Component {
         </div>
         <div className="--NetCreate_Fixed_Top nc-navbar">
           <SessionShell />
-          <NCCommentStatus
+          <URCommentStatus
             message={commentStatusMessage}
             handleMessageUpdate={handleMessageUpdate}
           />
