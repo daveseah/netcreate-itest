@@ -31,13 +31,13 @@ const React = require('react');
 const ReactStrap = require('reactstrap');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
-const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_EDGE } = require('system/util/enum');
 const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
+import URCommentBtn from './URCommentBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -811,7 +811,7 @@ class EdgeTable extends UNISYS.Component {
                 ))}
                 <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
+                  <URCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>

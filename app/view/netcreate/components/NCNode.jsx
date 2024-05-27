@@ -45,9 +45,9 @@ const { EDITORTYPE, BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const { EDGE_NOT_SET_LABEL, ARROW_RIGHT } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
-const NCCommentBtn = require('./NCCommentBtn');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
+import URCommentBtn from './URCommentBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -726,7 +726,7 @@ class NCNode extends UNISYS.Component {
           <div className="titlebar">
             <div className="nodenumber">NODE {id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <NCCommentBtn cref={collection_ref} />
+            <URCommentBtn cref={collection_ref} />
           </div>
           {/* TABS - - - - - - - - - - - - - - - - - - - */}
           <div className="--NCNode_View_Tabs tabcontainer">

@@ -36,6 +36,7 @@ const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
+import URCommentBtn from './URCommentBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -689,7 +690,7 @@ class NodeTable extends UNISYS.Component {
                 ))}
                 <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
                 <td>
-                  <NCCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
+                  <URCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
                 </td>
                 {/*
                 <td hidden={!isLocalHost} style={{ fontSize: '9px' }}>
