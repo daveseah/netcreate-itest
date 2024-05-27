@@ -1,5 +1,14 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
+
+
+
+
+  DEPRECATED: See URCommentPrompt
+
+
+
+
   CommentPrompt
 
   In edit mode, displays input widgets for entering prompts.
