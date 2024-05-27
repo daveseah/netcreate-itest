@@ -327,12 +327,11 @@ const URComment = ({ cref, cid, uid }) => {
           <div className="commentId">#{cid}</div>
           <div>{TypeSelector}</div>
           <URCommentPrompt
-            commentType={selected_comment_type}
             cref={cref}
+            commentType={selected_comment_type}
             commenterText={commenter_text}
             isMarkedDeleted={comment.comment_isMarkedDeleted}
-            // FIXME Dereference this
-            cvobj={cvobj}
+            isMarkedRead={cvobj.isMarkedRead}
             viewMode={CMTMGR.VIEWMODE.EDIT}
             onChange={UIOnInputUpdate}
             errorMessage={comment_error}
@@ -358,12 +357,11 @@ const URComment = ({ cref, cid, uid }) => {
         <div>
           <div className="commentId">#{cid}</div>
           <URCommentPrompt
-            commentType={selected_comment_type}
             cref={cref}
+            commentType={selected_comment_type}
             commenterText={commenter_text}
             isMarkedDeleted={comment.comment_isMarkedDeleted}
-            // FIXME Dereference this
-            cvobj={cvobj}
+            isMarkedRead={cvobj.isMarkedRead}
             viewMode={CMTMGR.VIEWMODE.VIEW}
             onChange={UIOnInputUpdate}
             errorMessage={comment_error}

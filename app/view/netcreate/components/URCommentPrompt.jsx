@@ -33,15 +33,19 @@
   USE:
 
     <URCommentPrompt
-      commentType={comment_type} // currently selected comment type, not stored comment.comment_type
       cref={cref}
+      commentType={comment_type} // currently selected comment type, not stored comment.comment_type
       commenterText={commenter_text}
       isMarkedDeleted={comment.comment_isMarkedDeleted}
-      cvobj={cvobj}
+      isMarkedRead={cvobj.isMarkedRead}
       viewMode={uViewMode}
       onChange={this.UIOnInputUpdate}
       errorMessage={comment_error}
     />
+
+    We use props (especially `commenter_text`) here because URComment stores the
+    current interim state of the comment text during editing.  The `commment`
+    object stores the previous saved state.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -66,20 +70,20 @@ function m_TextareaId(cref, index) {
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const URCommentPrompt = ({
-  commentType,
   cref,
+  commentType,
   commenterText,
   isMarkedDeleted,
-  cvobj,
+  isMarkedRead,
   viewMode,
   onChange,
   errorMessage
 }) => {
   const [firstUpdate, setFirstUpdate] = useState(true);
+  const commentTypes = CMTMGR.GetCommentTypes();
 
   useEffect(() => {
     if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
-      const commentTypes = CMTMGR.GetCommentTypes();
       // find the first empty `text` prompt
       let foundIndex = -1;
       commentTypes.get(commentType).prompts.find((prompt, promptIndex) => {
@@ -154,8 +158,6 @@ const URCommentPrompt = ({
   };
 
   const RenderEditMode = () => {
-    const commentTypes = CMTMGR.GetCommentTypes();
-
     return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let inputJSX;
       switch (prompt.format) {
@@ -279,7 +281,6 @@ const URCommentPrompt = ({
   };
 
   const RenderViewMode = () => {
-    const commentTypes = CMTMGR.GetCommentTypes();
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
     return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
@@ -365,7 +366,7 @@ const URCommentPrompt = ({
         <div key={promptIndex} className="comment-item">
           <div className="label">
             <div className="comment-icon-inline">
-              {!cvobj.isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
+              {!isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
             </div>
             {prompt.prompt}
           </div>
