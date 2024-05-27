@@ -49,9 +49,11 @@ const URComment = ({ cref, cid, uid }) => {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   useEffect(() => {
     const updatePermissions = data => {
-      setState(prevState =>
-        Object.assign({}, prevState, { uIsDisabled: data.commentBeingEditedByMe })
-      );
+      console.log('......URComment useEffect COMMENT_UPDATE_PERMISSIONS');
+      setState(prevState => ({
+        ...prevState,
+        uIsDisabled: data.commentBeingEditedByMe
+      }));
     };
 
     const updateCommentVObjs = () => {
@@ -125,8 +127,10 @@ const URComment = ({ cref, cid, uid }) => {
       state.uViewMode === CMTMGR.VIEWMODE.EDIT
         ? CMTMGR.VIEWMODE.VIEW
         : CMTMGR.VIEWMODE.EDIT;
-
-    setState(prevState => Object.assign({}, prevState, { uViewMode }));
+    setState(prevState => ({
+      ...prevState,
+      uViewMode
+    }));
 
     CMTMGR.LockComment(state.cid);
   };
@@ -139,10 +143,10 @@ const URComment = ({ cref, cid, uid }) => {
     comment.commenter_id = uid;
     CMTMGR.UpdateComment(comment);
     CMTMGR.UnlockComment(cid);
-
-    setState(prevState =>
-      Object.assign({}, prevState, { uViewMode: CMTMGR.VIEWMODE.VIEW })
-    );
+    setState(prevState => ({
+      ...prevState,
+      uViewMode: CMTMGR.VIEWMODE.VIEW
+    }));
   };
 
   const UIOnReply = () => {
@@ -200,12 +204,11 @@ const URComment = ({ cref, cid, uid }) => {
     } else {
       // revert to previous text if current text is empty
       const comment = CMTMGR.GetComment(cid);
-      setState(prevState =>
-        Object.assign({}, prevState, {
+      setState(prevState => ({
+        ...prevState,
           commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
           uViewMode: CMTMGR.VIEWMODE.VIEW
-        })
-      );
+      }));
 
       cb();
     }
@@ -213,19 +216,20 @@ const URComment = ({ cref, cid, uid }) => {
 
   const UIOnSelect = event => {
     const selection = event.target.value;
-    setState(prevState =>
-      Object.assign({}, prevState, { selected_comment_type: selection })
-    );
+    setState(prevState => ({
+      ...prevState,
+      selected_comment_type: selection
+    }));
   };
 
   const UIOnInputUpdate = (index, event) => {
     const { commenter_text } = state;
     commenter_text[index] = event.target.value;
-    setState(prevState =>
-      Object.assign({}, prevState, {
+    console.log('...replaced by', JSON.stringify([...commenter_text]));
+    setState(prevState => ({
+      ...prevState,
         commenter_text: [...commenter_text]
-      })
-    );
+    }));
   };
 
   /// RENDER /////////////////////////////////////////////////////////////////
