@@ -94,7 +94,8 @@ module.exports = {
   plugins: {
     babel: {
       ignore: [/^node_modules\/@ursys/],
-      presets: ['env', 'react']
+      presets: ['env', 'react'],
+      plugins: ['transform-object-rest-spread']
     },
     autoReload: { enabled: true },
     copycat: {
