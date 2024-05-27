@@ -91,6 +91,7 @@ import DCCOMMENTS, {
   CType,
   TCommentType,
   TCommentTypeMap,
+  TCommentMap,
   TCommentQueueActions
 } from './dc-comment.ts';
 
@@ -538,6 +539,9 @@ function GetCommentType(slug: CType): TCommentType {
 function GetDefaultCommentType(): TCommentType {
   return DCCOMMENTS.GetDefaultCommentType();
 }
+function GetCOMMENTS(): TCommentMap {
+  return DCCOMMENTS.GetCOMMENTS();
+}
 function GetComment(cid: TCommentID): TComment {
   return DCCOMMENTS.GetComment(cid);
 }
@@ -590,6 +594,7 @@ export {
   GetCommentTypes,
   GetCommentType,
   GetDefaultCommentType,
+  GetCOMMENTS,
   GetComment,
   GetReadby,
   GetCrefs

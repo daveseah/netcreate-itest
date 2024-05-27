@@ -108,9 +108,7 @@ class NCCommentPrompt extends React.Component {
         }
       });
       // set focus to the found empty 'text' prompt
-      const foundTextArea = document.getElementById(
-        m_TextareaId(cref, foundIndex)
-      );
+      const foundTextArea = document.getElementById(m_TextareaId(cref, foundIndex));
       if (foundTextArea) foundTextArea.focus();
       this.setState({ firstUpdate: false });
     }
@@ -416,9 +414,7 @@ class NCCommentPrompt extends React.Component {
         <div key={promptIndex} className="comment-item">
           <div className="label">
             <div className="comment-icon-inline">
-              {!cvobj.isMarkedRead &&
-                !isMarkedDeleted &&
-                CMTMGR.COMMENTICON}
+              {!cvobj.isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
             </div>
             {prompt.prompt}
           </div>
