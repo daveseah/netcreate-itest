@@ -108,7 +108,7 @@ function URComment({ cref, cid, uid }) {
       console.warn(comment_error);
       selected_comment_type = defaultCommentTypeObject.slug;
     }
-    // set initial component state
+    // set component state from retrieved data
     setState({
       // Data
       comment_id_parent: comment.comment_id_parent,
