@@ -415,7 +415,7 @@ class EdgeTable extends UNISYS.Component {
    */
   sortByComment(edges) {
     // stuff the count into edges for calculation
-    const uid = CMTMGR.GetCurrentUserId();
+    const uid = NCLOGIC.GetCurrentUserId();
     const countededges = edges.map(e => {
       const cref = CMTMGR.GetEdgeCREF(e.id);
       e.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
@@ -696,16 +696,6 @@ class EdgeTable extends UNISYS.Component {
                   </Button>
                 </th>
               ))}
-              <th width="10%" hidden={edgeDefs.provenance.hidden}>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    this.setSortKey('provenance', edgeDefs.provenance.type)
-                  }
-                >
-                  {edgeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
-                </Button>
-              </th>
               <th style={{ zIndex: 1 }}>
                 <div
                   className="comment-icon-inline comment-intable"
@@ -809,7 +799,6 @@ class EdgeTable extends UNISYS.Component {
                       : edge[a]}
                   </td>
                 ))}
-                <td hidden={edgeDefs.provenance.hidden}>{edge.provenance}</td>
                 <td>
                   <NCCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
                 </td>

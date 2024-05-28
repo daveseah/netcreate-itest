@@ -569,7 +569,7 @@ function RemoveComment(parms): TCommentQueueActions[] {
   } else if (markDeleted) {
     // MARK TARGET DELETED
     if (DBG) console.log('markDeleted', cidToDelete);
-    cobjToDelete.comment_type = DEFAULT_CommentTypes[0].id; // revert to default comment type
+    cobjToDelete.comment_type = DEFAULT_CommentTypes[0].slug; // revert to default comment type
     cobjToDelete.comment_isMarkedDeleted = true;
     COMMENTS.set(cobjToDelete.comment_id, cobjToDelete);
     queuedActions.push({ comment: cobjToDelete });

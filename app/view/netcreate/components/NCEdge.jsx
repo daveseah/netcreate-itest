@@ -8,7 +8,7 @@
 
     USAGE
 
-      <NCNEdge key={e.id} edge={edge} parentNodeId={nodeId}/>
+      <NCNEdge edgeId={edgeId} parentNodeId={nodeId} key={e.id} />
 
     This is designed to be embedded in an <NCNode> object.
     There should only be one open NCEdge component at a time.
@@ -33,6 +33,7 @@ const {
 } = require('system/util/constant');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
+const NCLOGIC = require('../nc-logic');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
 const NCCommentBtn = require('./NCCommentBtn');
@@ -69,6 +70,7 @@ class NCEdge extends UNISYS.Component {
     // STATE MANAGEMENT
     this.ResetState = this.ResetState.bind(this);
     this.UpdateSession = this.UpdateSession.bind(this);
+    this.UpdateNCData = this.UpdateNCData.bind(this);
     this.IsLoggedIn = this.IsLoggedIn.bind(this);
     this.SetPermissions = this.SetPermissions.bind(this);
     this.UpdatePermissions = this.UpdatePermissions.bind(this);
@@ -83,6 +85,7 @@ class NCEdge extends UNISYS.Component {
     this.LoadEdge = this.LoadEdge.bind(this);
     this.DeleteEdge = this.DeleteEdge.bind(this);
     this.LoadAttributes = this.LoadAttributes.bind(this);
+    this.LoadProvenance = this.LoadProvenance.bind(this);
     this.LockEdge = this.LockEdge.bind(this);
     this.UnlockEdge = this.UnlockEdge.bind(this);
     this.IsEdgeLocked = this.IsEdgeLocked.bind(this);
@@ -111,6 +114,7 @@ class NCEdge extends UNISYS.Component {
     this.UIDisableEditMode = this.UIDisableEditMode.bind(this);
     this.UIDeleteEdge = this.UIDeleteEdge.bind(this);
     this.UIInputUpdate = this.UIInputUpdate.bind(this);
+    this.UIProvenanceInputUpdate = this.UIProvenanceInputUpdate.bind(this);
     this.UIEnableSourceTargetSelect = this.UIEnableSourceTargetSelect.bind(this);
     this.UISourceTargetInputUpdate = this.UISourceTargetInputUpdate.bind(this);
     this.UISourceTargetInputSelect = this.UISourceTargetInputSelect.bind(this);
@@ -128,6 +132,7 @@ class NCEdge extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// REGISTER LISTENERS
     UDATA.OnAppStateChange('SESSION', this.UpdateSession);
+    UDATA.OnAppStateChange('NCDATA', this.UpdateNCData);
     UDATA.OnAppStateChange('SELECTION', this.UpdateSelection);
     UDATA.HandleMessage('EDGE_OPEN', this.ReqLoadEdge);
     UDATA.HandleMessage('EDGE_DESELECT', this.ClearSelection);
@@ -139,7 +144,8 @@ class NCEdge extends UNISYS.Component {
   componentDidMount() {
     this.ResetState(); // Initialize State
 
-    const { edge } = this.props;
+    const { edgeId } = this.props;
+    const edge = UDATA.AppState('NCDATA').edges.find(e => e.id === edgeId);
     this.LoadEdge(edge);
 
     window.addEventListener('beforeunload', this.CheckUnload);
@@ -147,6 +153,7 @@ class NCEdge extends UNISYS.Component {
   }
   componentWillUnmount() {
     UDATA.AppStateChangeOff('SESSION', this.UpdateSession);
+    UDATA.AppStateChangeOff('NCDATA', this.UpdateNCData);
     UDATA.AppStateChangeOff('SELECTION', this.UpdateSelection);
     UDATA.UnhandleMessage('EDGE_OPEN', this.ReqLoadEdge);
     UDATA.UnhandleMessage('EDGE_DESELECT', this.ClearSelection);
@@ -229,6 +236,14 @@ class NCEdge extends UNISYS.Component {
    */
   UpdateSession(decoded) {
     this.setState({ isLoggedIn: decoded.isValid }, () => this.UpdatePermissions());
+  }
+  /*
+      Called by NCDATA AppState updates
+  */
+  UpdateNCData(data) {
+    // If NCDATA is updated, reload the edge b/c db has changed
+    const updatedEdge = data.edges.find(e => e.id === this.props.edgeId);
+    this.LoadEdge(updatedEdge);
   }
   /**
    * Checks current SESSION state to see if user is logged in.
@@ -319,15 +334,18 @@ class NCEdge extends UNISYS.Component {
 
     // Load the edge
     const attributes = this.LoadAttributes(edge);
+    const provenance = this.LoadProvenance(edge);
     this.setState(
       {
         id: edge.id,
         sourceId: edge.source,
         targetId: edge.target,
         attributes: attributes,
-        provenance: edge.provenance,
+        provenance: provenance,
         created: edge.meta ? new Date(edge.meta.created).toLocaleString() : '',
+        createdBy: edge.createdBy,
         updated: edge.meta ? new Date(edge.meta.updated).toLocaleString() : '',
+        updatedBy: edge.updatedBy,
         revision: edge.meta ? edge.meta.revision : ''
       },
       () => this.UpdateDerivedValues()
@@ -349,9 +367,31 @@ class NCEdge extends UNISYS.Component {
       if (BUILTIN_FIELDS_EDGE.includes(k)) return; // skip built-in fields
       const attr_def = EDGEDEFS[k];
       if (attr_def.hidden) return; // skip hidden fields
+      if (attr_def.isProvenance) return; // skip fields that are marked as provenance
       attributes[k] = edge[k];
     });
     return attributes;
+  }
+  /**
+   * Loads up the `provenance` object defined by the TEMPLATE
+   * Will skip
+   *   * BUILTIN fields
+   *   * attributes that are `hidden` by the template
+   * REVIEW: Currently the parameters will show up in random object order.
+   * @param {Object} edge
+   * @returns {Object} { ...attr-key: attr-value }
+   */
+  LoadProvenance(edge) {
+    const EDGEDEFS = UDATA.AppState('TEMPLATE').edgeDefs;
+    const provenance = {};
+    Object.keys(EDGEDEFS).forEach(k => {
+      if (BUILTIN_FIELDS_EDGE.includes(k)) return; // skip built-in fields
+      const provenance_def = EDGEDEFS[k];
+      if (provenance_def.hidden) return; // skip hidden fields
+      if (!provenance_def.isProvenance) return; // skip fields that are not marked as provenance
+      provenance[k] = edge[k];
+    });
+    return provenance;
   }
 
   /**
@@ -599,14 +639,15 @@ class NCEdge extends UNISYS.Component {
   ///
   SaveEdge() {
     const { id, sourceId, targetId, attributes, provenance } = this.state;
-
+    const uid = NCLOGIC.GetCurrentUserId();
     const edge = {
       id,
       source: sourceId,
       target: targetId,
-      provenance
+      updatedBy: uid
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (edge[k] = provenance[k]));
 
     this.setState(
       {
@@ -719,6 +760,7 @@ class NCEdge extends UNISYS.Component {
       provenance
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
+    Object.keys(provenance).forEach(k => (edge[k] = provenance[k]));
     UNISYS.Log('edit edge', id, this.EdgeDisplayName(), JSON.stringify(edge));
   }
 
@@ -796,6 +838,17 @@ class NCEdge extends UNISYS.Component {
       const { attributes } = this.state;
       attributes[key] = value;
       this.setState({ attributes }, () => this.SetBackgroundColor());
+    }
+  }
+  UIProvenanceInputUpdate(key, value) {
+    if (BUILTIN_FIELDS_EDGE.includes(key)) {
+      const data = {};
+      data[key] = value;
+      this.setState(data);
+    } else {
+      const { provenance } = this.state;
+      provenance[key] = value;
+      this.setState({ provenance }, () => this.SetBackgroundColor());
     }
   }
 
@@ -1022,7 +1075,11 @@ class NCEdge extends UNISYS.Component {
                 {uSelectedTab === TABS.ATTRIBUTES &&
                   NCUI.RenderAttributesTabEdit(this.state, defs, this.UIInputUpdate)}
                 {uSelectedTab === TABS.PROVENANCE &&
-                  NCUI.RenderProvenanceTabEdit(this.state, defs, this.UIInputUpdate)}
+                  NCUI.RenderProvenanceTabEdit(
+                    this.state,
+                    defs,
+                    this.UIProvenanceInputUpdate
+                  )}
               </div>
             </div>
             {/* CONTROL BAR - - - - - - - - - - - - - - - - */}

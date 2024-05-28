@@ -251,6 +251,19 @@
   padding: 10px 5px 5px 5px;
   background-color: #fff8;
 }
+.nccomponent .provenance .category {
+  grid-column: span 2;
+  margin-top: 2em;
+  padding: 1em 0 0.5em 10px;
+  text-align: center;
+  border-top: 1px solid #0003;
+  /* text-decoration: underline; */
+}
+.nccomponent .provenance .category:nth-child(1) {
+  margin-top: 0;
+  padding-top: 0;
+  border: none;
+}
 .nccomponent .provenance label {
   line-height: 12px;
   margin-bottom: 0.25rem; /* override bootstrap */
