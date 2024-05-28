@@ -248,7 +248,6 @@ function URComment({ cref, cid, uid }) {
   const evt_CommentText = (index, event) => {
     const { commenter_text } = state;
     commenter_text[index] = event.target.value;
-    console.log('...replaced by', JSON.stringify([...commenter_text]));
     setState(prevState => ({
       ...prevState,
       commenter_text: [...commenter_text]
