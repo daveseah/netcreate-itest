@@ -1,13 +1,14 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  Comment
+  URComment is a representation of an individual comment, used in the context
+  of a URCommentThread.
 
   USE:
 
     <URComment
-      cref={cref}
-      cid={cvobj.comment_id}
-      uid={uid}
+      cref={cref} // collection reference (e.g. node, edge, project)
+      cid={cvobj.comment_id} // comment id
+      uid={uid} // user id
       key={cvobj.comment_id} // part of thread array
     />
 
@@ -20,12 +21,23 @@ import URCommentPrompt from './URCommentPrompt';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Initialize UNISYS DATA LINK for react component
+const UDATAOwner = { name: 'URComment' };
+const UDATA = UNISYS.NewDataLink(UDATAOwner);
+/// Debug Flags
 const DBG = false;
 const PR = 'URComment';
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const URComment = ({ cref, cid, uid }) => {
+/** URComment renders a single comment in the context of a URCommentThread
+ *  manager.
+ *  @param {string} cref - Collection reference
+ *  @param {string} cid - Comment ID
+ *  @param {string} uid - User ID
+ *  @returns {React.Component} - URComment
+ */
+function URComment({ cref, cid, uid }) {
   const [state, setState] = useState({
     commenter: '',
     createtime_string: '',
@@ -41,50 +53,49 @@ const URComment = ({ cref, cid, uid }) => {
     uAllowReply: false
   });
 
-  /// Initialize UNISYS DATA LINK for react component
-  const UDATAOwner = { name: 'URComment' };
-  const UDATA = UNISYS.NewDataLink(UDATAOwner);
+  /** Component Effect - initial comment viewobject on mount */
+  useEffect(
+    () => c_LoadCommentVObj(),
+    [] // run once because no dependencies are declared
+  );
 
-  /// INIT ////////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Component Effect - updated comment
+   */
   useEffect(() => {
-    const updatePermissions = data => {
+    // declare helpers
+    const urmsg_updatePermissions = data => {
       console.log('......URComment useEffect COMMENT_UPDATE_PERMISSIONS');
       setState(prevState => ({
         ...prevState,
         uIsDisabled: data.commentBeingEditedByMe
       }));
     };
+    const urstate_updateCommentVObjs = () => c_LoadCommentVObj();
 
-    const updateCommentVObjs = () => {
-      LoadCommentVObj();
-    };
+    // hook UNISYS state change and message handlers
+    UDATA.OnAppStateChange('COMMENTVOBJS', urstate_updateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_updatePermissions);
 
-    UDATA.OnAppStateChange('COMMENTVOBJS', updateCommentVObjs);
-    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', updatePermissions);
-
+    // cleanup methods for functional component unmount
     return () => {
       if (state.uIsBeingEdited) CMTMGR.UnlockComment(state.cid);
-      UDATA.AppStateChangeOff('COMMENTVOBJS', updateCommentVObjs);
-      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', updatePermissions);
+      UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_updateCommentVObjs);
+      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_updatePermissions);
     };
-  }, [state.uIsBeingEdited]);
+  }, [state.uIsBeingEdited]); // run when uIsBeingEdited changes
 
-  useEffect(
-    () => {
-      LoadCommentVObj();
-    },
-    [] // run once
-  );
-
-  const LoadCommentVObj = () => {
+  /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Declare helper method to load viewdata from comment manager into the
+   *  component state */
+  function c_LoadCommentVObj() {
     const cvobj = CMTMGR.GetCommentVObj(cref, cid);
     const comment = CMTMGR.GetComment(cid);
 
     // When deleting, COMMENTVOBJS state change will trigger a load and render
     // before the component is unmounted.  So catch it and skip the state update.
     if (!cvobj || !comment) {
-      console.error('LoadCommentVObj: comment or cvobj not found!');
+      console.error('c_LoadCommentVObj: comment or cvobj not found!');
       return;
     }
 
@@ -118,11 +129,12 @@ const URComment = ({ cref, cid, uid }) => {
 
     // Lock edit upon creation of a new comment or a new reply
     if (cvobj.isBeingEdited) CMTMGR.LockComment(comment.comment_id);
-  };
+  }
 
-  /// UI HANDLERS //////////////////////////////////////////////////////////////
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const UIOnEdit = () => {
+  /** handle edit button, which toggles the viewmode of this URComment */
+  const evt_EditBtn = () => {
     const uViewMode =
       state.uViewMode === CMTMGR.VIEWMODE.EDIT
         ? CMTMGR.VIEWMODE.VIEW
@@ -134,8 +146,11 @@ const URComment = ({ cref, cid, uid }) => {
 
     CMTMGR.LockComment(state.cid);
   };
-
-  const UIOnSave = () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle save button, which saves the state to comment manager.
+   *  looks like there are some side effects being handled at the end
+   */
+  const evt_SaveBtn = () => {
     const { selected_comment_type, commenter_text } = state;
     const comment = CMTMGR.GetComment(cid);
     comment.comment_type = selected_comment_type;
@@ -148,8 +163,11 @@ const URComment = ({ cref, cid, uid }) => {
       uViewMode: CMTMGR.VIEWMODE.VIEW
     }));
   };
-
-  const UIOnReply = () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle reply button, which adds a new comment via comment manager,
+   *  updating the thread data structure associated with URCommentThread
+   */
+  const evt_ReplyBtn = () => {
     const { comment_id_parent } = state;
     if (comment_id_parent === '') {
       // Reply to a root comment
@@ -169,16 +187,21 @@ const URComment = ({ cref, cid, uid }) => {
       });
     }
   };
-
-  const UIOnDelete = () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle delete button, which removes the comment associated with this
+   *  commment from the comment manager */
+  const evt_DeleteBtn = () => {
     CMTMGR.RemoveComment({
       collection_ref: cref,
       comment_id: cid,
       uid
     });
   };
-
-  const UIOnCancel = () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle cancel button, which reverts the comment to its previous state,
+   *  doing additional housekeeping to keep comment manager consistent
+   */
+  const evtCancelBtn = () => {
     const { commenter_text } = state;
     let savedCommentIsEmpty = true;
     commenter_text.forEach(t => {
@@ -206,34 +229,47 @@ const URComment = ({ cref, cid, uid }) => {
       const comment = CMTMGR.GetComment(cid);
       setState(prevState => ({
         ...prevState,
-          commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
-          uViewMode: CMTMGR.VIEWMODE.VIEW
+        commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
+        uViewMode: CMTMGR.VIEWMODE.VIEW
       }));
 
       cb();
     }
   };
-
-  const UIOnSelect = event => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle select button, which updates the comment type associated with this
+   *  comment via comment manager */
+  const evt_TypeSelector = event => {
     const selection = event.target.value;
     setState(prevState => ({
       ...prevState,
       selected_comment_type: selection
     }));
   };
-
-  const UIOnInputUpdate = (index, event) => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handle input update, which updates the text associated with this comment
+   *  via comment manager */
+  const evt_CommentText = (index, event) => {
     const { commenter_text } = state;
     commenter_text[index] = event.target.value;
     console.log('...replaced by', JSON.stringify([...commenter_text]));
     setState(prevState => ({
       ...prevState,
-        commenter_text: [...commenter_text]
+      commenter_text: [...commenter_text]
     }));
   };
 
-  /// RENDER /////////////////////////////////////////////////////////////////
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** The URComment conditionally renders its display state based on several
+   *  states:
+   *  - isAdmin - read from commentmgr directly
+   *  - state.uViewMode - "edit" or "view" mode of comment
+   *  - state.uIsSelected - is current selected comment
+   *  - state.uIsBeingEdited - is being live edited
+   *  - state.uIsEditable - can be edited
+   *  - state.uIsDisabled - is active/inactive
+   */
   const {
     commenter,
     selected_comment_type,
@@ -262,28 +298,28 @@ const URComment = ({ cref, cid, uid }) => {
 
   // SUB COMPONENTS
   const EditBtn = (
-    <button className="outline small" onClick={UIOnEdit}>
+    <button className="outline small" onClick={evt_EditBtn}>
       Edit
     </button>
   );
   const DeleteBtn = (
-    <button className="outline small danger" onClick={UIOnDelete}>
+    <button className="outline small danger" onClick={evt_DeleteBtn}>
       Delete
     </button>
   );
-  const SaveBtn = <button onClick={UIOnSave}>Save</button>;
+  const SaveBtn = <button onClick={evt_SaveBtn}>Save</button>;
   const ReplyBtn = uAllowReply ? (
-    <button onClick={UIOnReply}>Reply</button>
+    <button onClick={evt_ReplyBtn}>Reply</button>
   ) : (
     <div></div> // empty div to keep layout consistent
   );
   const CancelBtn = (
-    <button className="secondary" onClick={UIOnCancel}>
+    <button className="secondary" onClick={evtCancelBtn}>
       Cancel
     </button>
   );
   const TypeSelector = (
-    <select value={selected_comment_type} onChange={UIOnSelect}>
+    <select value={selected_comment_type} onChange={evt_TypeSelector}>
       {[...commentTypes.entries()].map(type => (
         <option key={type[0]} value={type[0]}>
           {type[1].label}
@@ -295,10 +331,10 @@ const URComment = ({ cref, cid, uid }) => {
   // const UIOnEditMenuSelect = event => {
   //   switch (event.target.value) {
   //     case 'edit':
-  //       UIOnEdit();
+  //       evt_EditBtn();
   //       break;
   //     case 'delete':
-  //       UIOnDelete();
+  //       evt_DeleteBtn();
   //       break;
   //     default:
   //       break;
@@ -337,7 +373,7 @@ const URComment = ({ cref, cid, uid }) => {
             isMarkedDeleted={comment.comment_isMarkedDeleted}
             isMarkedRead={cvobj.isMarkedRead}
             viewMode={CMTMGR.VIEWMODE.EDIT}
-            onChange={UIOnInputUpdate}
+            onChange={evt_CommentText}
             errorMessage={comment_error}
           />
           <div className="editbar">
@@ -367,7 +403,7 @@ const URComment = ({ cref, cid, uid }) => {
             isMarkedDeleted={comment.comment_isMarkedDeleted}
             isMarkedRead={cvobj.isMarkedRead}
             viewMode={CMTMGR.VIEWMODE.VIEW}
-            onChange={UIOnInputUpdate}
+            onChange={evt_CommentText}
             errorMessage={comment_error}
           />
           {uid && (
@@ -394,7 +430,7 @@ const URComment = ({ cref, cid, uid }) => {
   ) : (
     CommentComponent
   );
-};
+}
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
