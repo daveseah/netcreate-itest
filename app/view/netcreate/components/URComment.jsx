@@ -63,24 +63,24 @@ function URComment({ cref, cid, uid }) {
    */
   useEffect(() => {
     // declare helpers
-    const urmsg_updatePermissions = data => {
+    const urmsg_UpdatePermissions = data => {
       console.log('......URComment useEffect COMMENT_UPDATE_PERMISSIONS');
       setState(prevState => ({
         ...prevState,
         uIsDisabled: data.commentBeingEditedByMe
       }));
     };
-    const urstate_updateCommentVObjs = () => c_LoadCommentVObj();
+    const urstate_UpdateCommentVObjs = () => c_LoadCommentVObj();
 
     // hook UNISYS state change and message handlers
-    UDATA.OnAppStateChange('COMMENTVOBJS', urstate_updateCommentVObjs);
-    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_updatePermissions);
+    UDATA.OnAppStateChange('COMMENTVOBJS', urstate_UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
 
     // cleanup methods for functional component unmount
     return () => {
       if (state.uIsBeingEdited) CMTMGR.UnlockComment(state.cid);
-      UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_updateCommentVObjs);
-      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_updatePermissions);
+      UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
+      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     };
   }, [state.uIsBeingEdited]); // run when uIsBeingEdited changes
 
@@ -108,7 +108,7 @@ function URComment({ cref, cid, uid }) {
       console.warn(comment_error);
       selected_comment_type = defaultCommentTypeObject.slug;
     }
-
+    // set initial component state
     setState({
       // Data
       comment_id_parent: comment.comment_id_parent,
@@ -148,8 +148,7 @@ function URComment({ cref, cid, uid }) {
   };
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle save button, which saves the state to comment manager.
-   *  looks like there are some side effects being handled at the end
-   */
+   *  looks like there are some side effects being handled at the end */
   const evt_SaveBtn = () => {
     const { selected_comment_type, commenter_text } = state;
     const comment = CMTMGR.GetComment(cid);
@@ -165,8 +164,7 @@ function URComment({ cref, cid, uid }) {
   };
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle reply button, which adds a new comment via comment manager,
-   *  updating the thread data structure associated with URCommentThread
-   */
+   *  updating the thread data structure associated with URCommentThread */
   const evt_ReplyBtn = () => {
     const { comment_id_parent } = state;
     if (comment_id_parent === '') {
@@ -199,9 +197,8 @@ function URComment({ cref, cid, uid }) {
   };
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle cancel button, which reverts the comment to its previous state,
-   *  doing additional housekeeping to keep comment manager consistent
-   */
-  const evtCancelBtn = () => {
+   *  doing additional housekeeping to keep comment manager consistent */
+  const evt_CancelBtn = () => {
     const { commenter_text } = state;
     let savedCommentIsEmpty = true;
     commenter_text.forEach(t => {
@@ -314,7 +311,7 @@ function URComment({ cref, cid, uid }) {
     <div></div> // empty div to keep layout consistent
   );
   const CancelBtn = (
-    <button className="secondary" onClick={evtCancelBtn}>
+    <button className="secondary" onClick={evt_CancelBtn}>
       Cancel
     </button>
   );
