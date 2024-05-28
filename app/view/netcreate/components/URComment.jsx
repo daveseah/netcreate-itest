@@ -59,8 +59,7 @@ function URComment({ cref, cid, uid }) {
     [] // run once because no dependencies are declared
   );
 
-  /** Component Effect - updated comment
-   */
+  /** Component Effect - updated comment */
   useEffect(() => {
     // declare helpers
     const urmsg_UpdatePermissions = data => {
