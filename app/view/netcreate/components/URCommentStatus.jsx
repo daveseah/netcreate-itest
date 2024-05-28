@@ -82,7 +82,7 @@ const URCommentStatus = props => {
           setActiveCSS('');
         }, 13000); // should equal the `disappear` ease-in period + 'disappear' timeout
       } else {
-        forceUpdate(); // force update to update counts
+        setDummy(dummy => dummy + 1); // force update to update counts
       }
     }
   };
