@@ -31,17 +31,18 @@ var m_current_groupid = null;
     complete decode succes. groupId is also set if successful
  */
 SESUTIL.DecodeToken = function (token, dataset) {
+  const DELIMITER = '-';
   if (token === undefined) return {};
   if (dataset === undefined) {
     console.error('SESUTIL.DecodeToken called without "dataset" parameter.');
     return {};
   }
-  let tokenBits = token.split('-');
+  let tokenBits = token.split(DELIMITER);
   let classId, projId, hashedId, groupId, subId, isValid;
   // optimistically set valid flag to be negated on failure
   isValid = true;
   // check for superficial issues
-  if (token.substr(-1) === '-') {
+  if (token.substr(-1) === DELIMITER) {
     isValid = false;
   }
   // token is of form CLS-PRJ-HASHEDID
@@ -90,8 +91,10 @@ SESUTIL.DecodeToken = function (token, dataset) {
     }
   }
 
+  // reconstruct user id for use with author data for nodes, edges, comments
+  const userId = [classId, projId, hashedId].join(DELIMITER);
   // if isValid is false, check groupId is 0 or subId is 0, indicating error
-  let decoded = { token, isValid, classId, projId, hashedId, groupId, subId };
+  let decoded = { token, isValid, classId, projId, hashedId, groupId, subId, userId };
   return decoded;
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

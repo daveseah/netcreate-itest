@@ -398,7 +398,7 @@ class NodeTable extends UNISYS.Component {
    */
   sortByComment(nodes) {
     // stuff the count into nodes for calculation
-    const uid = CMTMGR.GetCurrentUserId();
+    const uid = NCLOGIC.GetCurrentUserId();
     const countednodes = nodes.map(n => {
       const cref = CMTMGR.GetNodeCREF(n.id);
       n.commentcount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
@@ -604,16 +604,6 @@ class NodeTable extends UNISYS.Component {
                   </Button>
                 </th>
               ))}
-              <th width="10%" hidden={nodeDefs.provenance.hidden}>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    this.setSortKey('provenance', nodeDefs.provenance.type)
-                  }
-                >
-                  {nodeDefs.provenance.displayLabel} {this.sortSymbol('provenance')}
-                </Button>
-              </th>
               <th style={{ zIndex: 1 }}>
                 <div
                   className="comment-icon-inline comment-intable"
@@ -688,7 +678,6 @@ class NodeTable extends UNISYS.Component {
                       : node[a]}
                   </td>
                 ))}
-                <td hidden={nodeDefs.provenance.hidden}>{node.provenance}</td>
                 <td>
                   <URCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
                 </td>

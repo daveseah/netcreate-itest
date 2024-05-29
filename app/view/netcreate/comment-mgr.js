@@ -29,6 +29,8 @@ let MOD = UNISYS.NewModule(module.id);
 let UDATA = UNISYS.NewDataLink(MOD);
 const dialogContainerId = 'dialog-container'; // used to inject dialogs into NetCreate.jsx
 
+let UID; // user id, cached.  nc-logic updates this on INITIALIZE and SESSION
+
 /// UNISYS LIFECYCLE HOOKS ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** lifecycle INITIALIZE handler
@@ -225,11 +227,8 @@ MOD.OpenComment = (cref, cid) => {
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
-MOD.GetCurrentUserId = () => {
-  const session = UDATA.AppState('SESSION');
-  const uid = String(session.token).toLowerCase();
-  return uid;
-};
+MOD.SetCurrentUserId = uid => UID = uid;
+MOD.GetCurrentUserId = () => UID; // called by other comment classes
 MOD.GetUserName = uid => {
   return COMMENT.GetUserName(uid);
 };

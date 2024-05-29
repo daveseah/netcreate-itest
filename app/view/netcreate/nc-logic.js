@@ -292,6 +292,12 @@ MOD.Hook('DISCONNECT', () => {
  */
 MOD.Hook('INITIALIZE', () => {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
+  UDATA.OnAppStateChange('SESSION', session => {
+    const { userId } = session;
+    // Push updates to sub modules
+    CMTMGR.SetCurrentUserId(userId);
+  });
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - inside hook
   /** RELOAD_DB
    *  Called by importexport-mgr.js.MOD.Import:818
    *  During import, DB_MERGE will be called to merge the import data
@@ -509,11 +515,13 @@ MOD.Hook('INITIALIZE', () => {
     // provenance
     const session = UDATA.AppState('SESSION');
     const timestamp = new Date().toLocaleString('en-US');
-    const provenance = `Added by ${session.token} on ${timestamp}`;
+    const provenance = [];
+    const createdBy = MOD.GetCurrentUserId();
+    const updatedBy = createdBy;
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
       const node = {
-        id: newNodeID, label: data.label, provenance
+        id: newNodeID, label: data.label, provenance, createdBy, updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
@@ -636,7 +644,9 @@ MOD.Hook('INITIALIZE', () => {
     // provenance
     const session = UDATA.AppState('SESSION');
     const timestamp = new Date().toLocaleString('en-US');
-    const provenance = `Added by ${session.token} on ${timestamp}`;
+    const provenance = [];
+    const createdBy = MOD.GetCurrentUserId();
+    const updatedBy = createdBy;
 
     // call server to retrieve an unused edge ID
     return DATASTORE.PromiseNewEdgeID().then(newEdgeID => {
@@ -646,7 +656,9 @@ MOD.Hook('INITIALIZE', () => {
         source: data.nodeId,
         target: undefined,
         attributes: {},
-        provenance
+        provenance,
+        createdBy,
+        updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { edge }).then(() => {
         console.log('...DB_UPDATE node is now', edge);
@@ -845,6 +857,16 @@ MOD.Hook('APP_READY', function (info) {
     });
   });
 }); // end UNISYS_READY
+
+/// GLOBAL HELPERS ////////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+MOD.GetCurrentUserId = () => {
+  // always get the current session value because it might change at any time
+  const session = UDATA.AppState('SESSION');
+  const { userId } = session;
+  return userId;
+};
 
 /// OBJECT HELPERS ////////////////////////////////////////////////////////////
 /// these probably should go into a utility class
