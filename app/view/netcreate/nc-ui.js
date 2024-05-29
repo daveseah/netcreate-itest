@@ -228,17 +228,66 @@ function RenderAttributesTabEdit(state, defs, onchange) {
   return <div className="formview">{items}</div>;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderProvenanceItemsView(state, defs) {
+  const { provenance } = state;
+  const items = [];
+  Object.keys(provenance).forEach(k => {
+    items.push(RenderLabel(k, defs[k].displayLabel, defs[k].help));
+    const type = defs[k].type;
+    switch (type) {
+      case 'markdown':
+        items.push(RenderMarkdownValue(k, provenance[k]));
+        break;
+      case 'string':
+      case 'number':
+      default:
+        items.push(RenderStringValue(k, provenance[k]));
+        break;
+    }
+  });
+  return items;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderProvenanceItemsEdit(state, defs, onchange) {
+  const { provenance, degrees } = state;
+  const items = [];
+  Object.keys(provenance).forEach(k => {
+    items.push(RenderLabel(k, defs[k].displayLabel));
+    const type = defs[k].type;
+    const value = provenance[k] || ''; // catch `undefined` or React will complain about changing from uncontrolled to controlled
+    const helpText = defs[k].help;
+    switch (type) {
+      case 'markdown':
+        items.push(RenderMarkdownInput(k, value, onchange, helpText));
+        break;
+      case 'string':
+        items.push(RenderStringInput(k, value, onchange, helpText));
+        break;
+      case 'number':
+        items.push(m_RenderNumberInput(k, value, onchange, helpText));
+        break;
+      case 'select':
+        items.push(m_RenderOptionsInput(k, value, defs, onchange, helpText));
+        break;
+      default:
+        items.push(RenderStringValue(k, value, onchange)); // display unsupported type
+    }
+  });
+  return items;
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabView(state, defs) {
-  const { provenance, degrees, created, updated, revision } = state;
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
   // FIXME: These will be dynamically generated with the new Provenance template
   return (
     <div className="provenance formview">
-      {RenderLabel('provenancelabel', defs.provenance.displayLabel)}
-      {RenderStringValue('provenancelabel', provenance)}
+      <div className="category">PROVENANCE</div>
+      {RenderProvenanceItemsView(state, defs)}
+      <div className="category">HISTORY</div>
       {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', created)}
+      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
       {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', updated)}
+      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
       {RenderLabel('revisionlabel', defs.revision.displayLabel)}
       {RenderStringValue('revisionlabel', revision)}
     </div>
@@ -246,20 +295,26 @@ function RenderProvenanceTabView(state, defs) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabEdit(state, defs, onchange) {
-  const { provenance, degrees, created, updated, revision } = state;
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
   // FIXME: These will be dynamically generated with the new Provenance template
   return (
     <div className="provenance formview">
-      {RenderLabel('provenancelabel', defs.provenance.displayLabel)}
-      {RenderStringInput('provenance', provenance, onchange)}
+      <div className="category">PROVENANCE</div>
+      {RenderProvenanceItemsEdit(state, defs, onchange)}
+      <div className="category">HISTORY</div>
       {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', created)}
+      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
       {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', updated)}
+      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
       {RenderLabel('revisionlabel', defs.revision.displayLabel)}
       {RenderStringValue('revisionlabel', revision)}
     </div>
   );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderProvenanceByline(author, date) {
+  const by = author ? `${author}` : `(not recorded)`;
+  return `${by}, ${date}`; // leave author blank for older templates
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

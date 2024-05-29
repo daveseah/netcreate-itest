@@ -1,54 +1,68 @@
 # CHANGELOG
-
-
 [Unreleased](#unreleased)  
-[1.5.1](#1.5.1) -- 2024 Jan 8 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.1)  
-[1.5.0](#1.5.0) -- 2023 Dec 23 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.0)  
-[1.4.0](#1.4.0) -- 2022 Apr 11 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.4.0)  
-[1.3.1](#1.3.1) -- 2020 Sep 21 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.1)  
-[1.3.0](#1.3.0) -- 2020 Aug 26 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.0)  
-[1.2.1](#1.2.1) -- 2020 Jun 5 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.1)  
-[1.2.0](#1.2.0) -- 2019 May 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.0)  
-[1.1.0](#1.1.0) -- 2019 Feb 12 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.1.0)  
-[1.0.1](#1.0.1) -- 2018 Oct 2 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.1)  
-[1.0.0](#1.0.0) -- 2018 Sep 30 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.0)  
-[0.1.0](#0.1.0) -- 2018 Aug 28 -- [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/0.1.0)  
+[1.5.1](#1.5.1) - 2024-01-08 - January 2024 Data Collection [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.1)  
+[1.5.0](#1.5.0) - 2023-12-23 - January 2024 Data Collection [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.5.0)  
+[1.4.0](#1.4.0) - 2022-04-11 - Filtering, Data Import/Export [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.4.0)  
+[1.3.1](#1.3.1) - 2020-09-21 - Network Optimization [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.1)  
+[1.3.0](#1.3.0) - 2020-08-26 - Multiple Instances, Filtering [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.3.0)  
+[1.2.1](#1.2.1) - 2020-06-05 - [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.1)  
+[1.2.0](#1.2.0) - 2019-05-02  - ns.js script [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.2.0)  
+[1.1.0](#1.1.0) - 2019-02-12 - Tacitus Study [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.1.0)  
+[1.0.1](#1.0.1) - 2018-10-02 - Oct 2018 Study Day 2: Alexander [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.1)  
+[1.0.0](#1.0.0) - 2018-09-30 - Oct 2018 Study: Alexander [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/1.0.0)  
+[0.1.0](#0.1.0) - 2018-08-28 - Proof of Concept Prototype [tag](https://github.com/netcreateorg/netcreate-itest/releases/tag/0.1.0)  
 
----
-# [Unreleased] <a name="unreleased"></a>
+-------------------------------------------------------------------------------
+# Unreleased <a name="unreleased"></a>
 
-Candidate version 1.6.0 "Commenting"
-To be released April 2024
+Candidate version 2.0 "Commenting"
+To be released May 2024
 
-v1.6.0 introduces "commenting".  Database/file data format has changed significantly with 1.5.x so pre-1.4.x data (*.loki) and template (*.json) files are no longer compatible.
+v2.0.0 introduces "commenting".  Database/file data format has changed significantly with 1.5.x so pre-1.4.x data (*.loki) and template (*.json) files are no longer compatible.
 
-### Breaking Changes
+**Breaking Changes**
 - Pre-Version 1.5.x project files are no longer compatible.
   - Comments have been added to the database #133
   - `created`, `updated`, `revision` meta fields are now consistently used #129
+- Add Template Versioning
+  - Templates now have a version designation.
+  - The version should match the github Release version. Hopefully this will be less confusing than having separate version numbers. The one caveat is that it's harder to track interim development/alpha versions prior to a release.
+  - When opening projects, the template version (or lack of a template version) will allow the system to decide how to migrate or ignore data fields. e.g. previously built-in fields like comments will continue to be displayed and will not break in table views.
 
-### Significant Features
+**Significant Features**
 - Add Comment System  #133 -- including support for:
 	- floating draggable comment windows
 	- displays of comment counts
 	- two levels of comment replies
 	- comment templates
+  - comment prompt types for comment templates: text, dropdown, checkbox, radio, likert, discrete-slider #201
 	- displaying "read" status on a per-user basis
 	- editing, deletion
+	- deleting comments now will prune any orphaned comments marked for deletion #156
 	- confirmation dialog when canceling or editing an unsaved comment
 	- working with comments directly in tables
+	- comments that have been added or updated now broadcast alerts to other users on the network #157
+	- "Unread" and "Unread replies to me" are now displayed both as summary statistics in a "Unread Comment Panel" that lists all unread comments. In addition, comments (as well as source nodes/edge) can be opened directly from the panel #157
+	- during comment edit, node and edge selection from the graph and NodeTable and EdgeTable are disabled
+- The Provenance tab has been reformatted to show two sections: "PROVENANCE" and "HISTORY".
+  - Any fields that are designated isProvenance will be added to the "PROVENANCE" tab.
+  - Added a createdBy and updatedBy built-in fields 6fc8dee
 - Module Infrastructure -- #132 #134 #138
 
-### Changes (Minor)
+**Changes (Minor)**
 - AutoSuggest now has a placeholder text and scrolls #123
 - `Provenance` is now displayed in Node and Edge Tables #129
+- Added more research logging with consistent column format:
+  - Node and Edge "edit", "save", "cancel" events
+  - Info Panel tab selection (Graph, Node Table, Edge Table, More) 
+  - Selecting and clearing filters
 
-### Fixed
+**Fixed**
 - The focus filter for Edge Tables are now properly refreshed after switching to an Edge Table view #129
 - `Provenance` fields can be edited again #129
 - Importing exported csv files into Windows Excel no longer chokes on blank lines #137
 
-### Developer Improvements
+**Developer Improvements**
 - Adds support for `addons` for the core URSYS library #132
 - Adds a testing framework and V2 state manager #134
 - Rewrite URNET messaging system for the following communication interfaces: Unix Domain Sockets, WebSocketServer, and Browser WebSockets. #138
@@ -61,23 +75,22 @@ v1.6.0 introduces "commenting".  Database/file data format has changed significa
 ### Removed
 ### Security
 
-----
-# [1.5.1] -- January 2024 Data Collection<a name="1.5.1"></a>
+-------------------------------------------------------------------------------
+# 1.5.1 - January 2024 Data Collection<a name="1.5.1"></a>
 Released 2024 Jan 8 -- *for January 11, 2024 Data Collection*
-### Added
+
+#### Added
 * Numeric input fields default to 0 rather than blank
 
-----
-# [1.5.0] -- January 2024 Data Collection<a name="1.5.0"></a>
+-------------------------------------------------------------------------------
+# 1.5.0 - January 2024 Data Collection<a name="1.5.0"></a>
 Released 2023 Dec 23 -- *for January 11, 2024 Data Collection*
 
-### Significant Features
-
-v1.5.0 introduces a two new significant features:
+#### Significant Features
 * A **new UI** for **Node** and **Edge** editing that splits out "ATTRIBUTES", "EDGES", and "PROVENANCE" into separate tabs. #39
 * Custom Node and Edge fields can now be added via templates (prior to this you could only rename an existing field). #39
 
-### Minor Features
+#### Minor Features
 * A "Focus" filter can highlight a selected node and a customizable range of connected nodes. [#275](https://github.com/netcreateorg/netcreate-2018/pull/275)
 * Filters will now show statistics of how many nodes and edges are currently being filtered. #95
 * Filters now support using `&&` and `||` in search strings. #105
@@ -85,7 +98,7 @@ v1.5.0 introduces a two new significant features:
 * Markdown now supports images (with scaling) and emoticons for Nodes, Edges, and tables. #91
 * Research logs now follow a consistent column format so that exports can be more easily compared. #112
 
-### Developer Improvements
+#### Developer Improvements
 * Required node version updated to `v18.18.2` (was v18.16.0 and v10.22.0) #89, #2, #1
 * `npm` version detection now shows errors and instructions for handling Apple Silicon (ARM) processors #1
 * Prettier linting is now fixed and enabled, so code format consistency is maintained. #7
@@ -93,18 +106,18 @@ v1.5.0 introduces a two new significant features:
 
 And many other infrastructure and minor fixes.
 
-### Caveats
+#### Caveats
 * **Template Editor not fully functional** -- With the introduction of custom attribute fields, the JSON-Editor functionality is broken. You can still use the Template Editor to change templates for projects that use the default fields, but any project that has custom fields (e.g. fields that have **NOT** been defined in `template-schema.js`) will corrupt your template.  See #115.
 
----
-# [1.4.0]<a name="1.4.0"></a>
+-------------------------------------------------------------------------------
+# 1.4.0 - Filtering, Data Import/Export<a name="1.4.0"></a>
 Released 2022 Apr 18
 
 Version 1.4.0 release focuses on improvements in filtering, data import and export.
 
 The Net.Create database/file data format has changed significantly with 1.4.0 so pre-1.4.0  data (`*.loki`) and template (`*.json`) files are no longer compatible.
 
-### Key Features
+#### Key Features
 See the [wiki](../../wiki) and pull requests for details:
 
 * #169 Filters
@@ -154,8 +167,8 @@ See [Using Templates](../../wiki/Using-Templates) for more information.
 #### Misc Changes
 See also commits by JDanish dated between Oct and Dec 2020 for miscellaneous changes.
 
----
-# [1.3.1]<a name="1.3.1"></a>
+-------------------------------------------------------------------------------
+# 1.3.1 - Network Optimization<a name="1.3.1"></a>
 Released 2020 Sep 17
 
 Version 1.3.1 release focuses on performance optimizations, especially around network  #129
@@ -196,8 +209,8 @@ This isn't a perfect solution but perhaps it'll give us a little more informatio
 * Properly unmount NodeTable and EdgeTable db864d645515e632a196f07a37750493b5ffd9df
 
 
----
-# [1.3.0]<a name="1.3.0"></a>
+-------------------------------------------------------------------------------
+# 1.3.0 - Multiple Instances, Filtering<a name="1.3.0"></a>
 Released 2020 Aug 25
 
 Version 1.3.0 introduces two main sets of features:
@@ -290,8 +303,8 @@ A new filters panel allows users to show or hide nodes and edges based on specif
 
 * Misc bug fixes.
 
----
-# [1.2.1]<a name="1.2.1"></a>
+-------------------------------------------------------------------------------
+# 1.2.1<a name="1.2.1"></a>
 Released 2020 May 27
 
 Tagged prior to NetCreate extension work for version 1.3.0.
@@ -317,8 +330,8 @@ Tagged prior to NetCreate extension work for version 1.3.0.
   *  added tooltips to the graph title in the main graph area
   *  moved tooltip css out of the index file to a separate tooltip,css
 
----
-# [1.2.0]<a name="1.2.0"></a>
+-------------------------------------------------------------------------------
+# 1.2.0 - ns.js script<a name="1.2.0"></a>
 Released 2019 May 2
 (changes were implemented 3/12/2019)
 
@@ -335,8 +348,8 @@ Released prior to transfer of repository to `netcreateorg`.
 
 * Allow edit target when source and target share the same parent node. -- #71 -- When the source and target nodes both point to the parent node, they could not be edited.  The fix was to allow editing only of the target node.  This addresses issues #68  and #70.
 
----
-# [1.1.0] -- Tacitus Study<a name="1.1.0"></a>
+-------------------------------------------------------------------------------
+# 1.1.0 - Tacitus Study<a name="1.1.0"></a>
 Released 2019 Feb 3 -- *for the February 4, 2019 study with Tacitus*
 
 ### New Features:
@@ -364,8 +377,8 @@ Released 2019 Feb 3 -- *for the February 4, 2019 study with Tacitus*
 * Node and Edge IDs now better enforce integer type IDs. -- #51
 * Many errors, weird conditions, and bugs stemming from network edit activity -- #46, #58, #62
 
----
-# [1.0.1] -- Oct 2018 Study Day 2: Alexander<a name="1.0.1"></a>
+-------------------------------------------------------------------------------
+# 1.0.1 - Oct 2018 Study Day 2: Alexander<a name="1.0.1"></a>
 Released 2018 Oct 2 -- *for the second day (Oct 3) of the October 1, 2018 study with Ptolemy's Alexander the Great*
 
 ### New Features:
@@ -387,8 +400,8 @@ Released 2018 Oct 2 -- *for the second day (Oct 3) of the October 1, 2018 study 
 
 * Group ID information has now been restored in the research logs.
 
----
-# [1.0.0] -- Oct 2018 Study: Alexander<a name="1.0.0"></a>
+-------------------------------------------------------------------------------
+# 1.0.0 - Oct 2018 Study: Alexander<a name="1.0.0"></a>
 Released 2018 Sep 30 -- *for the October 1, 2018 study with Ptolemy's Alexander the Great.*
 
 ### New Features:
@@ -409,8 +422,8 @@ Released 2018 Sep 30 -- *for the October 1, 2018 study with Ptolemy's Alexander 
 
 * **Node Edit Locking** -- Nodes are not yet locked out when someone is editing them.  If two people edit a node at the same time, their changes will clobber each other.
 
----
-# [0.1.0] -- Proof of Concept Prototype<a name="0.1.0"></a>
+-------------------------------------------------------------------------------
+# 0.1.0 - Proof of Concept Prototype<a name="0.1.0"></a>
 Released 2018 Sep 30.
 First major release of the tool for internal testing.
 

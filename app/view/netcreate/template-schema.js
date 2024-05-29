@@ -138,6 +138,7 @@ MOD.EDGETYPEOPTIONS = {
  */
 MOD.TEMPLATE = {
   title: 'NetCreate Template',
+  version: 2.0, // match github Release number
   type: 'object',
   properties: {
     'name': {
@@ -342,6 +343,12 @@ MOD.TEMPLATE = {
               description: 'Show "id" value in tooltip on graph',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -382,6 +389,12 @@ MOD.TEMPLATE = {
               description: 'Show "label" value in tooltip on graph',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               options: { hidden: true }, // not end-user editable, always hidden from Template Editor
@@ -421,6 +434,12 @@ MOD.TEMPLATE = {
               format: 'checkbox',
               description: 'Show "type" value in tooltip on graph',
               default: true
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -465,6 +484,12 @@ MOD.TEMPLATE = {
               description: 'Show "notes" value in tooltip on graph',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -504,6 +529,12 @@ MOD.TEMPLATE = {
               description: 'Show "info" value in tooltip on graph',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -512,82 +543,47 @@ MOD.TEMPLATE = {
             }
           }
         },
-        'provenance': {
-          // Provenance/Source
+        'infoSource': {
           type: 'object',
           description: 'Who created the node',
           properties: {
             'type': {
               type: 'string',
-              description: '"provenance" data type',
+              description: '"infoSource" data type',
               default: 'string'
             },
             'displayLabel': {
               type: 'string',
               description: 'Label to use for system display',
-              default: 'Provenance'
+              default: 'Info Source'
             },
             'exportLabel': {
               type: 'string',
               description: 'Label to use for exported csv file field name',
-              default: 'Provenance'
+              default: 'InfoSource'
             },
             'help': {
               type: 'string',
               description: 'Help text to display on the Node Editor form',
-              default: 'Who created this?  (aka Provenance)'
+              default: 'Who created this?  (aka Source)'
             },
             'includeInGraphTooltip': {
               type: 'boolean',
               format: 'checkbox',
-              description: 'Show "provenance" value in tooltip on graph',
+              description: 'Show "infoSource" value in tooltip on graph',
+              default: true
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
               default: true
             },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description:
-                'Hides "provenance" from Node Editor, Nodes Table, and exports',
-              default: false
-            }
-          }
-        },
-        'comments': {
-          // Comments
-          type: 'object',
-          description: 'User comments on the node',
-          properties: {
-            'type': {
-              type: 'string',
-              description: '"comments" data type',
-              default: 'string'
-            },
-            'displayLabel': {
-              type: 'string',
-              description: 'Label to use for system display',
-              default: 'Comments'
-            },
-            'exportLabel': {
-              type: 'string',
-              description: 'Label to use for exported csv file field name',
-              default: 'Comments'
-            },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Node Editor form',
-              default: 'Enter "<comment> -- <name> <date>"'
-            },
-            'includeInGraphTooltip': {
-              type: 'boolean',
-              format: 'checkbox',
-              description: 'Show "comments" value in tooltip on graph',
-              default: true
-            },
-            'hidden': {
-              type: 'boolean',
-              format: 'checkbox',
-              description:
-                'Hides "comments" from Node Editor, Nodes Table, and exports',
+                'Hides "infoSource" from Node Editor, Nodes Table, and exports',
               default: false
             }
           }
@@ -622,6 +618,12 @@ MOD.TEMPLATE = {
               description: 'Show "degrees" value in tooltip on graph',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -647,21 +649,68 @@ MOD.TEMPLATE = {
               description: 'Label to use for exported csv file field name',
               default: 'Created'
             },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Node Editor form',
+              default: 'Date and time node was created'
+            },
             'includeInGraphTooltip': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show "created" value in tooltip on graph',
               default: true
             },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Node Editor form',
-              default: 'Date and time node was created'
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Requires "created" for exports and imports',
+              default: false
+            }
+          }
+        },
+        'createdBy': {
+          // Built-in data DO NOT MODIFY!
+          type: 'object',
+          description:
+            'System-generated date.  This setting used to show/hide tooltip in graph and import/export',
+          properties: {
+            'displayLabel': {
+              type: 'string',
+              description: 'Label to use for system display',
+              default: 'Created By'
+            },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Node Editor form',
+              default: 'Author who created the node'
+            },
+            'exportLabel': {
+              type: 'string',
+              description: 'Label to use for exported csv file field name',
+              default: 'Created By'
+            },
+            'includeInGraphTooltip': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show "created by" value in tooltip on graph',
+              default: true
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
+            'hidden': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Requires "created by" for exports and imports',
               default: false
             }
           }
@@ -682,21 +731,68 @@ MOD.TEMPLATE = {
               description: 'Label to use for exported csv file field name',
               default: 'Updated'
             },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Node Editor form',
+              default: 'Date and time node was last modified'
+            },
             'includeInGraphTooltip': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show "updated" value in tooltip on graph',
               default: true
             },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Node Editor form',
-              default: 'Date and time node was last modified'
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Requires "updated" for exports and imports',
+              default: false
+            }
+          }
+        },
+        'updatedBy': {
+          // Built-in data DO NOT MODIFY!
+          type: 'object',
+          description:
+            'System-generated date.  This setting used to show/hide tooltip in graph and import/export',
+          properties: {
+            'displayLabel': {
+              type: 'string',
+              description: 'Label to use for system display',
+              default: 'Updated By'
+            },
+            'exportLabel': {
+              type: 'string',
+              description: 'Label to use for exported csv file field name',
+              default: 'Updated By'
+            },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Node Editor form',
+              default: 'Author who updated the node'
+            },
+            'includeInGraphTooltip': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show "updated by" value in tooltip on graph',
+              default: true
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
+            'hidden': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Requires "updated by" for exports and imports',
               default: false
             }
           }
@@ -717,16 +813,22 @@ MOD.TEMPLATE = {
               description: 'Label to use for exported csv file field name',
               default: 'Revision'
             },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Node Editor form',
+              default: 'Number of times this node has been revised'
+            },
             'includeInGraphTooltip': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show "revision" value in tooltip on graph',
               default: true
             },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Node Editor form',
-              default: 'Number of times this node has been revised'
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -766,6 +868,12 @@ MOD.TEMPLATE = {
               description: 'Help text to display on the Edge Editor form',
               default: 'System-generated unique id number'
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -799,6 +907,12 @@ MOD.TEMPLATE = {
               type: 'string',
               description: 'Help text to display on the Node Editor form',
               default: 'Edge source node'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -868,6 +982,12 @@ MOD.TEMPLATE = {
               description: 'Help text to display on the Node Editor form',
               default: 'Type of edge connection'
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -905,6 +1025,12 @@ MOD.TEMPLATE = {
               description: 'Help text to display on the Node Editor form',
               default: 'Significance of the connection'
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -937,6 +1063,12 @@ MOD.TEMPLATE = {
               type: 'string',
               description: 'Help text to display on the Node Editor form',
               default: '"YYYY-MM-DD" format"'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -989,6 +1121,12 @@ MOD.TEMPLATE = {
                 'Make "weight" a required value.  When "true", "weight" will be set to `defaultValue` for all edges if "weight" was not previously defined.  Be sure to define `defaultValue`',
               default: true
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
@@ -998,76 +1136,47 @@ MOD.TEMPLATE = {
             }
           }
         },
-        'provenance': {
-          // Provenance/Source
+        'infoSource': {
           type: 'object',
-          description: 'Provenance of the edge',
+          description: 'Who created the edge',
           properties: {
             'type': {
               type: 'string',
-              description: '"provenance" data type',
+              description: '"infoSource" data type',
               default: 'string'
             },
             'displayLabel': {
               type: 'string',
               description: 'Label to use for system display',
-              default: 'Provenance'
+              default: 'Info Source'
             },
             'exportLabel': {
               type: 'string',
               description: 'Label to use for exported csv file field name',
-              default: 'Provenance'
+              default: 'InfoSource'
             },
             'help': {
               type: 'string',
               description: 'Help text to display on the Edge Editor form',
-              default: 'Who created this?  (aka Provenance)'
-            },
-            'hidden': {
-              type: 'boolean',
-              format: 'checkbox',
-              description:
-                'Hides "provenance" from Edge Editor, Edges Table, and exports',
-              default: false
-            }
-          }
-        },
-        'comments': {
-          // Comments
-          type: 'object',
-          description: 'Comments on the edge',
-          properties: {
-            'type': {
-              type: 'string',
-              description: '"comments" data type',
-              default: 'string'
-            },
-            'displayLabel': {
-              type: 'string',
-              description: 'Label to use for system display',
-              default: 'Comments'
-            },
-            'exportLabel': {
-              type: 'string',
-              description: 'Label to use for exported csv file field name',
-              default: 'Comments'
-            },
-            'help': {
-              type: 'string',
-              description: 'Help text to display on the Edge Editor form',
-              default: 'Enter "<comment> -- <name> <date>"'
+              default: 'Who created this?  (aka Source)'
             },
             'includeInGraphTooltip': {
               type: 'boolean',
               format: 'checkbox',
-              description: 'Show "comments" value in tooltip on graph',
+              description: 'Show "infoSource" value in tooltip on graph',
+              default: true
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
               default: true
             },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description:
-                'Hides "comments" from Edge Editor, Edges Table, and exports',
+                'Hides "infoSource" from Edge Editor, Edges Table, and exports',
               default: false
             }
           }
@@ -1095,6 +1204,12 @@ MOD.TEMPLATE = {
               type: 'string',
               description: 'Help text to display on the Node Editor form',
               default: 'Source Book.Chapter (e.g. "Part 2 06.03")'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -1128,6 +1243,12 @@ MOD.TEMPLATE = {
               type: 'string',
               description: 'Help text to display on the Node Editor form',
               default: 'Category (deprecated)'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -1165,10 +1286,57 @@ MOD.TEMPLATE = {
               description: 'Help text to display on the Edge Editor form',
               default: 'Date and time edge was created'
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Requires "created" for exports and imports',
+              default: false
+            }
+          }
+        },
+        'createdBy': {
+          // Built-in data DO NOT MODIFY!
+          type: 'object',
+          description:
+            'System-generated date.  This setting used to show/hide tooltip in graph and import/export',
+          properties: {
+            'displayLabel': {
+              type: 'string',
+              description: 'Label to use for system display',
+              default: 'Created By'
+            },
+            'exportLabel': {
+              type: 'string',
+              description: 'Label to use for exported csv file field name',
+              default: 'Created By'
+            },
+            'includeInGraphTooltip': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show "created by" value in tooltip on graph',
+              default: true
+            },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Edge Editor form',
+              default: 'Author who created the edge'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: true
+            },
+            'hidden': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Requires "created by" for exports and imports',
               default: false
             }
           }
@@ -1200,10 +1368,57 @@ MOD.TEMPLATE = {
               description: 'Help text to display on the Edge Editor form',
               default: 'Date and time edge was last modified'
             },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
+            },
             'hidden': {
               type: 'boolean',
               format: 'checkbox',
               description: 'Requires "updated" for exports and imports',
+              default: false
+            }
+          }
+        },
+        'updatedBy': {
+          // Built-in data DO NOT MODIFY!
+          type: 'object',
+          description:
+            'System-generated date.  This setting used to show/hide tooltip in graph and import/export',
+          properties: {
+            'displayLabel': {
+              type: 'string',
+              description: 'Label to use for system display',
+              default: 'Updated By'
+            },
+            'exportLabel': {
+              type: 'string',
+              description: 'Label to use for exported csv file field name',
+              default: 'Updated By'
+            },
+            'includeInGraphTooltip': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show "updated by" value in tooltip on graph',
+              default: true
+            },
+            'help': {
+              type: 'string',
+              description: 'Help text to display on the Edge Editor form',
+              default: 'Author who updated the nodedgee'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: true
+            },
+            'hidden': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Requires "updated by" for exports and imports',
               default: false
             }
           }
@@ -1234,6 +1449,12 @@ MOD.TEMPLATE = {
               type: 'string',
               description: 'Help text to display on the Edge Editor form',
               default: 'Number of times this edge has been revised'
+            },
+            'isProvenance': {
+              type: 'boolean',
+              format: 'checkbox',
+              description: 'Show in Provenance tab',
+              default: false
             },
             'hidden': {
               type: 'boolean',
@@ -1351,7 +1572,7 @@ MOD.ParseTemplateSchema = () => {
     });
     return currJson;
   }
-  let json = {};
+  let json = { version: MOD.TEMPLATE.version };  // Insert template version
   u_ParseProperties(MOD.TEMPLATE.properties, json);
   return json;
 };
