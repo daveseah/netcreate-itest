@@ -30,10 +30,14 @@
                          In this case, using the value makes sense
                          because the saved data is a number.
 
+  This uses a lot of props because it really is a helper componnent for
+  URComment.  The current state is maintained in URComment, but during
+  edit, input updates are stored temporarily in this component.
+
   USE:
 
     <URCommentPrompt
-      cref={cref}
+      cref={cref}  // collection reference (e.g. node, edge, project)
       commentType={comment_type} // currently selected comment type, not stored comment.comment_type
       commenterText={commenter_text}
       isMarkedDeleted={comment.comment_isMarkedDeleted}
@@ -54,22 +58,15 @@ import CMTMGR from '../comment-mgr';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Debug Flags
 const DBG = false;
 const PR = 'URCommentPrompt';
-
+/// Constants
 const CHECKBOX_DELIMITER = /\n/;
-
-/// HELPERS ///////////////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-/// Converts `index` into "prompt-<index>" for use in HTML id attributes
-function m_TextareaId(cref, index) {
-  return `prompt-${cref}-${index}`;
-}
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const URCommentPrompt = ({
+function URCommentPrompt({
   cref,
   commentType,
   commenterText,
@@ -78,10 +75,11 @@ const URCommentPrompt = ({
   viewMode,
   onChange,
   errorMessage
-}) => {
+}) {
   const [firstUpdate, setFirstUpdate] = useState(true);
   const commentTypes = CMTMGR.GetCommentTypes();
 
+  /** Component Effect - set the focus to the first empty field on mount */
   useEffect(() => {
     if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
       // find the first empty `text` prompt
@@ -93,30 +91,41 @@ const URCommentPrompt = ({
         }
       });
       // set focus to the found empty 'text' prompt
-      const foundTextArea = document.getElementById(m_TextareaId(cref, foundIndex));
+      const foundTextArea = document.getElementById(u_TextareaId(cref, foundIndex));
       if (foundTextArea) foundTextArea.focus();
       setFirstUpdate(false);
     }
   }, [firstUpdate, viewMode, commentType, commenterText, cref]);
 
-  const IsEmpty = commenterTextStr => {
+  /// UTILITIES ///////////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Used for radio buttons to indicate that there is nothing selected
+   * @param {string} commenterTextStr current radio button value
+   * @returns {boolean} true if the string is empty
+   */
+  function u_IsEmpty(commenterTextStr) {
     return (
       commenterTextStr === undefined ||
       commenterTextStr === null ||
       commenterTextStr === ''
     );
-  };
-
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Converts `index` into "prompt-<index>" for use in HTML id attributes */
+  function u_TextareaId(cref, index) {
+    return `prompt-${cref}-${index}`;
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts "Apple Pie\nApple Fritter" into ["Apple Pie", "Apple Fritter"]
    * @param {string} commenterTextStr newline delimited string, e.g. "Apple Pie\nApple Fritter"
-   * @returns {string[]}
+   * @returns {string[]} updated commenter text
    */
-  const SplitCheckboxCommentText = commenterTextStr => {
+  function u_SplitCheckboxCommentText(commenterTextStr) {
     if (!commenterTextStr) return [];
     return commenterTextStr.split(CHECKBOX_DELIMITER);
-  };
-
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts a selection 0-based index into a stacked discrete slider string
    * to save as comment text, e.g. 2 becomes `★★★`
@@ -125,22 +134,25 @@ const URCommentPrompt = ({
    * @param {string[]} options e.g.  ['💙', '💚', '💛', '🧡', '🩷']
    * @returns {string} e.g. 2 returns '💙💚💛'
    */
-  const SelectedIndex2CommentText = (index, options) => {
+  function u_SelectedIndex2CommentText(index, options) {
     return options.map((o, i) => (i <= index ? o : '')).join('');
-  };
+  }
 
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
-   * Triggers onChange handler with derived data
-   * Combines all checkbox items into a single newline-delimited string
+   * handles checkbox changing by
+   * 1. combining all checkbox items into a single newline-delimited string
+   * 2. calling onChange handler with derived data for checkboxes
    * e.g. "Apple\nBanana"
-   * @param {*} promptIndex
-   * @param {*} optionIndex
-   * @param {*} options
-   * @param {*} event
+   * @param {number} promptIndex index pointing to the currently active prompt
+   * @param {number} optionIndex index of the checkbox option item
+   * @param {Object} options all of the checkbox options
+   * @param {Object} event
    */
-  const UIOnCheck = (promptIndex, optionIndex, options, event) => {
+  const evt_OnCheck = (promptIndex, optionIndex, options, event) => {
     // e.g. selectedCheckboxes =  ["Apple Pie", "Apple Fritter"]
-    const selectedCheckboxes = SplitCheckboxCommentText(commenterText[promptIndex]);
+    const selectedCheckboxes = u_SplitCheckboxCommentText(commenterText[promptIndex]);
     let items = [];
     options.forEach((o, index) => {
       if (optionIndex === index) {
@@ -157,6 +169,11 @@ const URCommentPrompt = ({
     onChange(promptIndex, event);
   };
 
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** URCommentPrompt renders its display state based on:
+   *  - viewMode -- "edit" or "view" mode
+   */
   const RenderEditMode = () => {
     return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let inputJSX;
@@ -164,7 +181,7 @@ const URCommentPrompt = ({
         case 'text':
           inputJSX = (
             <textarea
-              id={m_TextareaId(cref, promptIndex)}
+              id={u_TextareaId(cref, promptIndex)}
               autoFocus
               onChange={event => onChange(promptIndex, event)}
               value={commenterText[promptIndex] || ''}
@@ -187,7 +204,7 @@ const URCommentPrompt = ({
           break;
         case 'checkbox': {
           // converts commment text into ["Apple", "Banana"]
-          const selectedCheckboxes = SplitCheckboxCommentText(
+          const selectedCheckboxes = u_SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           inputJSX = (
@@ -198,7 +215,7 @@ const URCommentPrompt = ({
                     type="checkbox"
                     value={option}
                     onChange={event =>
-                      UIOnCheck(promptIndex, optionIndex, prompt.options, event)
+                      evt_OnCheck(promptIndex, optionIndex, prompt.options, event)
                     }
                     checked={selectedCheckboxes.includes(option)}
                   />
@@ -250,7 +267,7 @@ const URCommentPrompt = ({
               {prompt.options.map((option, index) => (
                 <button
                   key={index}
-                  value={[index, SelectedIndex2CommentText(index, prompt.options)]}
+                  value={[index, u_SelectedIndex2CommentText(index, prompt.options)]}
                   className={
                     String(index) <= commenterText[promptIndex]
                       ? 'selected'
@@ -280,6 +297,7 @@ const URCommentPrompt = ({
     });
   };
 
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const RenderViewMode = () => {
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
@@ -292,12 +310,12 @@ const URCommentPrompt = ({
           displayJSX = (
             <div className="commenttext">
               {!isMarkedDeleted && commenterText[promptIndex]}
-              {IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
+              {u_IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
             </div>
           );
           break;
         case 'checkbox': {
-          const selectedCheckboxes = SplitCheckboxCommentText(
+          const selectedCheckboxes = u_SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           displayJSX = (
@@ -379,8 +397,8 @@ const URCommentPrompt = ({
       );
     });
   };
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   return viewMode === CMTMGR.VIEWMODE.EDIT ? RenderEditMode() : RenderViewMode();
-};
+}
 
 export default URCommentPrompt;

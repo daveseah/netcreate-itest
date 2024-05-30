@@ -1,8 +1,15 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URCommentStatus
+  URCommentStatus displays a summary of new comments being added across the
+  network in the nav bar.  There are two views:
+  - uiIsExpanded = false: A count of the most recent read and unread comments
+  - uiIsExpanded = true: The full list of the the most recent comments
+  In addition, there are two commands:
+  - "Mark All Read" will mark all of the messages in the status list "read"
+  - Close will close the status list
 
-  Displays network comment status messages in navbar.
+  The comment status messages remain visible through the whole user session.
+  Marking all messages as "read" will clear the status list.
 
   USE:
 
@@ -17,36 +24,56 @@ import CMTMGR from '../comment-mgr';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Initialize UNISYS DATA LINK for functional react component
+const UDATAOwner = { name: 'URCommentStatus' };
+const UDATA = UNISYS.NewDataLink(UDATAOwner);
+/// Debug Flags
 const DBG = false;
 const PR = 'URCommentStatus';
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Animation Timers
 let AppearTimer;
 let DisappearTimer;
 let ResetTimer;
 
-/// REACT COMPONENT ///////////////////////////////////////////////////////////
+/// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const URCommentStatus = props => {
-  const [message, setMessage] = useState('delayed');
+/** URCommentStatus renders a summary of new comments in the nav bar.
+ * @param {*} props currently not used
+ * @returns
+ */
+function URCommentStatus(props) {
+  const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [activeCSS, setActiveCSS] = useState('');
   const [uiIsExpanded, setUiIsExpanded] = useState(false);
   const [dummy, setDummy] = useState(0); // Dummy state variable to force update
 
-  /// Initialize UNISYS DATA LINK for functional react component
-  const UDATAOwner = { name: 'URCommentThread' };
-  const UDATA = UNISYS.NewDataLink(UDATAOwner);
+  /** Component Effect - register listeners on mount */
+  useEffect(() => {
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', () => setDummy(dummy => dummy + 1)); // respond to close
+    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+    UDATA.HandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
 
-  /// URSYS HANDLERS //////////////////////////////////////////////////////////
+    return () => {
+      UDATA.AppStateChangeOff('COMMENTCOLLECTION', () =>
+        setDummy(dummy => dummy + 1)
+      ); // respond to close
+      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+      UDATA.UnhandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
+    };
+  }, []);
+
+  /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  const HandleCOMMENTS_UPDATE = () => {
+  /** force re-render after COMMENTS_UPDATE from a new comment another user */
+  function urmsg_COMMENTS_UPDATE() {
     // This is necessary to force a re-render of the comment summaries
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
-  };
-
-  const HandleCOMMENT_UPDATE = data => {
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** animate the addition of new comment messages after a new comment from another user */
+  function urmsg_COMMENT_UPDATE(data) {
     const { comment, uaddr } = data;
 
     const my_uaddr = UNISYS.SocketUADDR();
@@ -60,7 +87,7 @@ const URCommentStatus = props => {
         source = `${comment.commenter_id} commented: `;
       }
       comment.commenter_id = source;
-      const message = GetCommentItem(comment);
+      const message = c_GetCommentItemJSX(comment);
       setMessages(prevMessages => [...prevMessages, message]);
 
       // Only show status update if it's coming from another
@@ -85,12 +112,46 @@ const URCommentStatus = props => {
         setDummy(dummy => dummy + 1); // force update to update counts
       }
     }
+  }
+
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const evt_ExpandPanel = () => {
+    clearTimeout(DisappearTimer);
+    clearTimeout(ResetTimer);
+    setActiveCSS('appear');
+    setUiIsExpanded(true);
+  };
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const evt_Close = () => {
+    setMessage('');
+    setActiveCSS('');
+    setUiIsExpanded(false);
+  };
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const evt_MarkAllRead = () => {
+    CMTMGR.MarkAllRead();
+  };
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const evt_OpenReferent = (event, cref) => {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenReferent(cref);
+  };
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const evt_OpenComment = (event, cref, cid) => {
+    event.preventDefault();
+    event.stopPropagation();
+    CMTMGR.OpenComment(cref, cid);
   };
 
-  /// METHODS /////////////////////////////////////////////////////////////////
+  /// RENDER HELPERS //////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  const GetCommentItem = comment => {
+  /** Renders each comment item summary as a JSX element
+   *  @param {TCommentObject} comment
+   *  @returns {JSX.Element}
+   */
+  function c_GetCommentItemJSX(comment) {
     if (comment.comment_isMarkedDeleted) return ''; // was marked deleted, so skip
     const cref = comment ? comment.collection_ref : '';
     const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
@@ -101,14 +162,14 @@ const URCommentStatus = props => {
         <a
           href="#"
           className="comment-sourcelabel"
-          onClick={event => UIOpenReferent(event, cref)}
+          onClick={event => evt_OpenReferent(event, cref)}
         >
           {sourceLabel}
         </a>
         <div className="commenter">: {comment.commenter_id}&nbsp;</div>
         <a
           href="#"
-          onClick={event => UIOpenComment(event, cref, comment.comment_id)}
+          onClick={event => evt_OpenComment(event, cref, comment.comment_id)}
         >{`#${comment.comment_id}`}</a>
         &nbsp;&ldquo;
         <div className="comment-text">
@@ -117,57 +178,9 @@ const URCommentStatus = props => {
         &rdquo;
       </div>
     );
-  };
+  }
 
-  /// UI HANDLERS //////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const UIExpandPanel = () => {
-    clearTimeout(DisappearTimer);
-    clearTimeout(ResetTimer);
-    setActiveCSS('appear');
-    setUiIsExpanded(true);
-  };
-
-  const UIClose = () => {
-    setMessage('');
-    setActiveCSS('');
-    setUiIsExpanded(false);
-  };
-
-  const UIMarkAllRead = () => {
-    CMTMGR.MarkAllRead();
-  };
-
-  const UIOpenReferent = (event, cref) => {
-    event.preventDefault();
-    event.stopPropagation();
-    CMTMGR.OpenReferent(cref);
-  };
-
-  const UIOpenComment = (event, cref, cid) => {
-    event.preventDefault();
-    event.stopPropagation();
-    CMTMGR.OpenComment(cref, cid);
-  };
-
-  /// INIT ////////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  useEffect(() => {
-    /// REGISTER LISTENERS
-    UDATA.OnAppStateChange('COMMENTCOLLECTION', () => setDummy(dummy => dummy + 1)); // respond to close
-    UDATA.HandleMessage('COMMENTS_UPDATE', HandleCOMMENTS_UPDATE);
-    UDATA.HandleMessage('COMMENT_UPDATE', HandleCOMMENT_UPDATE);
-
-    return () => {
-      UDATA.AppStateChangeOff('COMMENTCOLLECTION', () =>
-        setDummy(dummy => dummy + 1)
-      ); // respond to close
-      UDATA.UnhandleMessage('COMMENTS_UPDATE', HandleCOMMENTS_UPDATE);
-      UDATA.UnhandleMessage('COMMENT_UPDATE', HandleCOMMENT_UPDATE);
-    };
-  }, []);
-
-  /// RENDER /////////////////////////////////////////////////////////////////
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const isLoggedIn = NetMessage.GlobalGroupID();
   if (!isLoggedIn) return '';
@@ -175,10 +188,12 @@ const URCommentStatus = props => {
   const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
   const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();
   const unreadRepliesToMeItems = unreadRepliesToMe.map(comment =>
-    GetCommentItem(comment)
+    c_GetCommentItemJSX(comment)
   );
   const unreadComments = CMTMGR.GetUnreadComments();
-  const unreadCommentItems = unreadComments.map(comment => GetCommentItem(comment));
+  const unreadCommentItems = unreadComments.map(comment =>
+    c_GetCommentItemJSX(comment)
+  );
 
   const UnreadRepliesToMeButtonJSX = (
     <div>
@@ -186,7 +201,7 @@ const URCommentStatus = props => {
         className={`commentbtn ${
           countRepliesToMe ? 'hasNewComments' : 'hasReadComments'
         }`}
-        onClick={UIExpandPanel}
+        onClick={evt_ExpandPanel}
       >
         {CMTMGR.COMMENTICON}
         <div className="comment-count">{countRepliesToMe}</div>
@@ -200,7 +215,7 @@ const URCommentStatus = props => {
         className={`commentbtn ${
           countUnread ? 'hasUnreadComments' : 'hasReadComments'
         }`}
-        onClick={UIExpandPanel}
+        onClick={evt_ExpandPanel}
       >
         {CMTMGR.COMMENTICON}
         <div className="comment-count">{countUnread}</div>
@@ -221,14 +236,14 @@ const URCommentStatus = props => {
         <div
           id="comment-summary"
           className={`${uiIsExpanded ? ' expanded' : ''}`}
-          onClick={UIExpandPanel}
+          onClick={evt_ExpandPanel}
         >
           {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
         </div>
         <div
           id="comment-panel"
           className={`${uiIsExpanded ? ' expanded' : ''}`}
-          onClick={UIClose}
+          onClick={evt_Close}
         >
           <div className="comments-unread">
             {UnreadRepliesToMeButtonJSX}
@@ -236,10 +251,10 @@ const URCommentStatus = props => {
             {UnreadButtonJSX}
             <div className="comment-status-body">{unreadCommentItems}</div>
             <div className="commentbar">
-              <button className="small" onClick={UIClose}>
+              <button className="small" onClick={evt_Close}>
                 Close
               </button>
-              <button className="small" onClick={UIMarkAllRead}>
+              <button className="small" onClick={evt_MarkAllRead}>
                 Mark All Read
               </button>
             </div>
@@ -248,7 +263,7 @@ const URCommentStatus = props => {
       </div>
     </div>
   );
-};
+}
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

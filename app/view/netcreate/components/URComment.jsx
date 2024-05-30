@@ -291,7 +291,7 @@ function URComment({ cref, cid, uid }) {
   // TODO Allow admins
   const isAllowedToEditOwnComment = uid === comment.commenter_id;
 
-  // SUB COMPONENTS
+  /// SUB COMPONENTS
   const EditBtn = (
     <button className="outline small" onClick={evt_EditBtn}>
       Edit

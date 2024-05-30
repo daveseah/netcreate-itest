@@ -8,6 +8,8 @@
   * Closing the comment by clicking the "Close" or "X" button will mark
     the comments "read".
   * "Read/Unread" status is tied to a user id.
+  * Any open URCommentThread windows will be positioned close to the
+    URCommentBtn that opened it upon a window resize.
 
   It displays a summary of the comment status:
   * count of number of comments
@@ -33,7 +35,7 @@
     />
 
   PROPS:
-    * cref    -- collection reference (usu node ide, edge id)
+    * cref    -- collection reference (usu node id, edge id)
     * isTable -- used to differentiate comment buttons on tables vs nodes/edges
                  ensures that each comment button id is unique
 
@@ -66,14 +68,22 @@ import URCommentThread from './URCommentThread';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Initialize UNISYS DATA LINK for functional react component
+const UDATAOwner = { name: 'URCommentThread' };
+const UDATA = UNISYS.NewDataLink(UDATAOwner);
+/// Debug Flags
 const DBG = false;
 const PR = 'URCommentBtn';
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const URCommentBtn = ({ cref, isTable }) => {
-  /// CONSTANTS & DECLARATIONS ////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** URCommentBtn renders the comment icon button on objects that can support
+ *  comments.  It displays the number of comments and the "read" status.
+ *  @param {string} cref - Collection reference
+ *  @param {boolean} isTable - Secondary identifier for comment button
+ *  @returns {React.Component} - URCommentBtn
+ */
+function URCommentBtn({ cref, isTable }) {
   const uid = CMTMGR.GetCurrentUserId();
   const btnid = `${cref}${isTable ? '-isTable' : ''}`;
   const [isOpen, setIsOpen] = useState(false);
@@ -82,13 +92,35 @@ const URCommentBtn = ({ cref, isTable }) => {
   const [dummy, setDummy] = useState(0); // Dummy state variable to force update
   const commentButtonId = `comment-button-${btnid}`;
 
-  /// Initialize UNISYS DATA LINK for functional react component
-  const UDATAOwner = { name: 'URCommentThread' };
-  const UDATA = UNISYS.NewDataLink(UDATAOwner);
+  /** Component Effect - set up listeners on mount */
+  useEffect(() => {
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', urstate_UpdateCommentCollection);
+    UDATA.OnAppStateChange('COMMENTVOBJS', urstate_UpdateCommentVObjs);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
+    UDATA.HandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
+    window.addEventListener('resize', evt_OnResize);
 
-  /// METHODS /////////////////////////////////////////////////////////////////
+    setPosition(c_GetCommentThreadPosition());
+
+    return () => {
+      UDATA.AppStateChangeOff('COMMENTCOLLECTION', urstate_UpdateCommentCollection);
+      UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
+      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
+      UDATA.UnhandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
+      window.removeEventListener('resize', evt_OnResize);
+    };
+  }, [
+    urstate_UpdateCommentCollection,
+    urstate_UpdateCommentVObjs,
+    urmsg_UpdatePermissions,
+    urmsg_COMMENT_SELECT,
+    evt_OnResize,
+    c_GetCommentThreadPosition
+  ]);
+
+  /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const UpdateCommentCollection = useCallback(
+  const urstate_UpdateCommentCollection = useCallback(
     COMMENTCOLLECTION => {
       const uistate = CMTMGR.GetCommentUIState(commentButtonId);
       const openuiref = CMTMGR.GetOpenComments(cref);
@@ -103,35 +135,37 @@ const URCommentBtn = ({ cref, isTable }) => {
     },
     [commentButtonId, cref]
   );
-
-  const UpdateCommentVObjs = useCallback(() => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const urstate_UpdateCommentVObjs = useCallback(() => {
     // This is necessary to force a re-render of the threads
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
   }, []);
-
-  const UpdatePermissions = useCallback(data => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const urmsg_UpdatePermissions = useCallback(data => {
     setIsDisabled(data.commentBeingEditedByMe);
   }, []);
-
-  const HandleCOMMENT_SELECT = useCallback(
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const urmsg_COMMENT_SELECT = useCallback(
     data => {
-      if (data.cref === cref) UIOpenComment(true);
+      if (data.cref === cref) c_OpenComment(true);
     },
     [cref]
   );
 
-  const UIOpenComment = useCallback(
+  /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const c_OpenComment = useCallback(
     isOpen => {
-      const position = GetCommentThreadPosition();
+      const position = c_GetCommentThreadPosition();
       setIsOpen(isOpen);
       setPosition(position);
       CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
     },
-    [GetCommentThreadPosition, commentButtonId, cref]
+    [c_GetCommentThreadPosition, commentButtonId, cref]
   );
-
-  const GetCommentThreadPosition = useCallback(() => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const c_GetCommentThreadPosition = useCallback(() => {
     const btn = document.getElementById(commentButtonId);
     const cmtbtnx = btn.getBoundingClientRect().left;
     const windowWidth = Math.min(screen.width, window.innerWidth);
@@ -145,53 +179,35 @@ const URCommentBtn = ({ cref, isTable }) => {
     return { x, y };
   }, [commentButtonId]);
 
-  /// UI HANDLERS //////////////////////////////////////////////////////////////
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const UIOnClick = useCallback(
+  /** handle URCommentBtn click, which opens and closes the URCommentThread */
+  const evt_OnClick = useCallback(
     event => {
       event.stopPropagation();
       if (!isDisabled) {
         const updatedIsOpen = !isOpen;
-        UIOpenComment(updatedIsOpen);
+        c_OpenComment(updatedIsOpen);
       }
     },
-    [isDisabled, isOpen, UIOpenComment]
+    [isDisabled, isOpen, c_OpenComment]
   );
-
-  const UIOnResize = useCallback(() => {
-    const position = GetCommentThreadPosition();
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handles window resize, which will adjust the URCommentThread window
+   *  position relative to the resized location of the URCommentBtn
+   */
+  const evt_OnResize = useCallback(() => {
+    const position = c_GetCommentThreadPosition();
     setPosition(position);
-  }, [GetCommentThreadPosition]);
+  }, [c_GetCommentThreadPosition]);
 
-  /// INIT ////////////////////////////////////////////////////////////////////
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  useEffect(() => {
-    UDATA.OnAppStateChange('COMMENTCOLLECTION', UpdateCommentCollection);
-    UDATA.OnAppStateChange('COMMENTVOBJS', UpdateCommentVObjs);
-    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', UpdatePermissions);
-    UDATA.HandleMessage('COMMENT_SELECT', HandleCOMMENT_SELECT);
-    window.addEventListener('resize', UIOnResize);
-
-    setPosition(GetCommentThreadPosition());
-
-    return () => {
-      UDATA.AppStateChangeOff('COMMENTCOLLECTION', UpdateCommentCollection);
-      UDATA.AppStateChangeOff('COMMENTVOBJS', UpdateCommentVObjs);
-      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', UpdatePermissions);
-      UDATA.UnhandleMessage('COMMENT_SELECT', HandleCOMMENT_SELECT);
-      window.removeEventListener('resize', UIOnResize);
-    };
-  }, [
-    UpdateCommentCollection,
-    UpdateCommentVObjs,
-    UpdatePermissions,
-    HandleCOMMENT_SELECT,
-    UIOnResize,
-    GetCommentThreadPosition
-  ]);
-
-  /// RENDER /////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** URCommentBtn displays:
+   *  - the number of comments in the thread
+   *  - the "read" status of all comments: unread (gold) or read (gray)
+   *  - isOpen - click on the button to display threads in a new window
+   */
   const count = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
   const ccol = CMTMGR.GetCommentCollection(cref) || {};
 
@@ -204,7 +220,7 @@ const URCommentBtn = ({ cref, isTable }) => {
 
   return (
     <div id={commentButtonId}>
-      <div className={css} onClick={UIOnClick}>
+      <div className={css} onClick={evt_OnClick}>
         {CMTMGR.COMMENTICON}
         <div className="comment-count">{label}</div>
       </div>
@@ -219,7 +235,7 @@ const URCommentBtn = ({ cref, isTable }) => {
       )}
     </div>
   );
-};
+}
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

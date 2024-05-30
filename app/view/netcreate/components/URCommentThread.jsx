@@ -1,6 +1,8 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  URCommentThread
+  URCommentThread displays all of the comments and replies for a given referent
+  object.  It is a draggable window that can be opened and closed by the user
+  via the URCommentBtn.  Clickin "X" or close will mark all comments as "read".
 
   USE:
 
@@ -13,9 +15,9 @@
     />
 
   PROPS:
-    * uiref   -- reference to the comment button id, usu commentButtonId
-    * cref    -- collection reference (usu node ide, edge id)
-    * uid     -- user id of active user viewing or changing comment
+    * uiref   -- reference to the ui component that opened the thread, usu commentButtonId
+    * cref    -- collection reference (usu node id, edge id)
+    * uid     -- user id of current active user viewing or changing comment
     * x,y     -- position of open comment thread used to set proximity to
                  comment button
 
@@ -30,33 +32,37 @@ import URComment from './URComment';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Initialize UNISYS DATA LINK for react component
+const UDATAOwner = { name: 'URCommentThread' };
+const UDATA = UNISYS.NewDataLink(UDATAOwner);
+/// Debug Flags
 const DBG = false;
 const PR = 'URCommentThread';
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const URCommentThread = ({ uiref, cref, uid, x, y }) => {
+/** URCommentThread renders the set of individual comments and replies
+ *  (URComment) in a single window.  Handles marking comments as "read"
+ *  when the thread is closed.
+ */
+function URCommentThread({ uiref, cref, uid, x, y }) {
   const [firstUpdate, setFirstUpdate] = useState(true);
   const [isDisabled, setIsDisabled] = useState(false);
 
-  /// Initialize UNISYS DATA LINK for react component
-  const UDATAOwner = { name: 'URCommentThread' };
-  const UDATA = UNISYS.NewDataLink(UDATAOwner);
-
-  /// INIT ////////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Component Effect - set up listeners on mount */
   useEffect(() => {
-    const handleUpdatePermissions = data => {
+    const urmsg_UpdatePermissions = data => {
       setIsDisabled(data.commentBeingEditedByMe);
     };
 
-    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', handleUpdatePermissions);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
 
     return () => {
-      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', handleUpdatePermissions);
+      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     };
   }, []);
 
+  /** Component Effect - scroll to last comment on mount */
   useEffect(() => {
     if (firstUpdate) {
       const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
@@ -69,9 +75,12 @@ const URCommentThread = ({ uiref, cref, uid, x, y }) => {
     }
   }, [firstUpdate, cref, uid]);
 
-  /// UI HANDLERS //////////////////////////////////////////////////////////////
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const UIOnReply = () => {
+  /** handles clicking the "Click to add a Comment" textarea to create a new
+   *  coment.
+   */
+  const evt_OnAddComment = () => {
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const numComments = commentVObjs.length;
     if (numComments < 1) {
@@ -93,22 +102,29 @@ const URCommentThread = ({ uiref, cref, uid, x, y }) => {
       });
     }
   };
-
-  const UIOnClose = () => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handles the "X" or "Close" button click, marks all comments "read" */
+  const evt_OnClose = () => {
     CMTMGR.CloseCommentCollection(uiref, cref, uid);
   };
-
-  const UIOnReferentClick = (event, cref) => {
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** handles clicking on the name of the object being commented on
+   *  opens the object -- useful for finding the source object if the
+   *  thread window has moved.
+   */
+  const evt_OnReferentClick = (event, cref) => {
     event.preventDefault();
     event.stopPropagation();
     CMTMGR.OpenReferent(cref);
   };
 
-  /// RENDER /////////////////////////////////////////////////////////////////
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
+
+  /// SUB COMPONENTS
   const CloseBtn = (
-    <button onClick={UIOnClose} disabled={isDisabled}>
+    <button onClick={evt_OnClose} disabled={isDisabled}>
       Close
     </button>
   );
@@ -129,12 +145,12 @@ const URCommentThread = ({ uiref, cref, uid, x, y }) => {
         <div className="topbar">
           <div className="commentTitle">
             Comments on {typeLabel}{' '}
-            <a href="#" onClick={event => UIOnReferentClick(event, cref)}>
+            <a href="#" onClick={event => evt_OnReferentClick(event, cref)}>
               {sourceLabel}
             </a>
           </div>
           {!isDisabled && (
-            <div className="closeBtn" onClick={UIOnClose}>
+            <div className="closeBtn" onClick={evt_OnClose}>
               X
             </div>
           )}
@@ -153,7 +169,7 @@ const URCommentThread = ({ uiref, cref, uid, x, y }) => {
               className="add"
               placeholder="Click to add a Comment..."
               readOnly
-              onClick={UIOnReply}
+              onClick={evt_OnAddComment}
             ></textarea>
           )}
           {!uid && commentVObjs.length < 1 && (
@@ -166,7 +182,7 @@ const URCommentThread = ({ uiref, cref, uid, x, y }) => {
       </div>
     </Draggable>
   );
-};
+}
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
