@@ -46,7 +46,6 @@ const PR = 'URCommentThread';
  *  when the thread is closed.
  */
 function URCommentThread({ uiref, cref, uid, x, y }) {
-  const [firstUpdate, setFirstUpdate] = useState(true);
   const [isDisabled, setIsDisabled] = useState(false);
 
   /** Component Effect - set up listeners on mount */
@@ -61,19 +60,6 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
       UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     };
   }, []);
-
-  /** Component Effect - scroll to last comment on mount */
-  useEffect(() => {
-    if (firstUpdate) {
-      const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
-      const lastCVObj = commentVObjs[commentVObjs.length - 1];
-      if (lastCVObj) {
-        const lastCommentEl = document.getElementById(lastCVObj.comment_id);
-        if (lastCommentEl) lastCommentEl.scrollIntoView({ behavior: 'smooth' });
-      }
-      setFirstUpdate(false);
-    }
-  }, [firstUpdate, cref, uid]);
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

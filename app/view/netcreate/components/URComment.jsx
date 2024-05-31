@@ -38,6 +38,7 @@ const PR = 'URComment';
  *  @returns {React.Component} - URComment
  */
 function URComment({ cref, cid, uid }) {
+  const [element, setElement] = useState(null);
   const [state, setState] = useState({
     commenter: '',
     createtime_string: '',
@@ -58,6 +59,14 @@ function URComment({ cref, cid, uid }) {
     () => c_LoadCommentVObj(),
     [] // run once because no dependencies are declared
   );
+
+  /** Component Effect - scroll component into view on mount */
+  useEffect(() => {
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      console.log('scrolling', element, cid, 'into view');
+    }
+  }, [element]);
 
   /** Component Effect - updated comment */
   useEffect(() => {
@@ -351,6 +360,7 @@ function URComment({ cref, cid, uid }) {
     CommentComponent = (
       <div
         id={cid}
+        ref={setElement}
         className={`comment ${comment.comment_isMarkedDeleted && 'deleted'}`}
         onMouseDown={e => e.stopPropagation()}
       >
@@ -383,6 +393,7 @@ function URComment({ cref, cid, uid }) {
     CommentComponent = (
       <div
         id={cid}
+        ref={setElement}
         className={`comment ${comment.comment_isMarkedDeleted ? 'deleted' : ''}`}
       >
         <div>
