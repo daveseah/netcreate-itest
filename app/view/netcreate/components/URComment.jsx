@@ -77,7 +77,7 @@ function URComment({ cref, cid, uid }) {
 
     // cleanup methods for functional component unmount
     return () => {
-      if (state.uIsBeingEdited) CMTMGR.UnlockComment(state.cid);
+      if (state.uIsBeingEdited) CMTMGR.UnlockComment(cid);
       UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
       UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     };
@@ -143,7 +143,7 @@ function URComment({ cref, cid, uid }) {
       uViewMode
     }));
 
-    CMTMGR.LockComment(state.cid);
+    CMTMGR.LockComment(cid);
   };
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle save button, which saves the state to comment manager.
