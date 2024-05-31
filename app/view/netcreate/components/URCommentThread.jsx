@@ -24,7 +24,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import UNISYS from 'unisys/client';
 import CMTMGR from '../comment-mgr';
@@ -66,7 +66,7 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
   /** handles clicking the "Click to add a Comment" textarea to create a new
    *  coment.
    */
-  const evt_OnAddComment = () => {
+  const evt_OnAddComment = useCallback(() => {
     const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
     const numComments = commentVObjs.length;
     if (numComments < 1) {
@@ -87,22 +87,25 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
         commenter_id: uid
       });
     }
-  };
+  }, [cref, uid]);
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles the "X" or "Close" button click, marks all comments "read" */
-  const evt_OnClose = () => {
+  const evt_OnClose = useCallback(() => {
     CMTMGR.CloseCommentCollection(uiref, cref, uid);
-  };
+  }, [uiref, cref, uid]);
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles clicking on the name of the object being commented on
    *  opens the object -- useful for finding the source object if the
    *  thread window has moved.
    */
-  const evt_OnReferentClick = (event, cref) => {
+  const evt_OnReferentClick = useCallback(
+    (event, cref) => {
     event.preventDefault();
     event.stopPropagation();
     CMTMGR.OpenReferent(cref);
-  };
+    },
+    [cref]
+  );
 
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
