@@ -76,12 +76,13 @@ function URCommentPrompt({
   onChange,
   errorMessage
 }) {
-  const [firstUpdate, setFirstUpdate] = useState(true);
   const commentTypes = CMTMGR.GetCommentTypes();
 
-  /** Component Effect - set the focus to the first empty field on mount */
+  /** Component Effect - set the focus to the first empty field on
+   *  entering edit mode, or selecting a new comment type
+   */
   useEffect(() => {
-    if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
+    if (viewMode === CMTMGR.VIEWMODE.EDIT) {
       // find the first empty `text` prompt
       let foundIndex = -1;
       commentTypes.get(commentType).prompts.find((prompt, promptIndex) => {
@@ -93,9 +94,8 @@ function URCommentPrompt({
       // set focus to the found empty 'text' prompt
       const foundTextArea = document.getElementById(u_TextareaId(cref, foundIndex));
       if (foundTextArea) foundTextArea.focus();
-      setFirstUpdate(false);
     }
-  }, [firstUpdate, viewMode, commentType, commenterText, cref]);
+  }, [viewMode, commentType]);
 
   /// UTILITIES ///////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
