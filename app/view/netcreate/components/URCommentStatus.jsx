@@ -66,15 +66,14 @@ function URCommentStatus(props) {
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** force re-render after COMMENTS_UPDATE from a new comment another user */
-  const urmsg_COMMENTS_UPDATE = useCallback(() => {
+  function urmsg_COMMENTS_UPDATE() {
     // This is necessary to force a re-render of the comment summaries
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** animate the addition of new comment messages after a new comment from another user */
-  const urmsg_COMMENT_UPDATE = useCallback(
-    data => {
+  function urmsg_COMMENT_UPDATE(data) {
     const { comment, uaddr } = data;
 
     const my_uaddr = UNISYS.SocketUADDR();
@@ -113,40 +112,38 @@ function URCommentStatus(props) {
         setDummy(dummy => dummy + 1); // force update to update counts
       }
     }
-    },
-    [AppearTimer, DisappearTimer, ResetTimer]
-  );
+  }
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const evt_ExpandPanel = useCallback(() => {
+  function evt_ExpandPanel() {
     clearTimeout(DisappearTimer);
     clearTimeout(ResetTimer);
     setActiveCSS('appear');
     setUiIsExpanded(true);
-  }, [DisappearTimer, ResetTimer]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const evt_Close = useCallback(() => {
+  function evt_Close() {
     setMessage('');
     setActiveCSS('');
     setUiIsExpanded(false);
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const evt_MarkAllRead = useCallback(() => {
+  function evt_MarkAllRead() {
     CMTMGR.MarkAllRead();
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const evt_OpenReferent = useCallback((event, cref) => {
+  function evt_OpenReferent(event, cref) {
     event.preventDefault();
     event.stopPropagation();
     CMTMGR.OpenReferent(cref);
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const evt_OpenComment = useCallback((event, cref, cid) => {
+  function evt_OpenComment(event, cref, cid) {
     event.preventDefault();
     event.stopPropagation();
     CMTMGR.OpenComment(cref, cid);
-  }, []);
+  }
 
   /// RENDER HELPERS //////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

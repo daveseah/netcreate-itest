@@ -103,28 +103,28 @@ function URCommentPrompt({
    * @param {string} commenterTextStr current radio button value
    * @returns {boolean} true if the string is empty
    */
-  const u_IsEmpty = useCallback(commenterTextStr => {
+  function u_IsEmpty(commenterTextStr) {
     return (
       commenterTextStr === undefined ||
       commenterTextStr === null ||
       commenterTextStr === ''
     );
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Converts `index` into "prompt-<index>" for use in HTML id attributes */
-  const u_TextareaId = useCallback((cref, index) => {
+  function u_TextareaId(cref, index) {
     return `prompt-${cref}-${index}`;
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts "Apple Pie\nApple Fritter" into ["Apple Pie", "Apple Fritter"]
    * @param {string} commenterTextStr newline delimited string, e.g. "Apple Pie\nApple Fritter"
    * @returns {string[]} updated commenter text
    */
-  const u_SplitCheckboxCommentText = useCallback(commenterTextStr => {
+  function u_SplitCheckboxCommentText(commenterTextStr) {
     if (!commenterTextStr) return [];
     return commenterTextStr.split(CHECKBOX_DELIMITER);
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts a selection 0-based index into a stacked discrete slider string
@@ -134,9 +134,9 @@ function URCommentPrompt({
    * @param {string[]} options e.g.  ['💙', '💚', '💛', '🧡', '🩷']
    * @returns {string} e.g. 2 returns '💙💚💛'
    */
-  const u_SelectedIndex2CommentText = useCallback((index, options) => {
+  function u_SelectedIndex2CommentText(index, options) {
     return options.map((o, i) => (i <= index ? o : '')).join('');
-  }, []);
+  }
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -150,7 +150,7 @@ function URCommentPrompt({
    * @param {Object} options all of the checkbox options
    * @param {Object} event
    */
-  const evt_OnCheck = useCallback((promptIndex, optionIndex, options, event) => {
+  function evt_OnCheck(promptIndex, optionIndex, options, event) {
     // e.g. selectedCheckboxes =  ["Apple Pie", "Apple Fritter"]
     const selectedCheckboxes = u_SplitCheckboxCommentText(commenterText[promptIndex]);
     let items = [];
@@ -167,7 +167,7 @@ function URCommentPrompt({
     });
     event.target.value = items.join('\n');
     onChange(promptIndex, event);
-  }, []);
+  }
 
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

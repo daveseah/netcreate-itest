@@ -62,10 +62,7 @@ function URComment({ cref, cid, uid }) {
 
   /** Component Effect - scroll component into view on mount */
   useEffect(() => {
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      console.log('scrolling', element, cid, 'into view');
-    }
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
   }, [element]);
 
   /** Component Effect - updated comment */
@@ -96,7 +93,7 @@ function URComment({ cref, cid, uid }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Declare helper method to load viewdata from comment manager into the
    *  component state */
-  const c_LoadCommentVObj = useCallback(() => {
+  function c_LoadCommentVObj() {
     const cvobj = CMTMGR.GetCommentVObj(cref, cid);
     const comment = CMTMGR.GetComment(cid);
 
@@ -137,12 +134,12 @@ function URComment({ cref, cid, uid }) {
 
     // Lock edit upon creation of a new comment or a new reply
     if (cvobj.isBeingEdited) CMTMGR.LockComment(comment.comment_id);
-  }, [cref, cid]);
+  }
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle edit button, which toggles the viewmode of this URComment */
-  const evt_EditBtn = useCallback(() => {
+  function evt_EditBtn() {
     const uViewMode =
       state.uViewMode === CMTMGR.VIEWMODE.EDIT
         ? CMTMGR.VIEWMODE.VIEW
@@ -153,11 +150,11 @@ function URComment({ cref, cid, uid }) {
     }));
 
     CMTMGR.LockComment(cid);
-  }, [state.uViewMode, cid]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle save button, which saves the state to comment manager.
    *  looks like there are some side effects being handled at the end */
-  const evt_SaveBtn = useCallback(() => {
+  function evt_SaveBtn() {
     const { selected_comment_type, commenter_text } = state;
     const comment = CMTMGR.GetComment(cid);
     comment.comment_type = selected_comment_type;
@@ -169,11 +166,11 @@ function URComment({ cref, cid, uid }) {
       ...prevState,
       uViewMode: CMTMGR.VIEWMODE.VIEW
     }));
-  }, [state, uid, cid]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle reply button, which adds a new comment via comment manager,
    *  updating the thread data structure associated with URCommentThread */
-  const evt_ReplyBtn = useCallback(() => {
+  function evt_ReplyBtn() {
     const { comment_id_parent } = state;
     if (comment_id_parent === '') {
       // Reply to a root comment
@@ -192,21 +189,21 @@ function URComment({ cref, cid, uid }) {
         commenter_id: uid
       });
     }
-  }, [state, cref, cid, uid]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle delete button, which removes the comment associated with this
    *  commment from the comment manager */
-  const evt_DeleteBtn = useCallback(() => {
+  function evt_DeleteBtn() {
     CMTMGR.RemoveComment({
       collection_ref: cref,
       comment_id: cid,
       uid
     });
-  }, [cref, cid, uid]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle cancel button, which reverts the comment to its previous state,
    *  doing additional housekeeping to keep comment manager consistent */
-  const evt_CancelBtn = useCallback(() => {
+  function evt_CancelBtn() {
     const { commenter_text } = state;
     let savedCommentIsEmpty = true;
     commenter_text.forEach(t => {
@@ -240,31 +237,28 @@ function URComment({ cref, cid, uid }) {
 
       cb();
     }
-  }, [state, cref, cid, uid]);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle select button, which updates the comment type associated with this
    *  comment via comment manager */
-  const evt_TypeSelector = useCallback(event => {
+  function evt_TypeSelector(event) {
     const selection = event.target.value;
     setState(prevState => ({
       ...prevState,
       selected_comment_type: selection
     }));
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle input update, which updates the text associated with this comment
    *  via comment manager */
-  const evt_CommentText = useCallback(
-    (index, event) => {
+  function evt_CommentText(index, event) {
     const { commenter_text } = state;
     commenter_text[index] = event.target.value;
     setState(prevState => ({
       ...prevState,
       commenter_text: [...commenter_text]
     }));
-    },
-    [state]
-  );
+  }
 
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

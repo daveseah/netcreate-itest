@@ -120,8 +120,7 @@ function URCommentBtn({ cref, isTable }) {
 
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const urstate_UpdateCommentCollection = useCallback(
-    COMMENTCOLLECTION => {
+  function urstate_UpdateCommentCollection(COMMENTCOLLECTION) {
       const uistate = CMTMGR.GetCommentUIState(commentButtonId);
       const openuiref = CMTMGR.GetOpenComments(cref);
       if (uistate) {
@@ -132,40 +131,32 @@ function URCommentBtn({ cref, isTable }) {
           setIsOpen(uistate.isOpen);
         }
       }
-    },
-    [commentButtonId, cref]
-  );
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const urstate_UpdateCommentVObjs = useCallback(() => {
+  function urstate_UpdateCommentVObjs() {
     // This is necessary to force a re-render of the threads
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const urmsg_UpdatePermissions = useCallback(data => {
+  function urmsg_UpdatePermissions(data) {
     setIsDisabled(data.commentBeingEditedByMe);
-  }, []);
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const urmsg_COMMENT_SELECT = useCallback(
-    data => {
+  function urmsg_COMMENT_SELECT(data) {
       if (data.cref === cref) c_OpenComment(true);
-    },
-    [cref]
-  );
+  }
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const c_OpenComment = useCallback(
-    isOpen => {
+  function c_OpenComment(isOpen) {
       const position = c_GetCommentThreadPosition();
       setIsOpen(isOpen);
       setPosition(position);
       CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
-    },
-    [c_GetCommentThreadPosition, commentButtonId, cref]
-  );
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const c_GetCommentThreadPosition = useCallback(() => {
+  function c_GetCommentThreadPosition() {
     const btn = document.getElementById(commentButtonId);
     const cmtbtnx = btn.getBoundingClientRect().left;
     const windowWidth = Math.min(screen.width, window.innerWidth);
@@ -177,29 +168,26 @@ function URCommentBtn({ cref, isTable }) {
     }
     const y = btn.getBoundingClientRect().top + window.scrollY;
     return { x, y };
-  }, [commentButtonId]);
+  }
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle URCommentBtn click, which opens and closes the URCommentThread */
-  const evt_OnClick = useCallback(
-    event => {
+  function evt_OnClick(event) {
       event.stopPropagation();
       if (!isDisabled) {
         const updatedIsOpen = !isOpen;
         c_OpenComment(updatedIsOpen);
       }
-    },
-    [isDisabled, isOpen, c_OpenComment]
-  );
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles window resize, which will adjust the URCommentThread window
    *  position relative to the resized location of the URCommentBtn
    */
-  const evt_OnResize = useCallback(() => {
+  function evt_OnResize() {
     const position = c_GetCommentThreadPosition();
     setPosition(position);
-  }, [c_GetCommentThreadPosition]);
+  }
 
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
