@@ -800,7 +800,10 @@ class EdgeTable extends UNISYS.Component {
                   </td>
                 ))}
                 <td>
-                  <URCommentBtn cref={CMTMGR.GetEdgeCREF(edge.id)} isTable />
+                  <URCommentBtn
+                    cref={CMTMGR.GetEdgeCREF(edge.id)}
+                    uuiid={'edgetable'}
+                  />
                 </td>
                 {/*
                 <td hidden={!isAdmin} style={{ fontSize: '9px' }}>

@@ -31,12 +31,13 @@
 
     <URCommentBtn
       cref={collection_ref}
-      isTable
+      uuiid={uuiid}
     />
 
   PROPS:
     * cref    -- collection reference (usu node id, edge id)
-    * isTable -- used to differentiate comment buttons on tables vs nodes/edges
+    * uuiid   -- unique user interface id
+                 used to differentiate comment buttons on tables vs nodes/edges
                  ensures that each comment button id is unique
 
   STATES:
@@ -61,7 +62,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import UNISYS from 'unisys/client';
 import CMTMGR from '../comment-mgr';
 import URCommentThread from './URCommentThread';
@@ -80,12 +81,12 @@ const PR = 'URCommentBtn';
 /** URCommentBtn renders the comment icon button on objects that can support
  *  comments.  It displays the number of comments and the "read" status.
  *  @param {string} cref - Collection reference
- *  @param {boolean} isTable - Secondary identifier for comment button
+ *  @param {boolean} [uuiid] - Optional secondary identifier for comment button
  *  @returns {React.Component} - URCommentBtn
  */
-function URCommentBtn({ cref, isTable }) {
+function URCommentBtn({ cref, uuiid }) {
   const uid = CMTMGR.GetCurrentUserId();
-  const btnid = `${cref}${isTable ? '-isTable' : ''}`;
+  const btnid = `${cref}${uuiid ? uuiid : ''}`;
   const [isOpen, setIsOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [position, setPosition] = useState({ x: '300px', y: '120px' });
@@ -109,14 +110,7 @@ function URCommentBtn({ cref, isTable }) {
       UDATA.UnhandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
       window.removeEventListener('resize', evt_OnResize);
     };
-  }, [
-    urstate_UpdateCommentCollection,
-    urstate_UpdateCommentVObjs,
-    urmsg_UpdatePermissions,
-    urmsg_COMMENT_SELECT,
-    evt_OnResize,
-    c_GetCommentThreadPosition
-  ]);
+  }, []);
 
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

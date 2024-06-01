@@ -679,7 +679,10 @@ class NodeTable extends UNISYS.Component {
                   </td>
                 ))}
                 <td>
-                  <URCommentBtn cref={CMTMGR.GetNodeCREF(node.id)} isTable />
+                  <URCommentBtn
+                    cref={CMTMGR.GetNodeCREF(node.id)}
+                    uuiid={'nodetable'}
+                  />
                 </td>
                 {/*
                 <td hidden={!isLocalHost} style={{ fontSize: '9px' }}>
