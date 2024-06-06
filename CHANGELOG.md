@@ -66,6 +66,7 @@ v2.0.0 introduces "commenting".  Database/file data format has changed significa
 - Adds support for `addons` for the core URSYS library #132
 - Adds a testing framework and V2 state manager #134
 - Rewrite URNET messaging system for the following communication interfaces: Unix Domain Sockets, WebSocketServer, and Browser WebSockets. #138
+- Adds support for object spread operator #219
 
 ### Added
 ### Fixed

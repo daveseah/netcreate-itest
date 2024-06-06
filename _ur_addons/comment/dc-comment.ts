@@ -147,7 +147,7 @@ type TCommentQueueAction_Update = {
 
 type TUserMap = Map<TUserID, TUserName>;
 export type TCommentTypeMap = Map<CType, TCommentType>;
-type TCommentMap = Map<TCommentID, TComment>;
+export type TCommentMap = Map<TCommentID, TComment>;
 type TReadByMap = Map<TCommentID, TUserID[]>;
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -365,7 +365,7 @@ function GetDefaultCommentType(): TCommentType {
   return GetCommentType(DEFAULT_CommentTypes[0].slug);
 }
 
-function GetComments(): TCommentMap {
+function GetCOMMENTS(): TCommentMap {
   return COMMENTS;
 }
 function GetComment(cid): TComment {
@@ -840,7 +840,7 @@ export default {
   GetCommentType,
   GetDefaultCommentType,
   // COMMENTS
-  GetComments,
+  GetCOMMENTS,
   GetComment,
   AddComment,
   UpdateComment,

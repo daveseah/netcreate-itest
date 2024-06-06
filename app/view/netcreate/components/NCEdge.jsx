@@ -36,9 +36,9 @@ const CMTMGR = require('../comment-mgr');
 const NCLOGIC = require('../nc-logic');
 const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
-const NCCommentBtn = require('./NCCommentBtn');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
+import URCommentBtn from './URCommentBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -934,7 +934,7 @@ class NCEdge extends UNISYS.Component {
           <div className="titlebar" style={{ marginBottom: '3px' }}>
             <div className="nodenumber">EDGE {id} </div>
             <div></div>
-            <NCCommentBtn cref={collection_ref} />
+            <URCommentBtn cref={collection_ref} />
           </div>
           <div className="formview">
             {NCUI.RenderLabel('source', defs['source'].displayLabel)}

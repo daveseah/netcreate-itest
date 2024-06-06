@@ -1,6 +1,16 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  Generic Dialog
+
+
+
+
+
+  DEPRECATED: See URCommentStatus
+
+
+
+
+URCommentStatus
 
   USE:
 

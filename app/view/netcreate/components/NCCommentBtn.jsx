@@ -1,5 +1,14 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
+
+
+
+
+  DEPRECATED: See URCommentBtn
+
+
+
+
   CommentBtn
 
   CommentBtn is the main UI element for comments.  It can be attached to any

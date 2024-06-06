@@ -1,5 +1,15 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
+
+
+
+
+  DEPRECATED: See URComment
+
+
+
+
+
   Comment
 
   USE:
@@ -13,7 +23,6 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
-const SETTINGS = require('settings');
 const CMTMGR = require('../comment-mgr');
 const NCCommentPrompt = require('./NCCommentPrompt');
 
@@ -240,6 +249,7 @@ class NCComment extends React.Component {
       commenter,
       createtime_string,
       modifytime_string,
+      cref,
       cid,
       selected_comment_type,
       commenter_text,
@@ -249,7 +259,7 @@ class NCComment extends React.Component {
       isDisabled
     } = this.state;
 
-    const isAdmin = SETTINGS.IsAdmin();
+    const isAdmin = CMTMGR.IsAdmin();
     const comment = CMTMGR.GetComment(cvobj.comment_id);
 
     // Only update comment data if we have a valid commenter_text (e.g. from user input)
@@ -329,7 +339,9 @@ class NCComment extends React.Component {
             <div>{TypeSelector}</div>
             <NCCommentPrompt
               commentType={selected_comment_type}
-              comment={comment}
+              cref={cref}
+              commenterText={commenter_text}
+              isMarkedDeleted={comment.comment_isMarkedDeleted}
               cvobj={cvobj}
               viewMode={CMTMGR.VIEWMODE.EDIT}
               onChange={this.UIOnInputUpdate}
@@ -358,7 +370,9 @@ class NCComment extends React.Component {
             <div className="commentId">#{cid}</div>
             <NCCommentPrompt
               commentType={selected_comment_type}
-              comment={comment}
+              cref={cref}
+              commenterText={commenter_text}
+              isMarkedDeleted={comment.comment_isMarkedDeleted}
               cvobj={cvobj}
               viewMode={CMTMGR.VIEWMODE.VIEW}
               onChange={this.UIOnInputUpdate}

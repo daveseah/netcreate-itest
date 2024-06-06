@@ -1,15 +1,6 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-
-
-
-
-  DEPRECATED: See URCommentPrompt
-
-
-
-
-  CommentPrompt
+  URCommentPrompt
 
   In edit mode, displays input widgets for entering prompts.
   In view mode, displays static comment prompt.
@@ -39,75 +30,59 @@
                          In this case, using the value makes sense
                          because the saved data is a number.
 
+  This uses a lot of props because it really is a helper componnent for
+  URComment.  The current state is maintained in URComment, but during
+  edit, input updates are stored temporarily in this component.
+
   USE:
 
-    <NCCommentPrompt
+    <URCommentPrompt
+      cref={cref}  // collection reference (e.g. node, edge, project)
       commentType={comment_type} // currently selected comment type, not stored comment.comment_type
-      cref={cref}
       commenterText={commenter_text}
       isMarkedDeleted={comment.comment_isMarkedDeleted}
-      cvobj={cvobj}
+      isMarkedRead={cvobj.isMarkedRead}
       viewMode={uViewMode}
       onChange={this.UIOnInputUpdate}
       errorMessage={comment_error}
     />
 
+    We use props (especially `commenter_text`) here because URComment stores the
+    current interim state of the comment text during editing.  The `commment`
+    object stores the previous saved state.
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-const React = require('react');
-const CMTMGR = require('../comment-mgr');
+import React, { useState, useEffect, useCallback } from 'react';
+import CMTMGR from '../comment-mgr';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Debug Flags
 const DBG = false;
-const PR = 'NCCommentPrompt';
-
+const PR = 'URCommentPrompt';
+/// Constants
 const CHECKBOX_DELIMITER = /\n/;
 
-/// HELPERS ///////////////////////////////////////////////////////////////////
+/// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function URCommentPrompt({
+  cref,
+  commentType,
+  commenterText,
+  isMarkedDeleted,
+  isMarkedRead,
+  viewMode,
+  onChange,
+  errorMessage
+}) {
+  const commentTypes = CMTMGR.GetCommentTypes();
 
-/// Converts `index` into "prompt-<index>" for use in HTML id attributes
-function m_TextareaId(cref, index) {
-  return `prompt-${cref}-${index}`;
-}
-
-/// REACT COMPONENT ///////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class NCCommentPrompt extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      firstUpdate: true
-    };
-
-    // DATA PROCESSORS
-    this.IsEmpty = this.IsEmpty.bind(this);
-    this.SplitCheckboxCommentText = this.SplitCheckboxCommentText.bind(this);
-    this.SelectedIndex2CommentText = this.SelectedIndex2CommentText.bind(this);
-
-    // RENDERERS
-    this.RenderEditMode = this.RenderEditMode.bind(this);
-    this.RenderViewMode = this.RenderViewMode.bind(this);
-
-    // UI HANDLERS
-    this.UIOnCheck = this.UIOnCheck.bind(this);
-  }
-
-  componentDidUpdate() {
-    const { firstUpdate } = this.state;
-    const {
-      commentType,
-      cref,
-      commenterText,
-      isMarkedDeleted,
-      cvobj,
-      viewMode,
-      onChange,
-      errorMessage
-    } = this.props;
-    if (firstUpdate && viewMode === CMTMGR.VIEWMODE.EDIT) {
-      const commentTypes = CMTMGR.GetCommentTypes();
+  /** Component Effect - set the focus to the first empty field on
+   *  entering edit mode, or selecting a new comment type
+   */
+  useEffect(() => {
+    if (viewMode === CMTMGR.VIEWMODE.EDIT) {
       // find the first empty `text` prompt
       let foundIndex = -1;
       commentTypes.get(commentType).prompts.find((prompt, promptIndex) => {
@@ -117,25 +92,40 @@ class NCCommentPrompt extends React.Component {
         }
       });
       // set focus to the found empty 'text' prompt
-      const foundTextArea = document.getElementById(m_TextareaId(cref, foundIndex));
+      const foundTextArea = document.getElementById(u_TextareaId(cref, foundIndex));
       if (foundTextArea) foundTextArea.focus();
-      this.setState({ firstUpdate: false });
     }
-  }
+  }, [viewMode, commentType]);
 
-  IsEmpty(commentText) {
-    return commentText === undefined || commentText === null || commentText === '';
+  /// UTILITIES ///////////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Used for radio buttons to indicate that there is nothing selected
+   * @param {string} commenterTextStr current radio button value
+   * @returns {boolean} true if the string is empty
+   */
+  function u_IsEmpty(commenterTextStr) {
+    return (
+      commenterTextStr === undefined ||
+      commenterTextStr === null ||
+      commenterTextStr === ''
+    );
   }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Converts `index` into "prompt-<index>" for use in HTML id attributes */
+  function u_TextareaId(cref, index) {
+    return `prompt-${cref}-${index}`;
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts "Apple Pie\nApple Fritter" into ["Apple Pie", "Apple Fritter"]
-   * @param {string} commenterTextString newline delimited string, e.g. "Apple Pie\nApple Fritter"
-   * @returns {string[]}
+   * @param {string} commenterTextStr newline delimited string, e.g. "Apple Pie\nApple Fritter"
+   * @returns {string[]} updated commenter text
    */
-  SplitCheckboxCommentText(commenterTextString) {
-    if (!commenterTextString) return [];
-    return commenterTextString.split(CHECKBOX_DELIMITER);
+  function u_SplitCheckboxCommentText(commenterTextStr) {
+    if (!commenterTextStr) return [];
+    return commenterTextStr.split(CHECKBOX_DELIMITER);
   }
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    * Converts a selection 0-based index into a stacked discrete slider string
    * to save as comment text, e.g. 2 becomes `★★★`
@@ -144,25 +134,25 @@ class NCCommentPrompt extends React.Component {
    * @param {string[]} options e.g.  ['💙', '💚', '💛', '🧡', '🩷']
    * @returns {string} e.g. 2 returns '💙💚💛'
    */
-  SelectedIndex2CommentText(index, options) {
+  function u_SelectedIndex2CommentText(index, options) {
     return options.map((o, i) => (i <= index ? o : '')).join('');
   }
 
+  /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
-   * Triggers onChange handler with derived data
-   * Combines all checkbox items into a single newline-delimited string
+   * handles checkbox changing by
+   * 1. combining all checkbox items into a single newline-delimited string
+   * 2. calling onChange handler with derived data for checkboxes
    * e.g. "Apple\nBanana"
-   * @param {*} promptIndex
-   * @param {*} optionIndex
-   * @param {*} options
-   * @param {*} event
+   * @param {number} promptIndex index pointing to the currently active prompt
+   * @param {number} optionIndex index of the checkbox option item
+   * @param {Object} options all of the checkbox options
+   * @param {Object} event
    */
-  UIOnCheck(promptIndex, optionIndex, options, event) {
-    const { commenterText, onChange } = this.props;
+  function evt_OnCheck(promptIndex, optionIndex, options, event) {
     // e.g. selectedCheckboxes =  ["Apple Pie", "Apple Fritter"]
-    const selectedCheckboxes = this.SplitCheckboxCommentText(
-      commenterText[promptIndex]
-    );
+    const selectedCheckboxes = u_SplitCheckboxCommentText(commenterText[promptIndex]);
     let items = [];
     options.forEach((o, index) => {
       if (optionIndex === index) {
@@ -179,27 +169,19 @@ class NCCommentPrompt extends React.Component {
     onChange(promptIndex, event);
   }
 
-  RenderEditMode() {
-    const {
-      commentType,
-      cref,
-      commenterText,
-      isMarkedDeleted,
-      cvobj,
-      viewMode,
-      onChange,
-      errorMessage
-    } = this.props;
-    const commentTypes = CMTMGR.GetCommentTypes();
-
-    let promptsJSX = [];
-    commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
+  /// COMPONENT RENDER ////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** URCommentPrompt renders its display state based on:
+   *  - viewMode -- "edit" or "view" mode
+   */
+  const RenderEditMode = () => {
+    return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let inputJSX;
       switch (prompt.format) {
         case 'text':
           inputJSX = (
             <textarea
-              id={`${m_TextareaId(cref, promptIndex)}`}
+              id={u_TextareaId(cref, promptIndex)}
               autoFocus
               onChange={event => onChange(promptIndex, event)}
               value={commenterText[promptIndex] || ''}
@@ -222,31 +204,24 @@ class NCCommentPrompt extends React.Component {
           break;
         case 'checkbox': {
           // converts commment text into ["Apple", "Banana"]
-          const selectedCheckboxes = this.SplitCheckboxCommentText(
+          const selectedCheckboxes = u_SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           inputJSX = (
             <div className="prompt">
-              {prompt.options.map((option, optionIndex) => {
-                return (
-                  <label key={optionIndex}>
-                    <input
-                      type="checkbox"
-                      value={option}
-                      onChange={event =>
-                        this.UIOnCheck(
-                          promptIndex,
-                          optionIndex,
-                          prompt.options,
-                          event
-                        )
-                      }
-                      checked={selectedCheckboxes.includes(option)}
-                    />
-                    {option}
-                  </label>
-                );
-              })}
+              {prompt.options.map((option, optionIndex) => (
+                <label key={optionIndex}>
+                  <input
+                    type="checkbox"
+                    value={option}
+                    onChange={event =>
+                      evt_OnCheck(promptIndex, optionIndex, prompt.options, event)
+                    }
+                    checked={selectedCheckboxes.includes(option)}
+                  />
+                  {option}
+                </label>
+              ))}
             </div>
           );
           break;
@@ -292,10 +267,7 @@ class NCCommentPrompt extends React.Component {
               {prompt.options.map((option, index) => (
                 <button
                   key={index}
-                  value={[
-                    index,
-                    this.SelectedIndex2CommentText(index, prompt.options)
-                  ]}
+                  value={[index, u_SelectedIndex2CommentText(index, prompt.options)]}
                   className={
                     String(index) <= commenterText[promptIndex]
                       ? 'selected'
@@ -309,8 +281,10 @@ class NCCommentPrompt extends React.Component {
             </div>
           );
           break;
+        default:
+          break;
       }
-      let promptJSX = (
+      return (
         <div key={promptIndex}>
           <div className="label">{prompt.prompt}</div>
           <div className="help">{prompt.help}</div>
@@ -320,28 +294,14 @@ class NCCommentPrompt extends React.Component {
           <hr />
         </div>
       );
-      promptsJSX.push(promptJSX);
     });
-    return promptsJSX;
-  }
+  };
 
-  RenderViewMode() {
-    const {
-      commentType,
-      cref,
-      commenterText,
-      isMarkedDeleted,
-      cvobj,
-      viewMode,
-      onChange,
-      errorMessage
-    } = this.props;
-    const commentTypes = CMTMGR.GetCommentTypes();
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const RenderViewMode = () => {
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
-    let promptsJSX = [];
-    commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
+    return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let displayJSX;
       switch (prompt.format) {
         case 'text':
@@ -350,13 +310,12 @@ class NCCommentPrompt extends React.Component {
           displayJSX = (
             <div className="commenttext">
               {!isMarkedDeleted && commenterText[promptIndex]}
-              {this.IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
+              {u_IsEmpty(commenterText[promptIndex]) && NOTHING_SELECTED}
             </div>
           );
           break;
         case 'checkbox': {
-          // converts commment text into ["Apple", "Banana"]
-          const selectedCheckboxes = this.SplitCheckboxCommentText(
+          const selectedCheckboxes = u_SplitCheckboxCommentText(
             commenterText[promptIndex]
           );
           displayJSX = (
@@ -417,13 +376,15 @@ class NCCommentPrompt extends React.Component {
             </div>
           );
           break;
+        default:
+          break;
       }
 
-      let promptJSX = (
+      return (
         <div key={promptIndex} className="comment-item">
           <div className="label">
             <div className="comment-icon-inline">
-              {!cvobj.isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
+              {!isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
             </div>
             {prompt.prompt}
           </div>
@@ -434,20 +395,10 @@ class NCCommentPrompt extends React.Component {
           <hr />
         </div>
       );
-      promptsJSX.push(promptJSX);
     });
-    return promptsJSX;
-  }
-
-  render() {
-    if (this.props.viewMode === CMTMGR.VIEWMODE.EDIT) {
-      return this.RenderEditMode();
-    } else {
-      return this.RenderViewMode();
-    }
-  }
+  };
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  return viewMode === CMTMGR.VIEWMODE.EDIT ? RenderEditMode() : RenderViewMode();
 }
 
-/// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = NCCommentPrompt;
+export default URCommentPrompt;
