@@ -17,6 +17,7 @@ const MDEMOJI = require('markdown-it-emoji');
 MD.use(MDEMOJI);
 const MDPARSE = require('html-react-parser').default;
 const NCDialogInsertImageURL = require('./components/NCDialogInsertImageURL');
+import URDateField from './components/URDateField';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -189,6 +190,11 @@ function RenderAttributesTabView(state, defs) {
     items.push(RenderStringValue('degrees', degrees));
   }
 
+  // WIP DATE Tester
+  items.push(RenderLabel('datelabel', 'Date'));
+  items.push(RenderDateValue('date', 'test'));
+  // END WIP
+
   return <div className="formview">{items}</div>;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -224,6 +230,12 @@ function RenderAttributesTabEdit(state, defs, onchange) {
     items.push(RenderLabel('degrees', defs['degrees'].displayLabel));
     items.push(RenderStringValue('degrees', degrees));
   }
+
+  // WIP DATE Tester
+  items.push(RenderLabel('datelabel', 'Date'));
+  items.push(RenderDateInput('date', 'test'));
+  // END WIP
+
 
   return <div className="formview">{items}</div>;
 }
@@ -343,6 +355,12 @@ function RenderStringValue(key, value) {
       {value}
     </div>
   );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderDateValue(key, value) {
+  return (
+    <URDateField key={`${key}value`} value={hdate} selectedFormat={selectedFormat} readOnly />
+  )
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -472,6 +490,13 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
       </select>
     </div>
   );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderDateInput(key, value) {
+  return (
+    <URDateField key={`${key}value`} value={hdate} selectedFormat={selectedFormat}
+    />
+  )
 }
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
