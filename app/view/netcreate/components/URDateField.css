@@ -1,0 +1,19 @@
+.urdate {
+  display: flex;
+  flex-direction: column;
+}
+.urdate input {
+  margin: 0;
+}
+.urdate input:read-only {
+  color: #666;
+  border: 1px solid #0003;
+}
+.urdate > .validator {
+  font-size: 10px;
+  color: #999;
+  height: 18px;
+}
+.urdate > .formfields {
+  display: flex;
+}
