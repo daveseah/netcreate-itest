@@ -13,8 +13,6 @@ const IS_MOBILE =
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
-const D_CONSOLE = require('./declare-console.js');
-const { TERM_COLORS, CSS_COLORS } = D_CONSOLE;
 
 const DEFAULT_PADDING = IS_NODE
   ? 10 // nodejs
@@ -23,15 +21,16 @@ const DEFAULT_SPACE = IS_NODE
   ? ' '.padStart(DEFAULT_PADDING, ' ')
   : ' '.padStart(DEFAULT_PADDING + 4, ' ');
 
+/// CONSTANTS & DECLARATIONS /////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+import { TERM_COLORS, CSS_COLORS, ANSI_COLORS } from './declare-colors.ts';
 const DEFAULT_COLOR = 'TagNull';
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // div console
 const HTCONSOLES = {};
 
 /// OUTPUT CONTROL ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** define
- */
 const SHOW = true;
 const HIDE = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -109,20 +108,22 @@ function m_MakeColorArray(prompt, colorName) {
 /** Returns an environment-specific color wrapper function suitable for use
  *  in debug output. Use m_MakeColorArray() for browser output.
  */
-function m_MakeColorPromptFunction(prompt, colorName, opt = {}) {
+function m_MakeColorPromptFunction(prompt, colorName, opt: any = {}) {
   const textColor = opt.color || 'Reset';
   const dim = opt.dim || false;
   return IS_NODE
     ? (str, ...args) => {
+        // @ts-ignore - args can be string or array of strings
         if (args === undefined) args = '';
         let TAG = TERM_COLORS[colorName];
         let TEXT = TERM_COLORS[textColor];
         let RST = TERM_COLORS.Reset;
         let PR = padString(prompt);
         if (dim) TEXT += TERM_COLORS.Dim;
-        console.log(`${RST}${TAG}${PR}${RST}${TEXT}    ${str}`, ...args);
+        console.log(`${RST}${TAG}${PR}${RST}${TEXT}    ${str}`, ...args, RST);
       }
     : (str, ...args) => {
+        // @ts-ignore - args can be string or array of strings
         if (args === undefined) args = '';
         let TEXT = TERM_COLORS[textColor];
         let RST = CSS_COLORS.Reset;
@@ -280,7 +281,7 @@ function colorTagString(str, tagColor) {
  *  unlike the browser. Use makeStyleFormatter for browsers
  */
 function makeTerminalOut(prompt, tagColor = DEFAULT_COLOR) {
-  const wrap = m_MakeColorPromptFunction(prompt, tagColor);
+  const wrap: any = m_MakeColorPromptFunction(prompt, tagColor);
   wrap.warn = m_MakeColorPromptFunction(prompt, 'TagYellow', { color: 'Yellow' });
   wrap.error = m_MakeColorPromptFunction(prompt, 'TagRed', { color: 'Red' });
   wrap.fail = m_MakeColorPromptFunction(prompt, 'Red', { color: 'Red' });
@@ -352,9 +353,10 @@ function printTagColors() {
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
-  TERM: TERM_COLORS,
-  CSS: CSS_COLORS,
+export {
+  TERM_COLORS as TERM,
+  CSS_COLORS as CSS,
+  ANSI_COLORS as ANSI,
   padString,
   makeStyleFormatter,
   makeErrorFormatter,
@@ -364,4 +366,9 @@ module.exports = {
   makeHTMLConsole,
   printTagColors,
   colorTagString
+};
+export default {
+  makeTerminalOut,
+  makeStyleFormatter,
+  padString
 };

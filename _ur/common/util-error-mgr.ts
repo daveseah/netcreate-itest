@@ -38,7 +38,4 @@ const NewConsoleError = (label = '_ERR_', tagColor = 'TagRed') => {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
-  DIE,
-  NewConsoleError
-};
+export { DIE, NewConsoleError };

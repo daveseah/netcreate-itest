@@ -17,7 +17,7 @@
 import NDIR from 'node-dir';
 import FSE from 'fs-extra';
 import PATH from 'node:path';
-import PROMPT from '../common/util-prompts.js';
+import PROMPT from '../common/util-prompts.ts';
 import { ShortPath } from '@ursys/core';
 import * as url from 'url';
 
@@ -25,7 +25,7 @@ import * as url from 'url';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** return the directory name of the current module */
 function m_Dirname() {
-  if (import.meta) return url.fileURLToPath(new URL('.', import.meta.url));
+  if (import.meta?.url) return url.fileURLToPath(new URL('.', import.meta.url));
   return __dirname;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -47,6 +47,19 @@ function DetectedRootDir(rootfile: string = '.nvmrc'): string {
   // If reached root and file not found by loop
   return undefined;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** when run from an addon directory, return the path to the addon directory
+ *  and the detected addon name */
+function DetectedAddonDir(): string[] {
+  const root = DetectedRootDir();
+  if (!root) return undefined;
+  const adir = PATH.join(root, '_ur_addons');
+  const cwd = process.cwd();
+  if (!cwd.includes(adir)) return undefined;
+  const addon = cwd.slice(adir.length + 1).split(PATH.sep)[0];
+  return [addon, PATH.join(adir, addon)];
+}
+
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PROMPT.makeTerminalOut(' FILE', 'TagGreen');
 let DETECTED_DIR; // cached value of DetectedRootDir
@@ -246,6 +259,7 @@ export {
   EnsureDir,
   RemoveDir,
   DetectedRootDir,
+  DetectedAddonDir,
   AbsLocalPath,
   RelLocalPath,
   ShortPath,

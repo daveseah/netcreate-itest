@@ -6,13 +6,13 @@
 
 import { EventEmitter } from 'node:events';
 import { Readable, Writable, Duplex, Transform } from 'node:stream';
-import D_ASYNC from '../common/declare-async.js';
+import D_ASYNC from '../common/declare-async.ts';
 const { URDEX } = D_ASYNC.UR_EVENTS;
 import { ChildProcess } from 'node:child_process';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import { makeTerminalOut } from '../common/util-prompts.js';
+import { makeTerminalOut } from '../common/util-prompts.ts';
 const LOG = makeTerminalOut(' URMOD', 'TagYellow');
 const DBG = true;
 

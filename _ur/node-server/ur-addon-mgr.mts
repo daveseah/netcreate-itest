@@ -17,14 +17,13 @@ import { DirExists, Files } from './files.mts';
 import UrModule from './class-urmodule.mts';
 import { DIR_UR_ADDS, ShortPath as u_short } from './env-node.mts';
 // JS imports are assumed to be CJS and cannot be destructured
-import ERROR from '../common/util-error-mgr.js';
-import PROMPT from '../common/util-prompts.js';
+import { DIE } from '../common/util-error-mgr.ts';
+import * as PROMPT from '../common/util-prompts.ts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LOG = PROMPT.makeTerminalOut(' UPROC', 'TagCyan');
 const DBG = true;
-const { DIE } = ERROR;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const LAUNCH_PREFIX = '@';
 let URDIR = '';
