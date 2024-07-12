@@ -86,7 +86,7 @@ let CALENDAR = {
   CHINESE: 'chinese'
 };
 
-const DATEFORMAT = {
+export const DATEFORMAT = {
   AS_ENTERED: 'As Entered',
 
   // MONTH
@@ -160,18 +160,25 @@ function u_monthName(num) {
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function URDateField({ value, selectedFormat = 'AS_ENTERED', readOnly }) {
+function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
   const [formatMenuOptions, setFormatMenuOptions] = useState([
     {
       value: 'AS_ENTERED',
       preview: 'as entered'
     }
   ]); // formats available given the current input
-  const [selectedDateFormat, setSelectedDateFormat] = useState(selectedFormat); // format currently selected in the format menu
+  // FIX: This should be a controlled input -- so we don't need it?
+  // but keep this for now for demo purposes and testing
+  const [selectedDateFormat, setSelectedDateFormat] = useState(dateFormat); // format currently selected in the format menu
   const [dateInputStr, setDateInputStr] = useState(value); // raw date as entered by the user
   const [dateValidationStr, setDateValidationStr] = useState('...'); // human-readable verification e.g. 'month:2024'
   const [dateDisplayStr, setDateDisplayStr] = useState(''); // final rendered date in selected format
+
+  /** Component Effect - set up listeners on mount */
+
   useEffect(() => {
+    const ParsedResult = erasChrono.parse(dateInputStr);
+    c_ShowMatchingFormats(ParsedResult);
     c_SetSelectedFormatResult();
   }, [selectedDateFormat, dateInputStr, dateDisplayStr]);
 
@@ -440,7 +447,7 @@ function URDateField({ value, selectedFormat = 'AS_ENTERED', readOnly }) {
       <div className="validator">{dateValidationStr}</div>
       <div className="formfields">
         <label>Format:&nbsp;</label>
-        <select onChange={evt_OnFormatSelect} value={selectedFormat}>
+        <select onChange={evt_OnFormatSelect} value={selectedDateFormat}>
           {formatMenuOptions.map(option => (
             <option key={option.value} value={option.value}>
               {option.preview}

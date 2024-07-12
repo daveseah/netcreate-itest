@@ -192,7 +192,7 @@ function RenderAttributesTabView(state, defs) {
 
   // WIP DATE Tester
   items.push(RenderLabel('datelabel', 'Date'));
-  items.push(RenderDateValue('date', 'test'));
+  items.push(RenderDateValue('date', 'circa apr 1, 100 bc', 'HISTORICAL_MONTHDAYYEAR_ABBR'));
   // END WIP
 
   return <div className="formview">{items}</div>;
@@ -233,7 +233,7 @@ function RenderAttributesTabEdit(state, defs, onchange) {
 
   // WIP DATE Tester
   items.push(RenderLabel('datelabel', 'Date'));
-  items.push(RenderDateInput('date', 'test'));
+  items.push(RenderDateInput('date', 'circa apr 1, 100 bc', 'HISTORICAL_MONTHDAYYEAR_ABBR'));
   // END WIP
 
 
@@ -357,9 +357,9 @@ function RenderStringValue(key, value) {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderDateValue(key, value) {
+function RenderDateValue(key, value, dateFormat) {
   return (
-    <URDateField key={`${key}value`} value={hdate} selectedFormat={selectedFormat} readOnly />
+    <URDateField key={`${key}value`} value={value} dateFormat={dateFormat} readOnly />
   )
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -492,9 +492,9 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderDateInput(key, value) {
+function RenderDateInput(key, value, dateFormat) {
   return (
-    <URDateField key={`${key}value`} value={hdate} selectedFormat={selectedFormat}
+    <URDateField key={`${key}value`} value={value} dateFormat={dateFormat}
     />
   )
 }
