@@ -2,11 +2,17 @@
 # URTEST is a CLI development task runner that invokes the URSYS CLI build library
 # it lives inside of the _ur directory
 
+# Portable Echo
+prln() {
+  printf "%s\n" "$*"
+}
+
 # PATH SETTINGS
-UR_BUILD="./"
-CLI_BUILD="./npm-scripts"
-ADDONS_LIB="../_ur_addons"
-TEST_BUILD="../_ur_addons/loki"
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+UR_BUILD="$SCRIPT_DIR/"
+CLI_BUILD="$SCRIPT_DIR/npm-scripts"
+ADDONS_LIB="$SCRIPT_DIR/../_ur_addons"
+TEST_BUILD="$SCRIPT_DIR/../_ur_addons/loki"
 
 # TERMINAL COLORS
 DIM=$(tput dim)
@@ -20,23 +26,23 @@ usage() {
     COMMANDS="build test"
     ADDONS=""
     a_dirs=$(find "$ADDONS_LIB" -mindepth 1 -maxdepth 1 -type d -name "[!_]*" -exec basename {} \;)
-    a_dirs=$(echo "$a_dirs" | tr '\n' ' ')
+    a_dirs=$(prln "$a_dirs" | tr '\n' ' ')
     for dir in $a_dirs; do
       if [ "$dir" != "node_modules" ]; then
         ADDONS="$ADDONS $dir"
       fi
     done
-    ADDONS=$(echo $ADDONS)
-    echo "usage:     ${yellow}ur [command | addon]${RESET}${DIM}"
-    echo "commands   $COMMANDS"
-    echo "addons     $ADDONS"
-    echo "${RESET}"
+    ADDONS=$(prln $ADDONS)
+    prln "usage:     ${yellow}ur [command | addon]${RESET}${DIM}"
+    prln "commands   $COMMANDS"
+    prln "addons     $ADDONS"
+    prln "${RESET}"
     exit 1
 }
 
 # Make sure NodeJS is installed
 if ! command -v node > /dev/null 2>&1; then
-    echo "Node.js not found. Please ensure it's installed."
+    prln "Node.js not found. Please ensure it's installed."
     exit 1
 fi
 
@@ -52,32 +58,31 @@ fi
 # note: Use --max-old-space-size to limit memory (values are in MB, so 128 is 128MB)
 #
 DEBUG="--inspect-brk" # use --inspect-brk to break on first line
-OPTS="--trace-warnings" # use --trace-warnings to show deprecation warnings
 TSOPTS="--transpile-only" # use --no-cache to force a full rebuild tsnode (disables typecheck)
 case "$1" in
     build)
         # (1) always build library first
-        node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+        npx ts-node-esm $TSOPTS $CLI_BUILD/@build-core.mts 2>&1 | cat
         # (2) add additional tasks here (eventually can be command args)
-        node $OPTS $CLI_BUILD/@build-addons.cjs 2>&1 | cat
+        npx ts-node-esm $TSOPTS $CLI_BUILD/@build-addons.mts 2>&1 | cat
         exit 0;
         ;;
 
     test)
         # get additional argument after 'test' into $option
-        node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+        npx ts-node-esm $TSOPTS  $CLI_BUILD/@build-core.mts 2>&1 | cat
         PROMPT="${BGBLUE} UR TEST ${RESET}"
         if [ "$2" = "core" ]; then
-            echo "${PROMPT} running ${BRITE}ursys core tests${RESET}"
+            prln "${PROMPT} running ${BRITE}ursys core tests${RESET}"
             npx vitest --config ./test-config/vitest.core.config.mts
         elif [ "$2" = "addons" ]; then
-            echo "${PROMPT} running ${BRITE}ursys addons tests${RESET}"
+            prln "${PROMPT} running ${BRITE}ursys addons tests${RESET}"
             npx vitest --config ./test-config/vitest.addons.config.mts
         elif [ -z "$2" ]; then
-            echo "${PROMPT} running ${BRITE}ursys core and addon tests${RESET}"
+            prln "${PROMPT} running ${BRITE}ursys core and addon tests${RESET}"
             npx vitest --config ./test-config/vitest.all.config.mts
         else
-            echo "${YELLOW}unknown test option: '$2'${RESET}"
+            prln "${YELLOW}unknown test option: '$2'${RESET}"
             exit 1;
         fi
         exit 0;
@@ -88,6 +93,6 @@ esac
 # if we got this far, assuming that $1 is a directory and we are going
 # to pass arguments to a special script
 #
-node $OPTS $CLI_BUILD/@build-core.cjs 2>&1 | cat
+npx ts-node-esm $TSOPTS $CLI_BUILD/@build-core.mts 2>&1 | cat
 # to debug the addon loader, remove the TSOPTS (--transpile-only)
 npx ts-node-esm $TSOPTS $ADDONS_LIB/@load-addon.mts "$@"

@@ -15,21 +15,49 @@ import * as APPSERV from './appserver.mts';
 import * as ENV from './env-node.mts';
 import * as FILE from './files.mts';
 import * as PROC from './processes.mts';
+import * as SERVER_EP from './urnet-node.mts';
 // cjs-style modules
-import TEXT from '../common/util-text.js';
-import PROMPTS from '../common/util-prompts.js';
+import TEXT from '../common/util-text.ts';
+import * as PROMPTS from '../common/util-prompts.ts';
 // typescript classes
 import UrModule from './class-urmodule.mts';
 import OpSequencer from '../common/class-op-seq.ts';
 import StateMgr from '../common/class-state-mgr.ts';
-const { makeTerminalOut } = PROMPTS;
+import NetSocket from '../common/class-urnet-socket.ts';
+import NetEndpoint from '../common/class-urnet-endpoint.ts';
+import NetPacket from '../common/class-urnet-packet.ts';
+// typescript library modules
+import * as UID from '../common/lib-uid.ts';
+import * as CONSTANTS from './constants-urnet.mts';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const { makeTerminalOut } = PROMPTS;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const CLASS = {
   OpSequencer,
   StateMgr,
-  UrModule
+  UrModule,
+  NetSocket,
+  NetEndpoint,
+  NetPacket
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const LIB = {
+  UID
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const { UDS_INFO, WSS_INFO, HTTP_INFO } = CONSTANTS;
+const { ESBUILD_INFO } = CONSTANTS;
+const CONSTANT = {
+  URNET: {
+    UDS_INFO,
+    WSS_INFO,
+    HTTP_INFO
+  },
+  BUILD: {
+    ESBUILD_INFO
+  }
 };
 
 /// RUNTIME API ///////////////////////////////////////////////////////////////
@@ -42,19 +70,23 @@ function Initialize(options: UR_InitOptions): void {
 
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const { makeStyleFormatter } = PROMPTS;
 export {
-  // URSYS CONTROL
+  // ursys control
   Initialize,
-  // MAIN MODULES
+  // common typescript classes, libraries
+  CONSTANT,
+  CLASS,
+  LIB,
+  // basic server modules
+  ENV,
+  FILE,
+  PROC,
+  TEXT,
+  // URNET server modules
+  SERVER_EP, // urnet endpoint for server
+  // server-based services
   APPSERV, // application server
   ADDONMGR, // ur module manager
-  CLASS,
-  ENV, // environment utilities and constants
-  FILE, // file utilities
-  PROC, // interprocess communication utils
-  // UTILITIES
-  TEXT,
-  // COMMON UTILS
+  // formatting
   makeTerminalOut as PR // prompt style formatter
 };
