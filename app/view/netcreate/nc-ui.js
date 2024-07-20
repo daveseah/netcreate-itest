@@ -110,6 +110,18 @@ function m_UISelectInputUpdate(event, cb) {
   if (typeof cb === 'function') cb(key, value);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** This processes the form data before passing it on to the parent handler.
+ *  The callback function is generally an input state update method in
+ *  NCNode or NCEdge
+ *  @param {Object} event
+ *  @param {function} cb Callback function
+ */
+function m_UIDateInputUpdate(event, cb) {
+  const key = event.target.id;
+  const value = event.target.value;
+  if (typeof cb === 'function') cb(key, value);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Insert a URL into the current input
  *  This processes the form data before passing it on to the parent handler.
  *  The callback function is generally an input state update method in
