@@ -6,19 +6,19 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
+/// TYPE DEFINITIONS //////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type ModuleSystemInfo = {
+  _initialized: boolean;
+  node?: [string, string];
+  browser?: [string, string];
+  error?: string;
+};
+
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** MODULE TYPE RETURN OBJECT
- *  @typedef {Object} ModuleSystemInfo
- *  @property {string[]} [node] - NodeJS environment type, description
- *  @property {string[]} [browser] - Browser environment type, description
- *  @property {string} [error] - error string
- *  @property {boolean} _init -  for internal use only
- */
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// typeof ModuleSystemInfo
-const INFO = {
-  _init: false
+const INFO: ModuleSystemInfo = {
+  _initialized: false
 };
 
 /// UTILITIES /////////////////////////////////////////////////////////////////
@@ -29,24 +29,27 @@ const INFO = {
  */
 function m_DetectModuleSystem() {
   // only run this code once
-  if (INFO._init) {
+  if (INFO._initialized) {
     console.log('...skipping duplicate environment detection');
     return;
   }
   // Check for Node.js environment first
+  // ts-disable-ts-1470
   if (process !== undefined && process.versions && process.versions.node) {
     if (typeof module !== 'undefined' && module.exports) {
       INFO.node = ['CJS', 'Node.js - CommonJS environment'];
+      // @ts-ignore - import.meta check
     } else if (typeof import.meta !== 'undefined') {
       INFO.node = ['ESM', 'Node.js - CommonJS environment'];
     }
   } else if (window !== undefined) {
     // Check for Browser environment
-    // eslint-disable-next-line no-undef
+    // @ts-ignore - dom checks
     if (typeof define === 'function' && define.amd) {
       INFO.browser = ['AMD', 'Browser - AMD maybe through UMD import'];
     } else if (document.currentScript && document.currentScript.type === 'module') {
       INFO.browser = ['ESM', 'Browser - ESM'];
+      // @ts-ignore - module checks
     } else if (typeof module === 'function' && module.exports) {
       INFO.browser = [
         'CJS',
@@ -58,7 +61,7 @@ function m_DetectModuleSystem() {
   } else {
     INFO.error = 'Unknown environment';
   }
-  INFO._init = true;
+  INFO._initialized = true;
 }
 
 /// API ///////////////////////////////////////////////////////////////////////

@@ -4,8 +4,9 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
-/* added for pull request #81 so 'npm run lint' test appears clean */
-/* eslint-disable no-unused-vars */
+/// TYPE DECLARATIONS /////////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+type ColorDict = { [key: string]: string };
 
 /// COLORS BY NAME ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -23,7 +24,7 @@ const COLOR_NAMES = [
   'Gray'
 ];
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const TERM_COLORS = {
+const TERM_COLORS: ColorDict = {
   // TOUT = makeTerminalOut(str); TOUT('hi')
   Reset: '\x1b[0m',
   Bright: '\x1b[1m',
@@ -71,7 +72,7 @@ const TERM_COLORS = {
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const CSS_COMMON = 'padding:3px 5px;border-radius:2px;';
-const CSS_COLORS = {
+const CSS_COLORS: ColorDict = {
   Reset: 'color:auto;background-color:auto',
   // COLOR FOREGROUND
   Black: 'color:black',
@@ -192,9 +193,18 @@ CSS_COLORS.TagEvent = CSS_COLORS.TagDkOrange;
 CSS_COLORS.TagStream = CSS_COLORS.TagDkOrange;
 CSS_COLORS.TagPhase = `color:#fff;background-color:MediumVioletRed;${CSS_COMMON}`;
 
+/// CONVENENICE CONSTANTS /////////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** these are used for direct color output with console.log in node */
+const ANSI_COLORS = {
+  BLU: '\x1b[34;1m',
+  YEL: '\x1b[33;1m',
+  RED: '\x1b[31m',
+  DIM: '\x1b[2m',
+  BLD: '\x1b[1m',
+  NRM: '\x1b[0m'
+};
+
 /// EXPORTS ///////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = {
-  TERM_COLORS,
-  CSS_COLORS
-};
+export { TERM_COLORS, CSS_COLORS, ANSI_COLORS };

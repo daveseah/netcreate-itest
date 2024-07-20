@@ -39,8 +39,8 @@ function PreprocessDataText(str) {
     return parts.join(delimiter);
   };
   for (let i = 0; i < lines.length; i++) {
-    lines[i] = processDelimited(lines[i], ',', { preserve: true });
-    lines[i] = processDelimited(lines[i], ':', { preserve: true });
+    lines[i] = processDelimited(lines[i], ',');
+    lines[i] = processDelimited(lines[i], ':');
   }
   normalizedStr = lines.join('\n').trim();
   return normalizedStr + '\n';

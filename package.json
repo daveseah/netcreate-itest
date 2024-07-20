@@ -7,8 +7,7 @@
     "_ur_addons/"
   ],
   "scripts": {
-    "dev": "node ./_ur/npm-scripts/@build-core.cjs && node ./_ur/npm-scripts/@build-addons.cjs && brunch w -s",
-    "build-core": "node ./_ur/npm-scripts/@build-core.cjs",
+    "dev": "source ./@build-ursys.sh && brunch w -s",
     "lint": "npm exec --workspaces -- npm run lint && eslint app/",
     "dev:inspect": "node --inspect brunch-server.js",
     "classroom": "brunch build -e classroom",
@@ -77,6 +76,7 @@
     "html-react-parser": "^5.0.6",
     "ip": "^1.1.8",
     "jquery": "^3.7.1",
+    "jsonfile": "^6.1.0",
     "lokijs": "^1.5.12",
     "markdown-it": "^13.0.2",
     "markdown-it-emoji": "^2.0.2",
