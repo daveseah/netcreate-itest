@@ -5,36 +5,52 @@
   A general date input field that can support a variety of calendar formats
   for historical projects, e.g. 1000 AD, 10,000 BCE.
 
+  The intent is to provide a unstructured input field that allows users to
+  enter arbitrary date-related strings that can be parsed by the application
+  well enough to support filtering and sorting.
+
   This is primarily used for data input rather than timestamping.
 
   The input field itself is intended to be flexible, using the `chrono-node`
-  library to parse a wide variety of date formats. The component then
-  interprets the parsed date and offers a selection of formats for the user
-  to choose from. The selected format is then displayed in the field.  The
-  user has the option to select the format "as entered" or to choose from a
-  list of suggested formats based on the parsed date.
+  library to parse a wide variety of date formats.
+  1. The user inputs a raw date-related string, e.g. "circa 1492"
+  2. The component then interprets the parsed date and offers a selection of
+     formats for the user to choose from.  The user has the option to select
+     the format "as entered" or to choose from a list of suggested formats
+     based on the parsed date.
+  3. The selected format is then displayed in the field.
+  4. When the user clicks "Save", the date is saved as
+      {value: "raw date string", format: "selected format"}
 
-  Formats are dynamically generated based on the parsed date. For example, if
+  Formats are dynamically generated based on the available parsed date,
+  displaying only formats that match the the parsed dimensions. For example, if
   the parsed data includes a year, month, and day, the component will offer
   a variety of formats including "April 1, 2024" and "2024/4/1". If the parsed
   date only includes a year and month, the component will offer formats like
-  "April 2024" and "2024/4". If the parsed date only includes a year, the
-  component will offer formats like "2024" and "2024 CE".
+  "April 2024" and "2024/4", but not "April 1, 2024" if the day is missing.
+  If the parsed date only includes a year, the component will offer formats
+  like "2024" and "2024 CE", etc.
 
-  Eras is handled via a template. The user can set the era to BCE/CE or BC/AD.
+  Eras are handled via a template setting. The user can set the era to BCE/CE or BC/AD.
   Dates can be entered in any format, e.g. "2024 BCE", "2024 BC", "2024 CE",
   but the selected format will use the format defined in the template, e.g.
   if the eras format is set to "BCE/CE", entering "1024 ad" will be formatted
-  as "1024 CE".
+  as "1024 CE".  (If you select "as entered" as the format you can still use "1024 ad")
 
-  For abmiguous years, adding a "CE" or "AD" to the end of the date will
+  For ambiguous years, adding a "CE" or "AD" to the end of the date can
   clarify the era. For example, "102" can't be parsed, but "102 ad"
   will parse the input as a year.
 
-  TEST DATES
-    2024 BC
-    2024
-    apr 10 (year = 10) doesn't work but 'apr 10 ad' does
+  You can add extra descriptive text to the field.  As long as the field can
+  interpret the date, the exact text doesn't matter.  So you can add other
+  descriptive text as part of the field and sorting and filtering should still
+  work.  This doesn't work if the input can't be interpreted.  And you do have
+  to make sure the interpretation is correct.
+
+  The stored value of a historical date field includes:
+  * The raw input string
+  * The selected format
+  The final output is then dynamically generated based on the selection.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
@@ -46,7 +62,8 @@ import UNISYS from 'unisys/client';
 
 /// HISTORICAL CHRONO /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Create a custom parser for BCE/CE dates
+/// Create a custom parser for BCE/CE dates
+///   ex: erasChrono.parseDate("I'll arrive at 2.30AM on Christmas night");
 const erasChrono = chrono.casual.clone();
 erasChrono.parsers.push({
   pattern: () => {
@@ -69,8 +86,7 @@ const UDATA = UNISYS.NewDataLink(UDATAOwner);
 const DBG = false;
 const PR = 'URDateField';
 
-// Use template to define other values, e.g.
-//   BC/AD
+// Use template to define other values, e.g. BC/AD
 let ERAS = {
   pre: 'BCE',
   post: 'CE'
@@ -90,69 +106,70 @@ export const DATEFORMAT = {
   AS_ENTERED: 'As Entered',
 
   // MONTH
-  MONTH_ABBR: 'Apr',
-  MONTH_FULL: 'April',
-  MONTH_NUM: '4',
-  MONTH_PAD: '04',
+  MONTH_ABBR: 'MMM',
+  MONTH_FULL: 'Month',
+  MONTH_NUM: 'M',
+  MONTH_PAD: 'MM',
 
   // MONTHDAY
-  MONTHDAY_ABBR: 'Apr 1',
-  MONTHDAY_FULL: 'April 1',
-  MONTHDAY_NUM: '4/1',
-  MONTHDAY_PAD: '04/01',
+  MONTHDAY_ABBR: 'MMM D',
+  MONTHDAY_FULL: 'Month D',
+  MONTHDAY_NUM: 'M/D',
+  MONTHDAY_PAD: 'MM/DD',
 
   // YEARMONTHDAY
-  MONTHDAYYEAR_ABBR: 'Apr 1, 2024',
-  MONTHDAYYEAR_FULL: 'April 1, 2024',
-  MONTHDAYYEAR_NUM: '4/1/2024',
-  MONTHDAYYEAR_PAD: '04/01/2024',
-  YEARMONTHDAY_ABBR: '2024 Apr 1',
-  YEARMONTHDAY_FULL: '2024 April 1',
-  YEARMONTHDAY_NUM: '2024/4/1',
-  YEARMONTHDAY_PAD: '2024/04/01',
-  HISTORICAL_MONTHDAYYEAR_ABBR: 'Apr 1, 2024 CE',
-  HISTORICAL_MONTHDAYYEAR_FULL: 'April 1, 2024 CE',
-  HISTORICAL_MONTHDAYYEAR_NUM: '4/1/2024 CE',
-  HISTORICAL_MONTHDAYYEAR_PAD: '04/01/2024 CE',
-  HISTORICAL_YEARMONTHDAY_ABBR: '2024 Apr 1 CE',
-  HISTORICAL_YEARMONTHDAY_FULL: '2024 April 1 CE',
-  HISTORICAL_YEARMONTHDAY_NUM: '2024/4/1 CE',
-  HISTORICAL_YEARMONTHDAY_PAD: '2024/04/01 CE',
+  MONTHDAYYEAR_ABBR: 'MMM D, YYYY',
+  MONTHDAYYEAR_FULL: 'Month D, YYYY',
+  MONTHDAYYEAR_NUM: 'M/D/YYYY',
+  MONTHDAYYEAR_PAD: 'MM/DD/YYYY',
+  YEARMONTHDAY_ABBR: 'YYYY MMM D',
+  YEARMONTHDAY_FULL: 'YYYY Month D',
+  YEARMONTHDAY_NUM: 'YYYY/M/D',
+  YEARMONTHDAY_PAD: 'YYYY/MM/DD',
+  HISTORICAL_MONTHDAYYEAR_ABBR: 'MMM D, YYYY CE',
+  HISTORICAL_MONTHDAYYEAR_FULL: 'Month D, YYYY CE',
+  HISTORICAL_MONTHDAYYEAR_NUM: 'M/D/YYYY CE',
+  HISTORICAL_MONTHDAYYEAR_PAD: 'MM/DD/YYYY CE',
+  HISTORICAL_YEARMONTHDAY_ABBR: 'YYYY MMM D CE',
+  HISTORICAL_YEARMONTHDAY_FULL: 'YYYY Month D CE',
+  HISTORICAL_YEARMONTHDAY_NUM: 'YYYY/M/D CE',
+  HISTORICAL_YEARMONTHDAY_PAD: 'YYYY/MM/DD CE',
 
   // YEARMONTH
-  MONTHYEAR_ABBR: 'Apr 2024',
-  MONTHYEAR_FULL: 'April 2024',
-  MONTHYEAR_NUM: '4/2024',
-  MONTHYEAR_PAD: '04/2024',
-  YEARMONTH_ABBR: '2024 Apr',
-  YEARMONTH_FULL: '2024 April',
-  YEARMONTH_NUM: '2024/4',
-  YEARMONTH_PAD: '2024/04',
-  HISTORICAL_MONTHYEAR_ABBR: 'Apr 2024 CE',
-  HISTORICAL_MONTHYEAR_FULL: 'April 2024 CE',
-  HISTORICAL_MONTHYEAR_NUM: '4/2024 CE',
-  HISTORICAL_MONTHYEAR_PAD: '04/2024 CE',
-  HISTORICAL_YEARMONTH_ABBR: '2024 Apr CE',
-  HISTORICAL_YEARMONTH_FULL: '2024 April CE',
-  HISTORICAL_YEARMONTH_NUM: '2024/4 CE',
-  HISTORICAL_YEARMONTH_PAD: '2024/04 CE',
+  MONTHYEAR_ABBR: 'MMM YYYY',
+  MONTHYEAR_FULL: 'Month YYYY',
+  MONTHYEAR_NUM: 'M/YYYY',
+  MONTHYEAR_PAD: 'MM/YYYY',
+  YEARMONTH_ABBR: 'YYYY MMM',
+  YEARMONTH_FULL: 'YYYY Month',
+  YEARMONTH_NUM: 'YYYY/M',
+  YEARMONTH_PAD: 'YYYY/MM',
+  HISTORICAL_MONTHYEAR_ABBR: 'MMM YYYY CE',
+  HISTORICAL_MONTHYEAR_FULL: 'Month YYYY CE',
+  HISTORICAL_MONTHYEAR_NUM: 'M/YYYY CE',
+  HISTORICAL_MONTHYEAR_PAD: 'MM/YYYY CE',
+  HISTORICAL_YEARMONTH_ABBR: 'YYYY MMM CE',
+  HISTORICAL_YEARMONTH_FULL: 'YYYY Month CE',
+  HISTORICAL_YEARMONTH_NUM: 'YYYY/M CE',
+  HISTORICAL_YEARMONTH_PAD: 'YYYY/MM CE',
 
   // YEAR
-  YEAR: '2024',
-  HISTORICALYEAR: '2024 CE'
+  YEAR: 'YYYY',
+  HISTORICALYEAR: 'YYYY CE'
 };
 
 /// UTILITIES //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 function u_pad(num) {
   if (!num) return '';
   return num.toString().padStart(2, '0');
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function u_monthAbbr(num) {
   const date = new Date(2000, num - 1, 1);
   return date.toLocaleDateString('default', { month: 'short' });
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function u_monthName(num) {
   const date = new Date(2000, num - 1, 1);
   return date.toLocaleDateString('default', { month: 'long' });
@@ -160,36 +177,67 @@ function u_monthName(num) {
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
+function URDateField({
+  id,
+  value = '', // string or {value, format}
+  dateFormat = 'AS_ENTERED',
+  allowFormatSelection = false,
+  readOnly,
+  onChange,
+  helpText
+}) {
+  /// CONSTANTS + STATES
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// `value` could be a string or an object {value, format}
+  /// if {value, format} is passed for `value`, use the format to override dateFormat
+  const c_value = value.value || value;
+  const c_dateFormat = value.format || dateFormat;
+
+  /// formatMenuOptions is a list of formats that are possible given the current input
   const [formatMenuOptions, setFormatMenuOptions] = useState([
     {
       value: 'AS_ENTERED',
       preview: 'as entered'
     }
-  ]); // formats available given the current input
-  // FIX: This should be a controlled input -- so we don't need it?
-  // but keep this for now for demo purposes and testing
-  const [selectedDateFormat, setSelectedDateFormat] = useState(dateFormat); // format currently selected in the format menu
-  const [dateInputStr, setDateInputStr] = useState(value); // raw date as entered by the user
+  ]);
+  const [selectedDateFormat, setSelectedDateFormat] = useState(c_dateFormat); // format currently selected in the format menu
+  const [dateInputStr, setDateInputStr] = useState(c_value); // raw date as entered by the user
   const [dateValidationStr, setDateValidationStr] = useState('...'); // human-readable verification e.g. 'month:2024'
   const [dateDisplayStr, setDateDisplayStr] = useState(''); // final rendered date in selected format
 
-  /** Component Effect - set up listeners on mount */
-
+  /// Component Effect - set up listeners on mount */
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   useEffect(() => {
     const ParsedResult = erasChrono.parse(dateInputStr);
+    c_ShowValidationResults(ParsedResult);
     c_ShowMatchingFormats(ParsedResult);
     c_SetSelectedFormatResult();
   }, [selectedDateFormat, dateInputStr, dateDisplayStr]);
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function c_ShowValidationResults(ParsedResult) {
+    // Show interpreted values
+    if (ParsedResult.length > 0) {
+      const knownValues = ParsedResult[0].start.knownValues;
+      const dateValidationStr = knownValues
+        ? Object.keys(knownValues).map(k => `${k}:${knownValues[k]}`)
+        : ["result: 'cannot interpret'"];
 
+      // TODO show ERAS TOO?
+
+      setDateValidationStr(dateValidationStr.join(' '));
+    }
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_ShowMatchingFormats(ParsedResult) {
     let options = [{ value: 'AS_ENTERED', preview: 'as entered' }];
-
     if (ParsedResult.length < 1) {
-      setFormatMenuOptions(options);
+      if (allowFormatSelection) setFormatMenuOptions(options);
+      else
+        setFormatMenuOptions([
+          { value: dateFormat, preview: DATEFORMAT[dateFormat] }
+        ]);
       return;
     }
 
@@ -198,6 +246,16 @@ function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
     const knownValues = ParsedResult[0].start.knownValues;
     const knownTypes = Object.keys(ParsedResult[0].start.knownValues);
 
+    if (!allowFormatSelection) {
+      // force the format to use the defined format
+      const options = [
+        { value: dateFormat, preview: c_GetPreviewStr(knownValues, dateFormat) }
+      ];
+      setFormatMenuOptions(options);
+      return;
+    }
+
+    // Figure out which formats are eligible based on the known values
     if (knownTypes.includes('year')) {
       if (knownTypes.includes('month')) {
         if (knownTypes.includes('day')) {
@@ -264,10 +322,11 @@ function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
     options = [...additionalOptions, ...options];
     setFormatMenuOptions(options);
   }
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_GetPreviewStr(knownValues, format) {
-    const { month, day, year } = knownValues;
-    let preview = '';
+    const month = knownValues.month || 'M?';
+    const day = knownValues.day || 'D?';
+    const year = knownValues.year || 'Y?';
     switch (format) {
       case 'MONTH_ABBR':
         return `${u_monthAbbr(month)}`;
@@ -387,11 +446,11 @@ function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
         return year < 1 ? `${Math.abs(year)} ${ERAS.pre}` : `${year} ${ERAS.post}`;
       case 'AS_ENTERED':
       default:
-        console.log('showprevieow...showing as entered', dateInputStr);
-        return `${dateInputStr}`;
+        // console.log('showprevieow...showing as entered', dateInputStr);
+        return `${dateInputStr}` || '...';
     }
   }
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_SetSelectedFormatResult() {
     // Show date in selected format
     const ParsedResult = erasChrono.parse(dateInputStr);
@@ -407,29 +466,36 @@ function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   function evt_OnInputUpdate(event) {
     setDateInputStr(event.target.value);
+
+    // stuff date format into result
+    const eventWithFormat = { target: {} };
+    eventWithFormat.target.id = id;
+    eventWithFormat.target.value = {
+      value: event.target.value,
+      format: selectedDateFormat
+    };
+    onChange(eventWithFormat);
+
     const ParsedResult = erasChrono.parse(event.target.value);
-    const ParsedResultDate = erasChrono.parseDate(event.target.value);
-    let dateValidationStr = ['...'];
-
-    // Show interpreted values
-    if (ParsedResult.length > 0) {
-      const knownValues = ParsedResult[0].start.knownValues;
-      dateValidationStr = knownValues
-        ? Object.keys(knownValues).map(k => `${k}:${knownValues[k]}`)
-        : ["result: 'cannot interpret'"];
-    }
-    setDateValidationStr(dateValidationStr.join(' '));
-
-
+    c_ShowValidationResults(ParsedResult);
     c_ShowMatchingFormats(ParsedResult);
     c_SetSelectedFormatResult();
   }
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function evt_OnFormatSelect(event) {
     setSelectedDateFormat(event.target.value);
+
+    // stuff date format into result
+    const eventWithFormat = { target: {} };
+    eventWithFormat.target.id = id;
+    eventWithFormat.target.value = {
+      value: dateInputStr,
+      format: event.target.value
+    };
+    onChange(eventWithFormat);
+
     const ParsedResult = erasChrono.parse(dateInputStr);
     c_ShowMatchingFormats(ParsedResult);
     c_SetSelectedFormatResult();
@@ -437,28 +503,30 @@ function URDateField({ value, dateFormat = 'AS_ENTERED', readOnly }) {
 
   /// RENDER /////////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
   return readOnly ? (
     <div>{dateDisplayStr}</div>
   ) : (
     <div className="urdate">
-      <input onChange={evt_OnInputUpdate} value={dateInputStr} />
-      <div className="validator">{dateValidationStr}</div>
-      <div className="formfields">
-        <label>Format:&nbsp;</label>
-        <select onChange={evt_OnFormatSelect} value={selectedDateFormat}>
+      <div className="help">{helpText}</div>
+      <div className="help">Display as</div>
+      {allowFormatSelection ? (
+        <select
+          onChange={evt_OnFormatSelect}
+          value={selectedDateFormat}
+          disabled={!allowFormatSelection}
+        >
           {formatMenuOptions.map(option => (
             <option key={option.value} value={option.value}>
               {option.preview}
             </option>
           ))}
         </select>
-      </div>
-      <div className="formfields">
-        <label>Result:&nbsp;</label>
-        <input readOnly value={dateDisplayStr} />
-      </div>
+      ) : (
+        <div>{dateDisplayStr}</div>
+      )}
+      <div className="help">Enter a date</div>
+      <input id={id} onChange={evt_OnInputUpdate} value={dateInputStr} />
+      <div className="validator">{dateValidationStr}</div>
     </div>
   );
 }

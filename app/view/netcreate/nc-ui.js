@@ -176,6 +176,9 @@ function RenderAttributesTabView(state, defs) {
       case 'markdown':
         items.push(RenderMarkdownValue(k, attributes[k]));
         break;
+      case 'hdate':
+        items.push(RenderDateValue(k, attributes[k], defs[k].format));
+        break;
       case 'string':
       default:
         items.push(RenderStringValue(k, attributes[k]));
@@ -189,11 +192,6 @@ function RenderAttributesTabView(state, defs) {
     items.push(RenderLabel('degrees', defs['degrees'].displayLabel));
     items.push(RenderStringValue('degrees', degrees));
   }
-
-  // WIP DATE Tester
-  items.push(RenderLabel('datelabel', 'Date'));
-  items.push(RenderDateValue('date', 'circa apr 1, 100 bc', 'HISTORICAL_MONTHDAYYEAR_ABBR'));
-  // END WIP
 
   return <div className="formview">{items}</div>;
 }
@@ -209,6 +207,9 @@ function RenderAttributesTabEdit(state, defs, onchange) {
     switch (type) {
       case 'markdown':
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
+        break;
+      case 'hdate':
+        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -231,12 +232,6 @@ function RenderAttributesTabEdit(state, defs, onchange) {
     items.push(RenderStringValue('degrees', degrees));
   }
 
-  // WIP DATE Tester
-  items.push(RenderLabel('datelabel', 'Date'));
-  items.push(RenderDateInput('date', 'circa apr 1, 100 bc', 'HISTORICAL_MONTHDAYYEAR_ABBR'));
-  // END WIP
-
-
   return <div className="formview">{items}</div>;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -249,6 +244,9 @@ function RenderProvenanceItemsView(state, defs) {
     switch (type) {
       case 'markdown':
         items.push(RenderMarkdownValue(k, provenance[k]));
+        break;
+      case 'hdate':
+        items.push(RenderDateValue(k, provenance[k], defs[k].format));
         break;
       case 'string':
       case 'number':
@@ -271,6 +269,9 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
     switch (type) {
       case 'markdown':
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
+        break;
+      case 'hdate':
+        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -492,9 +493,14 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderDateInput(key, value, dateFormat) {
+function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
+
   return (
-    <URDateField key={`${key}value`} value={value} dateFormat={dateFormat}
+    <URDateField key={`${key}value`} id={key} value={value}
+      dateFormat={dateFormat}
+      allowFormatSelection={allowFormatSelection}
+      onChange={event => m_UIDateInputUpdate(event, cb)}
+      helpText={helpText}
     />
   )
 }
