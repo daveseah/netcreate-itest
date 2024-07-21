@@ -532,6 +532,9 @@ function URDateField({
   ) : (
     <div className="urdate">
       <div className="help">{helpText}</div>
+      <div className="help">Enter a date</div>
+      <input id={id} onChange={evt_OnInputUpdate} value={dateInputStr} />
+      <div className="validator">{dateValidationStr}</div>
       <div className="help">Display as</div>
       {allowFormatSelection ? (
         <select
@@ -548,9 +551,6 @@ function URDateField({
       ) : (
         <div>{dateDisplayStr}</div>
       )}
-      <div className="help">Enter a date</div>
-      <input id={id} onChange={evt_OnInputUpdate} value={dateInputStr} />
-      <div className="validator">{dateValidationStr}</div>
     </div>
   );
 }
