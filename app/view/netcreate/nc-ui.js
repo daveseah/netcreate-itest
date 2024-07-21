@@ -505,8 +505,19 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** There are two levels of callbacks necessary here.
+ *  1. The `onChange` handler (in this module) processes the input's onChange event, and...
+ *  2. ...then passes the resulting value to the `cb` function in the parent module.
+ *  @param {string} key
+ *  @param {string} value Can be string or {value, format} object
+ *  @param {string} dateFormat Format that the input string will be converted to
+ *  @param {boolean} allowFormatSelection When true, user can select date format
+ *                                        otherwise, the format is fixed.
+ *  @param {function} cb Callback function
+ *  @param {string} helpText
+ *  @returns
+ */
 function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
-
   return (
     <URDateField key={`${key}value`} id={key} value={value}
       dateFormat={dateFormat}

@@ -54,8 +54,9 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as chrono from 'chrono-node';
+// import * as Temporal from 'temporal-polyfill';
 import 'temporal-polyfill/global';
 
 import UNISYS from 'unisys/client';
@@ -63,7 +64,7 @@ import UNISYS from 'unisys/client';
 /// HISTORICAL CHRONO /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Create a custom parser for BCE/CE dates
-///   ex: erasChrono.parseDate("I'll arrive at 2.30AM on Christmas night");
+///   ex: erasChrono.parseDate("I'll arrive at 2.30AM tomorrow");
 const erasChrono = chrono.casual.clone();
 erasChrono.parsers.push({
   pattern: () => {
@@ -87,12 +88,13 @@ const DBG = false;
 const PR = 'URDateField';
 
 // Use template to define other values, e.g. BC/AD
+// Other eras are not currently defined
 let ERAS = {
   pre: 'BCE',
   post: 'CE'
 };
 
-// Not currently used.
+// `CALENDAR` is not currently used.
 let CALENDAR = {
   ISO: 'iso8601',
   GREGORIAN: 'gregory',
@@ -188,7 +190,8 @@ function URDateField({
 }) {
   /// CONSTANTS + STATES
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /// `value` could be a string or an object {value, format}
+  /// `value` could be a string (if allowFormatSelect is false, so the default format is used)
+  /// or an object { value, format } that stores the raw date string and the selected format.
   /// if {value, format} is passed for `value`, use the format to override dateFormat
   const c_value = value.value || value;
   const c_dateFormat = value.format || dateFormat;
@@ -216,6 +219,10 @@ function URDateField({
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Show how the raw input string is parsed into date information by breaking
+   *  down the known values (e.g. `day`, and `month`) into a human-readable string.
+   *  @param {Array} ParsedResult - a chrono array of parsed date objects
+   */
   function c_ShowValidationResults(ParsedResult) {
     // Show interpreted values
     if (ParsedResult.length > 0) {
@@ -230,6 +237,11 @@ function URDateField({
     }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Show the list of available format types with previews based on the values
+   *  parsed from the input string. e.g. `April 1, 2024` will show formats
+   *  that include a month, day, and year.
+   *  @param {Array} ParsedResult - a chrono array of parsed date objects
+   */
   function c_ShowMatchingFormats(ParsedResult) {
     let options = [{ value: 'AS_ENTERED', preview: 'as entered' }];
     if (ParsedResult.length < 1) {
@@ -323,6 +335,10 @@ function URDateField({
     setFormatMenuOptions(options);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Show the formatted date string using the parsed result information
+   *  @param {Object} knownValues - the parsed date values
+   *  @param {String} format - the selected format
+   */
   function c_GetPreviewStr(knownValues, format) {
     const month = knownValues.month || 'M?';
     const day = knownValues.day || 'D?';
@@ -451,6 +467,8 @@ function URDateField({
     }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**  Set dateDisplayStr to the formatted date string using the selected format
+   */
   function c_SetSelectedFormatResult() {
     // Show date in selected format
     const ParsedResult = erasChrono.parse(dateInputStr);
@@ -466,6 +484,9 @@ function URDateField({
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Handle user text input updates, parse and format the date string based
+   *  on the input values.
+   */
   function evt_OnInputUpdate(event) {
     setDateInputStr(event.target.value);
 
@@ -484,6 +505,9 @@ function URDateField({
     c_SetSelectedFormatResult();
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Handle user selection of a datea format.  Formats the current date field
+   *  with the selected format.
+   */
   function evt_OnFormatSelect(event) {
     setSelectedDateFormat(event.target.value);
 
