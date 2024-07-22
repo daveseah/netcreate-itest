@@ -675,6 +675,8 @@ class NodeTable extends UNISYS.Component {
                   <td hidden={nodeDefs[a].hidden} key={`${node.id}${a}`}>
                     {nodeDefs[a].type === 'markdown'
                       ? NCUI.Markdownify(node[a])
+                      : nodeDefs[a].type === 'hdate'
+                      ? (node[a] && node[a].formattedDateString) || ''
                       : node[a]}
                   </td>
                 ))}

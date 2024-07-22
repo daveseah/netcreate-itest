@@ -796,6 +796,8 @@ class EdgeTable extends UNISYS.Component {
                   <td hidden={edgeDefs[a].hidden} key={`${edge.id}${a}`}>
                     {edgeDefs[a].type === 'markdown'
                       ? NCUI.Markdownify(edge[a])
+                      : edgeDefs[a].type === 'hdate'
+                      ? (edge[a] && edge[a].formattedDateString) || ''
                       : edge[a]}
                   </td>
                 ))}
