@@ -48,8 +48,9 @@
   to make sure the interpretation is correct.
 
   The stored value of a historical date field includes:
-  * The raw input string
-  * The selected format
+  - The raw input string (`value`)
+  - The selected format ('format')
+  - The formatted date string (`formattedDateString`)
   The final output is then dynamically generated based on the selection.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
@@ -490,19 +491,20 @@ function URDateField({
   function evt_OnInputUpdate(event) {
     setDateInputStr(event.target.value);
 
-    // stuff date format into result
-    const eventWithFormat = { target: {} };
-    eventWithFormat.target.id = id;
-    eventWithFormat.target.value = {
-      value: event.target.value,
-      format: selectedDateFormat
-    };
-    onChange(eventWithFormat);
-
     const ParsedResult = erasChrono.parse(event.target.value);
     c_ShowValidationResults(ParsedResult);
     c_ShowMatchingFormats(ParsedResult);
     c_SetSelectedFormatResult();
+
+    // stuff date format and formattedDateString into result
+    const eventWithFormat = { target: {} };
+    eventWithFormat.target.id = id;
+    eventWithFormat.target.value = {
+      value: event.target.value,
+      format: selectedDateFormat,
+      formattedDateString: dateDisplayStr
+    };
+    onChange(eventWithFormat);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Handle user selection of a datea format.  Formats the current date field
@@ -511,18 +513,19 @@ function URDateField({
   function evt_OnFormatSelect(event) {
     setSelectedDateFormat(event.target.value);
 
-    // stuff date format into result
+    const ParsedResult = erasChrono.parse(dateInputStr);
+    c_ShowMatchingFormats(ParsedResult);
+    c_SetSelectedFormatResult();
+
+    // stuff date format and formattedDateString into result
     const eventWithFormat = { target: {} };
     eventWithFormat.target.id = id;
     eventWithFormat.target.value = {
       value: dateInputStr,
-      format: event.target.value
+      format: event.target.value,
+      formattedDateString: dateDisplayStr
     };
     onChange(eventWithFormat);
-
-    const ParsedResult = erasChrono.parse(dateInputStr);
-    c_ShowMatchingFormats(ParsedResult);
-    c_SetSelectedFormatResult();
   }
 
   /// RENDER /////////////////////////////////////////////////////////////////
