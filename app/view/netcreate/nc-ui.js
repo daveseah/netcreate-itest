@@ -189,7 +189,7 @@ function RenderAttributesTabView(state, defs) {
         items.push(RenderMarkdownValue(k, attributes[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, attributes[k], defs[k].format));
+        items.push(RenderDateValue(k, attributes[k], defs[k].format, defs[k].allowFormatSelection));
         break;
       case 'string':
       default:
@@ -258,7 +258,7 @@ function RenderProvenanceItemsView(state, defs) {
         items.push(RenderMarkdownValue(k, provenance[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, provenance[k], defs[k].format));
+        items.push(RenderDateValue(k, provenance[k], defs[k].format, defs[k].allowFormatSelection));
         break;
       case 'string':
       case 'number':
@@ -370,9 +370,11 @@ function RenderStringValue(key, value) {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderDateValue(key, value, dateFormat) {
+function RenderDateValue(key, value, dateFormat, allowFormatSelection) {
   return (
-    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat} readOnly />
+    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat}
+      allowFormatSelection={allowFormatSelection}
+      readOnly />
   )
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
