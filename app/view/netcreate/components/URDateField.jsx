@@ -55,7 +55,7 @@
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import HDATE from 'system/util/hdate';
 import UNISYS from 'unisys/client';
 
@@ -80,6 +80,8 @@ function URDateField({
 }) {
   /// CONSTANTS + STATES
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const inputRef = useRef(null);
+  const cursorPos = useRef(0);
 
   const [hdate, setHDate] = useState({
     value: typeof value === 'object' ? value.value : value,
@@ -125,6 +127,14 @@ function URDateField({
     if (onChange && hdate.formattedDateString !== result.formattedDateString)
       c_HandleChange(result);
   }, [value, dateFormat]);
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Retain cursor position across updates
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.selectionStart = cursorPos.current;
+      inputRef.current.selectionEnd = cursorPos.current;
+    }
+  }, [hdate.value]);
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -153,6 +163,7 @@ function URDateField({
     // Copy state to local variables
     const result = { ...hdate };
     result.value = event.target.value;
+    cursorPos.current = event.target.selectionStart;
     c_HandleChange(result);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -174,7 +185,12 @@ function URDateField({
     <div className="urdate">
       <div className="help">{helpText}</div>
       <div className="help">Enter a date</div>
-      <input id={id} onChange={evt_OnInputUpdate} value={hdate.value} />
+      <input
+        ref={inputRef}
+        id={id}
+        onChange={evt_OnInputUpdate}
+        value={hdate.value}
+      />
       <div className="validator">{dateValidationStr}</div>
       <div className="help">Display as</div>
       {allowFormatSelection ? (
