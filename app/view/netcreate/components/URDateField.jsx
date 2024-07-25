@@ -120,6 +120,10 @@ function URDateField({
 
     // 4. Save State
     setHDate(result);
+
+    // 5. Force change so that the current format is changed when the field is opened
+    if (onChange && hdate.formattedDateString !== result.formattedDateString)
+      c_HandleChange(result);
   }, [value, dateFormat]);
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
