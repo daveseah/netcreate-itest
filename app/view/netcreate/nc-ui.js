@@ -372,7 +372,7 @@ function RenderStringValue(key, value) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderDateValue(key, value, dateFormat) {
   return (
-    <URDateField key={`${key}value`} value={value} dateFormat={dateFormat} readOnly />
+    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat} readOnly />
   )
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -519,7 +519,7 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
  */
 function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
   return (
-    <URDateField key={`${key}value`} id={key} value={value}
+    <URDateField id={key} key={`${key}value`} value={value}
       dateFormat={dateFormat}
       allowFormatSelection={allowFormatSelection}
       onChange={event => m_UIDateInputUpdate(event, cb)}
