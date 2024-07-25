@@ -119,37 +119,6 @@ HDATE.u_monthName = num => {
   const date = new Date(2000, num - 1, 1);
   return date.toLocaleDateString('default', { month: 'long' });
 }
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** Sorting routines
- *  @param {ParsingResult} date1 - a ParsingResult
- *  @param {ParsingResult} date2 - a ParsingResult
- */
-HDATE.gt = (date1, date2) => {
-  console.log('dates:', date1, '>', date2);
-  if (!date1 || !date2) return '';
-  const d1 = date1[0].start.knownValues;
-  const d2 = date2[0].start.knownValues;
-  if (d1.year && d2.year && d1.year > d2.year) return true;
-  if (d1.month && d2.month && d1.month > d2.month) return true;
-  if (d1.day && d2.day && d1.day > d2.day) return true;
-  if (d1.hour && d2.hour && d1.hour > d2.hour) return true;
-  if (d1.minute && d2.minute && d1.minute > d2.minute) return true;
-  if (d1.second && d2.second && d1.second > d2.second) return true;
-  return false
-}
-HDATE.lt = (date1, date2) => {
-  console.log('dates:', date1, '<', date2);
-  if (!date1 || !date2) return '';
-  const d1 = date1[0].start.knownValues;
-  const d2 = date2[0].start.knownValues;
-  if (d1.year && d2.year && d1.year < d2.year) return true;
-  if (d1.month && d2.month && d1.month < d2.month) return true;
-  if (d1.day && d2.day && d1.day < d2.day) return true;
-  if (d1.hour && d2.hour && d1.hour < d2.hour) return true;
-  if (d1.minute && d2.minute && d1.minute < d2.minute) return true;
-  if (d1.second && d2.second && d1.second < d2.second) return true;
-  return false;
-}
 
 /// HDATE METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

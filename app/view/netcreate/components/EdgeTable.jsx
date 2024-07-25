@@ -37,6 +37,7 @@ const { BUILTIN_FIELDS_EDGE } = require('system/util/enum');
 const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 const { Button } = ReactStrap;
 const UNISYS = require('unisys/client');
+import HDATE from 'system/util/hdate';
 import URCommentBtn from './URCommentBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -377,7 +378,30 @@ class EdgeTable extends UNISYS.Component {
         } else if (type === FILTER.TYPES.NUMBER) {
           akey = Number(a[key] || ''); // force number for sorting
           bkey = Number(b[key] || '');
-        } /* if some other type */ else {
+        } else if (type === FILTER.TYPES.HDATE) {
+          if (!a[key] || !b[key]) return 0;
+          akey = HDATE.Parse(a[key].value); // parseResult
+          bkey = HDATE.Parse(b[key].value);
+          if (akey.length < 1 || bkey.length < 1) return '';
+          const da = akey[0].start.knownValues;
+          const db = bkey[0].start.knownValues;
+          let order;
+          if (da.year !== db.year) {
+            order = da.year - db.year;
+          } else if (da.month !== db.month) {
+            order = da.month - db.month;
+          } else if (da.day !== db.day) {
+            order = da.day - db.day;
+          } else if (da.hour !== db.hour) {
+            order = da.hour - db.hour;
+          } else if (da.minute !== db.minute) {
+            order = da.minute - db.minute;
+          } else if (da.second !== db.second) {
+            order = da.second - db.second;
+          }
+          return order * Number(this.sortDirection);
+        } else {
+          /* some other type */
           akey = a[key];
           bkey = b[key];
         }
