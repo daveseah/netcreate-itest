@@ -7,7 +7,7 @@
     "_ur_addons/"
   ],
   "scripts": {
-    "dev": "source ./@build-ursys.sh && brunch w -s",
+    "dev": ". @build-ursys.sh && brunch w -s",
     "lint": "npm exec --workspaces -- npm run lint && eslint app/",
     "dev:inspect": "node --inspect brunch-server.js",
     "classroom": "brunch build -e classroom",
