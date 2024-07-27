@@ -10,6 +10,7 @@ const NumberFilter = require('./NumberFilter');
 const React = require('react');
 const SelectFilter = require('./SelectFilter');
 const StringFilter = require('./StringFilter');
+const HDateFilter = require('./HDateFilter');
 const ReactStrap = require('reactstrap');
 const { Input, Label } = ReactStrap;
 
@@ -39,6 +40,7 @@ function FilterGroup({ group, label, filters, filterAction, transparency }) {
         switch (filter.type) {
           case FILTER.TYPES.MARKDOWN:
           case FILTER.TYPES.NODE:
+          case FILTER.TYPES.DATE: // generic dates (not hdate) are treated like strings
           case FILTER.TYPES.STRING:
             return (
               <StringFilter
@@ -60,6 +62,15 @@ function FilterGroup({ group, label, filters, filterAction, transparency }) {
           case FILTER.TYPES.SELECT:
             return (
               <SelectFilter
+                key={filter.id}
+                group={group}
+                filter={filter}
+                filterAction={filterAction}
+              />
+            );
+          case FILTER.TYPES.HDATE:
+            return (
+              <HDateFilter
                 key={filter.id}
                 group={group}
                 filter={filter}

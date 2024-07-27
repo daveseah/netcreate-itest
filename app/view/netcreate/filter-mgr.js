@@ -80,6 +80,7 @@ const clone = require('rfdc')();
 const UTILS = require('./nc-utils');
 const PROMPTS = require('system/util/prompts');
 const NCLOGIC = require('./nc-logic');
+import HDATE from 'system/util/hdate';
 
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -262,6 +263,9 @@ function m_ImportPrompts(prompts) {
       case FILTER.TYPES.DATE:
         operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
         break;
+      case FILTER.TYPES.HDATE:
+        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
+        break;
       case FILTER.TYPES.HIDDEN:
         break;
       default:
@@ -281,7 +285,6 @@ function m_ImportPrompts(prompts) {
       operator: operator,
       value: ''
     };
-
     // Add "Options" for "select" filter types
     if (prompt.type === FILTER.TYPES.SELECT) {
       let options = [];
@@ -539,6 +542,63 @@ function m_MatchNumber(operator, filterVal, objVal) {
   }
   return matches;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function m_MatchHDate(operator, filterVal, objVal) {
+  // deconstruct the hdate
+  const { value, format, formattedString } = objVal;
+  const akey = HDATE.Parse(value); // parseResult
+  const bkey = HDATE.Parse(filterVal);
+  if (akey.length < 1 || bkey.length < 1) return false;
+  const da = akey[0].start.knownValues;
+  const db = bkey[0].start.knownValues;
+  let order;
+  if (da.year !== db.year && da.year !== undefined && db.year !== undefined) {
+    order = da.year - db.year;
+  } else if (da.month !== db.month && da.month !== undefined && db.month !== undefined) {
+    order = da.month - db.month;
+  } else if (da.day !== db.day && da.day !== undefined && db.day !== undefined) {
+    order = da.day - db.day;
+  } else if (da.hour !== db.hour && da.hour !== undefined && db.hour !== undefined) {
+    order = da.hour - db.hour;
+  } else if (da.minute !== db.minute && da.minute !== undefined && db.minute !== undefined) {
+    order = da.minute - db.minute;
+  } else if (da.second !== db.second && da.second !== undefined && db.second !== undefined) {
+    order = da.second - db.second;
+  } else {
+    // no matching values!
+    return false;
+  }
+
+  let matches;
+  if (filterVal === '') {
+    matches = true;
+  } else {
+    switch (operator) {
+      case FILTER.OPERATORS.GT.key:
+        matches = order > 0;
+        break;
+      case FILTER.OPERATORS.GT_EQ.key:
+        matches = order >= 0;
+        break;
+      case FILTER.OPERATORS.LT.key:
+        matches = order < 0;
+        break;
+      case FILTER.OPERATORS.LT_EQ.key:
+        matches = order <= 0;
+        break;
+      case FILTER.OPERATORS.EQ.key:
+        matches = order === 0;
+        break;
+      case FILTER.OPERATORS.NOT_EQ.key:
+        matches = order !== 0;
+        break;
+      default:
+        console.error(`filter-mgr.js: Unknown operator ${operator} for HDATE filter`);
+        break;
+    }
+  }
+  return matches;
+}
 
 /// NODE FILTERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -636,7 +696,9 @@ function m_IsNodeMatchedByFilter(node, filter) {
     case FILTER.OPERATORS.IS_NOT_EMPTY.key:
       return nodeValue !== undefined && nodeValue !== '';
     default:
-      // Else assume it's a number
+      if (filter.type === FILTER.TYPES.HDATE)
+        return m_MatchHDate(filter.operator, filter.value, nodeValue);
+      // else assume it's a number
       return m_MatchNumber(filter.operator, filter.value, nodeValue);
   }
 }
@@ -775,7 +837,9 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
     case FILTER.OPERATORS.IS_NOT_EMPTY.key:
       return edgeValue !== undefined && edgeValue !== '';
     default:
-      // Else assume it's a number
+      if (filter.type === FILTER.TYPES.HDATE)
+        return m_MatchHDate(filter.operator, filter.value, edgeValue);
+      // else assume it's a number
       return m_MatchNumber(filter.operator, filter.value, edgeValue);
   }
 }

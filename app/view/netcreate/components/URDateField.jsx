@@ -76,7 +76,9 @@ function URDateField({
   allowFormatSelection = false,
   readOnly,
   onChange,
-  helpText
+  helpText,
+  isFilter = false,
+  disabled = false
 }) {
   /// CONSTANTS + STATES
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -179,21 +181,39 @@ function URDateField({
 
   /// RENDER /////////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  return readOnly ? (
-    <div>{hdate.formattedDateString}</div>
-  ) : (
+  const READONLY = <div>{hdate.formattedDateString}</div>;
+
+  const FILTER = (
+    <div className="urdate">
+      <div className="filter">
+        <input
+          ref={inputRef}
+          id={id}
+          onChange={evt_OnInputUpdate}
+          value={hdate.value}
+          placeholder="..."
+          disabled={disabled}
+        />
+        <div className="validator">{dateValidationStr}</div>
+      </div>
+    </div>
+  );
+
+  const NORMAL = (
     <div className="urdate">
       <div className="help">{helpText}</div>
       <div className="help">Enter a date</div>
       <input
         ref={inputRef}
         id={id}
+        className={isFilter ? 'filter' : ''}
         onChange={evt_OnInputUpdate}
         value={hdate.value}
+        disabled={disabled}
       />
       <div className="validator">{dateValidationStr}</div>
       <div className="help">Display as</div>
-      {allowFormatSelection ? (
+      (allowFormatSelection ? (
         <select
           onChange={evt_OnFormatSelect}
           value={hdate.format}
@@ -205,11 +225,14 @@ function URDateField({
             </option>
           ))}
         </select>
-      ) : (
-        <div>{hdate.formattedDateString}</div>
-      )}
+      ) : (<div>{hdate.formattedDateString}</div>
+      ))
     </div>
   );
+
+  if (readOnly) return READONLY;
+  if (isFilter) return FILTER;
+  return NORMAL;
 }
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
