@@ -551,22 +551,33 @@ function m_MatchHDate(operator, filterVal, objVal) {
   if (akey.length < 1 || bkey.length < 1) return false;
   const da = akey[0].start.knownValues;
   const db = bkey[0].start.knownValues;
+
+  // first make sure that the dates share common values
+  // if they do not share common values, then there's no match
+  const dakeys = Object.keys(da);
+  const dbkeys = Object.keys(db);
+  const commonKeys = dbkeys.filter(k => dakeys.includes(k));
+  if (commonKeys.length < 1) {
+    // no common keys, so there's nothing to match
+    return false;
+  }
+
   let order;
-  if (da.year !== db.year && da.year !== undefined && db.year !== undefined) {
+  if (commonKeys.includes('year') && da.year !== db.year) {
     order = da.year - db.year;
-  } else if (da.month !== db.month && da.month !== undefined && db.month !== undefined) {
+  } else if (commonKeys.includes('month') && da.month !== db.month) {
     order = da.month - db.month;
-  } else if (da.day !== db.day && da.day !== undefined && db.day !== undefined) {
+  } else if (commonKeys.includes('day') && da.day !== db.day) {
     order = da.day - db.day;
-  } else if (da.hour !== db.hour && da.hour !== undefined && db.hour !== undefined) {
+  } else if (commonKeys.includes('hour') && da.hour !== db.hour) {
     order = da.hour - db.hour;
-  } else if (da.minute !== db.minute && da.minute !== undefined && db.minute !== undefined) {
+  } else if (commonKeys.includes('minute') && da.minute !== db.minute) {
     order = da.minute - db.minute;
-  } else if (da.second !== db.second && da.second !== undefined && db.second !== undefined) {
+  } else if (commonKeys.includes('second') && da.second !== db.second) {
     order = da.second - db.second;
   } else {
-    // no matching values!
-    return false;
+    // matched!
+    order = 0;
   }
 
   let matches;
