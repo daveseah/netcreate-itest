@@ -73,7 +73,7 @@ class StringFilter extends React.Component {
     this.OnSubmit = this.OnSubmit.bind(this);
 
     this.state = {
-      operator: FILTER.OPERATORS.NO_OP, // Used locally to define result
+      operator: FILTER.OPERATORS.NO_OP.key, // Used locally to define result
       inputval: '', // Used to maintain input caret position
       value: '' // Used to define the final result
     };

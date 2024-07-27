@@ -72,7 +72,7 @@ class SelectFilter extends React.Component {
     this.OnSubmit = this.OnSubmit.bind(this);
 
     this.state = {
-      operator: FILTER.OPERATORS.NO_OP, // Used locally to define result
+      operator: FILTER.OPERATORS.NO_OP.key, // Used locally to define result
       value: '' // Used locally to define result
     };
 
