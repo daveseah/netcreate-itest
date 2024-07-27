@@ -213,7 +213,7 @@ function URDateField({
       />
       <div className="validator">{dateValidationStr}</div>
       <div className="help">Display as</div>
-      (allowFormatSelection ? (
+      {allowFormatSelection ? (
         <select
           onChange={evt_OnFormatSelect}
           value={hdate.format}
@@ -225,8 +225,9 @@ function URDateField({
             </option>
           ))}
         </select>
-      ) : (<div>{hdate.formattedDateString}</div>
-      ))
+      ) : (
+        <div>{hdate.formattedDateString}</div>
+      )}
     </div>
   );
 
