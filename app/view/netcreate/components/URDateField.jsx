@@ -113,7 +113,6 @@ function URDateField({
       result.format
     );
 
-    );
     // 3. Save derived values
     const dateValidationResults = HDATE.ShowValidationResults(ParsingResult);
     setValidationStr(dateValidationResults ? dateValidationResults.join(' ') : '');
