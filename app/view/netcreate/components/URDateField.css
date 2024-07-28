@@ -9,10 +9,15 @@
   color: #666;
   border: 1px solid #0003;
 }
+.urdate input.not-validated {
+  color: red;
+  border: 1px solid red;
+}
 .urdate .validator {
   font-size: 10px;
-  color: #999;
-  height: 18px;
+  line-height: 12px;
+  min-height: 12px;
+  opacity: 0.5;
 }
 
 .urdate > .filter {

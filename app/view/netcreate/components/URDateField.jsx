@@ -90,7 +90,7 @@ function URDateField({
     format: allowFormatSelection ? value.format || dateFormat : dateFormat,
     formattedDateString: value.formattedDateString || ''
   });
-  const [dateValidationStr, setValidationStr] = useState('...'); // human-readable verification e.g. 'month:2024'
+  const [dateValidationStr, setValidationStr] = useState(); // human-readable verification e.g. 'month:2024'
   const [formatMenuOptions, setFormatMenuOptions] = useState([
     { value: 'AS_ENTERED', preview: 'as entered' }
   ]);
@@ -113,10 +113,9 @@ function URDateField({
       result.format
     );
 
-    // 3. Save derived values
-    const dateValidationResults = HDATE.ShowValidationResults(
-      HDATE.Parse(result.value)
     );
+    // 3. Save derived values
+    const dateValidationResults = HDATE.ShowValidationResults(ParsingResult);
     setValidationStr(dateValidationResults ? dateValidationResults.join(' ') : '');
     setFormatMenuOptions(
       HDATE.ShowMatchingFormats(ParsingResult, result.format, allowFormatSelection)
@@ -189,6 +188,7 @@ function URDateField({
         <input
           ref={inputRef}
           id={id}
+          className={dateValidationStr === '' ? 'not-validated' : ''}
           onChange={evt_OnInputUpdate}
           value={hdate.value}
           placeholder="..."
@@ -206,7 +206,7 @@ function URDateField({
       <input
         ref={inputRef}
         id={id}
-        className={isFilter ? 'filter' : ''}
+        className={dateValidationStr === '' ? 'not-validated' : ''}
         onChange={evt_OnInputUpdate}
         value={hdate.value}
         disabled={disabled}
