@@ -196,6 +196,19 @@ export type CPromptFormatOption_LikertData = string; // selected item string, e.
 export type CPromptFormatOption_DiscreteSliderData = string; // selected item 0-based index e.g. "2"
 
 const DEFAULT_CommentTypes: Array<TCommentType> = [
+  // Add default comment type if none are defined
+  {
+    slug: 'cmt',
+    label: 'Comment', // comment type label
+    prompts: [
+      {
+        format: 'text',
+        prompt: 'Comment', // prompt label
+        help: 'Use this for any general comment.',
+        feedback: ''
+      }
+    ]
+  }
   // Temporarily moved into template 2024-07-30
   // Move eventually to new templating system
   //
@@ -326,12 +339,16 @@ function m_LoadReadBy(readby: TReadByObject[]) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function Init() {
   if (DBG) console.log(PR, 'Init');
+
+  // Disable comment templates until final template system is in place
+  //
   // Load Defaults
-  m_LoadCommentTypes(DEFAULT_CommentTypes);
+  // m_LoadCommentTypes(DEFAULT_CommentTypes);
 }
 
 function LoadTemplate(commentTypes: Array<TCommentType>) {
-  m_LoadCommentTypes(commentTypes);
+  const types = commentTypes || DEFAULT_CommentTypes; // fall back to simple comment if it's not defined
+  m_LoadCommentTypes(types);
 }
 
 /**
