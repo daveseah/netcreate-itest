@@ -15,18 +15,51 @@ const HDATE = {};
 /// Create a custom parser for BCE/CE dates
 ///   ex: erasChrono.parseDate("I'll arrive at 2.30AM tomorrow");
 HDATE.erasChrono = chrono.casual.clone();
-HDATE.erasChrono.parsers.push({
+HDATE.erasChrono.parsers.push(
+  {
   pattern: () => {
-    return /(\d+)\s*(BCE|CE|BC|AD)/i;
+      // match year if "BC/AD/BCE/CE" (case insensitive)
+      //   "10bc"  -- without space
+      //   "10 bc" -- with space
+      return /(\d+)\s*(BCE|CE|BC|AD)?/i;
   },
   extract: (context, match) => {
     const year = parseInt(match[1], 10);
-    const era = match[2].toUpperCase();
+      const era = match[2] ? match[2].toUpperCase() : 'CE'; // default to CE
     // Adjust the year based on the era
     const adjustedYear = era === 'BCE' || era === 'BC' ? -year : year;
     return { year: adjustedYear };
   }
-});
+  }
+
+  // ALTERNATIVE APPROACH: Any 3 digits is a year
+  //
+  // NOTE: This only works with an UnlikelyFormatFilter override.
+  //       UnlikelyFormatFilter will remove raw numbers
+  //       so if we want to allow 3 digits, then
+  ///      UnlikelyFormatFilter needs to be overriden, otherwise
+  //       the ParsingResults are filtered out.
+  //       Remove lines 10-15 `if (result.text.replace(" ", "").match(/^\d*(\.\d*)?$/)) {`
+  // {
+  //   pattern: () => {
+  //     // match year if more than 3 digits assume CE
+  //     // NOTE: This assumes the string starts with the digits
+  //     return /(\d{3,})/i;
+  //   },
+  //   extract: (context, match) => {
+  //     const year = parseInt(match[0], 10);
+  //     return { year: year };
+  //   }
+  // },
+);
+HDATE.erasChrono.refiners.push(
+  {
+    refine: (context, results) => {
+      // placeholder if we decide we want to add a refiner
+      return results;
+    }
+  }
+);
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
