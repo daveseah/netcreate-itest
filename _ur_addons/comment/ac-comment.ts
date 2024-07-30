@@ -153,6 +153,13 @@ function Init() {
 }
 
 /**
+ * @param {array} commentTypes [...{slug, label, prompts}]
+ */
+function LoadTemplate(commentTypes: Array<TCommentType>) {
+  DCCOMMENTS.LoadTemplate(commentTypes);
+}
+
+/**
  * @param {any} data JSON data
  */
 function LoadDB(data) {
@@ -556,6 +563,7 @@ function GetCrefs(): TCollectionRef[] {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 export {
   Init,
+  LoadTemplate,
   // DB
   LoadDB,
   GetDateString,

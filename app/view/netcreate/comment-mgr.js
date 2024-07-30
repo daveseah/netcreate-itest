@@ -47,7 +47,7 @@ MOD.Hook('INITIALIZE', () => {
    *  @param {Object} data.comments
    */
   // Comment AddOn Handlers
-  UDATA.HandleMessage('LOAD_COMMENT_DATACORE', data => COMMENT.LoadDB(data));
+  UDATA.HandleMessage('LOAD_COMMENT_DATACORE', MOD.LoadDB);
   /// STATE UPDATES and Message Handlers
   UDATA.HandleMessage('COMMENTS_UPDATE', MOD.HandleCOMMENTS_UPDATE);
   UDATA.HandleMessage('COMMENT_UPDATE', MOD.HandleCOMMENT_UPDATE);
@@ -74,6 +74,13 @@ MOD.Hook('CONFIGURE', () => {
 MOD.Hook('APP_READY', function (info) {
   if (DBG) console.log('comment-mgr APP_READY');
 }); // end APP_READY Hook
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.LoadDB = data => {
+  const TEMPLATE = UDATA.AppState('TEMPLATE');
+  COMMENT.LoadTemplate(TEMPLATE.COMMENTTYPES);
+  COMMENT.LoadDB(data);
+}
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
