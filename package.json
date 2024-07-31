@@ -66,6 +66,7 @@
     "@ursys/core": "file:./_ur",
     "babel-polyfill": "^6.26.0",
     "bootstrap": "^4.6.2",
+    "chrono-node": "^2.7.5",
     "classnames": "^2.3.2",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -94,6 +95,7 @@
     "sqlite3": "^5.1.6",
     "stacktrace-js": "^2.0.2",
     "superstruct": "^1.0.3",
+    "temporal-polyfill": "^0.2.5",
     "type-detect": "^4.0.8",
     "ws": "~1.1.5",
     "yargs": "^17.7.2"

@@ -45,6 +45,7 @@ FILTER.TYPES.NUMBER = 'number';
 FILTER.TYPES.SELECT = 'select';
 FILTER.TYPES.NODE = 'node'; // edge source / target
 FILTER.TYPES.DATE = 'date';
+FILTER.TYPES.HDATE = 'hdate'; // custom historical date
 FILTER.TYPES.MARKDOWN = 'markdown';
 FILTER.TYPES.HIDDEN = 'hidden';
 // Special Edge Keys mapped to node objects
