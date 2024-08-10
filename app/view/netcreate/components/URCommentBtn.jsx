@@ -86,12 +86,14 @@ const PR = 'URCommentBtn';
  */
 function URCommentBtn({ cref, uuiid }) {
   const uid = CMTMGR.GetCurrentUserId();
-  const btnid = `${cref}${uuiid ? uuiid : ''}`;
+  const btnid = c_GenerateBtnId(cref, uuiid);
+  const [commentButtonId, setCommentButtonId] = useState(
+    c_GenerateCommentButtonId(btnid)
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [position, setPosition] = useState({ x: '300px', y: '120px' });
   const [dummy, setDummy] = useState(0); // Dummy state variable to force update
-  const commentButtonId = `comment-button-${btnid}`;
 
   /** Component Effect - set up listeners on mount */
   useEffect(() => {
@@ -142,6 +144,13 @@ function URCommentBtn({ cref, uuiid }) {
   }
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function c_GenerateBtnId(cref, uuiid) {
+    return `${cref}${uuiid ? uuiid : ''}`;
+  }
+  function c_GenerateCommentButtonId(btnid) {
+    return `comment-button-${btnid}`;
+  }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_OpenComment(isOpen) {
       const position = c_GetCommentThreadPosition();
