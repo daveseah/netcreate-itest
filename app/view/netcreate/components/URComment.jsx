@@ -69,7 +69,6 @@ function URComment({ cref, cid, uid }) {
   useEffect(() => {
     // declare helpers
     const urmsg_UpdatePermissions = data => {
-      console.log('......URComment useEffect COMMENT_UPDATE_PERMISSIONS');
       setState(prevState => ({
         ...prevState,
         uIsDisabled: data.commentBeingEditedByMe

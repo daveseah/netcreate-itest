@@ -2,6 +2,7 @@
   --comment-bg: #ffd700;
   --comment-bg-light: #f1e9c5ee;
   --comment-bg-new: #d84a00;
+  --comment-bg-new-light: #d84a0088;
   --comment-status-font-color: #d84a0088;
   --comment-system-font-color: #0003;
   --disabled-opacity: 0.5;
@@ -168,12 +169,12 @@ svg#comment-icon {
   position: absolute;
   width: 30px;
   height: 30px;
-  stroke-width: 2;
+  stroke-width: 3;
   fill: #ffd700;
-  stroke: white;
+  stroke: #fffc;
 }
 .isOpen svg#comment-icon {
-  stroke: var(--comment-bg-new);
+  stroke: var(--comment-bg-new-light);
 }
 .comment-icon-inline {
   display: inline-block;

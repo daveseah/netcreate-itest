@@ -117,16 +117,16 @@ function URCommentBtn({ cref, uuiid }) {
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urstate_UpdateCommentCollection(COMMENTCOLLECTION) {
-      const uistate = CMTMGR.GetCommentUIState(commentButtonId);
-      const openuiref = CMTMGR.GetOpenComments(cref);
-      if (uistate) {
-        if (openuiref !== commentButtonId) {
-          // close this comment if someone else is trying to open the same comment
-          setIsOpen(false);
-        } else {
-          setIsOpen(uistate.isOpen);
-        }
+    const uistate = CMTMGR.GetCommentUIState(commentButtonId);
+    const openuiref = CMTMGR.GetOpenComments(cref);
+    if (uistate) {
+      if (openuiref !== commentButtonId) {
+        // close this comment if someone else is trying to open the same comment
+        setIsOpen(false);
+      } else {
+        setIsOpen(uistate.isOpen);
       }
+    }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urstate_UpdateCommentVObjs() {
@@ -140,7 +140,7 @@ function URCommentBtn({ cref, uuiid }) {
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urmsg_COMMENT_SELECT(data) {
-      if (data.cref === cref) c_OpenComment(true);
+    if (data.cref === cref) c_OpenComment(true);
   }
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
@@ -153,10 +153,10 @@ function URCommentBtn({ cref, uuiid }) {
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_OpenComment(isOpen) {
-      const position = c_GetCommentThreadPosition();
-      setIsOpen(isOpen);
-      setPosition(position);
-      CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
+    const position = c_GetCommentThreadPosition();
+    setIsOpen(isOpen);
+    setPosition(position);
+    CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_GetCommentThreadPosition() {
@@ -177,11 +177,11 @@ function URCommentBtn({ cref, uuiid }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle URCommentBtn click, which opens and closes the URCommentThread */
   function evt_OnClick(event) {
-      event.stopPropagation();
-      if (!isDisabled) {
-        const updatedIsOpen = !isOpen;
-        c_OpenComment(updatedIsOpen);
-      }
+    event.stopPropagation();
+    if (!isDisabled) {
+      const updatedIsOpen = !isOpen;
+      c_OpenComment(updatedIsOpen);
+    }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles window resize, which will adjust the URCommentThread window

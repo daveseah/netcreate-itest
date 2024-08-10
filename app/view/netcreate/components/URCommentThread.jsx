@@ -50,9 +50,9 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
 
   /** Component Effect - set up listeners on mount */
   useEffect(() => {
-    const urmsg_UpdatePermissions = data => {
+    function urmsg_UpdatePermissions(data) {
       setIsDisabled(data.commentBeingEditedByMe);
-    };
+    }
 
     UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
 
