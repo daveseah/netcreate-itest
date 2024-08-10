@@ -17,19 +17,19 @@ const HDATE = {};
 HDATE.erasChrono = chrono.casual.clone();
 HDATE.erasChrono.parsers.push(
   {
-    pattern: () => {
+  pattern: () => {
       // match year if "BC/AD/BCE/CE" (case insensitive)
       //   "10bc"  -- without space
       //   "10 bc" -- with space
       return /(\d+)\s*(BCE|CE|BC|AD)?/i;
-    },
-    extract: (context, match) => {
-      const year = parseInt(match[1], 10);
+  },
+  extract: (context, match) => {
+    const year = parseInt(match[1], 10);
       const era = match[2] ? match[2].toUpperCase() : 'CE'; // default to CE
-      // Adjust the year based on the era
-      const adjustedYear = era === 'BCE' || era === 'BC' ? -year : year;
-      return { year: adjustedYear };
-    }
+    // Adjust the year based on the era
+    const adjustedYear = era === 'BCE' || era === 'BC' ? -year : year;
+    return { year: adjustedYear };
+  }
   }
 
   // ALTERNATIVE APPROACH: Any 3 digits is a year

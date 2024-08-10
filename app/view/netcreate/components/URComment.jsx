@@ -105,14 +105,10 @@ function URComment({ cref, cid, uid }) {
     }
 
     // Error check: verify that comment types exist, if not, fall back gracefully to default type
-    let selected_comment_type = comment.comment_type;
-    let comment_error = '';
-    if (!CMTMGR.GetCommentType(selected_comment_type)) {
-      const defaultCommentTypeObject = CMTMGR.GetDefaultCommentType();
-      comment_error = `Comment type "${selected_comment_type}" not found: Falling back to default  "${defaultCommentTypeObject.label}"`;
-      console.warn(comment_error);
-      selected_comment_type = defaultCommentTypeObject.slug;
-    }
+    const { comment_error, selected_comment_type } = c_ValidateCommentType(
+      comment.comment_type
+    );
+
     // set component state from retrieved data
     setState({
       // Data
@@ -135,7 +131,21 @@ function URComment({ cref, cid, uid }) {
     // Lock edit upon creation of a new comment or a new reply
     if (cvobj.isBeingEdited) CMTMGR.LockComment(comment.comment_id);
   }
-
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Validate selected comment type
+   *  Make sure the selected comment type exists.  If not, show error.
+   */
+  function c_ValidateCommentType(selected_comment_type) {
+    let comment_error = '';
+    if (!CMTMGR.GetCommentType(selected_comment_type)) {
+      const defaultCommentTypeObject = CMTMGR.GetDefaultCommentType();
+      comment_error = `Comment type "${selected_comment_type}" not found: Falling back to default  "${defaultCommentTypeObject.label}"`;
+      console.warn(comment_error);
+      selected_comment_type = defaultCommentTypeObject.slug;
+    }
+    // set component state from retrieved data
+    return { comment_error, selected_comment_type };
+  }
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle edit button, which toggles the viewmode of this URComment */
@@ -243,9 +253,12 @@ function URComment({ cref, cid, uid }) {
    *  comment via comment manager */
   function evt_TypeSelector(event) {
     const selection = event.target.value;
+    // Error check: verify that comment types exist, if not, fall back gracefully to default type
+    const { comment_error, selected_comment_type } = c_ValidateCommentType(selection);
     setState(prevState => ({
       ...prevState,
-      selected_comment_type: selection
+      comment_error,
+      selected_comment_type
     }));
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

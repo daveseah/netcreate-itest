@@ -1,17 +1,17 @@
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-  SELECTFILTER
+  HDATEFILTER
 
-  SelectFilter provides the UI for setting drop-down menu selection
-  style filters typically used for "type" node and edge properties.
+  HDateFilter provides the UI for entering search strings for hdate-based
+  node and edge properties.
 
-  The menu options are defined with the extra `options` property
-  of the filter.
-
-  Two Select operators are supported (These just use the string operators on
-  the values set via the menu selectios):
-  * contains
-  * not contains
+  Seven Numeric  operators are supported:
+  * >
+  * >=
+  * <
+  * <=
+  * =
+  * !=
 
   Matches will SHOW the resulting node or edge.
   Any nodes/edges not matching will be hidden.
@@ -25,10 +25,10 @@
           id,       // numeric id used for unique React key
           type,     // filter type, e.g "string" vs "number"
           key,      // node field key from the template
-          keylabel, // human friendly display name for the key.  This can be customized in the template.
+          keylabel, // human friendly display name for the key.
+                       This can be customized in the template.
           operator, // the comparison function, e.g. 'contains' or '>'
           value     // the search value to be used for matching
-          options   // array of select option strings, e.g. ['abc','def',..]
         },
         onChangeHandler // callback function for parent component
       }
@@ -39,12 +39,17 @@
   The `id` variable allows us to potentially support multiple search filters
   using the same key, e.g. we could have two 'Label' filters.
 
+  In order to retain the input selection cursor between state updates, we use
+  a secondary state `inputval` that retains the cursor position.
+
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const FILTER = require('./FilterEnums');
 const React = require('react');
 const ReactStrap = require('reactstrap');
 const { Form, FormGroup, Input, Label } = ReactStrap;
+import URDateField from '../URDateField';
 const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -53,19 +58,24 @@ var UDATA = null;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const OPERATORS = [
   FILTER.OPERATORS.NO_OP,
-  FILTER.OPERATORS.CONTAINS,
-  FILTER.OPERATORS.NOT_CONTAINS
+  FILTER.OPERATORS.EQ,
+  FILTER.OPERATORS.NOT_EQ,
+  FILTER.OPERATORS.LT,
+  FILTER.OPERATORS.LT_EQ,
+  FILTER.OPERATORS.GT,
+  FILTER.OPERATORS.GT_EQ
 ];
 
-/// CLASS /////////////////////////////////////////////////////////////////////
+/// CLASS DECLARATION /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class SelectFilter extends React.Component {
+class HDateFilter extends React.Component {
   constructor({
     group,
-    filter: { id, type, key, keylabel, operator, value, options },
+    filter: { id, type, key, keylabel, operator, value },
     onChangeHandler
   }) {
     super();
+    this.m_ClearFilters = this.m_ClearFilters.bind(this);
     this.OnChangeOperator = this.OnChangeOperator.bind(this);
     this.OnChangeValue = this.OnChangeValue.bind(this);
     this.TriggerChangeHandler = this.TriggerChangeHandler.bind(this);
@@ -73,42 +83,55 @@ class SelectFilter extends React.Component {
 
     this.state = {
       operator: FILTER.OPERATORS.NO_OP.key, // Used locally to define result
-      value: '' // Used locally to define result
+      inputval: '', // Used to maintain input caret position
+      value: '' // Used to define the final result
     };
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
+    UDATA.HandleMessage('FILTER_CLEAR', this.m_ClearFilters);
+  }
+
+  componentWillUnmount() {
+    UDATA.UnhandleMessage('FILTER_CLEAR', this.m_ClearFilters);
+  }
+
+  m_ClearFilters() {
+    this.setState({ inputval: '' });
   }
 
   OnChangeOperator(e) {
-    this.setState(
-      {
-        operator: e.target.value
-      },
-      this.TriggerChangeHandler
-    );
+    const newstate = { operator: e.target.value };
+    // clear value if NO_OP
+    if (e.target.value === FILTER.OPERATORS.NO_OP.key) {
+      newstate.inputval = '';
+      newstate.value = '';
+    }
+    this.setState(newstate, this.TriggerChangeHandler);
   }
 
-  OnChangeValue(e) {
-    this.setState(
-      {
-        value: e.target.value
-      },
-      this.TriggerChangeHandler
-    );
+  OnChangeValue(event) {
+    const value = event.target.value;
+    // deconstruct the URDate {value, format, formattedString } object
+    // save the raw input string
+    const inputString = value.value;
+    // First update the input field, retaining cursor position
+    this.setState({ inputval: inputString }, () => {
+      // Then send the result
+      this.setState({ value: inputString }, this.TriggerChangeHandler);
+    });
   }
 
   TriggerChangeHandler() {
     const { filterAction } = this.props;
-    const { id, type, key, keylabel, options } = this.props.filter;
+    const { id, type, key, keylabel } = this.props.filter;
     const filter = {
       id,
       type,
       key,
       keylabel,
       operator: this.state.operator,
-      value: this.state.operator === FILTER.OPERATORS.NO_OP.key ? '' : this.state.value,
-      options
+      value: this.state.value
     };
     if (UDATA)
       UDATA.LocalCall('FILTER_DEFINE', {
@@ -124,32 +147,22 @@ class SelectFilter extends React.Component {
     e.stopPropagation();
   }
 
-  componentDidMount() {
-    // Autoselect the first item
-    this.setState({
-      value: this.props.filter.options[0]
-    });
-  }
-
   render() {
-    const { filterAction } = this.props;
-    const { id, key, keylabel, operator, value, options } = this.props.filter;
+    const { inputval } = this.state;
+    const { id, key, keylabel, operator, value } = this.props.filter;
     return (
       <Form inline className="filter-item" key={id} onSubmit={this.OnSubmit}>
         {/* FormGroup needs to unset flexFlow or fields will overflow
             https://getbootstrap.com/docs/4.5/utilities/flex/
-         */}
+        */}
         <FormGroup className="flex-nowrap">
-          <Label
-            size="sm"
-            className="small text-muted"
-          >
+          <Label size="sm" className="small text-muted">
             {keylabel}
           </Label>
           <Input
             type="select"
             value={operator}
-            style={{ height: '1.5em', padding: '0' }}
+            style={{ maxWidth: '12em', height: '1.5em', padding: '0' }}
             onChange={this.OnChangeOperator}
             bsSize="sm"
           >
@@ -159,22 +172,14 @@ class SelectFilter extends React.Component {
               </option>
             ))}
           </Input>
-          <Input
-            type="select"
-            value={value}
-            style={{ maxWidth: '12em', height: '1.5em', padding: '0' }}
+          <URDateField
+            id={key}
+            key={`${key}value`}
+            value={inputval}
+            isFilter={true}
             onChange={this.OnChangeValue}
-            bsSize="sm"
             disabled={operator === FILTER.OPERATORS.NO_OP.key}
-          >
-            {operator !== FILTER.OPERATORS.NO_OP.key
-              ? options.map(op => (
-                <option value={op} key={`${id}${op}`} size="sm">
-                  {op}
-                </option>
-              ))
-              : ''}
-          </Input>
+          />
         </FormGroup>
       </Form>
     );
@@ -183,4 +188,4 @@ class SelectFilter extends React.Component {
 
 /// EXPORT CLASS DEFINITION ///////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = SelectFilter;
+module.exports = HDateFilter;

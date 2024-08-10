@@ -81,7 +81,7 @@ class NumberFilter extends React.Component {
     this.OnSubmit = this.OnSubmit.bind(this);
 
     this.state = {
-      operator: FILTER.OPERATORS.NO_OP, // Used locally to define result
+      operator: FILTER.OPERATORS.NO_OP.key, // Used locally to define result
       inputval: '', // Used to maintain input caret position
       value: '' // Used to define the final result
     };
@@ -177,7 +177,7 @@ class NumberFilter extends React.Component {
             type="number"
             value={inputval}
             placeholder="..."
-            style={{ maxWidth: '12em', height: '1.5em', padding: '0' }}
+            style={{ maxWidth: '12em', height: '1.5em' }}
             onChange={this.OnChangeValue}
             bsSize="sm"
             disabled={operator === FILTER.OPERATORS.NO_OP.key}

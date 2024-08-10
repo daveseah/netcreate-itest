@@ -110,8 +110,9 @@ class FiltersPanel extends UNISYS.Component {
 
   render() {
     const { hidden } = this.props;
-    const { filterAction, focusRange, focusSourceLabel, statsSummary } = this.state;
-    const defs = [this.state.nodes, this.state.edges];
+    const { filterAction, focusRange, focusSourceLabel, statsSummary, nodes, edges } =
+      this.state;
+    const defs = [nodes, edges];
 
     // Can we assume TEMPLATE is already loaded by the time we render?
     const TEMPLATE = UDATA.AppState('TEMPLATE');

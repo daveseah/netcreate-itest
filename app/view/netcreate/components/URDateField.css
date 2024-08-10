@@ -1,0 +1,43 @@
+.urdate {
+  display: flex;
+  flex-direction: column;
+}
+.urdate input {
+  margin: 0;
+}
+.urdate input:read-only {
+  color: #666;
+  border: 1px solid #0003;
+}
+.urdate input.not-validated {
+  color: red;
+  border: 1px solid red;
+}
+.urdate .validator {
+  font-size: 10px;
+  line-height: 12px;
+  min-height: 12px;
+  opacity: 0.5;
+}
+
+.urdate > .filter {
+  display: grid;
+  grid-template-columns: 8em auto;
+  grid-column-gap: 5px;
+  align-items: center;
+}
+.urdate > .filter > input {
+  /* emulate ReactStrap form control */
+  display: inline-block;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: 1px solid #ced4da;
+  border-radius: 0.2rem;
+  max-width: 12em;
+  height: 1.5em;
+  padding: 0.25rem 0.5rem;
+}
+.urdate > .filter > input:disabled {
+  /* emulate ReactStrap form control */
+  background-color: #e9ecef;
+}

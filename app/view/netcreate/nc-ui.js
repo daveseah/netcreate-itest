@@ -17,6 +17,7 @@ const MDEMOJI = require('markdown-it-emoji');
 MD.use(MDEMOJI);
 const MDPARSE = require('html-react-parser').default;
 const NCDialogInsertImageURL = require('./components/NCDialogInsertImageURL');
+import URDateField from './components/URDateField';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -109,6 +110,18 @@ function m_UISelectInputUpdate(event, cb) {
   if (typeof cb === 'function') cb(key, value);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** This processes the form data before passing it on to the parent handler.
+ *  The callback function is generally an input state update method in
+ *  NCNode or NCEdge
+ *  @param {Object} event
+ *  @param {function} cb Callback function
+ */
+function m_UIDateInputUpdate(event, cb) {
+  const key = event.target.id;
+  const value = event.target.value;
+  if (typeof cb === 'function') cb(key, value);
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Insert a URL into the current input
  *  This processes the form data before passing it on to the parent handler.
  *  The callback function is generally an input state update method in
@@ -175,6 +188,9 @@ function RenderAttributesTabView(state, defs) {
       case 'markdown':
         items.push(RenderMarkdownValue(k, attributes[k]));
         break;
+      case 'hdate':
+        items.push(RenderDateValue(k, attributes[k], defs[k].format, defs[k].allowFormatSelection));
+        break;
       case 'string':
       default:
         items.push(RenderStringValue(k, attributes[k]));
@@ -203,6 +219,9 @@ function RenderAttributesTabEdit(state, defs, onchange) {
     switch (type) {
       case 'markdown':
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
+        break;
+      case 'hdate':
+        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -238,6 +257,9 @@ function RenderProvenanceItemsView(state, defs) {
       case 'markdown':
         items.push(RenderMarkdownValue(k, provenance[k]));
         break;
+      case 'hdate':
+        items.push(RenderDateValue(k, provenance[k], defs[k].format, defs[k].allowFormatSelection));
+        break;
       case 'string':
       case 'number':
       default:
@@ -259,6 +281,9 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
     switch (type) {
       case 'markdown':
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
+        break;
+      case 'hdate':
+        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -343,6 +368,14 @@ function RenderStringValue(key, value) {
       {value}
     </div>
   );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderDateValue(key, value, dateFormat, allowFormatSelection) {
+  return (
+    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat}
+      allowFormatSelection={allowFormatSelection}
+      readOnly />
+  )
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -472,6 +505,29 @@ function m_RenderOptionsInput(key, value, defs, cb, helpText) {
       </select>
     </div>
   );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** There are two levels of callbacks necessary here.
+ *  1. The `onChange` handler (in this module) processes the input's onChange event, and...
+ *  2. ...then passes the resulting value to the `cb` function in the parent module.
+ *  @param {string} key
+ *  @param {string} value Can be string or {value, format} object
+ *  @param {string} dateFormat Format that the input string will be converted to
+ *  @param {boolean} allowFormatSelection When true, user can select date format
+ *                                        otherwise, the format is fixed.
+ *  @param {function} cb Callback function
+ *  @param {string} helpText
+ *  @returns
+ */
+function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
+  return (
+    <URDateField id={key} key={`${key}value`} value={value}
+      dateFormat={dateFormat}
+      allowFormatSelection={allowFormatSelection}
+      onChange={event => m_UIDateInputUpdate(event, cb)}
+      helpText={helpText}
+    />
+  )
 }
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////

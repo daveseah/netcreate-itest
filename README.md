@@ -14,7 +14,7 @@ If you use or refer to Net.Create in a publication, we ask that you cite it. The
 
 ## QUICK INSTALLATION
 
-The Wiki has [detailed instructions](https://github.com/netcreateorg/netcreate-2018/wiki/Installation-Guide). In general, you'll need to install the prerequisite `Git` and `NodeJS` (as of 12/23/2023 the officially supported version of Node is version 18.18.0) command line utilities to your computer and use a `terminal` program to issue the following commands to install from the Internet.
+The Wiki has [detailed instructions](https://github.com/netcreateorg/netcreate-itest/wiki/Installation-Guide). In general, you'll need to install the prerequisite `Git` and `NodeJS` (as of 12/23/2023 the officially supported version of Node is version 18.18.0) command line utilities to your computer and use a `terminal` program to issue the following commands to install from the Internet.
 
 ### 1. First Install
 
