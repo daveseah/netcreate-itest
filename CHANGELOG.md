@@ -16,7 +16,8 @@
 # Unreleased <a name="unreleased"></a>
 
 Candidate version 2.0 "Commenting"
-To be released May 2024
+To be released August 2024
+For Septemeber 2024 pilot testing.
 
 v2.0.0 introduces "commenting".  Database/file data format has changed significantly with 1.5.x so pre-1.4.x data (*.loki) and template (*.json) files are no longer compatible.
 
@@ -30,11 +31,17 @@ v2.0.0 introduces "commenting".  Database/file data format has changed significa
   - When opening projects, the template version (or lack of a template version) will allow the system to decide how to migrate or ignore data fields. e.g. previously built-in fields like comments will continue to be displayed and will not break in table views.
 
 **Significant Features**
+- Add Historical Date support #228 -- including support for:
+  - input of arbitrary date strings
+  - validation and parsing of date strings into sortable, filterable dates
+  - display and sorting of dates in Node and Edge Tables
+  - filtering of Nodes and Edge based on a simple date comparison
+  - definition of new custom fields using the new "hdate" field type
 - Add Comment System  #133 -- including support for:
 	- floating draggable comment windows
 	- displays of comment counts
 	- two levels of comment replies
-	- comment templates
+	- comment templates set up via old `toml` template system (does not support template editing via UI, only manual edit of the toml field)
   - comment prompt types for comment templates: text, dropdown, checkbox, radio, likert, discrete-slider #201
 	- displaying "read" status on a per-user basis
 	- editing, deletion
