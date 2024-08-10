@@ -19,14 +19,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/daveseah/netcreate-itest.git"
+    "url": "git+https://github.com/netcreateorg/netcreate-itest/netcreate-itest.git"
   },
   "author": "Inquirium LLC",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/daveseah/netcreate-itest/issues"
+    "url": "https://github.com/netcreateorg/netcreate-itest/issues"
   },
-  "homepage": "https://github.com/daveseah/netcreate-itest#readme",
+  "homepage": "https://github.com/netcreateorg/netcreate-itest#readme",
   "devDependencies": {
     "@babel/core": "^7.11.1",
     "@types/fs-extra": "^11.0.2",
@@ -66,6 +66,7 @@
     "@ursys/core": "file:./_ur",
     "babel-polyfill": "^6.26.0",
     "bootstrap": "^4.6.2",
+    "chrono-node": "^1.4.9",
     "classnames": "^2.3.2",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
