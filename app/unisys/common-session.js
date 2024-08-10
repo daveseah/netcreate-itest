@@ -58,7 +58,7 @@ SESUTIL.DecodeToken = function (token, dataset) {
   // 2024/08 Allow optional `dataset` so tokens can be shared across graphs
   // Orig code: let salt = `${classId}${projId}${dataset}`;
   let salt = `${classId}${projId}`; // skips `dataset`
-  console.warn('commen-session ignoring "dataset" to allow decoding of shared tokens');
+  if (DBG) console.warn('commen-session ignoring "dataset" to allow decoding of shared tokens');
   try {
     let hashids = new HashIds(salt, HASH_MINLEN, HASH_ABET);
     // try to decode the groupId
@@ -136,7 +136,7 @@ SESUTIL.MakeToken = function (classId, projId, groupId, dataset) {
   // 2024/08 Allow optional `dataset` so tokens can be shared across graphs
   // Orig code: let salt = `${classId}${projId}${dataset}`;
   let salt = `${classId}${projId}`; // skips `dataset`
-  console.warn('commen-session ignoring "dataset" to allow creation of shared tokens');
+  if (DBG) console.warn('commen-session ignoring "dataset" to allow creation of shared tokens');
   let hashids = new HashIds(salt, HASH_MINLEN, HASH_ABET);
   let hashedId = hashids.encode(groupId);
   return `${classId}-${projId}-${hashedId}`;
