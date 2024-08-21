@@ -165,6 +165,10 @@ function LoadTemplate(commentTypes: Array<TCommentType>) {
 function LoadDB(data) {
   if (DBG) console.log(PR, 'LoadDB', data);
   DCCOMMENTS.LoadDB(data);
+  if (DBG) console.log('COMMENTCOLLECTION', COMMENTCOLLECTION);
+  if (DBG) console.log('COMMENTUISTATE', COMMENTUISTATE);
+  if (DBG) console.log('OPENCOMMENTS', OPENCOMMENTS);
+  if (DBG) console.log('COMMENTVOBJS', COMMENTVOBJS);
 }
 
 /**
