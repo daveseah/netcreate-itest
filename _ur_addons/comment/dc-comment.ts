@@ -362,6 +362,7 @@ function LoadDB(data: TLokiData) {
   if (DBG) console.log(PR, 'LoadDB');
   // Load Data!
   if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
+  else m_LoadCommentTypes(DEFAULT_CommentTypes); // load default comments if db has none
   if (data.users) m_LoadUsers(data.users);
   if (data.comments) m_LoadComments(data.comments);
   if (data.readby) m_LoadReadBy(data.readby);

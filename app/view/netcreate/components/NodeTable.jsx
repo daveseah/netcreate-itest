@@ -29,7 +29,6 @@ const React = require('react');
 const ReactStrap = require('reactstrap');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
-const NCCommentBtn = require('./NCCommentBtn');
 const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
