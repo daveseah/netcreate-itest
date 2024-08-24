@@ -1278,14 +1278,25 @@ JSCLI.AddFunction(function ncDumpData() {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Command: Token Generator
  */
+/// ncMakeSharedTokens is a variant on ncMakeTokens
+/// This command skips `dataset` so tokens can be shared across graphs.
+/// Use ncMakeSharedTokens instead of ncMakeTokens to create shared tokens
+JSCLI.AddFunction(function ncMakeSharedTokens(clsId, projId, numGroups) {
+  return ncMakeTokens(clsId, projId, undefined, numGroups);
+});
+/// `datatset` is not being used but is retained for backwards compatibility
 JSCLI.AddFunction(function ncMakeTokens(clsId, projId, dataset, numGroups) {
   // type checking
   if (typeof clsId !== 'string')
     return 'args: str classId, str projId, str dataset, int numGroups';
   if (typeof projId !== 'string')
     return 'args: str classId, str projId, str dataset, int numGroups';
-  if (typeof dataset !== 'string')
-    return 'args: str classId, str projId, str dataset, int numGroups';
+
+  // 2024/08 Make 'dataset' optional so tokens can be shared across graphs
+  // `dataset` can still be defined, but it is now optional and does not return an error
+  // if (typeof dataset !== 'string')
+  //   return 'args: str classId, str projId, str dataset, int numGroups';
+
   if (clsId.length > 12) return 'classId arg1 should be 12 chars or less';
   if (projId.length > 12) return 'classId arg1 should be 12 chars or less';
   if (!Number.isInteger(numGroups)) return 'numGroups arg3 must be integer';

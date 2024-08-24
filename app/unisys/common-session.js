@@ -29,14 +29,17 @@ var m_current_groupid = null;
 /** Given a token of form CLASS-PROJECT-HASHEDID, return an object
     containing as many decoded values as possible. Check isValid for
     complete decode succes. groupId is also set if successful
+
+    `dataset` is not currently being used, but is retained for future use.
  */
 SESUTIL.DecodeToken = function (token, dataset) {
   const DELIMITER = '-';
   if (token === undefined) return {};
-  if (dataset === undefined) {
-    console.error('SESUTIL.DecodeToken called without "dataset" parameter.');
-    return {};
-  }
+  // 2024/08 Allow optional `dataset` so tokens can be shared across graphs
+  // if (dataset === undefined) {
+  //   console.error('SESUTIL.DecodeToken called without "dataset" parameter.');
+  //   return {};
+  // }
   let tokenBits = token.split(DELIMITER);
   let classId, projId, hashedId, groupId, subId, isValid;
   // optimistically set valid flag to be negated on failure
@@ -52,7 +55,10 @@ SESUTIL.DecodeToken = function (token, dataset) {
   if (tokenBits[2]) hashedId = tokenBits[2].toUpperCase();
   if (tokenBits[3]) subId = tokenBits[3].toUpperCase();
   // initialize hashid structure
-  let salt = `${classId}${projId}${dataset}`;
+  // 2024/08 Allow optional `dataset` so tokens can be shared across graphs
+  // Orig code: let salt = `${classId}${projId}${dataset}`;
+  let salt = `${classId}${projId}`; // skips `dataset`
+  if (DBG) console.warn('commen-session ignoring "dataset" to allow decoding of shared tokens');
   try {
     let hashids = new HashIds(salt, HASH_MINLEN, HASH_ABET);
     // try to decode the groupId
@@ -108,7 +114,9 @@ SESUTIL.IsValidToken = function (token, dataset) {
 /** Returns a token string of form CLASS-PROJECT-HASHEDID
     classId and projId should be short and are case-insensitive.
     groupId must be a non-negative integer
- */
+
+    `dataset` is not currently being used, but is retained for future use.
+*/
 SESUTIL.MakeToken = function (classId, projId, groupId, dataset) {
   // type checking
   if (typeof classId !== 'string')
@@ -125,7 +133,10 @@ SESUTIL.MakeToken = function (classId, projId, groupId, dataset) {
   // initialize hashid structure
   classId = classId.toUpperCase();
   projId = projId.toUpperCase();
-  let salt = `${classId}${projId}${dataset}`;
+  // 2024/08 Allow optional `dataset` so tokens can be shared across graphs
+  // Orig code: let salt = `${classId}${projId}${dataset}`;
+  let salt = `${classId}${projId}`; // skips `dataset`
+  if (DBG) console.warn('commen-session ignoring "dataset" to allow creation of shared tokens');
   let hashids = new HashIds(salt, HASH_MINLEN, HASH_ABET);
   let hashedId = hashids.encode(groupId);
   return `${classId}-${projId}-${hashedId}`;
