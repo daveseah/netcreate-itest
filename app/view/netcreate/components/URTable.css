@@ -8,8 +8,12 @@
   padding: 0 5px;
   border-right: 1px solid #ccc;
   position: relative;
-  user-select: none;
   background-color: #0001;
+}
+.URTable thead,
+.URTable thead > tr,
+.URTable thead > tr > th {
+  user-select: none;
 }
 .URTable .resize-handle {
   position: absolute;
