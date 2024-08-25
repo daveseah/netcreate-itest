@@ -3,7 +3,8 @@
   --comment-bg-light: #f1e9c5ee;
   --comment-bg-new: #d84a00;
   --comment-bg-new-light: #d84a0088;
-  --comment-status-font-color: #d84a0088;
+  --comment-commenter-font-color: #333;
+  --comment-status-font-color: #d44127; /* <= evan's, orig => #d84a0088; */
   --comment-system-font-color: #0003;
   --disabled-opacity: 0.5;
 }
@@ -318,6 +319,7 @@ svg#comment-icon {
 
 .commentThread .label,
 .comment .commenter,
+.comment label,
 .comment .label,
 .comment .help /* .help uses nccomponent */,
 .comment .commentId,
@@ -358,6 +360,7 @@ svg#comment-icon {
   color: var(--comment-status-font-color);
 }
 .comment .commenttext {
+  color: var(--comment-commenter-font-color);
   background-color: #fff5;
   padding-left: 3px;
   margin-bottom: 3px;
@@ -524,4 +527,24 @@ svg#comment-icon {
 }
 .comment .prompt button.notselected {
   opacity: 0.5;
+}
+
+/* URCommentVBtn */
+.URCommentVBtn {
+  display: inline-block;
+  cursor: pointer;
+  border: none;
+  background-color: transparent;
+}
+.URCommentVBtn svg {
+  width: 24px;
+  height: 24px;
+}
+.URCommentVBtn > .count {
+  display: inline-block;
+  margin-left: -16px;
+  color: #fff;
+}
+.URCommentVBtn > .count.unread {
+  color: var(--comment-status-font-color);
 }
