@@ -299,6 +299,7 @@ MOD.MarkAllRead = () => {
 MOD.GetCommentCollection = uiref => {
   return COMMENT.GetCommentCollection(uiref);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Marks a comment as read, and closes the component.
  * Called by NCCommentBtn when clicking "Close"
@@ -315,15 +316,35 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
     return;
   }
   // OK to close
+  UDATA.LocalCall('CTHREADMGR_THREAD_CLOSE', { cref });
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
 };
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentStats = () => {
   const uid = MOD.GetCurrentUserId();
   return COMMENT.GetCommentStats(uid);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.OpenCommentThread = (cref, position) => {
+  UDATA.LocalCall('CTHREADMGR_THREAD_OPEN', { cref, position });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.GetCommentThreadPosition = commentButtonId => {
+  const btn = document.getElementById(commentButtonId);
+  const cmtbtnx = btn.getBoundingClientRect().left;
+  const windowWidth = Math.min(screen.width, window.innerWidth);
+  let x;
+  if (windowWidth - cmtbtnx < 500) {
+    x = cmtbtnx - 405;
+  } else {
+    x = cmtbtnx + 35;
+  }
+  const y = btn.getBoundingClientRect().top + window.scrollY;
+  return { x, y };
+}
+
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment UI State
