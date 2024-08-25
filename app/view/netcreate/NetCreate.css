@@ -7,13 +7,13 @@
       2001  NCDialog .screen ==========
       2000  comment-bar
       1030  bootstrap .fixed-top
+       200  nc-navbar
        100  Node/EdgeTable thead
         15  NCAutoSuggest .matchlist
         15  NCNode .ncedge
         10  NCNode .nccomponent
          1  NCNode .screen ============
          1  ToolTip .modal, .tooltiptextabove, .tooltiptext
-         1  nc-navbar
          0  NetCreate
 */
 
@@ -51,7 +51,7 @@ nav.fixed-top {
   height: 38px;
   display: flex;
   flex-flow: row-reverse;
-  z-index: 1;
+  z-index: 200;
 }
 /* Bootstrap override */
 .nav-item {
