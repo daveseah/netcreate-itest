@@ -19,7 +19,7 @@ const React = require('react');
 const ReactStrap = require('reactstrap');
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
 const classnames = require('classnames');
-const NodeTable = require('./NodeTable');
+const NCNodeTable = require('./NCNodeTable');
 const EdgeTable = require('./EdgeTable');
 const More = require('./More');
 
@@ -264,7 +264,7 @@ class InfoPanel extends UNISYS.Component {
               <Row>
                 <Col sm="12">
                   {activeTab === TABS.NODESTABLE && (
-                    <NodeTable tableHeight={tableHeight} />
+                    <NCNodeTable tableHeight={tableHeight} />
                   )}
                 </Col>
               </Row>
