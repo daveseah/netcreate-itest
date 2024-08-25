@@ -195,7 +195,7 @@ module.exports = {
     // env 'package' is set by npm run package
     package: {
       optimize: false,
-      sourceMaps: false,
+      sourceMaps: true,
       plugins: {
         autoReload: { enabled: false }
       },
