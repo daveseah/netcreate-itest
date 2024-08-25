@@ -1,0 +1,26 @@
+.URTable {
+}
+.URTable table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.URTable th {
+  padding: 0 5px;
+  border-right: 1px solid #ccc;
+  position: relative;
+  user-select: none;
+  background-color: #0001;
+}
+.URTable .resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px; /* 5px; */
+  cursor: col-resize;
+  background-color: transparent;
+  user-select: none;
+}
+.URTable .resize-handle:hover {
+  background-color: #ccf; /* Highlight handle on hover */
+}
