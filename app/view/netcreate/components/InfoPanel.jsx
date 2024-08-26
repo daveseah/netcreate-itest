@@ -20,7 +20,7 @@ const ReactStrap = require('reactstrap');
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
 const classnames = require('classnames');
 const NCNodeTable = require('./NCNodeTable');
-const EdgeTable = require('./EdgeTable');
+const NCEdgeTable = require('./NCEdgeTable');
 const More = require('./More');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -273,7 +273,7 @@ class InfoPanel extends UNISYS.Component {
               <Row>
                 <Col sm="12">
                   {activeTab === TABS.EDGESTABLE && (
-                    <EdgeTable tableHeight={tableHeight} />
+                    <NCEdgeTable tableHeight={tableHeight} />
                   )}
                 </Col>
               </Row>
