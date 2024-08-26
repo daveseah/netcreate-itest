@@ -38,6 +38,7 @@ const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
+let UDATA = null;
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -410,7 +411,7 @@ class NCNodeTable extends UNISYS.Component {
 
     /// CLICK HANDLERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function ui_ClickViewComment(event, nodeId) {
+    function ui_ClickViewNode(event, nodeId) {
       event.preventDefault();
       event.stopPropagation();
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
@@ -424,10 +425,7 @@ class NCNodeTable extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function RenderViewOrEdit(value) {
       return (
-        <button
-          className="outline"
-          onClick={event => ui_ClickViewComment(event, value)}
-        >
+        <button className="outline" onClick={event => ui_ClickViewNode(event, value)}>
           {ICON_VIEW}
         </button>
       );
@@ -493,7 +491,6 @@ class NCNodeTable extends UNISYS.Component {
       {
         title: 'Comments',
         data: 'commentVBtnDef',
-        type: 'text',
         width: 50, // in px
         renderer: RenderCommentBtn,
         sorter: SortCommentsByCount
