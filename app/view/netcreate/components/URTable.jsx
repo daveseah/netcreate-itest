@@ -90,6 +90,10 @@ function URTable({ data, columns }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function m_SortByText(key, tdata, order) {
     const sortedData = [...tdata].sort((a, b) => {
+      console.log('sort by text', a[key], b[key]);
+      if (!a[key] && !b[key]) return 0;
+      if (!a[key]) return 1; // Move undefined or '' to the bottom regardless of sort order
+      if (!b[key]) return -1; // Move undefined or '' the bottom regardless of sort order
       if (a[key] < b[key]) return order;
       if (a[key] > b[key]) return order * -1;
       return 0;
