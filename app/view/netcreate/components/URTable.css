@@ -10,6 +10,9 @@
   position: relative;
   background-color: #0001;
 }
+.URTable th.selected {
+  background-color: #0003;
+}
 .URTable thead,
 .URTable thead > tr,
 .URTable thead > tr > th {

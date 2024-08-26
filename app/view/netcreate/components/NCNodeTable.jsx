@@ -258,7 +258,9 @@ class NCNodeTable extends UNISYS.Component {
             filteredNodes
           },
           () => {
-            const nodes = this.sortTable(this.state.sortkey, NCDATA.nodes);
+            // FIXME: how to handle sorting?
+            // const nodes = this.sortTable(this.state.sortkey, NCDATA.nodes);
+            const nodes = NCDATA.nodes;
             this.updateNodeFilterState(nodes, filteredNodes);
           }
         );
@@ -269,7 +271,9 @@ class NCNodeTable extends UNISYS.Component {
             filteredNodes
           },
           () => {
-            const nodes = this.sortTable(this.state.sortkey, filteredNodes);
+            // FIXME: how to handle sorting?
+            // const nodes = this.sortTable(this.state.sortkey, filteredNodes);
+            const nodes = NCDATA.nodes;
             this.updateNodeFilterState(nodes, filteredNodes);
           }
         );
@@ -373,10 +377,15 @@ class NCNodeTable extends UNISYS.Component {
       // custom attributes
       const attributes = {};
       attributeDefs.forEach((key, i) => {
-        let data;
-        if (nodeDefs[key].type === 'markdown') data = NCUI.Markdownify(node[key]);
-        else if (nodeDefs[key].type === 'hdate')
-          data = node[key] && node[a].formattedDatString;
+        let data = {};
+        if (nodeDefs[key].type === 'markdown') {
+          // for markdown:
+          // a. provide the raw markdown string
+          // b. provide the HTML string
+          data.html = NCUI.Markdownify(node[key]);
+          data.raw = node[key];
+        } else if (nodeDefs[key].type === 'hdate')
+          data = node[key] && node[key].formattedDateString;
         else data = node[key];
         attributes[key] = data;
       });
@@ -408,9 +417,7 @@ class NCNodeTable extends UNISYS.Component {
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
       let title = String(key);
       title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-      let type = 'text';
-      if (nodeDefs[key].type === 'markdown') type = 'text';
-      else if (nodeDefs[key].type === 'hdate') type = 'date';
+      let type = nodeDefs[key].type;
       return {
         title,
         type,
