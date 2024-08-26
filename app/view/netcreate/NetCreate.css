@@ -106,3 +106,14 @@ button svg {
   width: 16px;
   height: 16px;
 }
+
+/* NC Tables --------------------------------------------------------------- */
+.NCNodeTable,
+.NCEdgeTable {
+  overflow: auto;
+  position: relative;
+  display: block;
+  left: 1px;
+  right: 10px;
+  background-color: #eafcff;
+}

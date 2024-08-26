@@ -501,18 +501,7 @@ class NCNodeTable extends UNISYS.Component {
     ];
 
     return (
-      <div
-        className="NCNodeTable"
-        style={{
-          overflow: 'auto',
-          position: 'relative',
-          display: 'block',
-          left: '1px',
-          right: '10px',
-          height: tableHeight,
-          backgroundColor: '#eafcff'
-        }}
-      >
+      <div className="NCNodeTable" style={{ height: tableHeight }}>
         <URTable data={TABLEDATA} columns={COLUMNDEFS} />
       </div>
     );
