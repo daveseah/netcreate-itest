@@ -31,17 +31,19 @@ const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const UNISYS = require('unisys/client');
 import HDATE from 'system/util/hdate';
+import URCommentVBtn from './URCommentVBtn';
 import URTable from './URTable';
+const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var DBG = false;
+const DBG = false;
+
+/// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-const isLocalHost =
-  SETTINGS.EJSProp('client').ip === '127.0.0.1' ||
-  location.href.includes('admin=true');
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-var UDATA = null;
+function u_GetButtonId(cref) {
+  return `comment-button-${cref}`;
+}
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -341,16 +343,8 @@ class NCNodeTable extends UNISYS.Component {
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
   }
 
-  /// REACT LIFECYCLE METHODS ///////////////////////////////////////////////////
+  /// REACT LIFECYCLE METHODS /////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /*/ This is not yet implemented as of React 16.2.  It's implemented in 16.3.
-    getDerivedStateFromProps (props, state) {
-      console.error('getDerivedStateFromProps!!!');
-    }
-  /*/
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /**
-   */
   render() {
     const {
       nodes,
@@ -371,6 +365,8 @@ class NCNodeTable extends UNISYS.Component {
       k => !BUILTIN_FIELDS_NODE.includes(k)
     );
 
+    /// TABLE DATA GENERATION
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     const TABLEDATA = nodes.map((node, i) => {
       const { id, label, degrees } = node;
 
@@ -412,6 +408,55 @@ class NCNodeTable extends UNISYS.Component {
       };
     });
 
+    /// CLICK HANDLERS
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function ui_ClickViewComment(event, nodeId) {
+      event.preventDefault();
+      event.stopPropagation();
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
+    }
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function ui_ClickComment(cref) {
+      const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
+      CMTMGR.OpenCommentThread(cref, position);
+    }
+    /// RENDERERS
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function RenderViewOrEdit(value) {
+      return (
+        <button
+          className="outline"
+          onClick={event => ui_ClickViewComment(event, value)}
+        >
+          {ICON_VIEW}
+        </button>
+      );
+    }
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function RenderCommentBtn(value) {
+      return (
+        <URCommentVBtn
+          id={u_GetButtonId(value.cref)}
+          count={value.count}
+          hasUnreadComments={value.hasUnreadComments}
+          selected={value.selected}
+          cb={e => ui_ClickComment(value.cref)}
+        />
+      );
+    }
+    /// CUSTOM SORTERS
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function SortCommentsByCount(key, tdata, order) {
+      const sortedData = [...tdata].sort((a, b) => {
+        console.log('comment sort a', a, 'b', b);
+        if (a[key].count < b[key].count) return order;
+        if (a[key].count > b[key].count) return order * -1;
+        return 0;
+      });
+      return sortedData;
+    }
+    /// TABLE DATA SPECIFICATIONS
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
@@ -424,6 +469,36 @@ class NCNodeTable extends UNISYS.Component {
         data: key
       };
     });
+    const COLUMNDEFS = [
+      {
+        title: '-', // View/Edit
+        data: 'id',
+        type: 'number',
+        width: 50, // in px
+        renderer: RenderViewOrEdit
+      },
+      {
+        title: 'Deg.',
+        type: 'number',
+        width: 50, // in px
+        data: 'degrees'
+      },
+      {
+        title: 'Label',
+        type: 'text',
+        width: 300, // in px
+        data: 'label'
+      },
+      ...ATTRIBUTE_COLUMNDEFS,
+      {
+        title: 'Comments',
+        data: 'commentVBtnDef',
+        type: 'text',
+        width: 50, // in px
+        renderer: RenderCommentBtn,
+        sorter: SortCommentsByCount
+      }
+    ];
 
     return (
       <div
@@ -438,7 +513,7 @@ class NCNodeTable extends UNISYS.Component {
           backgroundColor: '#eafcff'
         }}
       >
-        <URTable data={TABLEDATA} attributeColumndefs={ATTRIBUTE_COLUMNDEFS} />
+        <URTable data={TABLEDATA} columns={COLUMNDEFS} />
       </div>
     );
   }

@@ -10,70 +10,47 @@ Emulates the API of Handsontable.
 
 /// LIBRARIES /////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import ReactDOM from 'react-dom'; // React 16
-// import { createRoot } from 'react-dom/client'; // requires React 18
-import UNISYS from 'unisys/client';
-
-const CMTMGR = require('../comment-mgr');
+import React, { useState, useEffect, useRef } from 'react';
 import HDATE from 'system/util/hdate';
-import URCommentVBtn from './URCommentVBtn';
-const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 
-/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// FUNCTIONAL COMPONENT DECLARATION //////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Initialize UNISYS DATA LINK for functional react component
-const UDATAOwner = { name: 'URCommentThread' };
-const UDATA = UNISYS.NewDataLink(UDATAOwner);
-
-/// CLASS DECLARATION /////////////////////////////////////////////////////////
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function URTable({ data, attributeColumndefs }) {
+function URTable({ data, columns }) {
   const [tabledata, setTableData] = useState([]);
+  const [columndefs, setColumnDefs] = useState([]);
   const [columnWidths, setColumnWidths] = useState([]);
-  const [sortColumn, setSortColumn] = useState(0);
+  const [sortColumnIdx, setSortColumnIdx] = useState(0);
   const [sortOrder, setSortOrder] = useState(1);
 
   const tableRef = useRef(null);
   const resizeRef = useRef(null);
 
-  /// USEEFFECT ///////////////////////////////////////////////////////////////
+  /// USE EFFECT //////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Init table data
   useEffect(() => {
     setTableData(data);
-  }, [data]);
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /// Init column widths
-  useEffect(() => {
-    const colWidths = [
-      50, // View/Edit
-      50, // Degrees
-      300 // Label
-    ];
-    let remainingWidth =
-      tableRef.current.clientWidth - colWidths.reduce((a, b) => a + b, 0) - 5;
-    for (let i = 0; i < attributeColumndefs.length; i++) {
-      colWidths.push(remainingWidth / attributeColumndefs.length);
-    }
-    colWidths.push(50); // Comments
+    setColumnDefs(columns);
+    // Calculate Initial Column Widths
+    const definedColWidths = columns.filter(col => col.width).map(col => col.width);
+    const definedColWidthSum = definedColWidths.reduce((a, b) => a + b, 0);
+    const remainingWidth = tableRef.current.clientWidth - definedColWidthSum;
+    const colWidths = columns.map(
+      col => col.width || remainingWidth / (columns.length - definedColWidths.length)
+    );
     setColumnWidths(colWidths);
-  }, []);
+  }, [data, columns]);
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Sort table data
   useEffect(() => {
-    ExecuteSorter();
-  }, [sortColumn, sortOrder]);
-
-  /// UTILITY METHODS /////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function u_GetButtonId(cref) {
-    return `comment-button-${cref}`;
-  }
+    m_ExecuteSorter();
+  }, [sortColumnIdx, sortOrder]);
 
   /// RESIZE COLUMN HANDLERS //////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const ui_mouseDown = (event, index) => {
+  const ui_MouseDown = (event, index) => {
+    event.preventDefault();
+    event.stopPropagation();
     resizeRef.current = {
       index,
       startX: event.clientX,
@@ -82,7 +59,7 @@ function URTable({ data, attributeColumndefs }) {
       maxCombinedWidth: columnWidths[index] + columnWidths[index + 1] - 50
     };
   };
-  const ui_mouseMove = event => {
+  const ui_MouseMove = event => {
     if (resizeRef.current !== null) {
       const { index, startX, startWidth, nextStartWidth, maxCombinedWidth } =
         resizeRef.current;
@@ -96,167 +73,88 @@ function URTable({ data, attributeColumndefs }) {
       setColumnWidths(newWidths);
     }
   };
-  const ui_mouseUp = () => {
+  const ui_MouseUp = () => {
     resizeRef.current = null; // Reset on mouse up
   };
 
   /// CLICK HANDLERS //////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function ui_ClickColumn(index) {
-    setSortColumn(index);
-    setSortOrder(sortOrder * -1);
-  }
-  function ui_ClickViewComment(event, nodeId) {
+  function ui_ClickSorter(event, index) {
     event.preventDefault();
     event.stopPropagation();
-    UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
-  }
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function ui_ClickComment(cref) {
-    const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
-    CMTMGR.OpenCommentThread(cref, position);
-  }
-
-  /// TABLE DEFINITIONS ////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  const COLUMNDEFS = [
-    {
-      title: '-', // View/Edit
-      data: 'id',
-      type: 'number',
-      renderer: RenderViewOrEdit
-    },
-    {
-      title: 'Deg.',
-      type: 'number',
-      data: 'degrees'
-    },
-    {
-      title: 'Label',
-      type: 'text',
-      data: 'label'
-    },
-    ...attributeColumndefs,
-    {
-      title: 'Comments',
-      data: 'commentVBtnDef',
-      type: 'text',
-      renderer: RenderCommentBtn,
-      sorter: SortCommentsByCount
-    }
-  ];
-
-  /// RENDERERS ////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function RenderViewOrEdit(value) {
-    return (
-      <button
-        className="outline"
-        onClick={event => ui_ClickViewComment(event, value)}
-      >
-        {ICON_VIEW}
-      </button>
-    );
-  }
-
-  function RenderCommentBtn(value) {
-    return (
-      <URCommentVBtn
-        id={u_GetButtonId(value.cref)}
-        count={value.count}
-        hasUnreadComments={value.hasUnreadComments}
-        selected={value.selected}
-        cb={e => ui_ClickComment(value.cref)}
-      />
-    );
-  }
-
-  /// CUSTOM SORTERS //////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function SortCommentsByCount() {
-    const key = COLUMNDEFS[sortColumn].data;
-    const sortedData = [...tabledata].sort((a, b) => {
-      if (a[key].count < b[key].count) return sortOrder;
-      if (a[key].count > b[key].count) return sortOrder * -1;
-      return 0;
-    });
-    setTableData(sortedData);
+    setSortColumnIdx(index);
+    setSortOrder(sortOrder * -1);
   }
 
   /// BUILT-IN SORTERS ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function SortByText(key) {
-    const sortedData = [...tabledata].sort((a, b) => {
-      if (a[key] < b[key]) return sortOrder;
-      if (a[key] > b[key]) return sortOrder * -1;
+  function m_SortByText(key, tdata, order) {
+    const sortedData = [...tdata].sort((a, b) => {
+      if (a[key] < b[key]) return order;
+      if (a[key] > b[key]) return order * -1;
       return 0;
     });
-    setTableData(sortedData);
+    return sortedData;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function SortByMarkdown(key) {
-    const sortedData = [...tabledata].sort((a, b) => {
+  function m_SortByMarkdown(key, tdata, order) {
+    const sortedData = [...tdata].sort((a, b) => {
       // NC's markdown format from NCNodeTable will pass:
       // { html, raw}
       // We will sort by the raw text
-      if (a[key].raw < b[key].raw) return sortOrder;
-      if (a[key].raw > b[key].raw) return sortOrder * -1;
+      if (a[key].raw < b[key].raw) return order;
+      if (a[key].raw > b[key].raw) return order * -1;
       return 0;
     });
-    setTableData(sortedData);
+    return sortedData;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function SortByNumber(key) {
-    const sortedData = [...tabledata].sort((a, b) => {
+  function m_SortByNumber(key, tdata, order) {
+    const sortedData = [...tdata].sort((a, b) => {
       const akey = Number(a[key]);
       const bkey = Number(b[key]);
       if (isNaN(akey) && isNaN(bkey)) return 0;
       if (isNaN(akey)) return 1; // Move NaN to the bottom regardless of sort order
       if (isNaN(bkey)) return -1; // Move NaN to the bottom regardless of sort order
-      if (akey < bkey) return sortOrder;
-      if (akey > bkey) return sortOrder * -1;
+      if (akey < bkey) return order;
+      if (akey > bkey) return order * -1;
       return 0;
     });
-    setTableData(sortedData);
+    return sortedData;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function SortByHDate(key) {
-    const sortedData = [...tabledata].sort((a, b) => {
+  function m_SortByHDate(key, tdata, order) {
+    const sortedData = [...tdata].sort((a, b) => {
       const akey = HDATE.Parse(a[key]); // parseResult
       const bkey = HDATE.Parse(b[key]);
       // if ANY is defined, it's automatically greater than undefined
-      if (akey.length > 0 && bkey.length < 1) return sortOrder;
-      if (akey.length < 1 && bkey.length > 0) return sortOrder * -1;
+      if (akey.length > 0 && bkey.length < 1) return order;
+      if (akey.length < 1 && bkey.length > 0) return order * -1;
       if (akey.length < 1 && bkey.length < 1) return 0;
       // two valid dates, compare them!
       const da = akey[0].start.knownValues;
       const db = bkey[0].start.knownValues;
-      let order;
+      let dateorder;
       if (da.year !== db.year) {
-        order = da.year - db.year;
+        dateorder = da.year - db.year;
       } else if (da.month !== db.month) {
-        order = da.month - db.month;
+        dateorder = da.month - db.month;
       } else if (da.day !== db.day) {
-        order = da.day - db.day;
+        dateorder = da.day - db.day;
       } else if (da.hour !== db.hour) {
-        order = da.hour - db.hour;
+        dateorder = da.hour - db.hour;
       } else if (da.minute !== db.minute) {
-        order = da.minute - db.minute;
+        dateorder = da.minute - db.minute;
       } else if (da.second !== db.second) {
-        order = da.second - db.second;
+        dateorder = da.second - db.second;
       }
-      return order * sortOrder;
+      return dateorder * order;
     });
-    setTableData(sortedData);
+    return sortedData;
   }
   /// BUILT-IN TABLE METHODS //////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  // function ExecuteRenderer(renderer, value) {
-  //   if (typeof renderer !== 'function') throw new Error('Invalid renderer');
-  //   return renderer(value);
-  // }
-  function ExecuteRenderer(value, col, idx) {
+  function m_ExecuteRenderer(value, col, idx) {
     const customRenderer = col.renderer;
     if (customRenderer) {
       if (typeof customRenderer !== 'function')
@@ -275,56 +173,58 @@ function URTable({ data, attributeColumndefs }) {
       }
     }
   }
-  function ExecuteSorter() {
-    const customSorter = COLUMNDEFS[sortColumn].sorter;
-    const key = COLUMNDEFS[sortColumn].data;
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function m_ExecuteSorter() {
+    if (columndefs.length < 1) return;
+    const customSorter = columndefs[sortColumnIdx].sorter;
+    const key = columndefs[sortColumnIdx].data;
+    let sortedData = [];
     if (customSorter) {
       if (typeof customSorter !== 'function') throw new Error('Invalid sorter');
-      customSorter(key);
+      sortedData = customSorter(key, tabledata, sortOrder);
     } else {
       // Run built-in sorters
-      switch (COLUMNDEFS[sortColumn].type) {
+      switch (columndefs[sortColumnIdx].type) {
         case 'hdate':
-          SortByHDate(key);
+          sortedData = m_SortByHDate(key, tabledata, sortOrder);
           break;
         case 'markdown':
-          SortByMarkdown(key);
+          sortedData = m_SortByMarkdown(key, tabledata, sortOrder);
           break;
         case 'date':
         case 'number':
-          SortByNumber(key);
+          sortedData = m_SortByNumber(key, tabledata, sortOrder);
           break;
         case 'text':
         default:
-          SortByText(key);
+          sortedData = m_SortByText(key, tabledata, sortOrder);
       }
     }
+    setTableData(sortedData);
   }
-
   /// RENDER //////////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   return (
     <div
       className="URTable"
       ref={tableRef}
-      onMouseMove={ui_mouseMove}
-      onMouseUp={ui_mouseUp}
+      onMouseMove={ui_MouseMove}
+      onMouseUp={ui_MouseUp}
     >
       <table>
         <thead>
           <tr>
-            {COLUMNDEFS.map((col, idx) => (
+            {columndefs.map((col, idx) => (
               <th
                 key={idx}
-                className={sortColumn === idx ? 'selected' : ''}
+                className={sortColumnIdx === idx ? 'selected' : ''}
                 width={`${columnWidths[idx]}`}
-                onClick={e => ui_ClickColumn(idx)}
               >
-                {col.title}
+                <div onClick={e => ui_ClickSorter(e, idx)}>{col.title}</div>
                 <div
                   className="resize-handle"
-                  onMouseDown={e => ui_mouseDown(e, idx)}
-                  hidden={idx === COLUMNDEFS.length - 1} // hide last resize handle
+                  onMouseDown={e => ui_MouseDown(e, idx)}
+                  hidden={idx === columndefs.length - 1} // hide last resize handle
                 ></div>
               </th>
             ))}
@@ -333,13 +233,8 @@ function URTable({ data, attributeColumndefs }) {
         <tbody>
           {tabledata.map((tdata, idx) => (
             <tr key={idx}>
-              {COLUMNDEFS.map((col, idx) => (
-                <td key={idx}>
-                  {ExecuteRenderer(tdata[col.data], col, idx)}
-                  {/* {col.renderer
-                    ? ExecuteRenderer(col.renderer, tdata[col.data])
-                    : tdata[col.data]} */}
-                </td>
+              {columndefs.map((col, idx) => (
+                <td key={idx}>{m_ExecuteRenderer(tdata[col.data], col, idx)}</td>
               ))}
             </tr>
           ))}
