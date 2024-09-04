@@ -306,7 +306,7 @@ function m_SocketMessage(socket, json) {
         throw new Error(`${PR} unknown packet type '${pkt.Type()}'`);
     } // end switch
   } catch (err) {
-    console.error(PR, 'ERROR:', err);
+    console.error(PR, 'm_SocketMessage try:', err);
   }
 } // end m_SocketMessage()
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
