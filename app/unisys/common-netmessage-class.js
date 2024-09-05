@@ -62,6 +62,7 @@ class NetMessage {
     if (typeof msg === 'object' && data === undefined) {
       // make sure it has a msg and data obj
       if (typeof msg.msg !== 'string' || typeof msg.data !== 'object') {
+        console.log('bad message object', JSON.stringify(msg));
         throw ERR_NOT_NETMESG;
       }
       // merge properties into this new class instance and return it

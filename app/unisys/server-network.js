@@ -290,21 +290,24 @@ function m_SocketMessage(socket, json) {
     m_ResetPongTimer(socket.UADDR);
     return;
   }
-
-  let pkt = new NetMessage(json);
-  // figure out what to do
-  switch (pkt.Type()) {
-    case 'state':
-      m_HandleState(socket, pkt);
-      break;
-    case 'msig':
-    case 'msend':
-    case 'mcall':
-      m_HandleMessage(socket, pkt);
-      break;
-    default:
-      throw new Error(`${PR} unknown packet type '${pkt.Type()}'`);
-  } // end switch
+  try {
+    let pkt = new NetMessage(json);
+    // figure out what to do
+    switch (pkt.Type()) {
+      case 'state':
+        m_HandleState(socket, pkt);
+        break;
+      case 'msig':
+      case 'msend':
+      case 'mcall':
+        m_HandleMessage(socket, pkt);
+        break;
+      default:
+        throw new Error(`${PR} unknown packet type '${pkt.Type()}'`);
+    } // end switch
+  } catch (err) {
+    console.error(PR, 'm_SocketMessage try:', err);
+  }
 } // end m_SocketMessage()
 ///	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** handle global state and rebroadcast
@@ -454,7 +457,8 @@ function m_PromiseRemoteHandlers(pkt) {
     if (verbose) {
       console.log(
         'make_resolver_func:',
-        `PKT: ${srcPkt.Type()} '${srcPkt.Message()}' from ${srcPkt.Info()} to d_uaddr:${d_uaddr} dispatch to d_sock.UADDR:${d_sock.UADDR
+        `PKT: ${srcPkt.Type()} '${srcPkt.Message()}' from ${srcPkt.Info()} to d_uaddr:${d_uaddr} dispatch to d_sock.UADDR:${
+          d_sock.UADDR
         }`
       );
     }
