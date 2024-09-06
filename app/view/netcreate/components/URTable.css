@@ -6,7 +6,7 @@
 }
 .URTable th {
   padding: 0 5px;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid #999;
   position: relative;
   background-color: #0001;
 }
@@ -17,6 +17,9 @@
 .URTable thead > tr,
 .URTable thead > tr > th {
   user-select: none;
+}
+.URTable tr:hover {
+  background-color: #0002;
 }
 .URTable .resize-handle {
   position: absolute;
@@ -29,5 +32,5 @@
   user-select: none;
 }
 .URTable .resize-handle:hover {
-  background-color: #ccf; /* Highlight handle on hover */
+  background-color: #99f; /* Highlight handle on hover */
 }
