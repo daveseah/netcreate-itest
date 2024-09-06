@@ -633,7 +633,7 @@ class NCEdgeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: 'Source.',
+        title: 'Source',
         width: 130, // in px
         data: 'sourceDef',
         renderer: RenderNode,
@@ -646,7 +646,7 @@ class NCEdgeTable extends UNISYS.Component {
         data: 'type'
       },
       {
-        title: 'Target.',
+        title: 'Target',
         width: 130, // in px
         data: 'targetDef',
         renderer: RenderNode,
