@@ -6,6 +6,7 @@
 #   git config --global core.excludesfile ~/.gitignore
 
 # NetCreate ignored directories
+/app-data/*
 /runtime
 netcreate-config.js
 
