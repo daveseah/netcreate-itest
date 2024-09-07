@@ -36,6 +36,7 @@ const UNISYS = require('unisys/client');
 const { EDITORTYPE } = require('system/util/enum');
 const TEMPLATE_MGR = require('../templateEditor-mgr');
 const SCHEMA = require('../template-schema');
+const DATASTORE = require('system/datastore');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,7 +60,8 @@ class Template extends UNISYS.Component {
       // edgeTypeOptions
       tomlfile: undefined,
       tomlfileStatus: '',
-      tomlfileErrors: undefined
+      tomlfileErrors: undefined,
+      tomlfilename: 'loading...'
     };
     this.loadEditor = this.loadEditor.bind(this);
     this.updateEditState = this.updateEditState.bind(this);
@@ -80,6 +82,9 @@ class Template extends UNISYS.Component {
 
   componentDidMount() {
     this.updateEditState();
+    DATASTORE.GetTemplateTOMLFileName().then(result => {
+      this.setState({ tomlfilename: result.filename });
+    });
   }
 
   componentWillUnmount() {
@@ -266,9 +271,16 @@ class Template extends UNISYS.Component {
   /// REACT LIFECYCLE METHODS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   render() {
-    const { disableEdit, isBeingEdited, tomlfile, tomlfileStatus, tomlfileErrors } =
-      this.state;
+    const {
+      disableEdit,
+      isBeingEdited,
+      tomlfile,
+      tomlfileStatus,
+      tomlfileErrors,
+      tomlfilename
+    } = this.state;
     let editorjsx;
+
     if (disableEdit && !isBeingEdited) {
       // Node or Edge is being edited, show disabled message
       editorjsx = (
@@ -362,6 +374,10 @@ class Template extends UNISYS.Component {
           padding: '10px 20px'
         }}
       >
+        <h4>Template Editor</h4>
+        <p>
+          <label>Current Template File Name:</label> <code>{tomlfilename}</code>
+        </p>
         {editorjsx}
         <div hidden={!isBeingEdited}>
           <Button onClick={this.onCancelEdit} size="sm" outline>
