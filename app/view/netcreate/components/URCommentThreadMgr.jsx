@@ -70,7 +70,7 @@ const PR = 'URCommentThreadMgr';
 function URCommentThreadMgr() {
   const uid = CMTMGR.GetCurrentUserId();
   const [cmtBtns, setCmtBtns] = useState([]);
-  const [dummy, setDummy] = useState(0);
+  const [dummy, setDummy] = useState(100);
 
   /** Component Effect - register listeners on mount */
   useEffect(() => {
@@ -86,7 +86,6 @@ function URCommentThreadMgr() {
       UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSE_ALL', urmsg_THREAD_CLOSE_ALL);
     };
   }, []);
-
 
   /// COMPONENT HELPER METHODS ////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -121,7 +120,12 @@ function URCommentThreadMgr() {
         )}`
       );
     // 1. Register the button
-    setCmtBtns(prevBtns => [...prevBtns, data]);
+    setCmtBtns(prevBtns => {
+      // skip if the comment is already open
+      if (prevBtns.find(btn => btn.cref === data.cref)) return prevBtns;
+      else return [...prevBtns, data];
+    });
+    setDummy(dummy => dummy + 15);
     // 2. Open the URCommentThread
     CMTMGR.UpdateCommentUIState(data.cref, { cref: data.cref, isOpen: true });
   }
@@ -141,7 +145,6 @@ function URCommentThreadMgr() {
 
   return (
     <div className="URCommentThreadMgr">
-      URCommentThreadMgrs:
       {cmtBtns.map(btn => (
         <URCommentThread
           key={btn.cref}
