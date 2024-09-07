@@ -34,3 +34,6 @@
 .URTable .resize-handle:hover {
   background-color: #99f; /* Highlight handle on hover */
 }
+.URTable button {
+  padding: 0 2px;
+}

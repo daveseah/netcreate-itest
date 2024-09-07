@@ -371,6 +371,8 @@ class NCNodeTable extends UNISYS.Component {
     const TABLEDATA = nodes.map((node, i) => {
       const { id, label, degrees } = node;
 
+      const sourceDef = { id, label };
+
       // custom attributes
       const attributes = {};
       attributeDefs.forEach((key, i) => {
@@ -402,7 +404,7 @@ class NCNodeTable extends UNISYS.Component {
 
       return {
         id,
-        label,
+        label: sourceDef, // { id, label } so that we can render a button
         degrees,
         ...attributes,
         commentVBtnDef
@@ -417,6 +419,16 @@ class NCNodeTable extends UNISYS.Component {
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function ui_ClickEditNode(event, nodeId) {
+      event.preventDefault();
+      event.stopPropagation();
+      const nodeID = parseInt(nodeId);
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [nodeID] }).then(() => {
+        if (DBG) console.error('NodeTable: Calling NODE_EDIT', nodeID);
+        UDATA.LocalCall('NODE_EDIT', { nodeID: nodeID });
+      });
+    }
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function ui_ClickComment(cref) {
       const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
       CMTMGR.OpenCommentThread(cref, position);
@@ -425,8 +437,44 @@ class NCNodeTable extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function RenderViewOrEdit(value) {
       return (
-        <button className="outline" onClick={event => ui_ClickViewNode(event, value)}>
-          {ICON_VIEW}
+        <div>
+          {!disableEdit && (
+            <button
+              className="outline"
+              onClick={event => ui_ClickViewNode(event, value)}
+            >
+              {ICON_VIEW}
+            </button>
+          )}
+          {!disableEdit && !isLocked && (
+            <button
+              className="outline"
+              onClick={event => ui_ClickEditNode(event, value)}
+            >
+              {ICON_PENCIL}
+            </button>
+          )}
+        </div>
+      );
+    }
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // interface TTblNodeObject {
+    //   id: String;
+    //   label: String;
+    // }
+    function RenderNode(value) {
+      console.log('rednering node', value);
+      if (!value) return; // skip if not defined yet
+      if (value.id === undefined)
+        throw new Error('RenderNode: value.id is undefined');
+      if (value.label === undefined)
+        throw new Error('RenderNode: value.label is undefined');
+      return (
+        <button
+          className="outline"
+          onClick={event => ui_ClickViewNode(event, value.id)}
+        >
+          <span style={{ color: 'blue' }}>{value.label}</span>
         </button>
       );
     }
@@ -443,6 +491,17 @@ class NCNodeTable extends UNISYS.Component {
       );
     }
     /// CUSTOM SORTERS
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// tdata = TTblNodeObject[] = { id: String, label: String }
+    function SortNodes(key, tdata, order) {
+      const sortedData = [...tdata].sort((a, b) => {
+        console.log('node sort a', a, 'b', b);
+        if (a[key].label < b[key].label) return order;
+        if (a[key].label > b[key].label) return order * -1;
+        return 0;
+      });
+      return sortedData;
+    }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function SortCommentsByCount(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
@@ -469,10 +528,10 @@ class NCNodeTable extends UNISYS.Component {
     });
     const COLUMNDEFS = [
       {
-        title: '-', // View/Edit
+        title: '', // View/Edit
         data: 'id',
         type: 'number',
-        width: 50, // in px
+        width: 45, // in px
         renderer: RenderViewOrEdit
       },
       {
@@ -483,9 +542,10 @@ class NCNodeTable extends UNISYS.Component {
       },
       {
         title: 'Label',
-        type: 'text',
+        data: 'label',
         width: 300, // in px
-        data: 'label'
+        renderer: RenderNode,
+        sorter: SortNodes
       },
       ...ATTRIBUTE_COLUMNDEFS,
       {
