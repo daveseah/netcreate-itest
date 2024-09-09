@@ -23,7 +23,7 @@ import CMTMGR from '../comment-mgr';
 
 /// REACT FUNCTIONAL COMPONENT ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function URCommentVBtn({ id, count, hasUnreadComments, selected, cb }) {
+function URCommentVBtn({ uiref, count, hasUnreadComments, selected, cb }) {
   let icon;
   if (count === 0) {
     icon = CMTMGR.ICN_COMMENT_UNREAD;
@@ -36,7 +36,7 @@ function URCommentVBtn({ id, count, hasUnreadComments, selected, cb }) {
   }
 
   return (
-    <button id={id} onClick={cb} className="URCommentVBtn">
+    <button id={uiref} onClick={cb} className="URCommentVBtn">
       {icon}
       <div className={`count ${hasUnreadComments ? 'unread' : ''}`}>
         {count === 0 ? '' : count}

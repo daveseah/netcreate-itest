@@ -482,7 +482,7 @@ class NCNodeTable extends UNISYS.Component {
     function RenderCommentBtn(value) {
       return (
         <URCommentVBtn
-          id={u_GetButtonId(value.cref)}
+          uiref={u_GetButtonId(value.cref)}
           count={value.count}
           hasUnreadComments={value.hasUnreadComments}
           selected={value.selected}
