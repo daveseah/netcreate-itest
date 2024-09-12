@@ -167,29 +167,12 @@ function m_GetHelp(node) {
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   const nodeDefs = TEMPLATE.nodeDefs;
   let titleText = '';
-  if (nodeDefs.label.includeInGraphTooltip !== undefined) {
-    // Add Label
-    if (nodeDefs.label.includeInGraphTooltip)
-      titleText += nodeDefs.label.displayLabel + ': ' + node.label + '\n';
-    // Add type
-    if (nodeDefs.type.includeInGraphTooltip)
-      titleText += nodeDefs.type.displayLabel + ': ' + node.type + '\n';
-    // Add degrees
-    if (nodeDefs.degrees.includeInGraphTooltip)
-      titleText += nodeDefs.degrees.displayLabel + ': ' + node.degrees + '\n';
-    // Add notes
-    if (nodeDefs.notes.includeInGraphTooltip)
-      titleText += nodeDefs.notes.displayLabel + ': ' + node.notes + '\n';
-    // Add info
-    if (nodeDefs.info.includeInGraphTooltip)
-      titleText += nodeDefs.info.displayLabel + ': ' + node.info + '\n';
-    // Add updated info
-    if (nodeDefs.updated.includeInGraphTooltip)
-      titleText += nodeDefs.updated.displayLabel + ': ' + m_GetUpdatedDateText(node);
-  } else {
-    // For backwards compatability
-    titleText += nodeDefs.displayLabel.label + ': ' + node.label + '\n';
-  }
+  Object.entries(nodeDefs).forEach(([key, def]) => {
+    if (def.includeInGraphTooltip && node[key] !== undefined) {
+      if (titleText) titleText += '\n';
+      titleText += def.displayLabel + ': ' + node[key];
+    }
+  });
   return titleText;
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
