@@ -101,6 +101,7 @@ function URCommentBtn({ cref, uuiid }) {
     UDATA.OnAppStateChange('COMMENTVOBJS', urstate_UpdateCommentVObjs);
     UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     UDATA.HandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
     window.addEventListener('resize', evt_OnResize);
 
     setPosition(c_GetCommentThreadPosition());
@@ -110,6 +111,7 @@ function URCommentBtn({ cref, uuiid }) {
       UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
       UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
       UDATA.UnhandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
+      UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
       window.removeEventListener('resize', evt_OnResize);
     };
   }, []);

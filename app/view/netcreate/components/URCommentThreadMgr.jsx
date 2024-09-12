@@ -5,11 +5,11 @@
   URCommentThreadMgr handles the opening and closing of URCommentThreads
   being requested from three sources:
   * Evidence Links -- via URCOmmentBtnAlias
-  * SVG props      -- in class-vbadge via UR.Publish(`CTHREADMGR_THREAD_OPEN`) calls
-  * SVG Mechanisms -- in class-vbadge via UR.Publish(`CTHREADMGR_THREAD_OPEN`) calls
+  * SVG props      -- in class-vbadge via UR.Publish(`CTHREADMGR_THREAD_OPENED`) calls
+  * SVG Mechanisms -- in class-vbadge via UR.Publish(`CTHREADMGR_THREAD_OPENED`) calls
 
   URCommentVBtn is a visual component that passes clicks
-  to URCommentThreadMgr via UR.Publish(`CTHREADMGR_THREAD_OPEN`) calls
+  to URCommentThreadMgr via UR.Publish(`CTHREADMGR_THREAD_OPENED`) calls
 
 
   HOW IT WORKS
@@ -19,10 +19,12 @@
     * Open the URCommentThread
     * When the URCommentThread is closed, it will be removed from the URCommentThreadMgr
 
+  See [Whimsical Comment Data Structures](https://whimsical.com/comment-data-structures-3zPhDYLVsEKt2gY7xyMMKS) for how the current system is implemented.
+
   UR MESSAGES
-    *  CTHREADMGR_THREAD_OPEN {cref, position}
-    *  CTHREADMGR_THREAD_CLOSE {cref}
-    *  CTHREADMGR_THREAD_CLOSE_ALL
+    *  CTHREADMGR_THREAD_OPENED {cref, position}
+    *  CTHREADMGR_THREAD_CLOSED {cref}            Just closed, update views
+    *  CTHREADMGR_THREAD_CLOSED_ALL
 
 
   NOTES
@@ -75,15 +77,14 @@ function URCommentThreadMgr() {
   /** Component Effect - register listeners on mount */
   useEffect(() => {
     UDATA.OnAppStateChange('COMMENTVOBJS', urstate_UpdateCommentVObjs);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_OPEN', urmsg_THREAD_OPEN);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSE', urmsg_THREAD_CLOSE);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSE_ALL', urmsg_THREAD_CLOSE_ALL);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', urmsg_THREAD_OPEN);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED', urmsg_THREAD_CLOSE);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', urmsg_THREAD_CLOSE_ALL);
 
     return () => {
-      STATE.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
-      UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPEN', urmsg_THREAD_OPEN);
-      UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSE', urmsg_THREAD_CLOSE);
-      UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSE_ALL', urmsg_THREAD_CLOSE_ALL);
+      UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', urmsg_THREAD_OPEN);
+      UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', urmsg_THREAD_CLOSE);
+      UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', urmsg_THREAD_CLOSE_ALL);
     };
   }, []);
 
