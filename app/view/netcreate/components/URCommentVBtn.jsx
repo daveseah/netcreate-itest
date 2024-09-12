@@ -25,13 +25,14 @@ import CMTMGR from '../comment-mgr';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function URCommentVBtn({ uiref, count, hasUnreadComments, selected, cb }) {
   let icon;
-  if (count === 0) {
-    icon = CMTMGR.ICN_COMMENT_UNREAD;
-  } else if (selected) {
+  if (selected) {
     if (hasUnreadComments) icon = CMTMGR.ICN_COMMENT_UNREAD_SELECTED;
+    else if (count === 0) icon = CMTMGR.ICN_COMMENT_UNREAD_SELECTED;
     else icon = CMTMGR.ICN_COMMENT_READ_SELECTED;
   } else {
+    // not selected
     if (hasUnreadComments) icon = CMTMGR.ICN_COMMENT_UNREAD;
+    else if (count === 0) icon = CMTMGR.ICN_COMMENT_UNREAD;
     else icon = CMTMGR.ICN_COMMENT_READ;
   }
 
