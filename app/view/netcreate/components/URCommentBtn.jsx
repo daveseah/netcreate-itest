@@ -45,7 +45,8 @@
     * HasUnreadComments -- Gold comment icon with count of comments in red
     * HasReadComments   -- Gray comment icon with count of comments in white
 
-    * isOpen            -- Corresponding comment window is open.  Comment icon outlined.
+    * commentIsOpen     -- Corresponding comment window is open.  Comment icon outlined.
+    * commentBtnIsSelected -- This comment button is selected.  Comment icon outlined.
     * x, y              -- position of CommentThread window
     * commentButtonId   -- unique id for each button
                            allows showing open/closed status for the same comment
@@ -90,7 +91,8 @@ function URCommentBtn({ cref, uuiid }) {
   const [commentButtonId, setCommentButtonId] = useState(
     c_GenerateCommentButtonId(btnid)
   );
-  const [isOpen, setIsOpen] = useState(false);
+  const [commentIsOpen, setCommentIsOpen] = useState(false);
+  const [commentBtnIsSelected, setCommentBtnIsSelected] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
   const [position, setPosition] = useState({ x: '300px', y: '120px' });
   const [dummy, setDummy] = useState(0); // Dummy state variable to force update
@@ -101,7 +103,6 @@ function URCommentBtn({ cref, uuiid }) {
     UDATA.OnAppStateChange('COMMENTVOBJS', urstate_UpdateCommentVObjs);
     UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
     UDATA.HandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
     window.addEventListener('resize', evt_OnResize);
 
     setPosition(c_GetCommentThreadPosition());
@@ -111,7 +112,6 @@ function URCommentBtn({ cref, uuiid }) {
       UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
       UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
       UDATA.UnhandleMessage('COMMENT_SELECT', urmsg_COMMENT_SELECT);
-      UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
       window.removeEventListener('resize', evt_OnResize);
     };
   }, []);
@@ -120,14 +120,19 @@ function URCommentBtn({ cref, uuiid }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urstate_UpdateCommentCollection(COMMENTCOLLECTION) {
     const uistate = CMTMGR.GetCommentUIState(commentButtonId);
-    const openuiref = CMTMGR.GetOpenComments(cref);
-    if (uistate) {
-      if (openuiref !== commentButtonId) {
-        // close this comment if someone else is trying to open the same comment
-        setIsOpen(false);
-      } else {
-        setIsOpen(uistate.isOpen);
-      }
+    const open_uiref = CMTMGR.GetOpenComments(cref);
+    if (open_uiref === commentButtonId) {
+      // The currently open comment is connected to this button
+      setCommentIsOpen(true);
+      setCommentBtnIsSelected(true);
+    } else if (open_uiref !== undefined) {
+      // The currently open comment is this comment, but connected to another button
+      setCommentIsOpen(false);
+      setCommentBtnIsSelected(true);
+    } else {
+      // No comments are open
+      setCommentIsOpen(false);
+      setCommentBtnIsSelected(false);
     }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -156,9 +161,9 @@ function URCommentBtn({ cref, uuiid }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_OpenComment(isOpen) {
     const position = c_GetCommentThreadPosition();
-    setIsOpen(isOpen);
+    setCommentIsOpen(isOpen);
     setPosition(position);
-    CMTMGR.UpdateCommentUIState(commentButtonId, { cref, isOpen });
+    CMTMGR.ToggleCommentCollection(commentButtonId, cref, position);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function c_GetCommentThreadPosition() {
@@ -181,7 +186,7 @@ function URCommentBtn({ cref, uuiid }) {
   function evt_OnClick(event) {
     event.stopPropagation();
     if (!isDisabled) {
-      const updatedIsOpen = !isOpen;
+      const updatedIsOpen = !commentIsOpen;
       c_OpenComment(updatedIsOpen);
     }
   }
@@ -207,7 +212,9 @@ function URCommentBtn({ cref, uuiid }) {
   let css = 'commentbtn ';
   if (ccol.hasUnreadComments) css += 'hasUnreadComments ';
   else if (ccol.hasReadComments) css += 'hasReadComments ';
-  css += isOpen ? 'isOpen ' : '';
+  css += commentBtnIsSelected ? 'isOpen ' : '';
+
+  // REVIEW: Replace with svg symbols!
 
   const label = count > 0 ? count : '';
 
@@ -217,7 +224,7 @@ function URCommentBtn({ cref, uuiid }) {
         {CMTMGR.COMMENTICON}
         <div className="comment-count">{label}</div>
       </div>
-      {isOpen && (
+      {commentIsOpen && (
         <URCommentThread
           uiref={commentButtonId}
           cref={cref}

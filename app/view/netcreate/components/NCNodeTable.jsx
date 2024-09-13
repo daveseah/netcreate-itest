@@ -42,8 +42,12 @@ let UDATA = null;
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Comment Button ID based on cref
+/// NOTE: This is different from the commenButtonID of URComentBtn,
+/// which is simply `comment-button-${cref}` so that we can distinguish
+/// clicks from the NCNodeTable from clicks from Node/Edges.
 function u_GetButtonId(cref) {
-  return `comment-button-${cref}`;
+  return `table-comment-button-${cref}`;
 }
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
@@ -65,9 +69,11 @@ class NCNodeTable extends UNISYS.Component {
       disableEdit: false,
       isLocked: false,
       isExpanded: true,
-      sortkey: 'label'
+      sortkey: 'label',
+      dummy: 0 // used to force render update
     };
 
+    this.onUpdateCommentUI = this.onUpdateCommentUI.bind(this);
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
     this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
     this.onStateChange_HILITE = this.onStateChange_HILITE.bind(this);
@@ -105,6 +111,12 @@ class NCNodeTable extends UNISYS.Component {
 
     this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
     this.OnAppStateChange('HILITE', this.onStateChange_HILITE);
+
+    // Comment Message Handlers
+    // Force update whenever threads are opened or closed
+    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
   } // constructor
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -137,6 +149,15 @@ class NCNodeTable extends UNISYS.Component {
     this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
     this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
     this.AppStateChangeOff('HILITE', this.onStateChange_HILITE);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Force update so that URCommentVBtn selection state is updated
+  onUpdateCommentUI(data) {
+    this.setState({ dummy: this.state.dummy + 1 });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -394,7 +415,9 @@ class NCNodeTable extends UNISYS.Component {
       const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
       const ccol = CMTMGR.GetCommentCollection(cref) || {};
       const hasUnreadComments = ccol.hasUnreadComments;
-      const selected = selectedNodeId === id;
+      const uiref = u_GetButtonId(cref); // comment button id is ${cref}${uuiid}
+
+      const selected = CMTMGR.GetOpenComments(cref);
       const commentVBtnDef = {
         cref,
         count: commentCount,
@@ -429,9 +452,10 @@ class NCNodeTable extends UNISYS.Component {
       });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function ui_ClickComment(cref) {
+    function ui_ClickCommentBtn(cref) {
       const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
-      CMTMGR.OpenCommentThread(cref, position);
+      const uiref = u_GetButtonId(cref);
+      CMTMGR.ToggleCommentCollection(uiref, cref, position);
     }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -463,7 +487,6 @@ class NCNodeTable extends UNISYS.Component {
     //   label: String;
     // }
     function RenderNode(value) {
-      console.log('rednering node', value);
       if (!value) return; // skip if not defined yet
       if (value.id === undefined)
         throw new Error('RenderNode: value.id is undefined');
@@ -486,7 +509,7 @@ class NCNodeTable extends UNISYS.Component {
           count={value.count}
           hasUnreadComments={value.hasUnreadComments}
           selected={value.selected}
-          cb={e => ui_ClickComment(value.cref)}
+          cb={e => ui_ClickCommentBtn(value.cref)}
         />
       );
     }

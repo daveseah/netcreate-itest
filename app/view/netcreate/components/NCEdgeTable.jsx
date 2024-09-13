@@ -49,7 +49,7 @@ var UDATA = null;
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function u_GetButtonId(cref) {
-  return `comment-button-${cref}`;
+  return `table-comment-button-${cref}`;
 }
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
@@ -543,9 +543,11 @@ class NCEdgeTable extends UNISYS.Component {
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Toggle Comment Button on and off
     function ui_ClickComment(cref) {
       const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
-      CMTMGR.OpenCommentThread(cref, position);
+      const uiref = u_GetButtonId(cref);
+      CMTMGR.ToggleCommentCollection(uiref, cref, position);
     }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

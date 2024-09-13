@@ -300,6 +300,38 @@ MOD.GetCommentCollection = uiref => {
   return COMMENT.GetCommentCollection(uiref);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.OpenCommentCollection = (uiref, cref, position) => {
+  MOD.UpdateCommentUIState(uiref, { cref, isOpen: true });
+  UDATA.LocalCall('CTHREADMGR_THREAD_OPENED', { uiref, cref, position });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Used by NCNodeTable and NCEdgeTable to open/close the comment thread
+ * If a comment is already opened by one button (e.g. node), and the user
+ * clicks on another comment button (e.g. NodeTable), the new one will open,
+ * and the old one closed.
+ * Called by URCommentBtn, NCNodeTable, and NCEdgeTable
+ * @param {TCommentUIRef} uiref comment button id
+ * @param {TCollectionRef} cref collection_ref
+ * @param {Object} position x, y position of the comment button
+ */
+MOD.ToggleCommentCollection = (uiref, cref, position) => {
+  const uid = MOD.GetCurrentUserId();
+  // is the comment already open?
+  const open_uiref = MOD.GetOpenComments(cref);
+  if (open_uiref === uiref) {
+    // already opened by THIS uiref, so toggle it closed.
+    MOD.CloseCommentCollection(uiref, cref, uid);
+  } else if (open_uiref !== undefined) {
+    // already opened by SOMEONE ELSE, so close it, then open the new one
+    MOD.CloseCommentCollection(open_uiref, cref, uid);
+    MOD.OpenCommentCollection(uiref, cref, position);
+  } else {
+    // no comment is open, so open the new one
+    MOD.OpenCommentCollection(uiref, cref, position);
+  }
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Marks a comment as read, and closes the component.
  * Called by NCCommentBtn when clicking "Close"
@@ -316,19 +348,16 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
     return;
   }
   // OK to close
-  UDATA.LocalCall('CTHREADMGR_THREAD_CLOSE', { cref });
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
+  // call to broadcast state AFTER derived state changes
+  UDATA.LocalCall('CTHREADMGR_THREAD_CLOSED', { cref });
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentStats = () => {
   const uid = MOD.GetCurrentUserId();
   return COMMENT.GetCommentStats(uid);
-};
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-MOD.OpenCommentThread = (cref, position) => {
-  UDATA.LocalCall('CTHREADMGR_THREAD_OPEN', { cref, position });
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentThreadPosition = commentButtonId => {
@@ -347,12 +376,16 @@ MOD.GetCommentThreadPosition = commentButtonId => {
 
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Comment UI State
+/**
+ * Comment UI State
+ * @param {string} uiref
+ * @returns {TCommentOpenState} {isOpen: boolean, cref: string}
+ */
 MOD.GetCommentUIState = uiref => {
   return COMMENT.GetCommentUIState(uiref);
 };
 /**
- *
+ * Used to open/close the comment thread
  * @param {string} uiref
  * @param {TCommentOpenState} openState
  */

@@ -51,15 +51,13 @@ function URCommentStatus(props) {
 
   /** Component Effect - register listeners on mount */
   useEffect(() => {
-    UDATA.OnAppStateChange('COMMENTCOLLECTION', () => setDummy(dummy => dummy + 1)); // respond to close
-    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
+    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
     UDATA.HandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
 
     return () => {
-      UDATA.AppStateChangeOff('COMMENTCOLLECTION', () =>
-        setDummy(dummy => dummy + 1)
-      ); // respond to close
-      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+      UDATA.AppStateChangeOff('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
+      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
       UDATA.UnhandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
     };
   }, []);
@@ -67,7 +65,7 @@ function URCommentStatus(props) {
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** force re-render after COMMENTS_UPDATE from a new comment another user */
-  function urmsg_COMMENTS_UPDATE() {
+  function urmsg_DUMMY_COMMENTS_UPDATE() {
     // This is necessary to force a re-render of the comment summaries
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render

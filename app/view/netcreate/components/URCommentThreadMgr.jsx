@@ -34,7 +34,7 @@
     URCommentBtn displays Comment Collections (e.g. URCommentThread) as children
     of the URCommentBtn.
     In contrast, URCommentThread are displayed as children of URCommentTHreadMgr.
-    This gets around t he problem of URCommentBtns beimg hidden inside Evidence Links.
+    This gets around the problem of URCommentBtns beimg hidden inside Evidence Links.
 
     To get around this, URCommentThreadMgr essentially replaces the
     functionality of URCommentBtn with three pieces, acting as a middle
@@ -71,7 +71,7 @@ const PR = 'URCommentThreadMgr';
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function URCommentThreadMgr() {
   const uid = CMTMGR.GetCurrentUserId();
-  const [cmtBtns, setCmtBtns] = useState([]);
+  const [cmtBtns, setCmtBtns] = useState([]); // { uiref, cref, position }
   const [dummy, setDummy] = useState(100);
 
   /** Component Effect - register listeners on mount */
@@ -82,6 +82,7 @@ function URCommentThreadMgr() {
     UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', urmsg_THREAD_CLOSE_ALL);
 
     return () => {
+      UDATA.AppStateChangeOff('COMMENTVOBJS', urstate_UpdateCommentVObjs);
       UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', urmsg_THREAD_OPEN);
       UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', urmsg_THREAD_CLOSE);
       UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', urmsg_THREAD_CLOSE_ALL);
@@ -99,17 +100,23 @@ function URCommentThreadMgr() {
     // especially when a new comment is added.
     setDummy(dummy => dummy + 1); // Trigger re-render
   }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
-   * Handle CTHREADMGR_THREAD_OPEN message
+   * Handle CTHREADMGR_THREAD_OPENED message
    * 1. Register the button, and
    * 2. Open the URCommentBtn
    * @param {Object} data
+   * @param {string} data.uiref - ID of UI component initiating the request
    * @param {string} data.cref - Collection reference
    * @param {Object} data.position - Position of the button
    */
   function urmsg_THREAD_OPEN(data) {
     if (DBG) console.log(PR, 'urmsg_THREAD_OPEN', data);
     // Validate
+    if (data.uiref === undefined)
+      throw new Error(
+        `URCommentThreadMgr: urmsg_THREAD_OPEN: missing uiref ${JSON.stringify(data)}`
+      );
     if (
       data.position === undefined ||
       data.position.x === undefined ||
@@ -121,14 +128,10 @@ function URCommentThreadMgr() {
         )}`
       );
     // 1. Register the button
-    setCmtBtns(prevBtns => {
-      // skip if the comment is already open
-      if (prevBtns.find(btn => btn.cref === data.cref)) return prevBtns;
-      else return [...prevBtns, data];
-    });
-    setDummy(dummy => dummy + 15);
+    setCmtBtns(prevBtns => [...prevBtns, data]);
     // 2. Open the URCommentThread
-    CMTMGR.UpdateCommentUIState(data.cref, { cref: data.cref, isOpen: true });
+    // NOTE: Call is to data.uiref, not data.cref
+    CMTMGR.UpdateCommentUIState(data.uiref, { cref: data.cref, isOpen: true });
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urmsg_THREAD_CLOSE(data) {
@@ -149,7 +152,7 @@ function URCommentThreadMgr() {
       {cmtBtns.map(btn => (
         <URCommentThread
           key={btn.cref}
-          uiref={btn.cref}
+          uiref={btn.uiref}
           cref={btn.cref}
           uid={uid}
           x={btn.position.x}
