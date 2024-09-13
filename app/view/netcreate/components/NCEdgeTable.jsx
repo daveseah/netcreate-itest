@@ -70,9 +70,11 @@ class NCEdgeTable extends UNISYS.Component {
       disableEdit: false,
       isLocked: false,
       isExpanded: true,
-      sortkey: 'Relationship'
+      sortkey: 'Relationship',
+      dummy: 0 // used to force render update
     };
 
+    this.onUpdateCommentUI = this.onUpdateCommentUI.bind(this);
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
     this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
     this.onEDGE_OPEN = this.onEDGE_OPEN.bind(this);
@@ -113,6 +115,12 @@ class NCEdgeTable extends UNISYS.Component {
     this.OnAppStateChange('FILTEREDNCDATA', this.handleFilterDataUpdate);
 
     this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
+
+    // Comment Message Handlers
+    // Force update whenever threads are opened or closed
+    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
   } // constructor
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -143,6 +151,15 @@ class NCEdgeTable extends UNISYS.Component {
     this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
     this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
     this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Force update so that URCommentVBtn selection state is updated
+  onUpdateCommentUI(data) {
+    this.setState({ dummy: this.state.dummy + 1 });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -445,22 +462,6 @@ class NCEdgeTable extends UNISYS.Component {
       edgeDefs.category.hidden = true;
     }
     const { tableHeight } = this.props;
-    const styles = `thead, tbody { font-size: 0.8em }
-                    .table {
-                      display: table; /* override bootstrap for fixed header */
-                      border-spacing: 0;
-                    }
-                    .table th {
-                      position: -webkit-sticky;
-                      position: sticky;
-                      top: 0;
-                      background-color: #eafcff;
-                      border-top: none;
-                    }
-                    xtbody { overflow: auto; }
-                    .btn-sm { font-size: 0.6rem; padding: 0.1rem 0.2rem }
-                    `;
-
     const uid = CMTMGR.GetCurrentUserId();
 
     let attributeDefs = Object.keys(edgeDefs).filter(
@@ -501,7 +502,7 @@ class NCEdgeTable extends UNISYS.Component {
       const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
       const ccol = CMTMGR.GetCommentCollection(cref) || {};
       const hasUnreadComments = ccol.hasUnreadComments;
-      const selected = selectedEdgeId === id;
+      const selected = CMTMGR.GetOpenComments(cref);
       const commentVBtnDef = {
         cref,
         count: commentCount,
@@ -595,7 +596,6 @@ class NCEdgeTable extends UNISYS.Component {
     /// tdata = TTblNodeObject[] = { id: String, label: String }
     function SortNodes(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
-        console.log('node sort a', a, 'b', b);
         if (a[key].label < b[key].label) return order;
         if (a[key].label > b[key].label) return order * -1;
         return 0;
@@ -605,7 +605,6 @@ class NCEdgeTable extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function SortCommentsByCount(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
-        console.log('comment sort a', a, 'b', b);
         if (a[key].count < b[key].count) return order;
         if (a[key].count > b[key].count) return order * -1;
         return 0;

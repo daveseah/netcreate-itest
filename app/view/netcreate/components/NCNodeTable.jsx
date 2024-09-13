@@ -273,9 +273,9 @@ class NCNodeTable extends UNISYS.Component {
       // If we're transitioning from "COLLAPSE" or "FOCUS" to "HILIGHT/FADE", then we
       // also need to add back in nodes that are not in filteredNodes
       // (because "COLLAPSE" and "FOCUS" removes nodes that are not matched)
+      const NCDATA = UDATA.AppState('NCDATA');
       const FILTERDEFS = UDATA.AppState('FILTERDEFS');
       if (FILTERDEFS.filterAction === FILTER.ACTION.FADE) {
-        const NCDATA = UDATA.AppState('NCDATA');
         this.setState(
           {
             nodes: NCDATA.nodes,
@@ -415,8 +415,6 @@ class NCNodeTable extends UNISYS.Component {
       const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
       const ccol = CMTMGR.GetCommentCollection(cref) || {};
       const hasUnreadComments = ccol.hasUnreadComments;
-      const uiref = u_GetButtonId(cref); // comment button id is ${cref}${uuiid}
-
       const selected = CMTMGR.GetOpenComments(cref);
       const commentVBtnDef = {
         cref,
@@ -518,7 +516,6 @@ class NCNodeTable extends UNISYS.Component {
     /// tdata = TTblNodeObject[] = { id: String, label: String }
     function SortNodes(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
-        console.log('node sort a', a, 'b', b);
         if (a[key].label < b[key].label) return order;
         if (a[key].label > b[key].label) return order * -1;
         return 0;
@@ -528,7 +525,6 @@ class NCNodeTable extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function SortCommentsByCount(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
-        console.log('comment sort a', a, 'b', b);
         if (a[key].count < b[key].count) return order;
         if (a[key].count > b[key].count) return order * -1;
         return 0;
