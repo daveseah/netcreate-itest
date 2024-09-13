@@ -566,10 +566,10 @@ class NCEdgeTable extends UNISYS.Component {
     // }
     function RenderNode(value) {
       if (!value) return; // skip if not defined yet
-      if (value.id === undefined)
-        throw new Error('RenderNode: value.id is undefined');
-      if (value.label === undefined)
-        throw new Error('RenderNode: value.label is undefined');
+      if (value.id === undefined || value.label === undefined) {
+        // During Edge creation, source/target may not be defined yet
+        return <span style={{ color: 'red' }}>...</span>;
+      }
       return (
         <button
           className="outline"
