@@ -84,8 +84,6 @@
   cursor: pointer;
   width: fit-content;
   padding: 3px 7px;
-  float: right;
-  margin-right: 150px; /* clear "login feedback" */
 }
 #comment-summary.expanded {
   display: none;

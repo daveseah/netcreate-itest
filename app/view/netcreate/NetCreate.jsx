@@ -192,10 +192,12 @@ class NetCreate extends UNISYS.Component {
         </div>
         <div className="--NetCreate_Fixed_Top nc-navbar">
           <SessionShell />
+          <div style={{ flexGrow: 1 }}></div>
           <URCommentStatus
             message={commentStatusMessage}
             handleMessageUpdate={handleMessageUpdate}
           />
+          <div style={{ flexGrow: 1 }}></div>
         </div>
 
         <div
