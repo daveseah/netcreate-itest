@@ -182,7 +182,6 @@ function URCommentStatus(props) {
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const isLoggedIn = NetMessage.GlobalGroupID();
-  if (!isLoggedIn) return '';
 
   const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
   const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();

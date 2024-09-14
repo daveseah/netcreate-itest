@@ -12,6 +12,7 @@
 /* Comment Bar ------------------------------------------------------------- */
 #comment-bar {
   display: flex;
+  align-self: flex-start;
   margin-top: 6px;
   font-size: 0.8rem;
   z-index: 2000;
@@ -84,6 +85,7 @@
   width: fit-content;
   padding: 3px 7px;
   float: right;
+  margin-right: 150px; /* clear "login feedback" */
 }
 #comment-summary.expanded {
   display: none;
