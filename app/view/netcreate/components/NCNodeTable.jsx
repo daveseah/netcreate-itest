@@ -14,11 +14,16 @@
     it easier to swap in custom table components.
 
 
+  ## PROPS
+
+    * tableHeight -- sets height based on InfoPanel dragger
+    * isOpen -- whether the table is visible
+
   ## TO USE
 
     NCNodeTable is self contained and relies on global NCDATA to load.
 
-      <NCNodeTable/>
+      <NCNodeTable tableHeight isOpen/>
 
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
@@ -70,7 +75,9 @@ class NCNodeTable extends UNISYS.Component {
       isLocked: false,
       isExpanded: true,
       sortkey: 'label',
-      dummy: 0 // used to force render update
+      dummy: 0, // used to force render update
+
+      COLUMNDEFS: []
     };
 
     this.onUpdateCommentUI = this.onUpdateCommentUI.bind(this);
@@ -88,7 +95,7 @@ class NCNodeTable extends UNISYS.Component {
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
     this.onHighlightRow = this.onHighlightRow.bind(this);
 
-    this.sortDirection = 1; // alphabetical A-Z
+    this.SetColumnDefs = this.SetColumnDefs.bind(this);
 
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
@@ -134,6 +141,7 @@ class NCNodeTable extends UNISYS.Component {
     this.setState({ filteredNodes: FILTEREDNCDATA.nodes }, () => {
       let NCDATA = this.AppState('NCDATA');
       this.handleDataUpdate(NCDATA);
+      this.SetColumnDefs();
     });
 
     // Request edit state too because the update may have come
@@ -282,8 +290,6 @@ class NCNodeTable extends UNISYS.Component {
             filteredNodes
           },
           () => {
-            // FIXME: how to handle sorting?
-            // const nodes = this.sortTable(this.state.sortkey, NCDATA.nodes);
             const nodes = NCDATA.nodes;
             this.updateNodeFilterState(nodes, filteredNodes);
           }
@@ -295,9 +301,7 @@ class NCNodeTable extends UNISYS.Component {
             filteredNodes
           },
           () => {
-            // FIXME: how to handle sorting?
-            // const nodes = this.sortTable(this.state.sortkey, filteredNodes);
-            const nodes = NCDATA.nodes;
+            const nodes = filteredNodes;
             this.updateNodeFilterState(nodes, filteredNodes);
           }
         );
@@ -365,74 +369,16 @@ class NCNodeTable extends UNISYS.Component {
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] });
   }
 
-  /// REACT LIFECYCLE METHODS /////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  render() {
-    const {
-      nodes,
-      nodeDefs,
-      selectedNodeId,
-      hilitedNodeId,
-      selectedNodeColor,
-      hilitedNodeColor,
-      disableEdit,
-      isLocked
-    } = this.state;
-    if (nodes === undefined) return '';
-    const { tableHeight } = this.props;
-
-    const uid = CMTMGR.GetCurrentUserId();
+  /// URTABLE COLUMN DEFS /////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  SetColumnDefs() {
+    const { nodeDefs, disableEdit, isLocked } = this.state;
 
     // Only include built in fields
     // Only include non-hidden fields
     const attributeDefs = Object.keys(nodeDefs).filter(
       k => !BUILTIN_FIELDS_NODE.includes(k) && !nodeDefs[k].hidden
     );
-
-    /// TABLE DATA GENERATION
-    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    const TABLEDATA = nodes.map((node, i) => {
-      const { id, label, degrees } = node;
-
-      const sourceDef = { id, label };
-
-      // custom attributes
-      const attributes = {};
-      attributeDefs.forEach((key, i) => {
-        let data = {};
-        if (nodeDefs[key].type === 'markdown') {
-          // for markdown:
-          // a. provide the raw markdown string
-          // b. provide the HTML string
-          data.html = NCUI.Markdownify(node[key]);
-          data.raw = node[key];
-        } else if (nodeDefs[key].type === 'hdate')
-          data = node[key] && node[key].formattedDateString;
-        else data = node[key];
-        attributes[key] = data;
-      });
-
-      // comment button definition
-      const cref = CMTMGR.GetNodeCREF(id);
-      const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
-      const ccol = CMTMGR.GetCommentCollection(cref) || {};
-      const hasUnreadComments = ccol.hasUnreadComments;
-      const selected = CMTMGR.GetOpenComments(cref);
-      const commentVBtnDef = {
-        cref,
-        count: commentCount,
-        hasUnreadComments,
-        selected
-      };
-
-      return {
-        id,
-        label: sourceDef, // { id, label } so that we can render a button
-        degrees,
-        ...attributes,
-        commentVBtnDef
-      };
-    });
 
     /// CLICK HANDLERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -533,7 +479,7 @@ class NCNodeTable extends UNISYS.Component {
       });
       return sortedData;
     }
-    /// TABLE DATA SPECIFICATIONS
+    /// COLUMN DEFINITIONS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
@@ -578,9 +524,88 @@ class NCNodeTable extends UNISYS.Component {
       }
     ];
 
+    this.setState({ COLUMNDEFS });
+  }
+
+  /// REACT LIFECYCLE METHODS /////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  render() {
+    const {
+      nodes,
+      nodeDefs,
+      selectedNodeId,
+      hilitedNodeId,
+      selectedNodeColor,
+      hilitedNodeColor,
+      disableEdit,
+      isLocked,
+      COLUMNDEFS
+    } = this.state;
+    if (nodes === undefined) return '';
+    const { isOpen, tableHeight } = this.props;
+
+    // skip rendering if COLUMNDEFS is not defined yet
+    // This ensures that URTable is inited only AFTER data has been loaded.
+    if (COLUMNDEFS.length < 1) return '';
+
+    const uid = CMTMGR.GetCurrentUserId();
+
+    const attributeDefs = Object.keys(nodeDefs).filter(
+      k => !BUILTIN_FIELDS_NODE.includes(k)
+    );
+
+    /// TABLE DATA GENERATION
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    const TABLEDATA = nodes.map((node, i) => {
+      const { id, label, degrees } = node;
+
+      const sourceDef = { id, label };
+
+      // custom attributes
+      const attributes = {};
+      attributeDefs.forEach((key, i) => {
+        let data = {};
+        if (nodeDefs[key].type === 'markdown') {
+          // for markdown:
+          // a. provide the raw markdown string
+          // b. provide the HTML string
+          data.html = NCUI.Markdownify(node[key]);
+          data.raw = node[key];
+        } else if (nodeDefs[key].type === 'hdate')
+          data = node[key] && node[key].formattedDateString;
+        else data = node[key];
+        attributes[key] = data;
+      });
+
+      // comment button definition
+      const cref = CMTMGR.GetNodeCREF(id);
+      const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+      const ccol = CMTMGR.GetCommentCollection(cref) || {};
+      const hasUnreadComments = ccol.hasUnreadComments;
+      const selected = CMTMGR.GetOpenComments(cref);
+      const commentVBtnDef = {
+        cref,
+        count: commentCount,
+        hasUnreadComments,
+        selected
+      };
+
+      return {
+        id,
+        label: sourceDef, // { id, label } so that we can render a button
+        degrees,
+        ...attributes,
+        commentVBtnDef,
+        meta: {
+          isFiltered: node.isFiltered,
+          filteredTransparency: node.filteredTransparency
+        }
+      };
+    });
+
     return (
       <div className="NCNodeTable" style={{ height: tableHeight }}>
-        <URTable data={TABLEDATA} columns={COLUMNDEFS} />
+        <URTable isOpen={isOpen} data={TABLEDATA} columns={COLUMNDEFS} />
       </div>
     );
   }

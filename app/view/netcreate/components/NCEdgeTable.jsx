@@ -8,11 +8,17 @@
     But also read FILTEREDNCDATA to show highlight/filtered state
 
 
+  ## PROPS
+
+    * tableHeight -- sets height based on InfoPanel dragger
+    * isOpen -- whether the table is visible
+
+
   ## TO USE
 
     EdgeTable is self contained and relies on global NCDATA to load.
 
-      <EdgeTable/>
+      <EdgeTable tableHeight isOpen />
 
 
     Set `DBG` to true to show the `ID` column.
@@ -71,7 +77,9 @@ class NCEdgeTable extends UNISYS.Component {
       isLocked: false,
       isExpanded: true,
       sortkey: 'Relationship',
-      dummy: 0 // used to force render update
+      dummy: 0, // used to force render update
+
+      COLUMNDEFS: []
     };
 
     this.onUpdateCommentUI = this.onUpdateCommentUI.bind(this);
@@ -91,6 +99,8 @@ class NCEdgeTable extends UNISYS.Component {
     this.m_FindMatchingEdgeByProp = this.m_FindMatchingEdgeByProp.bind(this);
     this.m_FindEdgeById = this.m_FindEdgeById.bind(this);
     this.lookupNodeLabel = this.lookupNodeLabel.bind(this);
+
+    this.SetColumnDefs = this.SetColumnDefs.bind(this);
 
     this.sortDirection = 1;
 
@@ -136,6 +146,7 @@ class NCEdgeTable extends UNISYS.Component {
     this.setState({ filteredEdges: FILTEREDNCDATA.edges }, () => {
       let NCDATA = this.AppState('NCDATA');
       this.handleDataUpdate(NCDATA);
+      this.SetColumnDefs();
     });
 
     // Request edit state too because the update may have come
@@ -246,10 +257,6 @@ class NCEdgeTable extends UNISYS.Component {
           e.targetLabel = this.lookupNodeLabel(e.target);
           return e;
         });
-        // ...   sort it also
-        // FIXME handle sort!
-        // edges = this.sortTable(this.state.sortkey, edges);
-        // ...1. So we need to save nodes for dereferencing.
         this.setState({ edges });
         const { filteredEdges } = this.state;
         this.updateEdgeFilterState(edges, filteredEdges);
@@ -277,8 +284,6 @@ class NCEdgeTable extends UNISYS.Component {
             filteredEdges
           },
           () => {
-            // FIXME handle sort table
-            // const edges = this.sortTable(this.state.sortkey, NCDATA.edges);
             const edges = NCDATA.edges;
             this.updateEdgeFilterState(edges, filteredEdges);
           }
@@ -290,8 +295,6 @@ class NCEdgeTable extends UNISYS.Component {
             filteredEdges
           },
           () => {
-            // FIXME handle sort table
-            // const edges = this.sortTable(this.state.sortkey, filteredEdges);
             const edges = filteredEdges;
             this.updateEdgeFilterState(edges, filteredEdges);
           }
@@ -399,142 +402,33 @@ class NCEdgeTable extends UNISYS.Component {
     UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [id] });
   }
 
-  /// OBJECT HELPERS ////////////////////////////////////////////////////////////
-  /// these probably should go into a utility class
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /** Return array of objects that match the match_me object keys/values
-    NOTE: make sure that strings are compared with strings, etc
-   */
-  m_FindMatchingObjsByProp(obj_list, match_me = {}) {
-    // operate on arrays only
-    if (!Array.isArray(obj_list))
-      throw Error('FindMatchingObjectsByProp arg1 must be array');
-    let matches = obj_list.filter(obj => {
-      let pass = true;
-      for (let key in match_me) {
-        if (match_me[key] !== obj[key]) pass = false;
-        break;
-      }
-      return pass;
-    });
-    // return array of matches (can be empty array)
-    return matches;
-  }
-
-  /// EDGE HELPERS //////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /** Return array of nodes that match the match_me object keys/values
-    NOTE: make sure that strings are compared with strings, etc
-   */
-  m_FindMatchingEdgeByProp(match_me = {}) {
-    return this.m_FindMatchingObjsByProp(this.state.edges, match_me);
-  }
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /** Convenience function to retrieve edge by ID
-   */
-  m_FindEdgeById(id) {
-    return this.m_FindMatchingEdgeByProp({ id })[0];
-  }
-
-  /// REACT LIFECYCLE METHODS ///////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /** This is not yet implemented as of React 16.2.  It's implemented in 16.3.
-      getDerivedStateFromProps (props, state) {
-        console.error('getDerivedStateFromProps!!!');
-      }
-   */
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /**
-   */
-  render() {
-    let {
-      edges,
-      edgeDefs,
-      selectedEdgeId,
-      selectedEdgeColor,
-      disableEdit,
-      isLocked
-    } = this.state;
-    if (edgeDefs.category === undefined) {
-      // for backwards compatability
-      edgeDefs.category = {};
-      edgeDefs.category.label = '';
-      edgeDefs.category.hidden = true;
-    }
-    const { tableHeight } = this.props;
-    const uid = CMTMGR.GetCurrentUserId();
-
+  /// URTABLE COLUMN DEFS /////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  SetColumnDefs() {
+    const { edges, edgeDefs, disableEdit, isLocked } = this.state;
     let attributeDefs = Object.keys(edgeDefs).filter(
       k => !BUILTIN_FIELDS_EDGE.includes(k)
     );
 
-    // show 'type' between 'source' and 'target' if `type` has been defined
-    // if it isn't defined, just show attribute fields after `source` and 'target`
-    const hasTypeField = edgeDefs['type'];
-    if (hasTypeField) attributeDefs = attributeDefs.filter(a => a !== 'type');
-
-    /// TABLE DATA GENERATION
-    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    const TABLEDATA = edges.map((edge, i) => {
-      const { id, source, target, sourceLabel, targetLabel, type } = edge;
-
-      const sourceDef = { id: source, label: sourceLabel };
-      const targetDef = { id: target, label: targetLabel };
-
-      // custom attributes
-      const attributes = {};
-      attributeDefs.forEach((key, i) => {
-        let data = {};
-        if (edgeDefs[key].type === 'markdown') {
-          // for markdown:
-          // a. provide the raw markdown string
-          // b. provide the HTML string
-          data.html = NCUI.Markdownify(edge[key]);
-          data.raw = edge[key];
-        } else if (edgeDefs[key].type === 'hdate')
-          data = edge[key] && edge[key].formattedDateString;
-        else data = edge[key];
-        attributes[key] = data;
-      });
-
-      // comment button definition
-      const cref = CMTMGR.GetNodeCREF(id);
-      const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
-      const ccol = CMTMGR.GetCommentCollection(cref) || {};
-      const hasUnreadComments = ccol.hasUnreadComments;
-      const selected = CMTMGR.GetOpenComments(cref);
-      const commentVBtnDef = {
-        cref,
-        count: commentCount,
-        hasUnreadComments,
-        selected
-      };
-
-      return {
-        id,
-        sourceDef,
-        targetDef,
-        type,
-        ...attributes,
-        commentVBtnDef
-      };
-    });
-    console.log('TABLEDATA', TABLEDATA);
-
     /// CLICK HANDLERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function ui_ClickViewEdge(event, edgeId) {
+    function ui_ClickViewEdge(event, value) {
       event.preventDefault();
       event.stopPropagation();
-      // REVIEW Is this necessary?
-      const edgeID = parseInt(edgeId);
-      // let edge = this.m_FindEdgeById(edgeID);
-      // REVIEW: should we be looking up from the local `edges`? or bind tothis?
-      const edge = edges.find(e => e.id === edgeID);
-      if (DBG) console.log('EdgeTable: Edge id', edge.id, 'selected for viewing');
+      const { edgeId, sourceId } = value;
       // Load Source Node then Edge
-      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
-        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [sourceId] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId });
+      });
+    }
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    function ui_ClickEditEdge(event, value) {
+      event.preventDefault();
+      event.stopPropagation();
+      const { edgeId, sourceId } = value;
+      // Load Source Node then Edge
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [sourceId] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT_AND_EDIT', { edgeId });
       });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -554,9 +448,24 @@ class NCEdgeTable extends UNISYS.Component {
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function RenderViewOrEdit(value) {
       return (
-        <button className="outline" onClick={event => ui_ClickViewEdge(event, value)}>
-          {ICON_VIEW}
-        </button>
+        <div>
+          {!disableEdit && (
+            <button
+              className="outline"
+              onClick={event => ui_ClickViewEdge(event, value)}
+            >
+              {ICON_VIEW}
+            </button>
+          )}
+          {!disableEdit && !isLocked && (
+            <button
+              className="outline"
+              onClick={event => ui_ClickEditEdge(event, value)}
+            >
+              {ICON_PENCIL}
+            </button>
+          )}
+        </div>
       );
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -611,7 +520,7 @@ class NCEdgeTable extends UNISYS.Component {
       });
       return sortedData;
     }
-    /// TABLE DATA SPECIFICATIONS
+    /// COLUMN DEFINITIONS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
@@ -663,15 +572,133 @@ class NCEdgeTable extends UNISYS.Component {
         sorter: SortCommentsByCount
       }
     ];
+    23;
+
+    this.setState({ COLUMNDEFS });
+  }
+
+  /// OBJECT HELPERS ////////////////////////////////////////////////////////////
+  /// these probably should go into a utility class
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Return array of objects that match the match_me object keys/values
+    NOTE: make sure that strings are compared with strings, etc
+   */
+  m_FindMatchingObjsByProp(obj_list, match_me = {}) {
+    // operate on arrays only
+    if (!Array.isArray(obj_list))
+      throw Error('FindMatchingObjectsByProp arg1 must be array');
+    let matches = obj_list.filter(obj => {
+      let pass = true;
+      for (let key in match_me) {
+        if (match_me[key] !== obj[key]) pass = false;
+        break;
+      }
+      return pass;
+    });
+    // return array of matches (can be empty array)
+    return matches;
+  }
+
+  /// EDGE HELPERS //////////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Return array of nodes that match the match_me object keys/values
+    NOTE: make sure that strings are compared with strings, etc
+   */
+  m_FindMatchingEdgeByProp(match_me = {}) {
+    return this.m_FindMatchingObjsByProp(this.state.edges, match_me);
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** Convenience function to retrieve edge by ID
+   */
+  m_FindEdgeById(id) {
+    return this.m_FindMatchingEdgeByProp({ id })[0];
+  }
+
+  /// REACT LIFECYCLE METHODS ///////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /** This is not yet implemented as of React 16.2.  It's implemented in 16.3.
+      getDerivedStateFromProps (props, state) {
+        console.error('getDerivedStateFromProps!!!');
+      }
+   */
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   */
+  render() {
+    const { edges, edgeDefs, disableEdit, isLocked, COLUMNDEFS } = this.state;
+    if (edgeDefs.category === undefined) {
+      // for backwards compatability
+      edgeDefs.category = {};
+      edgeDefs.category.label = '';
+      edgeDefs.category.hidden = true;
+    }
+    const { isOpen, tableHeight } = this.props;
+    const uid = CMTMGR.GetCurrentUserId();
+
     // Only include built in fields
     // Only include non-hidden fields
     let attributeDefs = Object.keys(edgeDefs).filter(
       k => !BUILTIN_FIELDS_EDGE.includes(k) && !edgeDefs[k].hidden
     );
 
+    // show 'type' between 'source' and 'target' if `type` has been defined
+    // if it isn't defined, just show attribute fields after `source` and 'target`
+    const hasTypeField = edgeDefs['type'];
+    if (hasTypeField) attributeDefs = attributeDefs.filter(a => a !== 'type');
+
+    /// TABLE DATA GENERATION
+    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    const TABLEDATA = edges.map((edge, i) => {
+      const { id, source, target, sourceLabel, targetLabel, type } = edge;
+
+      const sourceDef = { id: source, label: sourceLabel };
+      const targetDef = { id: target, label: targetLabel };
+
+      // custom attributes
+      const attributes = {};
+      attributeDefs.forEach((key, i) => {
+        let data = {};
+        if (edgeDefs[key].type === 'markdown') {
+          // for markdown:
+          // a. provide the raw markdown string
+          // b. provide the HTML string
+          data.html = NCUI.Markdownify(edge[key]);
+          data.raw = edge[key];
+        } else if (edgeDefs[key].type === 'hdate')
+          data = edge[key] && edge[key].formattedDateString;
+        else data = edge[key];
+        attributes[key] = data;
+      });
+
+      // comment button definition
+      const cref = CMTMGR.GetNodeCREF(id);
+      const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+      const ccol = CMTMGR.GetCommentCollection(cref) || {};
+      const hasUnreadComments = ccol.hasUnreadComments;
+      const selected = CMTMGR.GetOpenComments(cref);
+      const commentVBtnDef = {
+        cref,
+        count: commentCount,
+        hasUnreadComments,
+        selected
+      };
+
+      return {
+        id: { edgeId: id, sourceId: source }, // { edgeId, sourceId} for click handler
+        sourceDef, // { id: String, label: String }
+        targetDef, // { id: String, label: String }
+        type,
+        ...attributes,
+        commentVBtnDef,
+        meta: {
+          isFiltered: edge.isFiltered,
+          filteredTransparency: edge.filteredTransparency
+        }
+      };
+    });
     return (
       <div className="NCEdgeTable" style={{ height: tableHeight }}>
-        <URTable data={TABLEDATA} columns={COLUMNDEFS} />
+        <URTable isOpen={isOpen} data={TABLEDATA} columns={COLUMNDEFS} />
       </div>
     );
   }

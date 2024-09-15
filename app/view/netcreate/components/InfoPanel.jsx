@@ -263,18 +263,20 @@ class InfoPanel extends UNISYS.Component {
             <TabPane tabId={TABS.NODESTABLE}>
               <Row>
                 <Col sm="12">
-                  {activeTab === TABS.NODESTABLE && (
-                    <NCNodeTable tableHeight={tableHeight} />
-                  )}
+                  <NCNodeTable
+                    tableHeight={tableHeight}
+                    isOpen={activeTab === TABS.NODESTABLE}
+                  />
                 </Col>
               </Row>
             </TabPane>
             <TabPane tabId={TABS.EDGESTABLE}>
               <Row>
                 <Col sm="12">
-                  {activeTab === TABS.EDGESTABLE && (
-                    <NCEdgeTable tableHeight={tableHeight} />
-                  )}
+                  <NCEdgeTable
+                    tableHeight={tableHeight}
+                    isOpen={activeTab === TABS.EDGESTABLE}
+                  />
                 </Col>
               </Row>
             </TabPane>

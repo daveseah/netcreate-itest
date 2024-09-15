@@ -13,9 +13,13 @@ Emulates the API of Handsontable.
 import React, { useState, useEffect, useRef } from 'react';
 import HDATE from 'system/util/hdate';
 
+/// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const DBG = false;
+
 /// FUNCTIONAL COMPONENT DECLARATION //////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function URTable({ data, columns }) {
+function URTable({ isOpen, data, columns }) {
   const [tabledata, setTableData] = useState([]);
   const [columndefs, setColumnDefs] = useState([]);
   const [columnWidths, setColumnWidths] = useState([]);
@@ -30,8 +34,47 @@ function URTable({ data, columns }) {
   /// Init table data
   useEffect(() => {
     setTableData(data);
+  }, []);
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Calculate Initial Column Widths
+  useEffect(() => {
+    // ...AFTER the table is opened otherwise the table width is 0 at the first render
+    if (isOpen) {
+      // Only calculate widths if the table is open
+      u_CalculateColumnWidths();
+    }
+  }, [isOpen]);
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Update column definitions
+  useEffect(() => {
+    // Set columns independently of the table data so that data can be updated
+    // without affecting columns
     setColumnDefs(columns);
-    // Calculate Initial Column Widths
+    u_CalculateColumnWidths();
+  }, [columns]);
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Update table data
+  useEffect(() => {
+    m_ExecuteSorter(data);
+  }, [data]);
+  // Handle column sort selection
+  useEffect(() => {
+    // Sort table data
+    m_ExecuteSorter(data);
+  }, [sortColumnIdx, sortOrder]);
+
+  /// UTILITIES ///////////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  const u_CalculateColumnWidths = () => {
+
+    // if table is not drawn yet, skip
+    if (tableRef.current.clientWidth < 1) return;
+
+    // if it's already set, don't recalculate
+    if (columnWidths.length > 0 && tableRef.current.clientWidth > 0) {
+      return;
+    }
+
     const definedColWidths = columns.filter(col => col.width).map(col => col.width);
     const definedColWidthSum = definedColWidths.reduce((a, b) => a + b, 0);
     const remainingWidth = tableRef.current.clientWidth - definedColWidthSum;
@@ -39,12 +82,7 @@ function URTable({ data, columns }) {
       col => col.width || remainingWidth / (columns.length - definedColWidths.length)
     );
     setColumnWidths(colWidths);
-  }, [data, columns]);
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /// Sort table data
-  useEffect(() => {
-    m_ExecuteSorter();
-  }, [sortColumnIdx, sortOrder]);
+  };
 
   /// RESIZE COLUMN HANDLERS //////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -90,7 +128,7 @@ function URTable({ data, columns }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function m_SortByText(key, tdata, order) {
     const sortedData = [...tdata].sort((a, b) => {
-      console.log('sort by text', a[key], b[key]);
+      if (DBG) console.log('sort by text', a[key], b[key]);
       if (!a[key] && !b[key]) return 0;
       if (!a[key]) return 1; // Move undefined or '' to the bottom regardless of sort order
       if (!b[key]) return -1; // Move undefined or '' the bottom regardless of sort order
@@ -158,6 +196,13 @@ function URTable({ data, columns }) {
   }
   /// BUILT-IN TABLE METHODS //////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /**
+   *
+   * @param {*} value
+   * @param {*} col
+   * @param {*} idx
+   * @returns The final value to be rendered in the table cell
+   */
   function m_ExecuteRenderer(value, col, idx) {
     const customRenderer = col.renderer;
     if (customRenderer) {
@@ -178,30 +223,32 @@ function URTable({ data, columns }) {
     }
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  function m_ExecuteSorter() {
-    if (columndefs.length < 1) return;
+  /// Sorts then sets the table data
+  function m_ExecuteSorter(tdata) {
+    if (columndefs.length < 1) return [];
+
     const customSorter = columndefs[sortColumnIdx].sorter;
     const key = columndefs[sortColumnIdx].data;
     let sortedData = [];
     if (customSorter) {
       if (typeof customSorter !== 'function') throw new Error('Invalid sorter');
-      sortedData = customSorter(key, tabledata, sortOrder);
+      sortedData = customSorter(key, tdata, sortOrder);
     } else {
       // Run built-in sorters
       switch (columndefs[sortColumnIdx].type) {
         case 'hdate':
-          sortedData = m_SortByHDate(key, tabledata, sortOrder);
+          sortedData = m_SortByHDate(key, tdata, sortOrder);
           break;
         case 'markdown':
-          sortedData = m_SortByMarkdown(key, tabledata, sortOrder);
+          sortedData = m_SortByMarkdown(key, tdata, sortOrder);
           break;
         case 'date':
         case 'number':
-          sortedData = m_SortByNumber(key, tabledata, sortOrder);
+          sortedData = m_SortByNumber(key, tdata, sortOrder);
           break;
         case 'text':
         default:
-          sortedData = m_SortByText(key, tabledata, sortOrder);
+          sortedData = m_SortByText(key, tdata, sortOrder);
       }
     }
     setTableData(sortedData);
@@ -236,7 +283,13 @@ function URTable({ data, columns }) {
         </thead>
         <tbody>
           {tabledata.map((tdata, idx) => (
-            <tr key={idx}>
+            <tr
+              key={idx}
+              style={{
+                color: tdata.meta.isFiltered ? 'red' : 'black',
+                opacity: tdata.meta.filteredTransparency
+              }}
+            >
               {columndefs.map((col, idx) => (
                 <td key={idx}>{m_ExecuteRenderer(tdata[col.data], col, idx)}</td>
               ))}
