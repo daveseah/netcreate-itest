@@ -1,13 +1,14 @@
 /* Z-Index
 
       5000  NCDialog
-      3000  nc-savelert
+      3000  nc-savelert      
+      2500  nc-navbar > comment-status
       2500  commentThread
       2010  NCDialog .dialogWindow
       2001  NCDialog .screen ==========
       2000  comment-bar
+      1500  FiltersPanel
       1030  bootstrap .fixed-top
-       200  nc-navbar
        100  Node/EdgeTable thead
         15  NCAutoSuggest .matchlist
         15  NCNode .ncedge
@@ -51,7 +52,7 @@ nav.fixed-top {
   height: 38px;
   display: flex;
   flex-flow: row-reverse;
-  z-index: 200;
+  z-index: 2500; /* sets comment-status and comment threads */
 }
 /* Bootstrap override */
 .nav-item {
