@@ -663,6 +663,11 @@ class NCEdgeTable extends UNISYS.Component {
         sorter: SortCommentsByCount
       }
     ];
+    // Only include built in fields
+    // Only include non-hidden fields
+    let attributeDefs = Object.keys(edgeDefs).filter(
+      k => !BUILTIN_FIELDS_EDGE.includes(k) && !edgeDefs[k].hidden
+    );
 
     return (
       <div className="NCEdgeTable" style={{ height: tableHeight }}>
