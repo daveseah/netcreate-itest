@@ -7,10 +7,11 @@
 .URTable th {
   padding: 0 5px;
   border-right: 1px solid #999;
-  position: -webkit-sticky;
-  position: sticky;
   top: 0;
   background-color: #daebef;
+  position: -webkit-sticky;
+  position: sticky;
+  z-index: 1; /* for some reason EdgeTable requires this or body cells will cover td */
 }
 .URTable th.selected {
   background-color: #c6d5d6;
