@@ -626,12 +626,6 @@ class NCEdgeTable extends UNISYS.Component {
    */
   render() {
     const { edges, edgeDefs, disableEdit, isLocked, COLUMNDEFS } = this.state;
-    if (edgeDefs.category === undefined) {
-      // for backwards compatability
-      edgeDefs.category = {};
-      edgeDefs.category.label = '';
-      edgeDefs.category.hidden = true;
-    }
     const { isOpen, tableHeight } = this.props;
     const uid = CMTMGR.GetCurrentUserId();
 
