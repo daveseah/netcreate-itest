@@ -283,13 +283,7 @@ function URTable({ isOpen, data, columns }) {
         </thead>
         <tbody>
           {tabledata.map((tdata, idx) => (
-            <tr
-              key={idx}
-              style={{
-                color: tdata.meta.isFiltered ? 'red' : 'black',
-                opacity: tdata.meta.filteredTransparency
-              }}
-            >
+            <tr key={idx} style={{ opacity: tdata.meta.filteredTransparency }}>
               {columndefs.map((col, idx) => (
                 <td key={idx}>{m_ExecuteRenderer(tdata[col.data], col, idx)}</td>
               ))}

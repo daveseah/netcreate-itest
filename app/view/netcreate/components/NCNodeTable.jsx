@@ -231,16 +231,16 @@ class NCNodeTable extends UNISYS.Component {
         FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
         FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
       ) {
+        // Reduce (remove) or Focus
         nodes = nodes.filter(node => {
           const filteredNode = filteredNodes.find(n => n.id === node.id);
           return filteredNode; // keep if it's in the list of filtered nodes
         });
       } else {
-        nodes = nodes.map(node => {
-          const filteredNode = filteredNodes.find(n => n.id === node.id);
-          node.isFiltered = !filteredNode; // not in filteredNode, so it's been removed
-          return node;
-        });
+        // Fade
+        // Fading is handled by setting node.filteredTransparency which is
+        // directly handled by the filter now.  So no need to process it
+        // here in the table.
       }
     }
     this.setState({ nodes, filteredNodes });
@@ -597,7 +597,6 @@ class NCNodeTable extends UNISYS.Component {
         ...attributes,
         commentVBtnDef,
         meta: {
-          isFiltered: node.isFiltered,
           filteredTransparency: node.filteredTransparency
         }
       };

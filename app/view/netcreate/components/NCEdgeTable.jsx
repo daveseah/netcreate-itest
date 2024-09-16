@@ -228,16 +228,16 @@ class NCEdgeTable extends UNISYS.Component {
         FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
         FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
       ) {
+        // Reduce (remove) or Focus
         edges = edges.filter(edge => {
-          const filteredEdge = filteredEdges.find(n => n.id === edge.id);
+          const filteredEdge = filteredEdges.find(e => e.id === edge.id);
           return filteredEdge; // keep if it's in the list of filtered edges
         });
       } else {
-        edges = edges.map(edge => {
-          const filteredEdge = filteredEdges.find(n => n.id === edge.id);
-          edge.isFiltered = !filteredEdge;
-          return edge;
-        });
+        // Fade
+        // Fading is handled by setting node.filteredTransparency which is
+        // directly handled by the filter now.  So no need to process it
+        // here in the table.
       }
     }
     this.setState({ edges });
@@ -691,7 +691,6 @@ class NCEdgeTable extends UNISYS.Component {
         ...attributes,
         commentVBtnDef,
         meta: {
-          isFiltered: edge.isFiltered,
           filteredTransparency: edge.filteredTransparency
         }
       };
