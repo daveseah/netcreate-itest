@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import UNISYS from 'unisys/client';
+import NetMessage from 'unisys/common-netmessage-class';
 import CMTMGR from '../comment-mgr';
 import URCommentPrompt from './URCommentPrompt';
 
@@ -69,9 +70,10 @@ function URComment({ cref, cid, uid }) {
   useEffect(() => {
     // declare helpers
     const urmsg_UpdatePermissions = data => {
+      const isLoggedIn = NetMessage.GlobalGroupID();
       setState(prevState => ({
         ...prevState,
-        uIsDisabled: data.commentBeingEditedByMe
+        uIsDisabled: data.commentBeingEditedByMe || !isLoggedIn
       }));
     };
     const urstate_UpdateCommentVObjs = () => c_LoadCommentVObj();

@@ -8,7 +8,7 @@
   
     COMMENTCOLLECTION ccol
     -----------------
-    A COMENTCOLLECTION is the main data source for the CommentBtn.
+    A COMMENTCOLLECTION is the main data source for the CommentBtn.
     It primarily shows summary information for the three states of the button:
     * has no comments
     * has unread comments
@@ -24,31 +24,22 @@
       
     COMMENTUISTATE cui
     --------------
-    A COMMENTUISTATE object can be opened and closed from multiple UI elements.
-    COMMENTUI keeps track of the `isOpen` status based on the UI element.
+    COMMENTUISTATE keeps track of the `isOpen` state of currently selected/open 
+    comment ui buttons.
+    Comments can be opened and closed from multiple UI elements.
     e.g. a comment button in a node can open a comment but the same comment can
-    be opeend from the node table view.
+    be opened from the node table view.
     
       COMMENTUISTATE Map<uiref, {cref, isOpen}>
     
     
     OPENCOMMENTS
-    ------------
-    OPENCOMMENTS keeps track of currently open comment buttons.  This is 
+    ---------------
+    OPENCOMMENTS keeps track of currently open comments.  This is 
     used prevent two comment buttons from opening the same comment collection,
     e.g. if the user opens a node and a node table comment at the same time.
     
       OPENCOMMENTS Map<cref, uiref>
-
-      
-    EDITABLECOMMENTS
-    ----------------
-    EDITABLECOMMENTS keeps track of which comment is currently open for 
-    editing.  This is used to prevent close requests coming from NCCOmmentThreads
-    from closing a NCComment that is in the middle of being edited.
-    Tracked locally only.
-    
-      EDITABLECOMMENTS Map<cid, cid>
 
       
     COMMENTVOBJS

@@ -156,7 +156,7 @@ class FiltersPanel extends UNISYS.Component {
           padding: '5px',
           flexDirection: 'column',
           backgroundColor: '#EEE',
-          zIndex: '2000'
+          zIndex: '1500'
         }}
       >
         <ButtonGroup>

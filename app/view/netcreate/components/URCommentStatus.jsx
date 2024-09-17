@@ -21,6 +21,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import UNISYS from 'unisys/client';
 import NetMessage from 'unisys/common-netmessage-class';
 import CMTMGR from '../comment-mgr';
+import URCommentThreadMgr from './URCommentThreadMgr';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -50,15 +51,13 @@ function URCommentStatus(props) {
 
   /** Component Effect - register listeners on mount */
   useEffect(() => {
-    UDATA.OnAppStateChange('COMMENTCOLLECTION', () => setDummy(dummy => dummy + 1)); // respond to close
-    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
+    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
     UDATA.HandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
 
     return () => {
-      UDATA.AppStateChangeOff('COMMENTCOLLECTION', () =>
-        setDummy(dummy => dummy + 1)
-      ); // respond to close
-      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_COMMENTS_UPDATE);
+      UDATA.AppStateChangeOff('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
+      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
       UDATA.UnhandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
     };
   }, []);
@@ -66,7 +65,7 @@ function URCommentStatus(props) {
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** force re-render after COMMENTS_UPDATE from a new comment another user */
-  function urmsg_COMMENTS_UPDATE() {
+  function urmsg_DUMMY_COMMENTS_UPDATE() {
     // This is necessary to force a re-render of the comment summaries
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
@@ -183,7 +182,6 @@ function URCommentStatus(props) {
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const isLoggedIn = NetMessage.GlobalGroupID();
-  if (!isLoggedIn) return '';
 
   const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
   const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();
@@ -225,38 +223,41 @@ function URCommentStatus(props) {
   );
 
   return (
-    <div id="comment-bar">
-      <div
-        id="comment-alert"
-        className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
-      >
-        {!uiIsExpanded && <div className="comment-status-body">{message}</div>}
-      </div>
-      <div>
+    <div>
+      <URCommentThreadMgr />
+      <div id="comment-bar">
         <div
-          id="comment-summary"
-          className={`${uiIsExpanded ? ' expanded' : ''}`}
-          onClick={evt_ExpandPanel}
+          id="comment-alert"
+          className={`${activeCSS} ${uiIsExpanded ? ' expanded' : ''}`}
         >
-          {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
+          {!uiIsExpanded && <div className="comment-status-body">{message}</div>}
         </div>
-        <div
-          id="comment-panel"
-          className={`${uiIsExpanded ? ' expanded' : ''}`}
-          onClick={evt_Close}
-        >
-          <div className="comments-unread">
-            {UnreadRepliesToMeButtonJSX}
-            <div className="comment-status-body">{unreadRepliesToMeItems}</div>
-            {UnreadButtonJSX}
-            <div className="comment-status-body">{unreadCommentItems}</div>
-            <div className="commentbar">
-              <button className="small" onClick={evt_Close}>
-                Close
-              </button>
-              <button className="small" onClick={evt_MarkAllRead}>
-                Mark All Read
-              </button>
+        <div>
+          <div
+            id="comment-summary"
+            className={`${uiIsExpanded ? ' expanded' : ''}`}
+            onClick={evt_ExpandPanel}
+          >
+            {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
+          </div>
+          <div
+            id="comment-panel"
+            className={`${uiIsExpanded ? ' expanded' : ''}`}
+            onClick={evt_Close}
+          >
+            <div className="comments-unread">
+              {UnreadRepliesToMeButtonJSX}
+              <div className="comment-status-body">{unreadRepliesToMeItems}</div>
+              {UnreadButtonJSX}
+              <div className="comment-status-body">{unreadCommentItems}</div>
+              <div className="commentbar">
+                <button className="small" onClick={evt_Close}>
+                  Close
+                </button>
+                <button className="small" onClick={evt_MarkAllRead}>
+                  Mark All Read
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,0 +1,42 @@
+.URTable {
+}
+.URTable table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.URTable th {
+  padding: 0 5px;
+  border-right: 1px solid #999;
+  top: 0;
+  background-color: #daebef;
+  position: -webkit-sticky;
+  position: sticky;
+  z-index: 1; /* for some reason EdgeTable requires this or body cells will cover td */
+}
+.URTable th.selected {
+  background-color: #c6d5d6;
+}
+.URTable thead,
+.URTable thead > tr,
+.URTable thead > tr > th {
+  user-select: none;
+}
+.URTable tr:hover {
+  background-color: #0002;
+}
+.URTable .resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px; /* 5px; */
+  cursor: col-resize;
+  background-color: transparent;
+  user-select: none;
+}
+.URTable .resize-handle:hover {
+  background-color: #99f; /* Highlight handle on hover */
+}
+.URTable button {
+  padding: 0 2px;
+}

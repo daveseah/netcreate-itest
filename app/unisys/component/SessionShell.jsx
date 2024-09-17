@@ -265,7 +265,7 @@ class SessionShell extends UNISYS.Component {
         onSubmit={this.onSubmit}
         style={NAV_LOGIN_STYLE}
       >
-        <FormGroup row>
+        <FormGroup row style={{ marginRight: '-5px' }}>
           <InputGroup>
             <InputGroupAddon addonType="prepend">
               <Button

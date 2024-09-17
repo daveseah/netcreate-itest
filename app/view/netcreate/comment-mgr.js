@@ -90,6 +90,32 @@ MOD.COMMENTICON = (
     <path d="M21,0C9.4,0,0,9.4,0,21c0,4.12,1.21,7.96,3.26,11.2l-2.26,9.8,11.56-1.78c2.58,1.14,5.44,1.78,8.44,1.78,11.6,0,21-9.4,21-21S32.6,0,21,0Z" />
   </svg>
 );
+// From Evan O'Neil https://drive.google.com/drive/folders/1fJ5WiLMVQxxaqghrCOFwegmnYoOvst7E
+// NOTE viewbox is set to y=1 to better center the text
+MOD.ICN_COMMENT_UNREAD = (
+  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
+    <path fill="#FFE143" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
+    <path fill="#FFE143" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  </svg>
+)
+MOD.ICN_COMMENT_UNREAD_SELECTED = (
+  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
+    <path fill="#D44127" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
+    <path fill="#FFE143" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  </svg>
+)
+MOD.ICN_COMMENT_READ = (
+  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
+    <path fill="#696969" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
+    <path fill="#696969" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  </svg>
+)
+MOD.ICN_COMMENT_READ_SELECTED = (
+  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
+    <path fill="#D44127" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
+    <path fill="#696969" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  </svg>
+)
 
 function m_SetAppStateCommentCollections() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
@@ -273,6 +299,39 @@ MOD.MarkAllRead = () => {
 MOD.GetCommentCollection = uiref => {
   return COMMENT.GetCommentCollection(uiref);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.OpenCommentCollection = (uiref, cref, position) => {
+  MOD.UpdateCommentUIState(uiref, { cref, isOpen: true });
+  UDATA.LocalCall('CTHREADMGR_THREAD_OPENED', { uiref, cref, position });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Used by NCNodeTable and NCEdgeTable to open/close the comment thread
+ * If a comment is already opened by one button (e.g. node), and the user
+ * clicks on another comment button (e.g. NodeTable), the new one will open,
+ * and the old one closed.
+ * Called by URCommentBtn, NCNodeTable, and NCEdgeTable
+ * @param {TCommentUIRef} uiref comment button id
+ * @param {TCollectionRef} cref collection_ref
+ * @param {Object} position x, y position of the comment button
+ */
+MOD.ToggleCommentCollection = (uiref, cref, position) => {
+  const uid = MOD.GetCurrentUserId();
+  // is the comment already open?
+  const open_uiref = MOD.GetOpenComments(cref);
+  if (open_uiref === uiref) {
+    // already opened by THIS uiref, so toggle it closed.
+    MOD.CloseCommentCollection(uiref, cref, uid);
+  } else if (open_uiref !== undefined) {
+    // already opened by SOMEONE ELSE, so close it, then open the new one
+    MOD.CloseCommentCollection(open_uiref, cref, uid);
+    MOD.OpenCommentCollection(uiref, cref, position);
+  } else {
+    // no comment is open, so open the new one
+    MOD.OpenCommentCollection(uiref, cref, position);
+  }
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Marks a comment as read, and closes the component.
  * Called by NCCommentBtn when clicking "Close"
@@ -292,20 +351,41 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
+  // call to broadcast state AFTER derived state changes
+  UDATA.LocalCall('CTHREADMGR_THREAD_CLOSED', { cref });
 };
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentStats = () => {
   const uid = MOD.GetCurrentUserId();
   return COMMENT.GetCommentStats(uid);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.GetCommentThreadPosition = commentButtonId => {
+  const btn = document.getElementById(commentButtonId);
+  const cmtbtnx = btn.getBoundingClientRect().left;
+  const windowWidth = Math.min(screen.width, window.innerWidth);
+  let x;
+  if (windowWidth - cmtbtnx < 500) {
+    x = cmtbtnx - 405;
+  } else {
+    x = cmtbtnx + 35;
+  }
+  const y = btn.getBoundingClientRect().top + window.scrollY;
+  return { x, y };
+}
+
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Comment UI State
+/**
+ * Comment UI State
+ * @param {string} uiref
+ * @returns {TCommentOpenState} {isOpen: boolean, cref: string}
+ */
 MOD.GetCommentUIState = uiref => {
   return COMMENT.GetCommentUIState(uiref);
 };
 /**
- *
+ * Used to open/close the comment thread
  * @param {string} uiref
  * @param {TCommentOpenState} openState
  */
