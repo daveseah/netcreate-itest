@@ -542,7 +542,7 @@ class NCEdgeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: 'Source',
+        title: edgeDefs['source'].displayLabel,
         width: 130, // in px
         data: 'sourceDef',
         renderer: RenderNode,
@@ -559,7 +559,7 @@ class NCEdgeTable extends UNISYS.Component {
     }
     COLUMNDEFS.push(
       {
-        title: 'Target',
+        title: edgeDefs['target'].displayLabel,
         width: 130, // in px
         data: 'targetDef',
         renderer: RenderNode,
@@ -575,7 +575,6 @@ class NCEdgeTable extends UNISYS.Component {
         sorter: SortCommentsByCount
       }
     );
-
     this.setState({ COLUMNDEFS });
   }
 

@@ -500,13 +500,13 @@ class NCNodeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: 'Deg.',
+        title: nodeDefs['degrees'].displayLabel,
         type: 'number',
         width: 50, // in px
         data: 'degrees'
       },
       {
-        title: 'Label',
+        title: nodeDefs['label'].displayLabel,
         data: 'label',
         width: 300, // in px
         renderer: RenderNode,
