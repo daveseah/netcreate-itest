@@ -105,7 +105,7 @@ class NCEdge extends UNISYS.Component {
     this.SwapSourceAndTarget = this.SwapSourceAndTarget.bind(this);
     this.EdgeDisplayName = this.EdgeDisplayName.bind(this);
     // UI MANIPULATION METHODS
-    this.EnableEditMode = this.EnableEditMode.bind(this);
+    this.EnableEditMode = this.UIEnableEditMode.bind(this);
     // UI EVENT HANDLERS
     this.UISelectTab = this.UISelectTab.bind(this);
     this.UIRequestEditEdge = this.UIRequestEditEdge.bind(this);
@@ -175,6 +175,7 @@ class NCEdge extends UNISYS.Component {
       // target: null, // avoid ambiguous keys, use targetId instead
       sourceId: null,
       targetId: null,
+      type: '',
       attributes: [],
       provenance: [],
       created: undefined,
@@ -340,6 +341,7 @@ class NCEdge extends UNISYS.Component {
         id: edge.id,
         sourceId: edge.source,
         targetId: edge.target,
+        type: edge.type,
         attributes: attributes,
         provenance: provenance,
         created: edge.meta ? new Date(edge.meta.created).toLocaleString() : '',
@@ -464,7 +466,7 @@ class NCEdge extends UNISYS.Component {
     if (!this.IsLoggedIn()) return;
     this.LockEdge(lockSuccess => {
       this.setState({ uIsLockedByDB: !lockSuccess }, () => {
-        if (lockSuccess) this.EnableEditMode();
+        if (lockSuccess) this.UIEnableEditMode();
       });
     });
   }
@@ -638,12 +640,13 @@ class NCEdge extends UNISYS.Component {
   /// DATA SAVING
   ///
   SaveEdge() {
-    const { id, sourceId, targetId, attributes, provenance } = this.state;
+    const { id, sourceId, targetId, type, attributes, provenance } = this.state;
     const uid = NCLOGIC.GetCurrentUserId();
     const edge = {
       id,
       source: sourceId,
       target: targetId,
+      type,
       updatedBy: uid
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
@@ -684,8 +687,7 @@ class NCEdge extends UNISYS.Component {
    * color mapping.  This will eventually be replaced with a color manager.
    */
   SetBackgroundColor() {
-    const { attributes } = this.state;
-    const type = (attributes && attributes.type) || ''; // COLORMAP uses "" for undefined
+    const { type } = this.state;
     const COLORMAP = UDATA.AppState('COLORMAP');
     const uBackgroundColor = COLORMAP.edgeColorMap[type] || '#555555';
     this.setState({ uBackgroundColor });
@@ -737,12 +739,13 @@ class NCEdge extends UNISYS.Component {
   /**
    * Save `previousState` so that we can undo/restore data if user cancels
    */
-  EnableEditMode() {
-    const { uSelectedTab, id, sourceId, targetId, attributes, provenance } =
+  UIEnableEditMode() {
+    const { uSelectedTab, id, sourceId, targetId, type, attributes, provenance } =
       this.state;
     const previousState = {
       sourceId,
       targetId,
+      type,
       attributes: Object.assign({}, attributes)
       // provenance: Object.assign({}, provenance) // uncomment after provenence is implemented
     };
@@ -757,6 +760,7 @@ class NCEdge extends UNISYS.Component {
       id,
       source: sourceId,
       target: targetId,
+      type,
       provenance
     };
     Object.keys(attributes).forEach(k => (edge[k] = attributes[k]));
@@ -798,6 +802,7 @@ class NCEdge extends UNISYS.Component {
       {
         sourceId: previousState.sourceId,
         targetId: previousState.targetId,
+        type: previousState.type,
         attributes: previousState.attributes,
         uSelectSourceTarget: undefined
         // provenance: Object.assign({}, provenance) // uncomment after provenence is implemented
@@ -833,7 +838,7 @@ class NCEdge extends UNISYS.Component {
     if (BUILTIN_FIELDS_EDGE.includes(key)) {
       const data = {};
       data[key] = value;
-      this.setState(data);
+      this.setState(data, () => this.SetBackgroundColor());
     } else {
       const { attributes } = this.state;
       attributes[key] = value;
@@ -906,7 +911,8 @@ class NCEdge extends UNISYS.Component {
       uShowCitationDialog,
       id,
       dSourceNode = { label: undefined },
-      dTargetNode = { label: undefined }
+      dTargetNode = { label: undefined },
+      type
     } = this.state;
     const bgcolor = uBackgroundColor + '66'; // hack opacity
     const TEMPLATE = UDATA.AppState('TEMPLATE');
@@ -944,7 +950,22 @@ class NCEdge extends UNISYS.Component {
               disableSourceTargetInView
             )}
             <div />
-            <div className="targetarrow">{ARROW_DOWN}</div>
+            <div className="edgetypeRow">
+              <div className="targetarrow">{ARROW_DOWN}</div>
+              {/* Special handling for `type` field */}
+              {defs['type'] && !defs['type'].hidden ? (
+                <div className="formview typeview">
+                  {NCUI.RenderLabel(
+                    'type',
+                    defs['type'].displayLabel,
+                    defs['type'].help
+                  )}
+                  {NCUI.RenderStringValue('type', type)}
+                </div>
+              ) : (
+                <div />
+              )}
+            </div>
             {NCUI.RenderLabel('target', defs['target'].displayLabel)}
             {this.RenderSourceTargetButton(
               'target',
@@ -1009,6 +1030,7 @@ class NCEdge extends UNISYS.Component {
     const {
       sourceId,
       targetId,
+      type,
       revision,
       uSelectedTab,
       uSelectSourceTarget,
@@ -1052,14 +1074,33 @@ class NCEdge extends UNISYS.Component {
                 parentNodeId === sourceId
               )}
               <div />
-              <div className="targetarrow">
-                <button
-                  className="swapbtn"
-                  onClick={this.SwapSourceAndTarget}
-                  title="Swap 'Source' and 'Target' nodes"
-                >
-                  {ARROW_UPDOWN}
-                </button>
+              <div className="edgetypeRow">
+                <div className="targetarrow">
+                  <button
+                    className="swapbtn"
+                    onClick={this.SwapSourceAndTarget}
+                    title="Swap 'Source' and 'Target' nodes"
+                  >
+                    {ARROW_UPDOWN}
+                  </button>
+                </div>
+                {/* Special handling for `type` field */}
+                {defs['type'] && !defs['type'].hidden && (
+                  <div className="formview typeview">
+                    {NCUI.RenderLabel(
+                      'type',
+                      defs['type'].displayLabel,
+                      defs['type'].help
+                    )}
+                    {NCUI.RenderOptionsInput(
+                      'type',
+                      type,
+                      defs,
+                      this.UIInputUpdate,
+                      defs['type'].help
+                    )}
+                  </div>
+                )}
               </div>
               {NCUI.RenderLabel('target', defs['target'].displayLabel)}
               {this.RenderSourceTargetButton(

@@ -514,6 +514,12 @@ class NCNodeTable extends UNISYS.Component {
         renderer: RenderNode,
         sorter: SortNodes
       },
+      {
+        title: 'Type',
+        type: 'text',
+        width: 130, // in px
+        data: 'type'
+      },
       ...ATTRIBUTE_COLUMNDEFS,
       {
         title: 'Comments',
@@ -557,7 +563,7 @@ class NCNodeTable extends UNISYS.Component {
     /// TABLE DATA GENERATION
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     const TABLEDATA = nodes.map((node, i) => {
-      const { id, label, degrees } = node;
+      const { id, label, type, degrees } = node;
 
       const sourceDef = { id, label };
 
@@ -593,6 +599,7 @@ class NCNodeTable extends UNISYS.Component {
       return {
         id,
         label: sourceDef, // { id, label } so that we can render a button
+        type,
         degrees,
         ...attributes,
         commentVBtnDef,
