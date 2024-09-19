@@ -535,7 +535,7 @@ class NCEdgeTable extends UNISYS.Component {
     });
     const COLUMNDEFS = [
       {
-        title: '-', // View/Edit
+        title: '', // View/Edit
         data: 'id',
         type: 'number',
         width: 50, // in px
