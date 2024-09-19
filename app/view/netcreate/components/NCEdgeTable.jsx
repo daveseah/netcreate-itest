@@ -525,9 +525,8 @@ class NCEdgeTable extends UNISYS.Component {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      let title = String(key);
-      title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-      let type = edgeDefs[key].type;
+      const title = edgeDefs[key].displayLabel;
+      const type = edgeDefs[key].type;
       return {
         title,
         type,
