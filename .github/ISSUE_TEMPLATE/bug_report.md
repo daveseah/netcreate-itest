@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Ensuring good bug reports
-title: ''
+title: 'BUG: [ description here ]'
 labels: ''
 assignees: ''
 
@@ -17,4 +17,4 @@ Please provide the following information:
 The following is also helpful for context:
 
 5. Any WORKAROUND you discovered to get around the problem
-6. How the bug PREVENTS you from in your current TASK
+6. How the bug PREVENTS you from doing your work
