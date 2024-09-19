@@ -515,7 +515,7 @@ class NCNodeTable extends UNISYS.Component {
     ];
     if (nodeDefs['type'] && !nodeDefs['type'].hidden) {
       COLUMNDEFS.push({
-        title: 'Type',
+        title: nodeDefs['type'].displayLabel,
         type: 'text',
         width: 130, // in px
         data: 'type'

@@ -551,7 +551,7 @@ class NCEdgeTable extends UNISYS.Component {
     ];
     if (edgeDefs['type'] && !edgeDefs['type'].hidden) {
       COLUMNDEFS.push({
-        title: 'Type',
+        title: edgeDefs['type'].displayLabel,
         type: 'text',
         width: 130, // in px
         data: 'type'
