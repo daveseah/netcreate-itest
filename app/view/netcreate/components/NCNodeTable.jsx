@@ -130,8 +130,7 @@ class NCNodeTable extends UNISYS.Component {
   /**
    */
   componentDidMount() {
-    if (DBG) console.error('NodeTable.componentDidMount!');
-
+    if (DBG) console.log('NodeTable.componentDidMount!');
     this.onStateChange_SESSION(this.AppState('SESSION'));
 
     // Explicitly retrieve data because we may not have gotten a NCDATA
@@ -513,23 +512,23 @@ class NCNodeTable extends UNISYS.Component {
         width: 300, // in px
         renderer: RenderNode,
         sorter: SortNodes
-      },
-      {
+      }
+    ];
+    if (nodeDefs['type'] && !nodeDefs['type'].hidden) {
+      COLUMNDEFS.push({
         title: 'Type',
         type: 'text',
         width: 130, // in px
         data: 'type'
-      },
-      ...ATTRIBUTE_COLUMNDEFS,
-      {
-        title: 'Comments',
-        data: 'commentVBtnDef',
-        width: 50, // in px
-        renderer: RenderCommentBtn,
-        sorter: SortCommentsByCount
-      }
-    ];
-
+      });
+    }
+    COLUMNDEFS.push(...ATTRIBUTE_COLUMNDEFS, {
+      title: 'Comments',
+      data: 'commentVBtnDef',
+      width: 50, // in px
+      renderer: RenderCommentBtn,
+      sorter: SortCommentsByCount
+    });
     this.setState({ COLUMNDEFS });
   }
 

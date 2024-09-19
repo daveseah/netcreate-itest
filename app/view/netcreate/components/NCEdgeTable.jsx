@@ -548,13 +548,17 @@ class NCEdgeTable extends UNISYS.Component {
         data: 'sourceDef',
         renderer: RenderNode,
         sorter: SortNodes
-      },
-      {
+      }
+    ];
+    if (edgeDefs['type'] && !edgeDefs['type'].hidden) {
+      COLUMNDEFS.push({
         title: 'Type',
         type: 'text',
         width: 130, // in px
         data: 'type'
-      },
+      });
+    }
+    COLUMNDEFS.push(
       {
         title: 'Target',
         width: 130, // in px
@@ -571,8 +575,7 @@ class NCEdgeTable extends UNISYS.Component {
         renderer: RenderCommentBtn,
         sorter: SortCommentsByCount
       }
-    ];
-    23;
+    );
 
     this.setState({ COLUMNDEFS });
   }
