@@ -19,6 +19,7 @@ ENUM.EDITORTYPE = {
 ENUM.BUILTIN_FIELDS_NODE = [
   'id',
   'label',
+  'type',
   'degrees',
   'created',
   'createdBy',
@@ -29,6 +30,7 @@ ENUM.BUILTIN_FIELDS_NODE = [
 ENUM.BUILTIN_FIELDS_EDGE = [
   'id',
   'source',
+  'type',
   'target',
   'weight',
   'degrees',

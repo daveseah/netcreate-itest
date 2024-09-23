@@ -707,6 +707,7 @@ function m_IsNodeMatchedByFilter(node, filter) {
     case FILTER.OPERATORS.IS_NOT_EMPTY.key:
       return nodeValue !== undefined && nodeValue !== '';
     default:
+      if (nodeValue === undefined) return false; // no value to match
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, nodeValue);
       // else assume it's a number
@@ -848,6 +849,7 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
     case FILTER.OPERATORS.IS_NOT_EMPTY.key:
       return edgeValue !== undefined && edgeValue !== '';
     default:
+      if (edgeValue === undefined) return false; // no value to match
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, edgeValue);
       // else assume it's a number

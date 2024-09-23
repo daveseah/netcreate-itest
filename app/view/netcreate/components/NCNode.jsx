@@ -168,6 +168,7 @@ class NCNode extends UNISYS.Component {
       // NODE DEFS
       id: null,
       label: '',
+      type: '',
       degrees: null,
       attributes: [],
       provenance: [],
@@ -355,6 +356,7 @@ class NCNode extends UNISYS.Component {
       {
         id: node.id,
         label: node.label,
+        type: node.type,
         degrees: node.degrees,
         attributes: attributes,
         provenance: provenance,
@@ -502,12 +504,13 @@ class NCNode extends UNISYS.Component {
   /// DATA SAVING
   ///
   SaveNode() {
-    const { id, label, attributes, provenance, created, updated, revision } =
+    const { id, label, type, attributes, provenance, created, updated, revision } =
       this.state;
     const uid = NCLOGIC.GetCurrentUserId();
     const node = {
       id,
       label,
+      type,
       updatedBy: uid
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
@@ -557,8 +560,7 @@ class NCNode extends UNISYS.Component {
    * color mapping.  This will eventually be replaced with a color manager.
    */
   SetBackgroundColor() {
-    const { attributes } = this.state;
-    const type = (attributes && attributes.type) || ''; // COLORMAP uses "" for undefined
+    const { type } = this.state;
     const COLORMAP = UDATA.AppState('COLORMAP');
     const uBackgroundColor = COLORMAP.nodeColorMap[type] || '#555555';
     this.setState({ uBackgroundColor });
@@ -624,12 +626,13 @@ class NCNode extends UNISYS.Component {
   }
 
   UIEnableEditMode() {
-    const { uSelectedTab, id, label, attributes, provenance } = this.state;
+    const { uSelectedTab, id, label, type, attributes, provenance } = this.state;
     // If user was on Edges tab while requesting edit (e.g. from Node Table), then
     // switch to Attributes tab first.
     const editableTab = uSelectedTab === TABS.EDGES ? TABS.ATTRIBUTES : uSelectedTab;
     const previousState = {
       label,
+      type,
       attributes: Object.assign({}, attributes)
       // provenance: Object.assign({}, provenance) // uncomment after provenence is implemented
     };
@@ -642,6 +645,7 @@ class NCNode extends UNISYS.Component {
     const node = {
       id,
       label,
+      type,
       provenance
     };
     Object.keys(attributes).forEach(k => (node[k] = attributes[k]));
@@ -664,6 +668,7 @@ class NCNode extends UNISYS.Component {
     this.setState(
       {
         label: previousState.label,
+        type: previousState.type,
         attributes: previousState.attributes
         // provenance: previousState.provenance // uncomment after provenence is implemented
       },
@@ -747,7 +752,8 @@ class NCNode extends UNISYS.Component {
       uIsValidReplacementNodeID,
       uShowCitationDialog,
       id,
-      label
+      label,
+      type
     } = this.state;
     const TEMPLATE = UDATA.AppState('TEMPLATE');
     const defs = TEMPLATE.nodeDefs;
@@ -769,7 +775,15 @@ class NCNode extends UNISYS.Component {
             <div className="nodenumber">NODE {id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
             <URCommentBtn cref={collection_ref} />
+            {/* using key resets with a new URComment <URCommentBtn cref={collection_ref} key={collection_ref} /> */}
           </div>
+          {/* Special handling for `type` field */}
+          {defs['type'] && !defs['type'].hidden && (
+            <div className="formview typeview">
+              {NCUI.RenderLabel('type', defs['type'].displayLabel, defs['type'].help)}
+              {NCUI.RenderStringValue('type', type)}
+            </div>
+          )}
           {/* TABS - - - - - - - - - - - - - - - - - - - */}
           <div className="--NCNode_View_Tabs tabcontainer">
             {NCUI.RenderTabSelectors(TABS, this.state, this.UISelectTab)}
@@ -851,8 +865,9 @@ class NCNode extends UNISYS.Component {
       uBackgroundColor,
       uShowMatchlist,
       matchingNodes,
+      id,
       label,
-      id
+      type
     } = this.state;
     const defs = UDATA.AppState('TEMPLATE').nodeDefs;
     const bgcolor = uBackgroundColor + '66'; // hack opacity
@@ -894,6 +909,23 @@ class NCNode extends UNISYS.Component {
               )}
               {isDuplicate && <div className="message">{duplicateWarning}</div>}
             </div>
+            {/* Special handling for `type` field */}
+            {defs['type'] && !defs['type'].hidden && (
+              <div className="formview typeview">
+                {NCUI.RenderLabel(
+                  'type',
+                  defs['type'].displayLabel,
+                  defs['type'].help
+                )}
+                {NCUI.RenderOptionsInput(
+                  'type',
+                  type,
+                  defs,
+                  this.UIInputUpdate,
+                  defs['type'].help
+                )}
+              </div>
+            )}
             {/* TABS - - - - - - - - - - - - - - - - - - - */}
             <div className="tabcontainer">
               {NCUI.RenderTabSelectors(TABS, this.state, this.UISelectTab)}

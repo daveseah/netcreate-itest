@@ -181,25 +181,49 @@
 }
 
 .nccomponent .nodelabel {
-  padding: 3px 10px 5px 0px;
+  padding: 3px 10px 0 0px;
   font-weight: bold;
   text-align: left;
   overflow: hidden;
+}
+.nccomponent .edit .nodelabel {
+  padding-right: 0px;
 }
 
 .nccomponent .formview {
   display: grid;
   grid-template-columns: 70px auto;
+  align-items: center;
   column-gap: 10px;
   margin-bottom: 10px;
+}
+.nccomponent .edit .formview {
+  row-gap: 10px;
 }
 .nccomponent .formview label {
   font-size: 10px;
   line-height: 12px;
   opacity: 0.7;
   text-align: right;
+  margin-bottom: 0; /* override bootstrap */
 }
-
+.nccomponent .formview.typeview {
+  /* match .formview with column gap*/
+  grid-template-columns: 40px auto;
+}
+.nccomponent .formview.typeview label {
+  color: #0004;
+  opacity: 1;
+}
+.nccomponent .formview .edgetypeRow {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  column-gap: 10px;
+  margin-bottom: 0;
+}
+.nccomponent .formview .edgetypeRow .typeview {
+  margin-bottom: 0;
+}
 .nccomponent .formview .viewvalue {
   padding-left: 10px;
   text-align: left;
@@ -279,8 +303,8 @@
 
 .nccomponent .titlebar {
   display: grid;
-  grid-template-columns: 4em auto 30px;
-  align-items: top;
+  grid-template-columns: 60px auto 30px;
+  align-items: center;
   /* display: flex;
   justify-content: space-between;
   align-items: baseline; */
@@ -291,7 +315,9 @@
   color: #0004;
   padding-right: 0.4em;
 }
-
+.nccomponent .titlebar .nodelabel label {
+  margin-bottom: 0; /* override bootstrap */
+}
 .nccomponent .controlbar {
   display: flex;
   justify-content: flex-end;

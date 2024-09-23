@@ -130,8 +130,7 @@ class NCNodeTable extends UNISYS.Component {
   /**
    */
   componentDidMount() {
-    if (DBG) console.error('NodeTable.componentDidMount!');
-
+    if (DBG) console.log('NodeTable.componentDidMount!');
     this.onStateChange_SESSION(this.AppState('SESSION'));
 
     // Explicitly retrieve data because we may not have gotten a NCDATA
@@ -484,9 +483,8 @@ class NCNodeTable extends UNISYS.Component {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      let title = String(key);
-      title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-      let type = nodeDefs[key].type;
+      const title = nodeDefs[key].displayLabel;
+      const type = nodeDefs[key].type;
       return {
         title,
         type,
@@ -502,28 +500,34 @@ class NCNodeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: 'Deg.',
+        title: nodeDefs['degrees'].displayLabel,
         type: 'number',
         width: 50, // in px
         data: 'degrees'
       },
       {
-        title: 'Label',
+        title: nodeDefs['label'].displayLabel,
         data: 'label',
         width: 300, // in px
         renderer: RenderNode,
         sorter: SortNodes
-      },
-      ...ATTRIBUTE_COLUMNDEFS,
-      {
-        title: 'Comments',
-        data: 'commentVBtnDef',
-        width: 50, // in px
-        renderer: RenderCommentBtn,
-        sorter: SortCommentsByCount
       }
     ];
-
+    if (nodeDefs['type'] && !nodeDefs['type'].hidden) {
+      COLUMNDEFS.push({
+        title: nodeDefs['type'].displayLabel,
+        type: 'text',
+        width: 130, // in px
+        data: 'type'
+      });
+    }
+    COLUMNDEFS.push(...ATTRIBUTE_COLUMNDEFS, {
+      title: 'Comments',
+      data: 'commentVBtnDef',
+      width: 50, // in px
+      renderer: RenderCommentBtn,
+      sorter: SortCommentsByCount
+    });
     this.setState({ COLUMNDEFS });
   }
 
@@ -557,7 +561,7 @@ class NCNodeTable extends UNISYS.Component {
     /// TABLE DATA GENERATION
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     const TABLEDATA = nodes.map((node, i) => {
-      const { id, label, degrees } = node;
+      const { id, label, type, degrees } = node;
 
       const sourceDef = { id, label };
 
@@ -593,6 +597,7 @@ class NCNodeTable extends UNISYS.Component {
       return {
         id,
         label: sourceDef, // { id, label } so that we can render a button
+        type,
         degrees,
         ...attributes,
         commentVBtnDef,

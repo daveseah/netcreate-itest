@@ -230,7 +230,7 @@ function RenderAttributesTabEdit(state, defs, onchange) {
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
         break;
       case 'select':
-        items.push(m_RenderOptionsInput(k, value, defs, onchange, helpText));
+        items.push(RenderOptionsInput(k, value, defs, onchange, helpText));
         break;
       default:
         items.push(RenderStringValue(k, value, onchange)); // display unsupported type
@@ -292,7 +292,7 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
         break;
       case 'select':
-        items.push(m_RenderOptionsInput(k, value, defs, onchange, helpText));
+        items.push(RenderOptionsInput(k, value, defs, onchange, helpText));
         break;
       default:
         items.push(RenderStringValue(k, value, onchange)); // display unsupported type
@@ -486,7 +486,7 @@ function m_RenderNumberInput(key, value, cb, helpText) {
  *  @returns
  */
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function m_RenderOptionsInput(key, value, defs, cb, helpText) {
+function RenderOptionsInput(key, value, defs, cb, helpText) {
   const options = defs[key].options;
   return (
     <div key={`${key}div`}>
@@ -545,5 +545,6 @@ module.exports = {
   RenderMarkdownValue,
   RenderStringValue,
   RenderMarkdownInput,
-  RenderStringInput
+  RenderStringInput,
+  RenderOptionsInput
 };

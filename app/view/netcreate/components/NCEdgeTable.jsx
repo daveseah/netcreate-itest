@@ -525,9 +525,8 @@ class NCEdgeTable extends UNISYS.Component {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      let title = String(key);
-      title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
-      let type = edgeDefs[key].type;
+      const title = edgeDefs[key].displayLabel;
+      const type = edgeDefs[key].type;
       return {
         title,
         type,
@@ -536,27 +535,31 @@ class NCEdgeTable extends UNISYS.Component {
     });
     const COLUMNDEFS = [
       {
-        title: '-', // View/Edit
+        title: '', // View/Edit
         data: 'id',
         type: 'number',
         width: 50, // in px
         renderer: RenderViewOrEdit
       },
       {
-        title: 'Source',
+        title: edgeDefs['source'].displayLabel,
         width: 130, // in px
         data: 'sourceDef',
         renderer: RenderNode,
         sorter: SortNodes
-      },
-      {
-        title: 'Type',
+      }
+    ];
+    if (edgeDefs['type'] && !edgeDefs['type'].hidden) {
+      COLUMNDEFS.push({
+        title: edgeDefs['type'].displayLabel,
         type: 'text',
         width: 130, // in px
         data: 'type'
-      },
+      });
+    }
+    COLUMNDEFS.push(
       {
-        title: 'Target',
+        title: edgeDefs['target'].displayLabel,
         width: 130, // in px
         data: 'targetDef',
         renderer: RenderNode,
@@ -571,9 +574,7 @@ class NCEdgeTable extends UNISYS.Component {
         renderer: RenderCommentBtn,
         sorter: SortCommentsByCount
       }
-    ];
-    23;
-
+    );
     this.setState({ COLUMNDEFS });
   }
 
