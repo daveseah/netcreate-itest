@@ -4,6 +4,10 @@
   --comment-bg-new: #d84a00;
   --comment-bg-new-light: #d84a0088;
   --comment-commenter-font-color: #333;
+  --comment-font-size-small: 10px;
+  --comment-font-size-medium: 12px;
+  --comment-font-weight-light: 300;
+  --comment-font-weight-medium: 400;
   --comment-status-font-color: #d44127; /* <= evan's, orig => #d84a0088; */
   --comment-system-font-color: #0003;
   --disabled-opacity: 0.5;
@@ -312,9 +316,16 @@ svg#comment-icon {
   fill: transparent;
 }
 
-.comment .date {
+.comment .date,
+.comment .type {
   color: #0006;
-  font-size: 0.6em;
+  font-size: var(--comment-font-size-small);
+}
+.comment .date {
+  font-weight: var(--comment-font-weight-light);
+}
+.comment .type {
+  font-weight: var(--comment-font-weight-medium);
 }
 
 .commentThread .label,
@@ -325,7 +336,8 @@ svg#comment-icon {
 .comment .commentId,
 .comment-status-body .commenter {
   color: #0008;
-  font-size: 0.8em;
+  font-size: var(--comment-font-size-medium);
+  font-weight: var(--comment-font-weight-medium);
 }
 .comment .label {
   margin-top: 10px;
