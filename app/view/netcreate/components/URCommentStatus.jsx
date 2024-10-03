@@ -78,15 +78,22 @@ function URCommentStatus(props) {
     const my_uaddr = UNISYS.SocketUADDR();
     const isNotMe = my_uaddr !== uaddr;
 
-    if (comment && comment.commenter_text.length > 0) {
+    // clone the comment object so we can modify the reply text
+    // otherwise we inadvertently change the commenter_id
+    const status_comment = Object.assign({}, comment);
+    if (
+      status_comment &&
+      status_comment.commenter_text &&
+      status_comment.commenter_text.length > 0
+    ) {
       let source;
-      if (comment.comment_id_parent) {
-        source = `${comment.commenter_id} replied: `;
+      if (status_comment.comment_id_parent) {
+        source = `${status_comment.commenter_id} replied: `;
       } else {
-        source = `${comment.commenter_id} commented: `;
+        source = `${status_comment.commenter_id} commented: `;
       }
-      comment.commenter_id = source;
-      const message = c_GetCommentItemJSX(comment);
+      status_comment.commenter_id = source;
+      const message = c_GetCommentItemJSX(status_comment);
       setMessages(prevMessages => [...prevMessages, message]);
 
       // Only show status update if it's coming from another
