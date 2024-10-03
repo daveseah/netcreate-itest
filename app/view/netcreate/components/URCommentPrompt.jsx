@@ -301,6 +301,8 @@ function URCommentPrompt({
   const RenderViewMode = () => {
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
 
+    if (isMarkedDeleted) return <div className="commenttext">DELETED</div>;
+
     return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let displayJSX;
       switch (prompt.format) {
