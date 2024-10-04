@@ -232,14 +232,16 @@ function GetCommentStats(uid: TUserID): {
   COMMENTVOBJS.forEach(cvobjs => {
     cvobjs.forEach(cvobj => {
       if (!cvobj.isMarkedRead) {
-        // count unread
-        countUnread++;
-        // count repliesToMe
         const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
-        if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
-          // HACK: Update cvobj by reference!
-          cvobj.isReplyToMe = true;
-          countRepliesToMe++;
+        if (!comment.comment_isMarkedDeleted) {
+          // count unread
+          countUnread++;
+          // count repliesToMe
+          if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
+            // HACK: Update cvobj by reference!
+            cvobj.isReplyToMe = true;
+            countRepliesToMe++;
+          }
         }
       }
     });
