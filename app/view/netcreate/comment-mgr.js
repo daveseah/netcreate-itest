@@ -355,6 +355,11 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
   UDATA.LocalCall('CTHREADMGR_THREAD_CLOSED', { cref });
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MOD.GetCommentCollectionCount = cref => {
+  const ccol = COMMENT.GetCommentCollection(cref);
+  return ccol ? ccol.commentCount : '';
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentStats = () => {
   const uid = MOD.GetCurrentUserId();
   return COMMENT.GetCommentStats(uid);
@@ -414,9 +419,6 @@ MOD.OKtoClose = cref => {
 /// Threaded View Objects
 MOD.GetThreadedViewObjects = (cref, uid) => {
   return COMMENT.GetThreadedViewObjects(cref, uid);
-};
-MOD.GetThreadedViewObjectsCount = (cref, uid) => {
-  return COMMENT.GetThreadedViewObjectsCount(cref, uid);
 };
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

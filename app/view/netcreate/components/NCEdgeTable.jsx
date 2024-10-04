@@ -667,7 +667,7 @@ class NCEdgeTable extends UNISYS.Component {
 
       // comment button definition
       const cref = CMTMGR.GetNodeCREF(id);
-      const commentCount = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+      const commentCount = CMTMGR.GetCommentCollectionCount(cref);
       const ccol = CMTMGR.GetCommentCollection(cref) || {};
       const hasUnreadComments = ccol.hasUnreadComments;
       const selected = CMTMGR.GetOpenComments(cref);

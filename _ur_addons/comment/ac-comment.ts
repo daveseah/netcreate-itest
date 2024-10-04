@@ -13,12 +13,14 @@
     * has no comments
     * has unread comments
     * has read comments
+    * number of non-deleted comments in the collection
     It passes on the collection_ref to the CommentThread components.
     
       interface CommentCollection {
         cref: any; // collection_ref
         hasUnreadComments: boolean;
         hasReadComments: boolean;
+        commentCount: number; 
       }
 
       
@@ -68,8 +70,6 @@
         isMarkedRead: boolean;
         isReplyToMe: boolean;
         allowReply: boolean;
-        
-        markedRead: boolean;
       }
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
@@ -96,6 +96,7 @@ type TCommentCollection = {
   collection_ref: TCollectionRef;
   hasUnreadComments?: boolean;
   hasReadComments?: boolean;
+  commentCount?: number;
 };
 
 type TCommentUIRef = string; // comment button id, e.g. `n32-isTable`, not just TCollectionRef
@@ -113,9 +114,8 @@ type TCommentVisualObject = {
   isBeingEdited: boolean;
   isEditable: boolean;
   isMarkedRead: boolean;
-  isReplyToMe: boolean;
-  allowReply: boolean;
-  markedRead: boolean;
+  isReplyToMe?: boolean;
+  allowReply?: boolean;
 };
 
 type TCommentCollectionMap = Map<TCollectionRef, TCommentCollection>;
@@ -318,11 +318,13 @@ function DeriveThreadedViewObjects(
   if (cref === undefined)
     throw new Error(`m_DeriveThreadedViewObjects cref: "${cref}" must be defined!`);
   const commentVObjs = [];
+  let commentCount = 0;
   const threadIds = DCCOMMENTS.GetThreadedCommentIds(cref);
   threadIds.forEach(cid => {
     const comment = DCCOMMENTS.GetComment(cid);
     if (comment === undefined)
       console.error('GetThreadedViewObjects for cid not found', cid, 'in', threadIds);
+    if (!comment.comment_isMarkedDeleted) commentCount++;
     const level = comment.comment_id_parent === '' ? 0 : 1;
     commentVObjs.push({
       comment_id: cid,
@@ -367,6 +369,7 @@ function DeriveThreadedViewObjects(
   });
   ccol.hasUnreadComments = hasUnreadComments;
   ccol.hasReadComments = hasReadComments;
+  ccol.commentCount = commentCount;
   COMMENTCOLLECTION.set(cref, ccol);
   return commentReplyVObjs;
 }
@@ -582,7 +585,6 @@ export {
   DeriveAllThreadedViewObjects,
   DeriveThreadedViewObjects,
   GetThreadedViewObjects,
-  GetThreadedViewObjectsCount,
   GetCOMMENTVOBJS,
   GetCommentVObj,
   // Comment Objects
