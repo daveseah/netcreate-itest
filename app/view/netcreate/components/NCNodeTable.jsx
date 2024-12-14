@@ -74,7 +74,6 @@ class NCNodeTable extends UNISYS.Component {
       disableEdit: false,
       isLocked: false,
       isExpanded: true,
-      sortkey: 'label',
       dummy: 0, // used to force render update
 
       COLUMNDEFS: []
@@ -317,9 +316,6 @@ class NCNodeTable extends UNISYS.Component {
     });
   }
 
-  /// UTILITIES /////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
   /// UI EVENT HANDLERS /////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
@@ -404,7 +400,8 @@ class NCNodeTable extends UNISYS.Component {
     }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function RenderViewOrEdit(value) {
+    function RenderViewOrEdit(key, tdata, coldef) {
+      const value = tdata[key];
       return (
         <div>
           {!disableEdit && (
@@ -431,23 +428,25 @@ class NCNodeTable extends UNISYS.Component {
     //   id: String;
     //   label: String;
     // }
-    function RenderNode(value) {
+    function RenderNode(key, tdata, coldef) {
+      const value = tdata[key];
       if (!value) return; // skip if not defined yet
-      if (value.id === undefined)
-        throw new Error('RenderNode: value.id is undefined');
-      if (value.label === undefined)
-        throw new Error('RenderNode: value.label is undefined');
+      if (tdata.id === undefined)
+        throw new Error(`RenderNode: id is undefined. tdata=${tdata}`);
+      if (value === undefined)
+        throw new Error(`RenderNode: label is undefined. value=${value}`);
       return (
         <button
           className="outline"
-          onClick={event => ui_ClickViewNode(event, value.id)}
+          onClick={event => ui_ClickViewNode(event, tdata.id)}
         >
-          <span style={{ color: 'blue' }}>{value.label}</span>
+          <span style={{ color: 'blue' }}>{value}</span>
         </button>
       );
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function RenderCommentBtn(value) {
+    function RenderCommentBtn(key, tdata, coldef) {
+      const value = tdata[key];
       return (
         <URCommentVBtn
           uiref={u_GetButtonId(value.cref)}
@@ -497,7 +496,8 @@ class NCNodeTable extends UNISYS.Component {
         data: 'id',
         type: 'number',
         width: 45, // in px
-        renderer: RenderViewOrEdit
+        renderer: RenderViewOrEdit,
+        sortDisabled: true
       },
       {
         title: nodeDefs['degrees'].displayLabel,
@@ -509,14 +509,13 @@ class NCNodeTable extends UNISYS.Component {
         title: nodeDefs['label'].displayLabel,
         data: 'label',
         width: 300, // in px
-        renderer: RenderNode,
-        sorter: SortNodes
+        renderer: RenderNode
       }
     ];
     if (nodeDefs['type'] && !nodeDefs['type'].hidden) {
       COLUMNDEFS.push({
         title: nodeDefs['type'].displayLabel,
-        type: 'text',
+        type: 'text-case-insensitive',
         width: 130, // in px
         data: 'type'
       });
@@ -596,7 +595,7 @@ class NCNodeTable extends UNISYS.Component {
 
       return {
         id,
-        label: sourceDef, // { id, label } so that we can render a button
+        label,
         type,
         degrees,
         ...attributes,

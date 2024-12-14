@@ -4,8 +4,8 @@
 
     EdgeTable is used to to display a table of edges for review.
 
-    It displays NCDATA.
-    But also read FILTEREDNCDATA to show highlight/filtered state
+    It displays NCDATA. But also read FILTEREDNCDATA to show highlight/filtered
+    state
 
 
   ## PROPS
@@ -76,7 +76,6 @@ class NCEdgeTable extends UNISYS.Component {
       disableEdit: false,
       isLocked: false,
       isExpanded: true,
-      sortkey: 'Relationship',
       dummy: 0, // used to force render update
 
       COLUMNDEFS: []
@@ -377,21 +376,6 @@ class NCEdgeTable extends UNISYS.Component {
     UDATA.LocalCall('TABLE_HILITE_NODE', { nodeId });
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /*/
-   */
-  setSortKey(key, type) {
-    if (key === this.state.sortkey) this.sortDirection = -1 * this.sortDirection;
-    // if this was already the key, flip the direction
-    else this.sortDirection = 1;
-
-    const edges = this.sortTable(key, this.state.edges, type);
-    this.setState({
-      edges,
-      sortkey: key
-    });
-    UNISYS.Log('sort edge table', key, this.sortDirection);
-  }
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
   selectNode(id, event) {
@@ -446,7 +430,8 @@ class NCEdgeTable extends UNISYS.Component {
     }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function RenderViewOrEdit(value) {
+    function RenderViewOrEdit(key, tdata, coldef) {
+      const value = tdata[key];
       return (
         <div>
           {!disableEdit && (
@@ -473,9 +458,11 @@ class NCEdgeTable extends UNISYS.Component {
     //   id: String;
     //   label: String;
     // }
-    function RenderNode(value) {
+    function RenderNode(key, tdata, coldef) {
+      const value = tdata[key];
+      // console.log('RenderNode', value);
       if (!value) return; // skip if not defined yet
-      if (value.id === undefined || value.label === undefined) {
+      if (value.id === undefined || value === undefined) {
         // During Edge creation, source/target may not be defined yet
         return <span style={{ color: 'red' }}>...</span>;
       }
@@ -489,7 +476,8 @@ class NCEdgeTable extends UNISYS.Component {
       );
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function RenderCommentBtn(value) {
+    function RenderCommentBtn(key, tdata, coldef) {
+      const value = tdata[key];
       return (
         <URCommentVBtn
           uiref={u_GetButtonId(value.cref)}
@@ -539,7 +527,8 @@ class NCEdgeTable extends UNISYS.Component {
         data: 'id',
         type: 'number',
         width: 50, // in px
-        renderer: RenderViewOrEdit
+        renderer: RenderViewOrEdit,
+        sortDisabled: true
       },
       {
         title: edgeDefs['source'].displayLabel,
@@ -552,7 +541,7 @@ class NCEdgeTable extends UNISYS.Component {
     if (edgeDefs['type'] && !edgeDefs['type'].hidden) {
       COLUMNDEFS.push({
         title: edgeDefs['type'].displayLabel,
-        type: 'text',
+        type: 'text-case-insensitive',
         width: 130, // in px
         data: 'type'
       });
@@ -629,6 +618,10 @@ class NCEdgeTable extends UNISYS.Component {
     const { edges, edgeDefs, disableEdit, isLocked, COLUMNDEFS } = this.state;
     const { isOpen, tableHeight } = this.props;
     const uid = CMTMGR.GetCurrentUserId();
+
+    // skip rendering if COLUMNDEFS is not defined yet
+    // This ensures that URTable is inited only AFTER data has been loaded.
+    if (COLUMNDEFS.length < 1) return '';
 
     // Only include built in fields
     // Only include non-hidden fields

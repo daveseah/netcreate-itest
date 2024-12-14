@@ -1,28 +1,61 @@
 .URTable {
+  /* override styles here */
+  --bg-thead-clr: #fdfdff;
+  --bg-selected-clr: #eef;
+  --bg-hover-clr: #ddf;
+  /* layout */
+  --padding-horizontal: 10px;
 }
 .URTable table {
   border-collapse: collapse;
   width: 100%;
 }
 .URTable th {
-  padding: 0 5px;
+  padding: 0 var(--padding-horizontal);
   border-right: 1px solid #999;
   top: 0;
-  background-color: #daebef;
+  background-color: var(--bg-thead-clr);
   position: -webkit-sticky;
   position: sticky;
   z-index: 1; /* for some reason EdgeTable requires this or body cells will cover td */
 }
 .URTable th.selected {
-  background-color: #c6d5d6;
+  background-color: var(--bg-selected-clr);
 }
 .URTable thead,
 .URTable thead > tr,
 .URTable thead > tr > th {
   user-select: none;
 }
+.URTable th span.sortDisabled {
+  display: none;
+}
+.URTable th span.sortEnabled {
+  display: none;
+}
+.URTable th:hover {
+  background-color: var(--bg-hover-clr);
+  cursor: default;
+}
+.URTable th:hover span {
+  opacity: 0.5;
+}
+.URTable th:hover span.sortEnabled {
+  display: inline;
+  cursor: pointer;
+}
+.URTable th.selected span {
+  display: inline;
+}
+.URTable th.selected:hover span {
+  opacity: 1;
+}
+
 .URTable tr:hover {
-  background-color: #0002;
+  background-color: var(--bg-hover-clr);
+}
+.URTable td {
+  padding: 0 var(--padding-horizontal);
 }
 .URTable .resize-handle {
   position: absolute;
