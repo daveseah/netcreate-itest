@@ -3,6 +3,7 @@ const fs = require('fs-extra');
 const child_process = require('child_process');
 const shell = require('shelljs');
 const argv = require('minimist')(process.argv.slice(1));
+const dotenv = require('dotenv');
 
 const PR = 'BUILD\t';
 const TR = '\x1b[0m';
@@ -54,7 +55,7 @@ function f_PackageWebTurbo360(template = '_blank') {
   if (res.code !== 0) {
     console.error(
       PR,
-      `${CR}Unable to clone Turbo 360 Base Net.Create Template - do you have access?${TR}:`
+      `${CR}Unable to clone Turbo 360 Base Template - do you have access?${TR}:`
     );
     process.exit(1);
   }
@@ -78,6 +79,7 @@ function f_PackageWebTurbo360(template = '_blank') {
   fs.moveSync('./dist/public/index.ejs', './dist/views/home.html');
   fs.removeSync('./dist/public/index.html');
 
+  // TODO: Consider copying TOML and other files
   // console.log(PR, `Copying resources (using template: ${template})`);
   // fs.copySync(`./templates/${template}/resources`, './dist/public/resources');
 
@@ -89,47 +91,131 @@ function f_PackageWebTurbo360(template = '_blank') {
 }
 
 function f_DeployWebTurbo360() {
-  console.log(PR, `Deploying to ${CY}Turbo-360${TR}...`);
+  let res = 0;
 
-  console.log(PR, 'Installing/updating Turbo-360 CLI tools');
-  let res = shell.exec('npm i -g @turbo360/cli', { silent: true });
-  if (res.code !== 0) {
-    console.error(PR, 'Unable to globally install the Turbo-360 CLI tools');
-    console.error(PR, `\t${res.error}`);
-    process.exit(1);
-  }
+  console.log(PR, `Welcome to the Turbo-360 Deployment Tool!`);
+  console.log(PR, `Please select the ${CY}Turbo-360${TR} project to deploy to:`);
 
-  console.log(PR, `Beginning Turbo-360 deployment...`);
+  // First, connect the local project:
   shell.cd('./dist');
 
   try {
-    child_process.execFileSync('turbo', ['connect'], { stdio: 'inherit' });
+    child_process.execFileSync('npx turbo', ['connect'], {
+      stdio: 'inherit',
+      shell: true
+    });
   } catch (err) {
-    console.error(PR, 'Unable to connect your local project to Turbo 360');
-    console.error(PR, `\t${err}`);
+    if (err.status !== 0) {
+      f_HandleDeployError(res.code);
+      process.exit(1);
+    }
+  }
+
+  // .env file contains the slug
+  if (!fs.existsSync('.env')) {
+    console.log(
+      PR,
+      `You must connect your local project to a Turbo-360 project by selecting an option`
+    );
     process.exit(1);
   }
 
-  res = shell.exec('turbo deploy');
-  if (res.code !== 0) {
-    console.error(PR, 'There was an error during Turbo 360 server deployment:');
-    console.error(PR, `\t${res.error}`);
-    process.exit(1);
+  const { TURBO_PROJECT = null, TURBO_PROJECT_SLUG = null } = dotenv.parse(
+    fs.readFileSync('.env') ?? ''
+  );
+
+  // Second, do the two deployment steps:
+  console.log(
+    PR,
+    `Deploying to ${CY}Turbo-360${TR} Project ${CY}${TURBO_PROJECT}${TR}`
+  );
+
+  console.log(PR, `Beginning Turbo-360 deployment...`);
+  console.log(PR, `Please wait, this process may take several minutes....`);
+  try {
+    res = shell.exec('npx turbo deploy', { silent: true });
+    if (res.code !== 0) {
+      f_HandleDeployError(res.code);
+      process.exit(1);
+    }
+
+    res = shell.exec('npx turbo deploy -t static', { silent: true });
+    if (res.code !== 0) {
+      f_HandleDeployError(res.code);
+      process.exit(1);
+    }
+
+    const url = `https://${TURBO_PROJECT_SLUG}.turbo360-staging.com`;
+    console.log(
+      '\nDeployment complete, you can access the site using the following URLs:'
+    );
+    console.log(`\tApplication: ${url}/`);
+  } catch (err) {
+    // Unexpected errors
+    console.log(PR, `unexpected error during Turbo-360 deployment: ${err}`);
+    process.exit(-1);
+  } finally {
+    shell.cd(__dirname);
   }
 
-  res = shell.exec('turbo deploy -t static');
-  if (res.code !== 0) {
-    console.error(PR, 'There was an error during Turbo 360 asset deployment');
-    console.error(PR, `\t${res.error}`);
-    process.exit(1);
-  }
+  // Local function
+  function f_HandleDeployError(exitCode) {
+    if (exitCode) {
+      // FUTURE: This should ideally be exported from the CLI tool, or alternatively, the CLI tool
+      //  should expose a programmatic interface rather than mediate this through the shell
+      const TURBO360_ERRORS = {
+        // General errors
+        UNSPECIFIED: { exitCode: 1 },
+        INVALID_PARAMS: { exitCode: 2 },
+        NOT_LOGGED_IN: { exitCode: 3 },
 
-  shell.cd(__dirname);
+        // Deploy-specific errors
+        PROJECT_NOT_CONNECTED: { exitCode: 100 },
+        PROJECT_NOT_FOUND: { exitCode: 101 },
+        NOT_AUTHORIZED: { exitCode: 102 }
+      };
+
+      // Non-zero exit code, interpret it
+      switch (exitCode) {
+        case TURBO360_ERRORS.NOT_LOGGED_IN:
+          console.log(PR, `You must log in to ${CY}Turbo-360${TR} to deploy.`);
+          break;
+
+        case TURBO360_ERRORS.PROJECT_NOT_CONNECTED:
+          console.log(
+            PR,
+            `Your local codebase must be connected to a ${CY}Turbo-360${TR} project to continue.`
+          );
+          break;
+
+        case TURBO360_ERRORS.PROJECT_NOT_FOUND:
+        case TURBO360_ERRORS.NOT_AUTHORIZED:
+          console.log(
+            PR,
+            `The specified ${CY}Turbo-360${TR} project does not exist or you do not have access to it.`
+          );
+          break;
+
+        default:
+          // All other errors
+          console.log(
+            PR,
+            `Unexpected error while performing the ${CY}Turbo-360${TR} deployment: ${exitCode}.`
+          );
+          break;
+      }
+
+      console.log(
+        PR,
+        `\tPlease review the ${CY}Turbo-360${TR} deployment notes in ${CY}README-Turbo360.md${TR}`
+      );
+    }
+  }
 }
 
 function u_checkError(execResults) {
   if (!execResults.stderr) return;
-  console.log(`${CR}*** ERROR IN MEME EXEC ***${TR}`);
+  console.log(`${CR}*** ERROR IN NETCREATE EXEC ***${TR}`);
   console.log(execResults.stderr);
   process.exit(0);
 }
