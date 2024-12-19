@@ -15,7 +15,8 @@
     "package:debug": "brunch watch -e package_debug -s",
     "clean": "rm -rf ./public ./node_modules && npm exec --workspaces -- npm run clean",
     "debug": "LOGGY_STACKS=true BRUNCH_DEVTOOLS=true ./brunch-debug watch --server",
-    "log": "tail -f -n100 \"$(ls -at ./runtime/logs/* | head -n 1)\""
+    "log": "tail -f -n100 \"$(ls -at ./runtime/logs/* | head -n 1)\"",
+    "package-turbo360": "node @build-turbo360.js package-turbo360"
   },
   "repository": {
     "type": "git",
