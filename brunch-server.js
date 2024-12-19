@@ -111,7 +111,10 @@ module.exports = (config, callback) => {
       ukey,
       // socket address
       uaddr,
-      uport
+      uport,
+      wss: false,
+      preamble: null,
+      heartbeat: true
     };
     res.render(indexFile, templateProps);
     // adding next() causes 'headers already sent' error
