@@ -66,6 +66,7 @@ const DATASTORE = require('system/datastore');
 const TOML = require('@iarna/toml');
 const clone = require('rfdc')();
 const UTILS = require('./nc-utils');
+const ENUM = require('system/util/enum');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -284,9 +285,13 @@ MOD.ExportNodes = () => {
   /// 1. Export Nodes
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Define Node KEYS to export
-  /// Use nodekeys from TEMPLATE, but skip hidden fields
+  /// Use nodekeys from TEMPLATE
+  /// Skip hidden fields that are not built-in fields
+  /// Built-in fields are ALWAYS exported
   const nodekeys = Object.keys(TEMPLATE.nodeDefs).filter(k => {
-    return TEMPLATE.nodeDefs[k].hidden ? false : k;
+    return TEMPLATE.nodeDefs[k].hidden && !ENUM.BUILTIN_FIELDS_NODE.includes(k)
+      ? false
+      : k;
   });
 
   /// 2. Expand to CSV
@@ -352,10 +357,13 @@ MOD.ExportEdges = () => {
   // const edgesArr = m_GenerateEdgesArray(edges, EDGEKEYS);
 
   // New Template method
-  // Use edgekeys from TEMPLATE, but skip hidden fields
+  // Use edgekeys from TEMPLATE
+  // Skip hidden fields that are not built-in fields
   // const edgekeys = Object.keys(TEMPLATE.edgeDefs);
   const edgekeys = Object.keys(TEMPLATE.edgeDefs).filter(k => {
-    return TEMPLATE.edgeDefs[k].hidden ? false : k;
+    return TEMPLATE.edgeDefs[k].hidden && !ENUM.BUILTIN_FIELDS_EDGE.includes(k)
+      ? false
+      : k;
   });
 
   // const edgesArr = m_GenerateEdgesArray(edges, edgekeys);
@@ -476,7 +484,7 @@ async function m_NodefileCheckHeaders(data) {
   // Retrieve import file node keys defined in template
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   const NODEKEYS = Object.values(TEMPLATE.nodeDefs)
-    .filter(k => !k.hidden) // Ignore hidden keys
+    .filter(k => !k.hidden || ENUM.BUILTIN_FIELDS_NODE.includes(k)) // Ignore hidden keys but keep built-in fields, even if hidden
     .map(k => k.exportLabel);
 
   const { nodefile } = data;
@@ -731,7 +739,7 @@ async function m_EdgefileCheckHeaders(data) {
   // Retrieve import file node keys defined in template
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   const EDGEKEYS = Object.values(TEMPLATE.edgeDefs)
-    .filter(k => !k.hidden) // Ignore hidden keys
+    .filter(k => !k.hidden || ENUM.BUILTIN_FIELDS_EDGE.includes(k)) // Ignore hidden keys but keep built-in fields, even if hidden
     .map(k => k.exportLabel);
 
   const { edgefile } = data;
