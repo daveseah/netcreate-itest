@@ -664,7 +664,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -705,7 +705,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -746,7 +746,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -787,7 +787,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -828,7 +828,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -1290,7 +1290,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -1372,7 +1372,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -1454,7 +1454,7 @@ MOD.TEMPLATE = {
               type: 'boolean',
               format: 'checkbox',
               description: 'Show in Provenance tab',
-              default: false
+              default: true
             },
             'hidden': {
               type: 'boolean',
@@ -1572,7 +1572,7 @@ MOD.ParseTemplateSchema = () => {
     });
     return currJson;
   }
-  let json = { version: MOD.TEMPLATE.version };  // Insert template version
+  let json = { version: MOD.TEMPLATE.version }; // Insert template version
   u_ParseProperties(MOD.TEMPLATE.properties, json);
   return json;
 };
