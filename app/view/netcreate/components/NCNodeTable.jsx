@@ -555,7 +555,7 @@ class NCNodeTable extends UNISYS.Component {
     const uid = CMTMGR.GetCurrentUserId();
 
     const attributeDefs = Object.keys(nodeDefs).filter(
-      k => !BUILTIN_FIELDS_NODE.includes(k)
+      k => !BUILTIN_FIELDS_NODE.includes(k) && !nodeDefs[k].hidden
     );
 
     /// TABLE DATA GENERATION

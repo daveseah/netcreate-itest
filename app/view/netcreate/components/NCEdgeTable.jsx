@@ -407,7 +407,7 @@ class NCEdgeTable extends UNISYS.Component {
   SetColumnDefs() {
     const { edges, edgeDefs, disableEdit, isLocked } = this.state;
     let attributeDefs = Object.keys(edgeDefs).filter(
-      k => !BUILTIN_FIELDS_EDGE.includes(k)
+      k => !BUILTIN_FIELDS_EDGE.includes(k) && !edgeDefs[k].hidden
     );
 
     /// CLICK HANDLERS
