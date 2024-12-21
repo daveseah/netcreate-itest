@@ -175,6 +175,7 @@ class NCEdgeTable extends UNISYS.Component {
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   onStateChange_SELECTION(data) {
+    if (data === undefined) return;
     this.setState({
       selectedEdgeId: data.edges.length > 0 ? data.edges[0].id : undefined
     });
