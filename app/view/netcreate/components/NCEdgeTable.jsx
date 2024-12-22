@@ -36,7 +36,6 @@
 const React = require('react');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
-const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const UNISYS = require('unisys/client');
 import HDATE from 'system/util/hdate';
@@ -48,8 +47,6 @@ const { ICON_PENCIL, ICON_VIEW } = require('system/util/constant');
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const DBG = false;
-const isAdmin = SETTINGS.IsAdmin();
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 var UDATA = null;
 
 /// UTILITY METHODS ///////////////////////////////////////////////////////////
@@ -71,7 +68,6 @@ class NCEdgeTable extends UNISYS.Component {
       edges: [],
       selectedEdgeId: undefined,
       selectedEdgeColor: TEMPLATE.sourceColor,
-      filteredEdges: [],
       nodes: [], // needed for dereferencing source/target
       disableEdit: false,
       isLocked: false,
@@ -86,6 +82,7 @@ class NCEdgeTable extends UNISYS.Component {
     this.onStateChange_SESSION = this.onStateChange_SESSION.bind(this);
     this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
     this.onEDGE_OPEN = this.onEDGE_OPEN.bind(this);
+    this.deriveFilteredEdges = this.deriveFilteredEdges.bind(this);
     this.updateEdgeFilterState = this.updateEdgeFilterState.bind(this);
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
     this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
@@ -141,17 +138,11 @@ class NCEdgeTable extends UNISYS.Component {
 
     // Explicitly retrieve data because we may not have gotten a NCDATA
     // update while we were hidden.
-    // filtered data needs to be set before D3Data
-    const FILTEREDNCDATA = UDATA.AppState('FILTEREDNCDATA');
-    this.setState({ filteredEdges: FILTEREDNCDATA.edges }, () => {
-      let NCDATA = this.AppState('NCDATA');
-      this.handleDataUpdate(NCDATA);
-      this.SetColumnDefs();
-    });
+    let NCDATA = this.AppState('NCDATA');
+    this.onStateChange_NCDATA(NCDATA);
 
-    // Request edit state too because the update may have come
-    // while we were hidden
-    this.updateEditState();
+    const COLUMNDEFS = this.SetColumnDefs();
+    this.setState({ COLUMNDEFS });
   }
 
   componentWillUnmount() {
@@ -176,9 +167,12 @@ class NCEdgeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   onStateChange_SELECTION(data) {
     if (data === undefined) return;
-    this.setState({
-      selectedEdgeId: data.edges.length > 0 ? data.edges[0].id : undefined
-    });
+
+    const selectedEdgeId = data.edges.length > 0 ? data.edges[0].id : undefined;
+    if (selectedEdgeId === this.state.selectedEdgeId) {
+      return;
+    }
+    this.setState({ selectedEdgeId });
   }
   /** Handle change in SESSION data
     Called both by componentWillMount() and AppStateChange handler.
@@ -187,7 +181,11 @@ class NCEdgeTable extends UNISYS.Component {
     SessionShell.componentWillMount()
    */
   onStateChange_SESSION(decoded) {
-    this.setState({ isLocked: !decoded.isValid });
+    const isLocked = !decoded.isValid;
+    if (isLocked === this.state.isLocked) {
+      return;
+    }
+    this.setState({ isLocked });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -218,30 +216,38 @@ class NCEdgeTable extends UNISYS.Component {
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /// Set edge filtered status based on current filteredNodes
-  updateEdgeFilterState(edges, filteredEdges) {
-    // add highlight/filter status
-    if (filteredEdges.length > 0) {
-      // If we're transitioning from "HILIGHT/FADE" to "COLLAPSE" or "FOCUS", then we
-      // also need to remove edges that are not in filteredEdges
-      const FILTERDEFS = UDATA.AppState('FILTERDEFS');
-      if (
-        FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
-        FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
-      ) {
-        // Reduce (remove) or Focus
-        edges = edges.filter(edge => {
-          const filteredEdge = filteredEdges.find(e => e.id === edge.id);
-          return filteredEdge; // keep if it's in the list of filtered edges
-        });
-      } else {
-        // Fade
-        // Fading is handled by setting node.filteredTransparency which is
-        // directly handled by the filter now.  So no need to process it
-        // here in the table.
-      }
+  /// Set node filtered status based on current filteredNodes
+  deriveFilteredEdges(edges) {
+    // set filter status
+    let filteredEdges = [];
+    // If we're transitioning from "HILIGHT/FADE" to "COLLAPSE" or "FOCUS", then we
+    // also need to remove edges that are not in filteredEdges
+    const FILTERDEFS = UDATA.AppState('FILTERDEFS');
+    if (
+      FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
+      FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
+    ) {
+      // Reduce (remove) or Focus
+      filteredEdges = edges.filter(edge => {
+        const filteredEdge = filteredEdges.find(e => e.id === edge.id);
+        return filteredEdge; // keep if it's in the list of filtered edges
+      });
+    } else {
+      // Fade
+      // Fading is handled by setting node.filteredTransparency which is
+      // directly handled by the filter now.  So no need to process it
+      // here in the table.
+      filteredEdges = edges;
     }
-    this.setState({ edges });
+
+    return filteredEdges;
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Set edge filtered status based on current filteredNodes
+  updateEdgeFilterState(edges) {
+    const filteredEdges = this.deriveFilteredEdges(edges);
+    this.setState({ edges: filteredEdges });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -305,25 +311,46 @@ class NCEdgeTable extends UNISYS.Component {
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  updateEditState() {
+  urmsg_EDIT_PERMISSIONS_UPDATE() {
+    // Update COLUMNDEFS after permissions update so disabledState is shown
+    const cb = () => {
+      // Update COLUMNDEFS to update buttons
+      const COLUMNDEFS = this.SetColumnDefs();
+      this.setState({ COLUMNDEFS });
+    };
+    this.updateEditState(cb);
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Disable edit if someone else is editing a template
+  updateEditState(cb) {
     // disable edit if someone else is editing a template, node, or edge
     let disableEdit = false;
     UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
       // someone else might be editing a template or importing or editing node or edge
-      disableEdit =
-        data.templateBeingEdited ||
-        data.importActive ||
-        data.nodeOrEdgeBeingEdited ||
-        data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
-      this.setState({ disableEdit });
+      disableEdit = data.templateBeingEdited || data.importActive;
+      // REVIEW: Only disableEdit if template is being updated, otherwise allow edits
+      // || data.nodeOrEdgeBeingEdited ||
+      // REVIEW: commentBeingEditedByMe shouldn't affect table?
+      // data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
+
+      // optimize, skip render if no change
+      if (disableEdit === this.state.disableEdit) {
+        return;
+      }
+
+      this.setState({ disableEdit }, () => {
+        if (typeof cb === 'function') cb();
+      });
     });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   OnTemplateUpdate(data) {
+    const COLUMNDEFS = this.SetColumnDefs(data.edgeDefs);
     this.setState({
       edgeDefs: data.edgeDefs,
-      selectedEdgeColor: data.sourceColor
+      selectedEdgeColor: data.sourceColor,
+      COLUMNDEFS
     });
   }
 
@@ -405,10 +432,13 @@ class NCEdgeTable extends UNISYS.Component {
 
   /// URTABLE COLUMN DEFS /////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  SetColumnDefs() {
+  SetColumnDefs(incomingEdgeDefs) {
     const { edges, edgeDefs, disableEdit, isLocked } = this.state;
-    let attributeDefs = Object.keys(edgeDefs).filter(
-      k => !BUILTIN_FIELDS_EDGE.includes(k) && !edgeDefs[k].hidden
+
+    const defs = incomingEdgeDefs || edgeDefs;
+
+    let attributeDefs = Object.keys(defs).filter(
+      k => !BUILTIN_FIELDS_EDGE.includes(k) && !defs[k].hidden
     );
 
     /// CLICK HANDLERS
@@ -526,8 +556,8 @@ class NCEdgeTable extends UNISYS.Component {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      const title = edgeDefs[key].displayLabel;
-      const type = edgeDefs[key].type;
+      const title = defs[key].displayLabel;
+      const type = defs[key].type;
       return {
         title,
         type,
@@ -543,16 +573,16 @@ class NCEdgeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: edgeDefs['source'].displayLabel,
+        title: defs['source'].displayLabel,
         width: 130, // in px
         data: 'sourceDef',
         renderer: RenderNode,
         sorter: SortNodes
       }
     ];
-    if (edgeDefs['type'] && !edgeDefs['type'].hidden) {
+    if (defs['type'] && !defs['type'].hidden) {
       COLUMNDEFS.push({
-        title: edgeDefs['type'].displayLabel,
+        title: defs['type'].displayLabel,
         type: 'text',
         width: 130, // in px
         data: 'type'
@@ -560,7 +590,7 @@ class NCEdgeTable extends UNISYS.Component {
     }
     COLUMNDEFS.push(
       {
-        title: edgeDefs['target'].displayLabel,
+        title: defs['target'].displayLabel,
         width: 130, // in px
         data: 'targetDef',
         renderer: RenderNode,
@@ -576,7 +606,8 @@ class NCEdgeTable extends UNISYS.Component {
         sorter: SortCommentsByCount
       }
     );
-    this.setState({ COLUMNDEFS });
+
+    return COLUMNDEFS;
   }
 
   /// OBJECT HELPERS ////////////////////////////////////////////////////////////

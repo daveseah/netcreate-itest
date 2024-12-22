@@ -31,7 +31,6 @@
 const React = require('react');
 const NCUI = require('../nc-ui');
 const CMTMGR = require('../comment-mgr');
-const SETTINGS = require('settings');
 const FILTER = require('./filter/FilterEnums');
 const { BUILTIN_FIELDS_NODE } = require('system/util/enum');
 const UNISYS = require('unisys/client');
@@ -70,7 +69,6 @@ class NCNodeTable extends UNISYS.Component {
       hilitedNodeId: undefined,
       selectedNodeColor: TEMPLATE.sourceColor,
       hilitedNodeColor: TEMPLATE.searchColor,
-      filteredNodes: [],
       disableEdit: false,
       isLocked: false,
       isExpanded: true,
@@ -85,6 +83,7 @@ class NCNodeTable extends UNISYS.Component {
     this.onStateChange_SELECTION = this.onStateChange_SELECTION.bind(this);
     this.onStateChange_HILITE = this.onStateChange_HILITE.bind(this);
     this.displayUpdated = this.displayUpdated.bind(this);
+    this.deriveFilteredNodes = this.deriveFilteredNodes.bind(this);
     this.updateNodeFilterState = this.updateNodeFilterState.bind(this);
     this.updateEditState = this.updateEditState.bind(this);
     this.handleDataUpdate = this.handleDataUpdate.bind(this);
@@ -135,17 +134,11 @@ class NCNodeTable extends UNISYS.Component {
 
     // Explicitly retrieve data because we may not have gotten a NCDATA
     // update while we were hidden.
-    // filtered data needs to be set before D3Data
-    const FILTEREDNCDATA = UDATA.AppState('FILTEREDNCDATA');
-    this.setState({ filteredNodes: FILTEREDNCDATA.nodes }, () => {
-      let NCDATA = this.AppState('NCDATA');
-      this.handleDataUpdate(NCDATA);
-      this.SetColumnDefs();
-    });
+    let NCDATA = this.AppState('NCDATA');
+    this.onStateChange_NCDATA(NCDATA);
 
-    // Request edit state too because the update may have come
-    // while we were hidden
-    this.updateEditState();
+    const COLUMNDEFS = this.SetColumnDefs();
+    this.setState({ COLUMNDEFS });
   }
 
   componentWillUnmount() {
@@ -170,9 +163,12 @@ class NCNodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   onStateChange_SELECTION(data) {
     if (data === undefined) return;
-    this.setState({
-      selectedNodeId: data.nodes.length > 0 ? data.nodes[0].id : undefined
-    });
+
+    const selectedNodeId = data.nodes.length > 0 ? data.nodes[0].id : undefined;
+    if (selectedNodeId === this.state.selectedNodeId) {
+      return;
+    }
+    this.setState({ selectedNodeId });
   }
 
   onStateChange_HILITE(data) {
@@ -181,6 +177,9 @@ class NCNodeTable extends UNISYS.Component {
     if (autosuggestHiliteNodeId !== undefined)
       hilitedNodeId = autosuggestHiliteNodeId;
     if (userHighlightNodeId !== undefined) hilitedNodeId = userHighlightNodeId;
+    if (hilitedNodeId === this.state.hilitedNodeId) {
+      return;
+    }
     this.setState({ hilitedNodeId });
   }
 
@@ -191,7 +190,11 @@ class NCNodeTable extends UNISYS.Component {
     SessionShell.componentWillMount()
    */
   onStateChange_SESSION(decoded) {
-    this.setState({ isLocked: !decoded.isValid });
+    const isLocked = !decoded.isValid;
+    if (isLocked === this.state.isLocked) {
+      return;
+    }
+    this.setState({ isLocked });
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -221,43 +224,71 @@ class NCNodeTable extends UNISYS.Component {
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Set node filtered status based on current filteredNodes
-  updateNodeFilterState(nodes, filteredNodes) {
+  deriveFilteredNodes(nodes) {
     // set filter status
-    if (filteredNodes.length > 0) {
-      // If we're transitioning from "HILIGHT/FADE" to "COLLAPSE" or "FOCUS", then we
-      // also need to remove nodes that are not in filteredNodes
-      const FILTERDEFS = UDATA.AppState('FILTERDEFS');
-      if (
-        FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
-        FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
-      ) {
-        // Reduce (remove) or Focus
-        nodes = nodes.filter(node => {
-          const filteredNode = filteredNodes.find(n => n.id === node.id);
-          return filteredNode; // keep if it's in the list of filtered nodes
-        });
-      } else {
-        // Fade
-        // Fading is handled by setting node.filteredTransparency which is
-        // directly handled by the filter now.  So no need to process it
-        // here in the table.
-      }
+    let filteredNodes = [];
+    // if (filteredNodes.length > 0) {
+    // If we're transitioning from "HILIGHT/FADE" to "COLLAPSE" or "FOCUS", then we
+    // also need to remove nodes that are not in filteredNodes
+    const FILTERDEFS = UDATA.AppState('FILTERDEFS');
+    if (
+      FILTERDEFS.filterAction === FILTER.ACTION.REDUCE ||
+      FILTERDEFS.filterAction === FILTER.ACTION.FOCUS
+    ) {
+      // Reduce (remove) or Focus
+      filteredNodes = nodes.filter(node => {
+        const filteredNode = filteredNodes.find(n => n.id === node.id);
+        return filteredNode; // keep if it's in the list of filtered nodes
+      });
+    } else {
+      // Fade
+      // Fading is handled by setting node.filteredTransparency which is
+      // directly handled by the filter now.  So no need to process it
+      // here in the table.
+      filteredNodes = nodes;
     }
-    this.setState({ nodes, filteredNodes });
+    // }
+    return filteredNodes;
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  updateEditState() {
-    // disable edit if someone else is editing a template, node, or edge
+  /// Set node filtered status based on current filteredNodes
+  updateNodeFilterState(nodes) {
+    const filteredNodes = this.deriveFilteredNodes(nodes);
+    this.setState({ nodes: filteredNodes });
+  }
+
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Hide/Show "View" and "Edit" buttons in table based on template edit state
+  urmsg_EDIT_PERMISSIONS_UPDATE() {
+    // Update COLUMNDEFS after permissions update so disabledState is shown
+    const cb = () => {
+      // Update COLUMNDEFS to update buttons
+      const COLUMNDEFS = this.SetColumnDefs();
+      this.setState({ COLUMNDEFS });
+    };
+    this.updateEditState(cb);
+  }
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  /// Disable edit if someone else is editing a template
+  updateEditState(cb) {
     let disableEdit = false;
     UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
       // someone else might be editing a template or importing or editing node or edge
-      disableEdit =
-        data.templateBeingEdited ||
-        data.importActive ||
-        data.nodeOrEdgeBeingEdited ||
-        data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
-      this.setState({ disableEdit });
+      disableEdit = data.templateBeingEdited || data.importActive;
+      // REVIEW: Only disableEdit if template is being updated, otherwise allow edits
+      // || data.nodeOrEdgeBeingEdited ||
+      // REVIEW: commentBeingEditedByMe shouldn't affect table?
+      // data.commentBeingEditedByMe; // only lock out if this user is the one editing comments, allow network commen edits
+
+      // optimize, skip render if no change
+      if (disableEdit === this.state.disableEdit) {
+        return;
+      }
+
+      this.setState({ disableEdit }, () => {
+        if (typeof cb === 'function') cb();
+      });
     });
   }
 
@@ -267,54 +298,37 @@ class NCNodeTable extends UNISYS.Component {
   handleDataUpdate(data) {
     if (DBG) console.log('handle data update');
     if (data.nodes) {
-      // const nodes = this.sortTable(this.state.sortkey, data.nodes);
-      const nodes = data.nodes;
-      const { filteredNodes } = this.state;
-      this.updateNodeFilterState(nodes, filteredNodes);
+      const filteredNodes = this.deriveFilteredNodes(data.nodes);
     }
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   handleFilterDataUpdate(data) {
     if (data.nodes) {
-      const filteredNodes = data.nodes;
       // If we're transitioning from "COLLAPSE" or "FOCUS" to "HILIGHT/FADE", then we
       // also need to add back in nodes that are not in filteredNodes
       // (because "COLLAPSE" and "FOCUS" removes nodes that are not matched)
       const NCDATA = UDATA.AppState('NCDATA');
       const FILTERDEFS = UDATA.AppState('FILTERDEFS');
       if (FILTERDEFS.filterAction === FILTER.ACTION.FADE) {
-        this.setState(
-          {
-            nodes: NCDATA.nodes,
-            filteredNodes
-          },
-          () => {
-            const nodes = NCDATA.nodes;
-            this.updateNodeFilterState(nodes, filteredNodes);
-          }
-        );
+        // show ALL nodes
+        this.updateNodeFilterState(NCDATA.nodes);
       } else {
-        this.setState(
-          {
-            nodes: filteredNodes,
-            filteredNodes
-          },
-          () => {
-            const nodes = filteredNodes;
-            this.updateNodeFilterState(nodes, filteredNodes);
-          }
-        );
+        // show only filtered nodes from the filter update
+        this.updateNodeFilterState(data.nodes);
       }
     }
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   OnTemplateUpdate(data) {
+  onStateChange_TEMPLATE(data) {
+    const COLUMNDEFS = this.SetColumnDefs(data.nodeDefs);
     this.setState({
       nodeDefs: data.nodeDefs,
       selectedNodeColor: data.sourceColor,
-      hilitedNodeColor: data.searchColor
+      hilitedNodeColor: data.searchColor,
+      COLUMNDEFS
     });
   }
 
@@ -371,13 +385,15 @@ class NCNodeTable extends UNISYS.Component {
 
   /// URTABLE COLUMN DEFS /////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  SetColumnDefs() {
+  SetColumnDefs(incomingNodeDefs) {
     const { nodeDefs, disableEdit, isLocked } = this.state;
+
+    const defs = incomingNodeDefs || nodeDefs;
 
     // Only include built in fields
     // Only include non-hidden fields
-    const attributeDefs = Object.keys(nodeDefs).filter(
-      k => !BUILTIN_FIELDS_NODE.includes(k) && !nodeDefs[k].hidden
+    const attributeDefs = Object.keys(defs).filter(
+      k => !BUILTIN_FIELDS_NODE.includes(k) && !defs[k].hidden
     );
 
     /// CLICK HANDLERS
@@ -484,8 +500,8 @@ class NCNodeTable extends UNISYS.Component {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      const title = nodeDefs[key].displayLabel;
-      const type = nodeDefs[key].type;
+      const title = defs[key].displayLabel;
+      const type = defs[key].type;
       return {
         title,
         type,
@@ -501,22 +517,22 @@ class NCNodeTable extends UNISYS.Component {
         renderer: RenderViewOrEdit
       },
       {
-        title: nodeDefs['degrees'].displayLabel,
+        title: defs['degrees'].displayLabel,
         type: 'number',
         width: 50, // in px
         data: 'degrees'
       },
       {
-        title: nodeDefs['label'].displayLabel,
+        title: defs['label'].displayLabel,
         data: 'label',
         width: 300, // in px
         renderer: RenderNode,
         sorter: SortNodes
       }
     ];
-    if (nodeDefs['type'] && !nodeDefs['type'].hidden) {
+    if (defs['type'] && !defs['type'].hidden) {
       COLUMNDEFS.push({
-        title: nodeDefs['type'].displayLabel,
+        title: defs['type'].displayLabel,
         type: 'text',
         width: 130, // in px
         data: 'type'
@@ -529,7 +545,7 @@ class NCNodeTable extends UNISYS.Component {
       renderer: RenderCommentBtn,
       sorter: SortCommentsByCount
     });
-    this.setState({ COLUMNDEFS });
+    return COLUMNDEFS;
   }
 
   /// REACT LIFECYCLE METHODS /////////////////////////////////////////////////
