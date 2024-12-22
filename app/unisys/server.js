@@ -257,7 +257,6 @@ UNISYS.RegisterHandlers = () => {
     return UDB.PKT_GetNewCommentID(pkt);
   });
 
-
   UNET.HandleMessage('SRV_LOG_EVENT', function (pkt) {
     if (DBG) console.log(PR, sprint_message(pkt));
     return LOGGER.PKT_LogEvent(pkt);

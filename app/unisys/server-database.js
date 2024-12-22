@@ -155,7 +155,11 @@ DB.InitializeDatabase = function (options = {}) {
     // remap duplicate NODE IDs
     dupeNodes.forEach(obj => {
       m_max_nodeID += 1;
-      LOGGER.WriteRLog({}, PR, `# rewriting duplicate nodeID ${obj.id} to ${m_max_nodeID}`);
+      LOGGER.WriteRLog(
+        {},
+        PR,
+        `# rewriting duplicate nodeID ${obj.id} to ${m_max_nodeID}`
+      );
       obj.id = m_max_nodeID;
     });
 
@@ -210,7 +214,10 @@ DB.InitializeDatabase = function (options = {}) {
     let edgeCount = EDGES.count();
     let commentCount = COMMENTS.count();
     let readbyCount = READBY.count();
-    console.log(PR, `AUTOSAVING! ${nodeCount} NODES / ${edgeCount} EDGES / ${commentCount} COMMENTS / ${readbyCount} READBY <3`);
+    console.log(
+      PR,
+      `AUTOSAVING! ${nodeCount} NODES / ${edgeCount} EDGES / ${commentCount} COMMENTS / ${readbyCount} READBY <3`
+    );
   }
 }; // InitializeDatabase()
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -453,11 +460,16 @@ function m_MigrateTemplate() {
 
   // Migrate 1.0 to 1.1
   // -- Make sure required core preferences have been created
-  TEMPLATE.duplicateWarning = TEMPLATE.duplicateWarning || SCHEMA.duplicateWarning.default;
-  TEMPLATE.nodeIsLockedMessage = TEMPLATE.nodeIsLockedMessage || SCHEMA.nodeIsLockedMessage.default;
-  TEMPLATE.edgeIsLockedMessage = TEMPLATE.edgeIsLockedMessage || SCHEMA.edgeIsLockedMessage.default;
-  TEMPLATE.templateIsLockedMessage = TEMPLATE.templateIsLockedMessage || SCHEMA.templateIsLockedMessage.default;
-  TEMPLATE.importIsLockedMessage = TEMPLATE.importIsLockedMessage || SCHEMA.importIsLockedMessage.default;
+  TEMPLATE.duplicateWarning =
+    TEMPLATE.duplicateWarning || SCHEMA.duplicateWarning.default;
+  TEMPLATE.nodeIsLockedMessage =
+    TEMPLATE.nodeIsLockedMessage || SCHEMA.nodeIsLockedMessage.default;
+  TEMPLATE.edgeIsLockedMessage =
+    TEMPLATE.edgeIsLockedMessage || SCHEMA.edgeIsLockedMessage.default;
+  TEMPLATE.templateIsLockedMessage =
+    TEMPLATE.templateIsLockedMessage || SCHEMA.templateIsLockedMessage.default;
+  TEMPLATE.importIsLockedMessage =
+    TEMPLATE.importIsLockedMessage || SCHEMA.importIsLockedMessage.default;
 
   // Migrate v1.4 to 1.5 Core Preferences
   // -- v1.5 core defaults -- added 2023-0628 #31
@@ -474,19 +486,24 @@ function m_MigrateTemplate() {
   if (TEMPLATE.filterFocus === undefined)
     TEMPLATE.filterFocus = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocus.default;
   if (TEMPLATE.filterFadeHelp === undefined)
-    TEMPLATE.filterFadeHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFadeHelp.default;
+    TEMPLATE.filterFadeHelp =
+      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFadeHelp.default;
   if (TEMPLATE.filterReduceHelp === undefined)
-    TEMPLATE.filterReduceHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduceHelp.default;
+    TEMPLATE.filterReduceHelp =
+      TEMPLATE_SCHEMA.TEMPLATE.properties.filterReduceHelp.default;
   if (TEMPLATE.filterFocusHelp === undefined)
-    TEMPLATE.filterFocusHelp = TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocusHelp.default;
+    TEMPLATE.filterFocusHelp =
+      TEMPLATE_SCHEMA.TEMPLATE.properties.filterFocusHelp.default;
   // -- v1.5 max sizes -- added 2023-0605 #117
   // See branch `dev-bl/max-size
   if (TEMPLATE.nodeSizeDefault === undefined)
-    TEMPLATE.nodeSizeDefault = TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeDefault.default;
+    TEMPLATE.nodeSizeDefault =
+      TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeDefault.default;
   if (TEMPLATE.nodeSizeMax === undefined)
     TEMPLATE.nodeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.nodeSizeMax.default;
   if (TEMPLATE.edgeSizeDefault === undefined)
-    TEMPLATE.edgeSizeDefault = TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeDefault.default;
+    TEMPLATE.edgeSizeDefault =
+      TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeDefault.default;
   if (TEMPLATE.edgeSizeMax === undefined)
     TEMPLATE.edgeSizeMax = TEMPLATE_SCHEMA.TEMPLATE.properties.edgeSizeMax.default;
 
@@ -525,7 +542,6 @@ function m_MigrateTemplate() {
   // Make sure built-in fields are not being defined in the template.
   // e.g. it's easy to define another "Source" field for "Provenance" but that conflicts with
   // the edge's "Source" field.
-
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -556,57 +572,58 @@ function m_ValidateTemplate() {
     // 2. Validate deprecated fields
     //    `TEMPLATE.version` was added after 2.0.
     if (!TEMPLATE.version) {
-
       // nodeDefs
-    if (nodeDefs.type === undefined)
-      throw 'Missing `nodeDefs.type` type= ' + nodeDefs.type;
-    if (
-      nodeDefs.type.options === undefined ||
-      !Array.isArray(nodeDefs.type.options)
-    ) {
-      throw 'Missing or bad `nodeDefs.type.options` options=' + nodeDefs.type.options;
-    }
-    if (nodeDefs.notes === undefined)
-      throw 'Missing `nodeDefs.notes` notes=' + nodeDefs.notes;
-    if (nodeDefs.info === undefined)
-      throw 'Missing `nodeDefs.info` info=' + nodeDefs.info;
+      if (nodeDefs.type === undefined)
+        throw 'Missing `nodeDefs.type` type= ' + nodeDefs.type;
+      if (
+        nodeDefs.type.options === undefined ||
+        !Array.isArray(nodeDefs.type.options)
+      ) {
+        throw (
+          'Missing or bad `nodeDefs.type.options` options=' + nodeDefs.type.options
+        );
+      }
+      if (nodeDefs.notes === undefined)
+        throw 'Missing `nodeDefs.notes` notes=' + nodeDefs.notes;
+      if (nodeDefs.info === undefined)
+        throw 'Missing `nodeDefs.info` info=' + nodeDefs.info;
       // Version 1.5+ Fields
-    if (nodeDefs.provenance === undefined)
-      throw 'Missing `nodeDefs.provenance` provenance=' + nodeDefs.provenance;
-    if (nodeDefs.comments === undefined)
-      throw 'Missing `nodeDefs.comments` comments=' + nodeDefs.comments;
+      if (nodeDefs.provenance === undefined)
+        throw 'Missing `nodeDefs.provenance` provenance=' + nodeDefs.provenance;
+      if (nodeDefs.comments === undefined)
+        throw 'Missing `nodeDefs.comments` comments=' + nodeDefs.comments;
 
-    // edgeDefs
-    if (edgeDefs.type === undefined)
-      throw 'Missing `edgeDefs.type` type= ' + edgeDefs.type;
-    if (
-      edgeDefs.type.options === undefined ||
-      !Array.isArray(edgeDefs.type.options)
-    ) {
-      throw 'Missing or bad `edgeDefs.type.options` options=' + edgeDefs.type.options;
-    }
-    if (edgeDefs.notes === undefined)
-      throw 'Missing `edgeDefs.notes` notes=' + edgeDefs.notes;
-    if (edgeDefs.info === undefined)
-      throw 'Missing `edgeDefs.info` info=' + edgeDefs.info;
+      // edgeDefs
+      if (edgeDefs.type === undefined)
+        throw 'Missing `edgeDefs.type` type= ' + edgeDefs.type;
+      if (
+        edgeDefs.type.options === undefined ||
+        !Array.isArray(edgeDefs.type.options)
+      ) {
+        throw (
+          'Missing or bad `edgeDefs.type.options` options=' + edgeDefs.type.options
+        );
+      }
+      if (edgeDefs.notes === undefined)
+        throw 'Missing `edgeDefs.notes` notes=' + edgeDefs.notes;
+      if (edgeDefs.info === undefined)
+        throw 'Missing `edgeDefs.info` info=' + edgeDefs.info;
       // Version 1.5+ Fields
-    if (edgeDefs.provenance === undefined)
-      throw 'Missing `edgeDefs.provenance` provenance=' + edgeDefs.provenance;
-    if (edgeDefs.comments === undefined)
-      throw 'Missing `edgeDefs.comments` comments=' + edgeDefs.comments;
+      if (edgeDefs.provenance === undefined)
+        throw 'Missing `edgeDefs.provenance` provenance=' + edgeDefs.provenance;
+      if (edgeDefs.comments === undefined)
+        throw 'Missing `edgeDefs.comments` comments=' + edgeDefs.comments;
       // -- End 1.5+
-    if (edgeDefs.citation === undefined)
-      throw 'Missing `edgeDefs.citation` info=' + edgeDefs.citation;
-    if (edgeDefs.category === undefined)
-      throw 'Missing `edgeDefs.category` info=' + edgeDefs.category;
-
+      if (edgeDefs.citation === undefined)
+        throw 'Missing `edgeDefs.citation` info=' + edgeDefs.citation;
+      if (edgeDefs.category === undefined)
+        throw 'Missing `edgeDefs.category` info=' + edgeDefs.category;
     } else {
       // Placeholder for future version checks
       // if (TEMPLATE.version <= "2.0") {
       //   // do something
       // }
     }
-
   } catch (error) {
     const templateFileName = m_GetTemplateTOMLFilePath();
     console.error('Error loading template `', templateFileName, '`::::', error);
@@ -626,7 +643,8 @@ DB.PKT_GetDatabase = function (pkt) {
   if (DBG)
     console.log(
       PR,
-      `PKT_GetDatabase ${pkt.Info()} (loaded ${nodes.length} nodes, ${edges.length
+      `PKT_GetDatabase ${pkt.Info()} (loaded ${nodes.length} nodes, ${
+        edges.length
       } edges)`
     );
   m_MigrateNodes(nodes);
@@ -836,7 +854,8 @@ function m_GetNewCommentID() {
   return m_max_commentID;
 }
 DB.PKT_GetNewCommentID = function (pkt) {
-  if (DBG) console.log(PR, `PKT_GetNewCommentID ${pkt.Info()} commentID ${m_max_commentID}`);
+  if (DBG)
+    console.log(PR, `PKT_GetNewCommentID ${pkt.Info()} commentID ${m_max_commentID}`);
   return { comment_id: m_GetNewCommentID() };
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1031,12 +1050,13 @@ DB.RequestUnlock = function (uaddr) {
   });
   m_locked_comments.forEach((value, key) => {
     if (value === uaddr) m_locked_comments.delete(key);
-  })
+  });
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // eslint-disable-next-line complexity
 DB.PKT_Update = function (pkt) {
-  let { node, edge, nodeID, replacementNodeID, edgeID, comment, readbys } = pkt.Data();
+  let { node, edge, nodeID, replacementNodeID, edgeID, comment, readbys } =
+    pkt.Data();
   let retval = {};
   // PROCESS NODE INSERT/UPDATE
   if (node) {
@@ -1064,7 +1084,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedNode)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
+          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${
+            node.id
           } ${JSON.stringify(node)}`
         );
       retval = { op: 'insert', node: updatedNode };
@@ -1087,7 +1108,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedNode)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${node.id
+          `PKT_Update ${pkt.Info()} could not find node after update!  This should not happen! ${
+            node.id
           } ${JSON.stringify(node)}`
         );
       retval = { op: 'update', node: updatedNode };
@@ -1128,7 +1150,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${
+            edge.id
           } ${JSON.stringify(edge)}`
         );
       retval = { op: 'insert', edge: updatedEdge };
@@ -1138,7 +1161,8 @@ DB.PKT_Update = function (pkt) {
         if (DBG)
           console.log(
             PR,
-            `PKT_Update ${pkt.SourceGroupID()} UPDATE edgeID ${edge.id
+            `PKT_Update ${pkt.SourceGroupID()} UPDATE edgeID ${
+              edge.id
             } ${JSON.stringify(edge)}`
           );
         LOGGER.WriteRLog(pkt.InfoObj(), `update edge`, edge.id, JSON.stringify(edge));
@@ -1150,7 +1174,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedEdge)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${edge.id
+          `PKT_Update ${pkt.Info()} could not find edge after update!  This should not happen! ${
+            edge.id
           } ${JSON.stringify(edge)}`
         );
       retval = { op: 'update', edge: updatedEdge };
@@ -1184,11 +1209,23 @@ DB.PKT_Update = function (pkt) {
     if (replacementNodeID !== -1) {
       // re-link edges to replacementNodeID...
       EDGES.findAndUpdate({ source: nodeID }, e => {
-        LOGGER.WriteRLog(pkt.InfoObj(), `relinking edge`, e.id, `to`, replacementNodeID);
+        LOGGER.WriteRLog(
+          pkt.InfoObj(),
+          `relinking edge`,
+          e.id,
+          `to`,
+          replacementNodeID
+        );
         e.source = replacementNodeID;
       });
       EDGES.findAndUpdate({ target: nodeID }, e => {
-        LOGGER.WriteRLog(pkt.InfoObj(), `relinking edge`, e.id, `to`, replacementNodeID);
+        LOGGER.WriteRLog(
+          pkt.InfoObj(),
+          `relinking edge`,
+          e.id,
+          `to`,
+          replacementNodeID
+        );
         e.target = replacementNodeID;
       });
     } else {
@@ -1240,7 +1277,12 @@ DB.PKT_Update = function (pkt) {
         comment.comment_id = m_GetNewCommentID();
       }
 
-      LOGGER.WriteRLog(pkt.InfoObj(), `insert comment`, comment.comment_id, JSON.stringify(comment));
+      LOGGER.WriteRLog(
+        pkt.InfoObj(),
+        `insert comment`,
+        comment.comment_id,
+        JSON.stringify(comment)
+      );
       DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
       COMMENTS.insert(comment);
       // Return the updated record -- needed to update metadata
@@ -1248,7 +1290,8 @@ DB.PKT_Update = function (pkt) {
       if (!updatedComment)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
+          `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${
+            comment.comment_id
           } ${JSON.stringify(comment)}`
         );
       retval = { op: 'insert', comment: updatedComment };
@@ -1258,11 +1301,16 @@ DB.PKT_Update = function (pkt) {
         if (DBG)
           console.log(
             PR,
-            `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
-              comment
-            )}`
+            `PKT_Update ${pkt.Info()} UPDATE comment_id ${
+              comment.comment_id
+            } ${JSON.stringify(comment)}`
           );
-        LOGGER.WriteRLog(pkt.InfoObj(), `update comment`, comment.comment_id, JSON.stringify(comment));
+        LOGGER.WriteRLog(
+          pkt.InfoObj(),
+          `update comment`,
+          comment.comment_id,
+          JSON.stringify(comment)
+        );
         DB.AppendCommentLog(c, pkt); // log GroupId to node stored in database
         Object.assign(c, comment);
       });
@@ -1272,14 +1320,23 @@ DB.PKT_Update = function (pkt) {
       if (!updatedComment)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
+          `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${
+            comment.comment_id
           } ${JSON.stringify(comment)}`
         );
       retval = { op: 'update', comment: updatedComment };
     } else {
       if (DBG)
-        console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
-      LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
+        console.log(
+          PR,
+          `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`
+        );
+      LOGGER.WriteRLog(
+        pkt.InfoObj(),
+        `ERROR`,
+        comment.comment_id,
+        'duplicate comment id'
+      );
       retval = { op: 'error-multinodeid' };
     }
     return retval;
@@ -1303,10 +1360,19 @@ DB.PKT_Update = function (pkt) {
         // Handle different id types
         if (isNaN(readby.comment_id)) {
           // If the node id has NOT been defined, generate a new node id
-          throw new Error(`server-database.PKT_Update called with invalid comment_id ${JSON.stringify(readby)}. This should not happen.`);
+          throw new Error(
+            `server-database.PKT_Update called with invalid comment_id ${JSON.stringify(
+              readby
+            )}. This should not happen.`
+          );
         }
 
-        LOGGER.WriteRLog(pkt.InfoObj(), `insert readby`, readby.comment_id, JSON.stringify(readby));
+        LOGGER.WriteRLog(
+          pkt.InfoObj(),
+          `insert readby`,
+          readby.comment_id,
+          JSON.stringify(readby)
+        );
         DB.AppendReadbyLog(readby, pkt); // log GroupId to node stored in database
         READBY.insert(readby);
         // Return the updated record -- needed to update metadata
@@ -1314,7 +1380,8 @@ DB.PKT_Update = function (pkt) {
         if (!updatedReadby)
           console.log(
             PR,
-            `PKT_Update ${pkt.Info()} could not find new readby after update!  This should not happen! ${readby.comment_id
+            `PKT_Update ${pkt.Info()} could not find new readby after update!  This should not happen! ${
+              readby.comment_id
             } ${JSON.stringify(readby)}`
           );
         retval = { op: 'insert', readby: updatedReadby };
@@ -1324,11 +1391,16 @@ DB.PKT_Update = function (pkt) {
           if (DBG)
             console.log(
               PR,
-              `PKT_Update ${pkt.Info()} UPDATE comment_id ${readby.comment_id} ${JSON.stringify(
-                readby
-              )}`
+              `PKT_Update ${pkt.Info()} UPDATE comment_id ${
+                readby.comment_id
+              } ${JSON.stringify(readby)}`
             );
-          LOGGER.WriteRLog(pkt.InfoObj(), `update readby`, readby.comment_id, JSON.stringify(readby));
+          LOGGER.WriteRLog(
+            pkt.InfoObj(),
+            `update readby`,
+            readby.comment_id,
+            JSON.stringify(readby)
+          );
           DB.AppendReadbyLog(r, pkt); // log GroupId to node stored in database
           Object.assign(r, readby);
         });
@@ -1338,14 +1410,23 @@ DB.PKT_Update = function (pkt) {
         if (!updatedReadby)
           console.log(
             PR,
-            `PKT_Update ${pkt.Info()} could not find updated readby after update!  This should not happen! ${readby.comment_id
+            `PKT_Update ${pkt.Info()} could not find updated readby after update!  This should not happen! ${
+              readby.comment_id
             } ${JSON.stringify(readby)}`
           );
         retval = { op: 'update', readby: updatedReadby };
       } else {
         if (DBG)
-          console.log(PR, `WARNING: multiple comment_id ${readby.comment_id} x${matches.length}`);
-        LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, readby.comment_id, 'duplicate comment id');
+          console.log(
+            PR,
+            `WARNING: multiple comment_id ${readby.comment_id} x${matches.length}`
+          );
+        LOGGER.WriteRLog(
+          pkt.InfoObj(),
+          `ERROR`,
+          readby.comment_id,
+          'duplicate comment id'
+        );
         retval = { op: 'error-multinodeid' };
       }
       // NOTE returns an array of retvals for multiple replies
@@ -1370,7 +1451,7 @@ DB.PKT_BatchUpdate = function (pkt) {
     if (commentID !== undefined) retvals.push(m_CommentRemove(commentID, pkt));
     // Trigger derived value update after removal
     if (collection_ref) retvals.push({ op: 'refresh', collection_ref });
-  })
+  });
   return retvals;
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1389,7 +1470,12 @@ function m_CommentUpdate(comment, pkt) {
       // If the comment id has NOT been defined, generate a new comment id
       comment.comment_id = m_GetNewCommentID();
     }
-    LOGGER.WriteRLog(pkt.InfoObj(), `insert comment`, comment.comment_id, JSON.stringify(comment));
+    LOGGER.WriteRLog(
+      pkt.InfoObj(),
+      `insert comment`,
+      comment.comment_id,
+      JSON.stringify(comment)
+    );
     DB.AppendCommentLog(comment, pkt); // log GroupId to node stored in database
     COMMENTS.insert(comment);
     // Return the updated record -- needed to update metadata
@@ -1397,7 +1483,8 @@ function m_CommentUpdate(comment, pkt) {
     if (!updatedComment)
       console.log(
         PR,
-        `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${comment.comment_id
+        `PKT_Update ${pkt.Info()} could not find new comment after update!  This should not happen! ${
+          comment.comment_id
         } ${JSON.stringify(comment)}`
       );
     retval = { op: 'insert', comment: updatedComment };
@@ -1407,11 +1494,16 @@ function m_CommentUpdate(comment, pkt) {
       if (DBG)
         console.log(
           PR,
-          `PKT_Update ${pkt.Info()} UPDATE comment_id ${comment.comment_id} ${JSON.stringify(
-            comment
-          )}`
+          `PKT_Update ${pkt.Info()} UPDATE comment_id ${
+            comment.comment_id
+          } ${JSON.stringify(comment)}`
         );
-      LOGGER.WriteRLog(pkt.InfoObj(), `update comment`, comment.comment_id, JSON.stringify(comment));
+      LOGGER.WriteRLog(
+        pkt.InfoObj(),
+        `update comment`,
+        comment.comment_id,
+        JSON.stringify(comment)
+      );
       DB.AppendCommentLog(c, pkt); // log GroupId to node stored in database
       Object.assign(c, comment);
     });
@@ -1421,14 +1513,23 @@ function m_CommentUpdate(comment, pkt) {
     if (!updatedComment)
       console.log(
         PR,
-        `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${comment.comment_id
+        `PKT_Update ${pkt.Info()} could not find updated comment after update!  This should not happen! ${
+          comment.comment_id
         } ${JSON.stringify(comment)}`
       );
     retval = { op: 'update', comment: updatedComment };
   } else {
     if (DBG)
-      console.log(PR, `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`);
-    LOGGER.WriteRLog(pkt.InfoObj(), `ERROR`, comment.comment_id, 'duplicate comment id');
+      console.log(
+        PR,
+        `WARNING: multiple comment_id ${comment.comment_id} x${matches.length}`
+      );
+    LOGGER.WriteRLog(
+      pkt.InfoObj(),
+      `ERROR`,
+      comment.comment_id,
+      'duplicate comment id'
+    );
     retval = { op: 'error-multinodeid' };
   }
   return retval;
@@ -1549,7 +1650,10 @@ DB.WriteDbJSON = function (filePath) {
         if (DBG) console.log(PR, `writing { nodes, edges } to '${filePath}'`);
         let nodes = db.getCollection('nodes').chain().data({ removeMeta: false });
         let edges = db.getCollection('edges').chain().data({ removeMeta: false });
-        const comments = db.getCollection('comments').chain().data({ removeMeta: false });
+        const comments = db
+          .getCollection('comments')
+          .chain()
+          .data({ removeMeta: false });
         const readby = db.getCollection('readby').chain().data({ removeMeta: false });
         let data = { nodes, edges, comments, readby };
         let json = JSON.stringify(data);
@@ -1728,7 +1832,9 @@ DB.GetEditStatus = pkt => {
     (m_open_editors.includes(EDITORTYPE.NODE) ||
       m_open_editors.includes(EDITORTYPE.EDGE));
   // Used to disable local editing if a comment is being edited, but ignores network comment edits
-  const commentBeingEditedByMe = [...m_locked_comments.values()].find(comment_uaddr => comment_uaddr === my_uaddr);
+  const commentBeingEditedByMe = [...m_locked_comments.values()].find(
+    comment_uaddr => comment_uaddr === my_uaddr
+  );
   return {
     templateBeingEdited,
     importActive,
@@ -1811,7 +1917,11 @@ function m_MigrateEdges(edges) {
 function m_CleanObjID(prompt, obj) {
   if (typeof obj.id === 'string') {
     let int = parseInt(obj.id, 10);
-    LOGGER.WriteRLog({}, PR, `! ${prompt} "${obj.id}" is string; converting to ${int}`);
+    LOGGER.WriteRLog(
+      {},
+      PR,
+      `! ${prompt} "${obj.id}" is string; converting to ${int}`
+    );
     obj.id = int;
   }
   return obj;
@@ -1820,7 +1930,8 @@ function m_CleanEdgeEndpoints(prompt, edge) {
   if (typeof edge.source === 'string') {
     let int = parseInt(edge.source, 10);
     LOGGER.WriteRLog(
-      {}, PR,
+      {},
+      PR,
       `  edge ${prompt} source "${edge.source}" is string; converting to ${int}`
     );
     edge.source = int;
@@ -1828,7 +1939,8 @@ function m_CleanEdgeEndpoints(prompt, edge) {
   if (typeof edge.target === 'string') {
     let int = parseInt(edge.target, 10);
     LOGGER.WriteRLog(
-      {}, PR,
+      {},
+      PR,
       `  edge ${prompt} target "${edge.target}" is string; converting to ${int}`
     );
     edge.target = int;
@@ -1838,7 +1950,11 @@ function m_CleanEdgeEndpoints(prompt, edge) {
 function m_CleanID(prompt, id) {
   if (typeof id === 'string') {
     let int = parseInt(id, 10);
-    LOGGER.WriteRLog({}, PR, `! ${prompt} "${id}" is string; converting to number ${int}`);
+    LOGGER.WriteRLog(
+      {},
+      PR,
+      `! ${prompt} "${id}" is string; converting to number ${int}`
+    );
     id = int;
   }
   return id;
