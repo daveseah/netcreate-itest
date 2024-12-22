@@ -85,10 +85,12 @@ class NCNodeTable extends UNISYS.Component {
     this.displayUpdated = this.displayUpdated.bind(this);
     this.deriveFilteredNodes = this.deriveFilteredNodes.bind(this);
     this.updateNodeFilterState = this.updateNodeFilterState.bind(this);
+    this.urmsg_EDIT_PERMISSIONS_UPDATE =
+      this.urmsg_EDIT_PERMISSIONS_UPDATE.bind(this);
     this.updateEditState = this.updateEditState.bind(this);
-    this.handleDataUpdate = this.handleDataUpdate.bind(this);
-    this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
-    this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
+    this.onStateChange_NCDATA = this.onStateChange_NCDATA.bind(this);
+    this.onStateChange_FILTEREDNCDATA = this.onStateChange_FILTEREDNCDATA.bind(this);
+    this.onStateChange_TEMPLATE = this.onStateChange_TEMPLATE.bind(this);
     this.onViewButtonClick = this.onViewButtonClick.bind(this);
     this.onEditButtonClick = this.onEditButtonClick.bind(this);
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
@@ -99,7 +101,10 @@ class NCNodeTable extends UNISYS.Component {
     /// Initialize UNISYS DATA LINK for REACT
     UDATA = UNISYS.NewDataLink(this);
 
-    UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
+    UDATA.HandleMessage(
+      'EDIT_PERMISSIONS_UPDATE',
+      this.urmsg_EDIT_PERMISSIONS_UPDATE
+    );
 
     // SESSION is called by SessionSHell when the ID changes
     //  set system-wide. data: { classId, projId, hashedId, groupId, isValid }
@@ -107,13 +112,13 @@ class NCNodeTable extends UNISYS.Component {
 
     // Always make sure class methods are bind()'d before using them
     // as a handler, otherwise object context is lost
-    this.OnAppStateChange('NCDATA', this.handleDataUpdate);
+    this.OnAppStateChange('NCDATA', this.onStateChange_NCDATA);
 
     // Track Filtered Data Updates too
-    this.OnAppStateChange('FILTEREDNCDATA', this.handleFilterDataUpdate);
+    this.OnAppStateChange('FILTEREDNCDATA', this.onStateChange_FILTEREDNCDATA);
 
     // Handle Template updates
-    this.OnAppStateChange('TEMPLATE', this.OnTemplateUpdate);
+    this.OnAppStateChange('TEMPLATE', this.onStateChange_TEMPLATE);
 
     this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
     this.OnAppStateChange('HILITE', this.onStateChange_HILITE);
@@ -142,11 +147,14 @@ class NCNodeTable extends UNISYS.Component {
   }
 
   componentWillUnmount() {
-    UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
+    UDATA.UnhandleMessage(
+      'EDIT_PERMISSIONS_UPDATE',
+      this.urmsg_EDIT_PERMISSIONS_UPDATE
+    );
     this.AppStateChangeOff('SESSION', this.onStateChange_SESSION);
-    this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
-    this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
-    this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
+    this.AppStateChangeOff('NCDATA', this.onStateChange_NCDATA);
+    this.AppStateChangeOff('FILTEREDNCDATA', this.onStateChange_FILTEREDNCDATA);
+    this.AppStateChangeOff('TEMPLATE', this.onStateChange_TEMPLATE);
     this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
     this.AppStateChangeOff('HILITE', this.onStateChange_HILITE);
     UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
@@ -295,15 +303,16 @@ class NCNodeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Handle updated SELECTION
    */
-  handleDataUpdate(data) {
+  onStateChange_NCDATA(data) {
     if (DBG) console.log('handle data update');
     if (data.nodes) {
       const filteredNodes = this.deriveFilteredNodes(data.nodes);
+      // REVIEW DO SOMETHING.  SELECTION update is not currently being handled.
     }
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  handleFilterDataUpdate(data) {
+  onStateChange_FILTEREDNCDATA(data) {
     if (data.nodes) {
       // If we're transitioning from "COLLAPSE" or "FOCUS" to "HILIGHT/FADE", then we
       // also need to add back in nodes that are not in filteredNodes
@@ -321,7 +330,6 @@ class NCNodeTable extends UNISYS.Component {
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  OnTemplateUpdate(data) {
   onStateChange_TEMPLATE(data) {
     const COLUMNDEFS = this.SetColumnDefs(data.nodeDefs);
     this.setState({

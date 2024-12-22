@@ -84,10 +84,11 @@ class NCEdgeTable extends UNISYS.Component {
     this.onEDGE_OPEN = this.onEDGE_OPEN.bind(this);
     this.deriveFilteredEdges = this.deriveFilteredEdges.bind(this);
     this.updateEdgeFilterState = this.updateEdgeFilterState.bind(this);
-    this.handleDataUpdate = this.handleDataUpdate.bind(this);
-    this.handleFilterDataUpdate = this.handleFilterDataUpdate.bind(this);
-    this.updateEditState = this.updateEditState.bind(this);
-    this.OnTemplateUpdate = this.OnTemplateUpdate.bind(this);
+    this.onStateChange_NCDATA = this.onStateChange_NCDATA.bind(this);
+    this.onStateChange_FILTEREDNCDATA = this.onStateChange_FILTEREDNCDATA.bind(this);
+    this.urmsg_EDIT_PERMISSIONS_UPDATE =
+      this.urmsg_EDIT_PERMISSIONS_UPDATE.bind(this);
+    this.onStateChange_TEMPLATE = this.onStateChange_TEMPLATE.bind(this);
     this.onViewButtonClick = this.onViewButtonClick.bind(this);
     this.onEditButtonClick = this.onEditButtonClick.bind(this);
     this.onToggleExpanded = this.onToggleExpanded.bind(this);
@@ -105,7 +106,10 @@ class NCEdgeTable extends UNISYS.Component {
     UDATA = UNISYS.NewDataLink(this);
 
     UDATA.HandleMessage('EDGE_OPEN', this.onEDGE_OPEN);
-    UDATA.HandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
+    UDATA.HandleMessage(
+      'EDIT_PERMISSIONS_UPDATE',
+      this.urmsg_EDIT_PERMISSIONS_UPDATE
+    );
 
     // SESSION is called by SessionSHell when the ID changes
     //  set system-wide. data: { classId, projId, hashedId, groupId, isValid }
@@ -113,13 +117,13 @@ class NCEdgeTable extends UNISYS.Component {
 
     // Always make sure class methods are bind()'d before using them
     // as a handler, otherwise object context is lost
-    this.OnAppStateChange('NCDATA', this.handleDataUpdate);
+    this.OnAppStateChange('NCDATA', this.onStateChange_NCDATA);
 
     // Handle Template updates
-    this.OnAppStateChange('TEMPLATE', this.OnTemplateUpdate);
+    this.OnAppStateChange('TEMPLATE', this.onStateChange_TEMPLATE);
 
     // Track Filtered Data Updates too
-    this.OnAppStateChange('FILTEREDNCDATA', this.handleFilterDataUpdate);
+    this.OnAppStateChange('FILTEREDNCDATA', this.onStateChange_FILTEREDNCDATA);
 
     this.OnAppStateChange('SELECTION', this.onStateChange_SELECTION);
 
@@ -147,11 +151,14 @@ class NCEdgeTable extends UNISYS.Component {
 
   componentWillUnmount() {
     UDATA.UnhandleMessage('EDGE_OPEN', this.onEDGE_OPEN);
-    UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
+    UDATA.UnhandleMessage(
+      'EDIT_PERMISSIONS_UPDATE',
+      this.urmsg_EDIT_PERMISSIONS_UPDATE
+    );
     this.AppStateChangeOff('SESSION', this.onStateChange_SESSION);
-    this.AppStateChangeOff('NCDATA', this.handleDataUpdate);
-    this.AppStateChangeOff('FILTEREDNCDATA', this.handleFilterDataUpdate);
-    this.AppStateChangeOff('TEMPLATE', this.OnTemplateUpdate);
+    this.AppStateChangeOff('NCDATA', this.onStateChange_NCDATA);
+    this.AppStateChangeOff('FILTEREDNCDATA', this.onStateChange_FILTEREDNCDATA);
+    this.AppStateChangeOff('TEMPLATE', this.onStateChange_TEMPLATE);
     this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
     UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
     UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
@@ -253,7 +260,7 @@ class NCEdgeTable extends UNISYS.Component {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** Handle updated SELECTION: NCDATA updates
    */
-  handleDataUpdate(data) {
+  onStateChange_NCDATA(data) {
     if (data && data.edges && data.nodes) {
       // NCDATA.edges no longer uses source/target objects
       // ...1. So we need to save nodes for dereferencing.
@@ -276,7 +283,7 @@ class NCEdgeTable extends UNISYS.Component {
       Note that edge.soourceLabel and edge.targetLabel should already be set
       by filter-mgr.
    */
-  handleFilterDataUpdate(data) {
+  onStateChange_FILTEREDNCDATA(data) {
     if (data.edges) {
       const filteredEdges = data.edges;
       // If we're transitioning from "COLLAPSE" or "FOCUS" to "HILIGHT/FADE", then we
@@ -345,7 +352,7 @@ class NCEdgeTable extends UNISYS.Component {
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  OnTemplateUpdate(data) {
+  onStateChange_TEMPLATE(data) {
     const COLUMNDEFS = this.SetColumnDefs(data.edgeDefs);
     this.setState({
       edgeDefs: data.edgeDefs,
