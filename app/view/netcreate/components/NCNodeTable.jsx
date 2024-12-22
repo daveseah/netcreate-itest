@@ -235,7 +235,6 @@ class NCNodeTable extends UNISYS.Component {
   deriveFilteredNodes(nodes) {
     // set filter status
     let filteredNodes = [];
-    // if (filteredNodes.length > 0) {
     // If we're transitioning from "HILIGHT/FADE" to "COLLAPSE" or "FOCUS", then we
     // also need to remove nodes that are not in filteredNodes
     const FILTERDEFS = UDATA.AppState('FILTERDEFS');
