@@ -1,16 +1,12 @@
 /* eslint-disable no-alert */
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
-
-  DEPRECATED -- see NCTemplate.jsx
-
-
-  Template Editor View
+  NC Template Editor View
+  (replaces `Template.jsx`)
 
   Displays a variety of tools to edit templates:
   * Edit Node Types
   * Edit Edge Types
-  * Edit Current Template
   * Download Current Template
   * Create New Template
   * Import Template from File
@@ -33,9 +29,6 @@
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
-const ReactStrap = require('reactstrap');
-const { Button } = ReactStrap;
-import { JSONEditor } from '@json-editor/json-editor';
 const UNISYS = require('unisys/client');
 const { EDITORTYPE } = require('system/util/enum');
 const TEMPLATE_MGR = require('../templateEditor-mgr');
@@ -47,12 +40,10 @@ const DATASTORE = require('system/datastore');
 const DBG = false;
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let UDATA = null;
-let EDITOR; // json-editor object
-let typeOptions;
 
 /// REACT COMPONENT ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-class Template extends UNISYS.Component {
+class NCTemplate extends UNISYS.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -67,7 +58,6 @@ class Template extends UNISYS.Component {
       tomlfileErrors: undefined,
       tomlfilename: 'loading...'
     };
-    this.loadEditor = this.loadEditor.bind(this);
     this.updateEditState = this.updateEditState.bind(this);
     this.disableOrigLabelFields = this.disableOrigLabelFields.bind(this);
     this.releaseOpenEditor = this.releaseOpenEditor.bind(this);
@@ -92,45 +82,8 @@ class Template extends UNISYS.Component {
   }
 
   componentWillUnmount() {
-    if (EDITOR) EDITOR.destroy();
     this.releaseOpenEditor();
     UDATA.UnhandleMessage('EDIT_PERMISSIONS_UPDATE', this.updateEditState);
-  }
-
-  /// METHODS /////////////////////////////////////////////////////////////////
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  /**
-   * Load JSON Editor
-   * -- If schema is not defined, the default schema is used
-   * -- If startval is not defined, an empty template created from the default
-   *    schema is used.
-   * @param {object} parms { schema, startval }
-   * @param {function} cb - Callback function
-   */
-  loadEditor(parms, cb) {
-    UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.TEMPLATE }).then(data => {
-      const el = document.getElementById('editor');
-      const schema = (parms && parms.schema) || SCHEMA.TEMPLATE;
-      const startval = parms && parms.startval;
-
-      const options = {
-        theme: 'bootstrap4', // spectre, bootstrap3, tailwind, html
-        disable_edit_json: true, // set to false allow direct viewing/editing of json for debugging
-        disable_properties: false, // needed to allow user to add missing properties
-        object_layout: 'table', // 'grid', 'grid-strict', 'categories'
-        no_additional_properties: true, // prevent users from adding new non-schema properties
-        schema
-        // iconlib: 'fontawesome5', // fontawesome is not currently loaded
-      };
-      if (startval) options.startval = startval; // only add startval if its defined, otherwise you end up with an empty template
-      if (EDITOR) EDITOR.destroy(); // clear any existing editor
-      EDITOR = new JSONEditor(el, options);
-
-      this.setState({ isBeingEdited: true });
-
-      if (cb === undefined || typeof cb !== 'function') return;
-      cb();
-    });
   }
 
   /// UI EVENT HANDLERS /////////////////////////////////////////////////////////
@@ -231,13 +184,8 @@ class Template extends UNISYS.Component {
     const tomlfile = e.target.files[0];
     TEMPLATE_MGR.ValidateTOMLFile({ tomlfile }).then(result => {
       if (result.isValid) {
-        this.setState({
-          editScope: 'root'
-        });
-        this.loadEditor({
-          schema: SCHEMA.TEMPLATE,
-          startval: result.templateJSON
-        });
+        console.log('got template', result.templateJSON);
+        this.onSaveChanges(result.templateJSON);
       } else {
         const errorMsg = result.error;
         this.setState({
@@ -253,14 +201,13 @@ class Template extends UNISYS.Component {
     TEMPLATE_MGR.DownloadTemplate();
   }
 
-  onSaveChanges() {
-    const templateJSON = EDITOR.getValue(); // could be a snippet
-    const { editScope } = this.state;
-    const template = TEMPLATE_MGR.UpdateTemplate(templateJSON, editScope);
-    TEMPLATE_MGR.SaveTemplateToFile(template).then(result => {
+  onSaveChanges(templateJSON) {
+    TEMPLATE_MGR.SaveTemplateToFile(templateJSON).then(result => {
+      console.error('onSaveChanges', result, templateJSON);
       if (!result.OK) {
         alert(result.info);
       } else {
+        alert(`Template Saved: ${templateJSON.name}`);
         this.setState({ isBeingEdited: false });
       }
     });
@@ -319,33 +266,18 @@ class Template extends UNISYS.Component {
           >
             <i className="small text-muted">Edit Current Template Options</i>
             <br />
-            <Button size="sm" onClick={this.onEditNodeTypes}>
+            <button size="sm" onClick={this.onEditNodeTypes}>
               Edit Node Types
-            </Button>
-            <Button size="sm" onClick={this.onEditEdgeTypes}>
+            </button>
+            <button size="sm" onClick={this.onEditEdgeTypes}>
               Edit Edge Types
-            </Button>
+            </button>
             <p></p>
             <p></p>
             <hr />
             <hr />
             <p>ADVANCED USERS ONLY</p>
             <p></p>
-            <i className="small text-muted">Edit Current Template</i>
-            <br />
-            <Button size="sm" onClick={this.onCurrentTemplateLoad}>
-              Edit Current Template
-            </Button>
-            <Button outline size="sm" onClick={this.onDownloadTemplate}>
-              Download Current Template
-            </Button>
-            <p></p>
-            <p></p>
-            <i className="small text-muted">Create New Template</i>
-            <br />
-            <Button size="sm" onClick={this.onNewTemplate}>
-              New Template
-            </Button>
             <div>
               <i className="small text-muted">
                 Import TOML template (replace existing template)
@@ -364,8 +296,20 @@ class Template extends UNISYS.Component {
                   <span style={{ color: 'red' }}>{tomlfileErrors}</span>
                 )}
               </label>
-              <br />
             </div>
+            <p></p>
+            <i className="small text-muted">Current Template</i>
+            <br />
+            <button size="sm" onClick={this.onDownloadTemplate}>
+              Download Current Template
+            </button>
+            <p></p>
+            <i className="small text-muted">Create New Template</i>
+            <br />
+            <button size="sm" onClick={this.onNewTemplate}>
+              New Template
+            </button>
+            <p></p>
           </div>
           <hr />
         </div>
@@ -374,75 +318,31 @@ class Template extends UNISYS.Component {
     return (
       <div
         style={{
-          backgroundColor: 'rgba(240,240,240,0.95)',
+          backgroundColor: '#0003',
           padding: '10px 20px'
         }}
       >
-        <h4>OLD Template Editor</h4>
+        <h4>Template Editor</h4>
         <p>
           <label>Current Template File Name:</label> <code>{tomlfilename}</code>
         </p>
         {editorjsx}
         <div hidden={!isBeingEdited}>
-          <Button onClick={this.onCancelEdit} size="sm" outline>
+          <button onClick={this.onCancelEdit} size="sm">
             Cancel
-          </Button>
+          </button>
           &nbsp;
-          <Button onClick={this.onSaveChanges} size="sm" color="primary">
+          <button onClick={this.onSaveChanges} size="sm" color="primary">
             Save Changes
-          </Button>
+          </button>
           <hr />
         </div>
         <div id="editor" hidden={!isBeingEdited}></div>
       </div>
     );
   }
-} // class Help
-
-// NOTES on using json-editor
-// Not needed anymore, but keep for reference for managing json-editor
-//
-// // Handle Delete Events
-// EDITOR.on('deleteRow', editor => {
-//   const val = EDITOR.getValue();
-//   const currentOptions = val ? val.options : [];
-//   console.log('currentOptions', currentOptions);
-//   typeOptionsRemoved = []; // start from scratch each time
-//   typeOptions.forEach(o => {
-//     if (!currentOptions.find(c => c.label === o.label)) typeOptionsRemoved.push(o);
-//   });
-//   console.log('removed options', typeOptionsRemoved);
-//   const deletions = EDITOR.getEditor('root.deletions');
-//   if (deletions) deletions.setValue(typeOptionsRemoved);
-//
-//   // key is 0 for first row
-//   // editor and key are undefined for last row
-//   // console.log('deleteRow', editor && editor.key)
-//   // const deletions = EDITOR.getEditor('root.deletions');
-//   // if (deletions) deletions.setValue([{ label: 'yo', color: '#ffffff' }]);
-//   // EDITOR.setValue({ deleted: 'yes' });
-// });
-//
-//
-// watch one
-// root.1 refers to second field, fields are 0-indexed
-// EDITOR.watch('root.1.label', (e) => {
-//   // `e` is undefined
-//   console.log('change', e);
-// });
-//
-// watch ALL
-// works but watches too much?
-// const watcherCallback = function (path) {
-//   console.log(`field with path: [${path}] changed to [${JSON.stringify(this.getEditor(path).getValue())}]`);
-//   // Do something
-// }
-// for (let key in EDITOR.editors) {
-//   if (EDITOR.editors.hasOwnProperty(key) && key !== 'root') {
-//     EDITOR.watch(key, watcherCallback.bind(EDITOR, key));
-//   }
-// }
+}
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-module.exports = Template;
+module.exports = NCTemplate;

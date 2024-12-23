@@ -17,7 +17,7 @@ const SETTINGS = require('settings');
 const Help = require('./Help');
 const Vocabulary = require('./Vocabulary');
 const ImportExport = require('./ImportExport');
-const Template = require('./Template');
+const NCTemplate = require('./NCTemplate');
 const UNISYS = require('unisys/client');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
@@ -138,7 +138,7 @@ class More extends UNISYS.Component {
             <TabPane tabId="1">{activeTab === '1' && <Help />}</TabPane>
             <TabPane tabId="2">{activeTab === '2' && <Vocabulary />}</TabPane>
             <TabPane tabId="3">{activeTab === '3' && <ImportExport />}</TabPane>
-            <TabPane tabId="4">{activeTab === '4' && <Template />}</TabPane>
+            <TabPane tabId="4">{activeTab === '4' && <NCTemplate />}</TabPane>
           </TabContent>
         </div>
       </div>
