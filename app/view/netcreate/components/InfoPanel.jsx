@@ -159,6 +159,9 @@ class InfoPanel extends UNISYS.Component {
   }
 
   UpdateFilterSummary(data) {
+    if (this.state.filtersSummary === data.filtersSummary) {
+      return;
+    }
     this.setState({ filtersSummary: data.filtersSummary });
   }
 

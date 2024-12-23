@@ -1,6 +1,10 @@
 /* eslint-disable no-alert */
 /*//////////////////////////////// ABOUT \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\*\
 
+
+  DEPRECATED -- see NCTemplate.jsx
+
+
   Template Editor View
 
   Displays a variety of tools to edit templates:
@@ -374,7 +378,7 @@ class Template extends UNISYS.Component {
           padding: '10px 20px'
         }}
       >
-        <h4>Template Editor</h4>
+        <h4>OLD Template Editor</h4>
         <p>
           <label>Current Template File Name:</label> <code>{tomlfilename}</code>
         </p>

@@ -1,3 +1,4 @@
+version = 2
 name = "Untitled Project"
 description = "No Description"
 requireLogin = false
@@ -22,7 +23,6 @@ nodeDefaultTransparency = 1
 edgeDefaultTransparency = 0.7
 searchColor = "#008800"
 sourceColor = "#FFa500"
-version = 2
 
 [citation]
 text = "No citation set"
@@ -100,7 +100,7 @@ displayLabel = "Created"
 exportLabel = "Created"
 help = "Date and time node was created"
 includeInGraphTooltip = true
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [nodeDefs.createdBy]
@@ -108,7 +108,7 @@ displayLabel = "Created By"
 help = "Author who created the node"
 exportLabel = "Created By"
 includeInGraphTooltip = true
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [nodeDefs.updated]
@@ -116,7 +116,7 @@ displayLabel = "Updated"
 exportLabel = "Updated"
 help = "Date and time node was last modified"
 includeInGraphTooltip = true
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [nodeDefs.updatedBy]
@@ -124,7 +124,7 @@ displayLabel = "Updated By"
 exportLabel = "Updated By"
 help = "Author who updated the node"
 includeInGraphTooltip = true
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [nodeDefs.revision]
@@ -132,7 +132,7 @@ displayLabel = "Revision"
 exportLabel = "Revision"
 help = "Number of times this node has been revised"
 includeInGraphTooltip = true
-isProvenance = false
+isProvenance = true
 hidden = true
 
 [edgeDefs.id]
@@ -227,7 +227,7 @@ displayLabel = "Created"
 exportLabel = "Created"
 includeInGraphTooltip = true
 help = "Date and time edge was created"
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [edgeDefs.createdBy]
@@ -243,7 +243,7 @@ displayLabel = "Updated"
 exportLabel = "Updated"
 includeInGraphTooltip = true
 help = "Date and time edge was last modified"
-isProvenance = false
+isProvenance = true
 hidden = false
 
 [edgeDefs.updatedBy]
@@ -259,5 +259,5 @@ displayLabel = "Revision"
 exportLabel = "Revision"
 includeInGraphTooltip = true
 help = "Number of times this edge has been revised"
-isProvenance = false
+isProvenance = true
 hidden = true

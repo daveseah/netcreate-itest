@@ -13,7 +13,8 @@
         15  NCAutoSuggest .matchlist
         15  NCNode .ncedge
         10  NCNode .nccomponent
-         1  NCNode .screen ============
+         9  NCNode .screen ============
+         1  URTable th
          1  ToolTip .modal, .tooltiptextabove, .tooltiptext
          0  NetCreate
 */

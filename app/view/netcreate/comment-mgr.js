@@ -80,7 +80,7 @@ MOD.LoadDB = data => {
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   COMMENT.LoadTemplate(TEMPLATE.COMMENTTYPES);
   COMMENT.LoadDB(data);
-}
+};
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -93,29 +93,77 @@ MOD.COMMENTICON = (
 // From Evan O'Neil https://drive.google.com/drive/folders/1fJ5WiLMVQxxaqghrCOFwegmnYoOvst7E
 // NOTE viewbox is set to y=1 to better center the text
 MOD.ICN_COMMENT_UNREAD = (
-  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
-    <path fill="#FFE143" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
-    <path fill="#FFE143" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  <svg
+    id="icn-comment-unread"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 1 16 16"
+  >
+    <path
+      fill="#FFE143"
+      d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z"
+    />
+    <path
+      fill="#FFE143"
+      d="M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z"
+    />
   </svg>
-)
+);
 MOD.ICN_COMMENT_UNREAD_SELECTED = (
-  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
-    <path fill="#D44127" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
-    <path fill="#FFE143" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  <svg
+    id="icn-comment-unread"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 1 16 16"
+  >
+    <path
+      fill="#D44127"
+      d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z"
+    />
+    <path
+      fill="#FFE143"
+      d="M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z"
+    />
   </svg>
-)
+);
 MOD.ICN_COMMENT_READ = (
-  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
-    <path fill="#696969" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
-    <path fill="#696969" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  <svg
+    id="icn-comment-unread"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 1 16 16"
+  >
+    <path
+      fill="#696969"
+      d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z"
+    />
+    <path
+      fill="#696969"
+      d="M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z"
+    />
   </svg>
-)
+);
 MOD.ICN_COMMENT_READ_SELECTED = (
-  <svg id="icn-comment-unread" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 1 16 16">
-    <path fill="#D44127" d='M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z' />
-    <path fill="#696969" d='M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z' />
+  <svg
+    id="icn-comment-unread"
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 1 16 16"
+  >
+    <path
+      fill="#D44127"
+      d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 9.15705 1.28072 10.2485 1.77778 11.21V15H8Z"
+    />
+    <path
+      fill="#696969"
+      d="M3.17778 10.8696V13.6H8C11.0928 13.6 13.6 11.0928 13.6 8C13.6 4.90721 11.0928 2.4 8 2.4C4.90721 2.4 2.4 4.90721 2.4 8C2.4 8.92813 2.62469 9.79968 3.02143 10.5671L3.17778 10.8696Z"
+    />
   </svg>
-)
+);
 
 function m_SetAppStateCommentCollections() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
@@ -169,12 +217,12 @@ MOD.DeconstructCref = cref => {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
   return { type, id };
-}
+};
 
 /**
  * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
-* e.g. "n32" becomes {typeLabel "Node", sourceLabel: "32"}
-* @param {string} cref
+ * e.g. "n32" becomes {typeLabel "Node", sourceLabel: "32"}
+ * @param {string} cref
  * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
  */
 MOD.GetCREFSourceLabel = cref => {
@@ -260,14 +308,14 @@ MOD.OpenComment = (cref, cid) => {
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// User Id
-MOD.SetCurrentUserId = uid => UID = uid;
+MOD.SetCurrentUserId = uid => (UID = uid);
 MOD.GetCurrentUserId = () => UID; // called by other comment classes
 MOD.GetUserName = uid => {
   return COMMENT.GetUserName(uid);
 };
 MOD.IsAdmin = () => {
   return SETTINGS.IsAdmin();
-}
+};
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment Type
@@ -377,8 +425,7 @@ MOD.GetCommentThreadPosition = commentButtonId => {
   }
   const y = btn.getBoundingClientRect().top + window.scrollY;
   return { x, y };
-}
-
+};
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -431,10 +478,10 @@ MOD.GetCommentVObj = (cref, cid) => {
 /// Comments
 MOD.GetComment = cid => {
   return COMMENT.GetComment(cid);
-}
+};
 MOD.GetUnreadRepliesToMe = uid => {
   return COMMENT.GetUnreadRepliesToMe(uid);
-}
+};
 MOD.GetUnreadComments = () => {
   return COMMENT.GetUnreadComments();
 };
@@ -608,19 +655,17 @@ MOD.HandleREADBY_UPDATE = data => {
 /// DB CALLS //////////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.LockComment = comment_id => {
-  UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment_id }).then(
-    () => {
-      UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
-      UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
-    }
-  );
-}
+  UDATA.NetCall('SRV_DBLOCKCOMMENT', { commentID: comment_id }).then(() => {
+    UDATA.NetCall('SRV_REQ_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
+    UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'comment_edit' });
+  });
+};
 MOD.UnlockComment = comment_id => {
   UDATA.NetCall('SRV_DBUNLOCKCOMMENT', { commentID: comment_id }).then(() => {
     UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.COMMENT });
     UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
   });
-}
+};
 
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
