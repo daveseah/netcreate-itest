@@ -342,6 +342,8 @@ function URComment({ cref, cid, uid }) {
       ))}
     </select>
   );
+  const SelectedType = commentTypes.get(selected_comment_type); //(type => type[0] === selected_comment_type);
+  const SelectedTypeLabel = SelectedType ? SelectedType.label : 'Type not found';
   // Alternative three-dot menu approach to hide "Edit" and "Delete"
   // const UIOnEditMenuSelect = event => {
   //   switch (event.target.value) {
@@ -413,6 +415,10 @@ function URComment({ cref, cid, uid }) {
         </div>
         <div>
           <div className="commentId">#{cid}</div>
+          <div>
+            <span className="date">TYPE: </span>
+            <span className="type">{SelectedTypeLabel}</span>
+          </div>
           <URCommentPrompt
             cref={cref}
             commentType={selected_comment_type}

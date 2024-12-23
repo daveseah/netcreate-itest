@@ -66,6 +66,7 @@ const DATASTORE = require('system/datastore');
 const TOML = require('@iarna/toml');
 const clone = require('rfdc')();
 const UTILS = require('./nc-utils');
+const ENUM = require('system/util/enum');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -284,9 +285,13 @@ MOD.ExportNodes = () => {
   /// 1. Export Nodes
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Define Node KEYS to export
-  /// Use nodekeys from TEMPLATE, but skip hidden fields
+  /// Use nodekeys from TEMPLATE
+  /// Skip hidden fields that are not built-in fields
+  /// Built-in fields are ALWAYS exported
   const nodekeys = Object.keys(TEMPLATE.nodeDefs).filter(k => {
-    return TEMPLATE.nodeDefs[k].hidden ? false : k;
+    return TEMPLATE.nodeDefs[k].hidden && !ENUM.BUILTIN_FIELDS_NODE.includes(k)
+      ? false
+      : k;
   });
 
   /// 2. Expand to CSV
@@ -352,10 +357,13 @@ MOD.ExportEdges = () => {
   // const edgesArr = m_GenerateEdgesArray(edges, EDGEKEYS);
 
   // New Template method
-  // Use edgekeys from TEMPLATE, but skip hidden fields
+  // Use edgekeys from TEMPLATE
+  // Skip hidden fields that are not built-in fields
   // const edgekeys = Object.keys(TEMPLATE.edgeDefs);
   const edgekeys = Object.keys(TEMPLATE.edgeDefs).filter(k => {
-    return TEMPLATE.edgeDefs[k].hidden ? false : k;
+    return TEMPLATE.edgeDefs[k].hidden && !ENUM.BUILTIN_FIELDS_EDGE.includes(k)
+      ? false
+      : k;
   });
 
   // const edgesArr = m_GenerateEdgesArray(edges, edgekeys);
@@ -476,7 +484,7 @@ async function m_NodefileCheckHeaders(data) {
   // Retrieve import file node keys defined in template
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   const NODEKEYS = Object.values(TEMPLATE.nodeDefs)
-    .filter(k => !k.hidden) // Ignore hidden keys
+    .filter(k => !k.hidden || ENUM.BUILTIN_FIELDS_NODE.includes(k)) // Ignore hidden keys but keep built-in fields, even if hidden
     .map(k => k.exportLabel);
 
   const { nodefile } = data;
@@ -527,72 +535,73 @@ function m_NodefileLoadNodes(headers, lines) {
   // Load JSON
   let isValid = true;
   let messageJsx = '';
-  const nodes = lines.map(l => {
-    if (l === "") return undefined; // skip blank lines
-    const node = { meta: {} };
-    const subcategories = new Map();
-    const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
-    importFields.forEach((f, index) => {
-      const field = f.replace(/^"/, '').replace(/"$/, ''); // strip start and end quotes from strings
-      const key = headers[index];
-      const keysplit = String(key).split(':');
-      // Subcategory and subkey are DEPRECATED
-      const subcategory = keysplit[0]; // e.g. 'attributes' of 'attributes:Node_type'
-      const subkey = keysplit[1]; // e.g. 'Node_type'
-      if (subkey) {
-        isValid = false;
-        messageJsx = <div color="red">`subkey ${subkey} is deprecated!`</div>;
-        console.error(PR, `subkey ${subkey} is deprecated!`);
-        // DEPRECATED: Review if we decide to use this again.
-        // // Using a sub category?  e.g. 'attributes:Node_type'
-        // const currSubfields = subcategories.get(subcategory) || {};
-        // console.log('...currSubfields', currSubfields, field)
-        // currSubfields[subkey] = field;
-        // subcategories.set(subcategory, currSubfields);
-        // console.log('adding subfields', key, currSubfields, subcategories)
-      } else {
-        // not using a subcategory, just a regular field
-        const exportLabel = headers[index];
-        if (exportLabel === undefined)
-          console.error(
-            PR,
-            'could not find exportLabel for index',
-            index,
-            'in',
-            headers
-          );
-        const internalLabel = INTERNAL_FIELDS_MAP.get(exportLabel);
-        // special handling for internal fields
-        if (['id'].includes(internalLabel)) {
-          // Note that Number("") => 0
-          // We don't want empty ids to be converted to id 0
-          // so we explicitly replace it with NaN
-          node[internalLabel] = field === '' ? NaN : field; // ids are numbers
-        } else if (['created', 'updated'].includes(internalLabel)) {
-          // meta fields: date
-          node.meta[internalLabel] = new Date(field).getTime();
-        } else if (['revision'].includes(internalLabel)) {
-          // meta fields: revision
-          node.meta[internalLabel] = field;
+  const nodes = lines
+    .map(l => {
+      if (l === '') return undefined; // skip blank lines
+      const node = { meta: {} };
+      const subcategories = new Map();
+      const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
+      importFields.forEach((f, index) => {
+        const field = f.replace(/^"/, '').replace(/"$/, ''); // strip start and end quotes from strings
+        const key = headers[index];
+        const keysplit = String(key).split(':');
+        // Subcategory and subkey are DEPRECATED
+        const subcategory = keysplit[0]; // e.g. 'attributes' of 'attributes:Node_type'
+        const subkey = keysplit[1]; // e.g. 'Node_type'
+        if (subkey) {
+          isValid = false;
+          messageJsx = <div color="red">`subkey ${subkey} is deprecated!`</div>;
+          console.error(PR, `subkey ${subkey} is deprecated!`);
+          // DEPRECATED: Review if we decide to use this again.
+          // // Using a sub category?  e.g. 'attributes:Node_type'
+          // const currSubfields = subcategories.get(subcategory) || {};
+          // console.log('...currSubfields', currSubfields, field)
+          // currSubfields[subkey] = field;
+          // subcategories.set(subcategory, currSubfields);
+          // console.log('adding subfields', key, currSubfields, subcategories)
         } else {
-          node[internalLabel] = m_decode(field); // convert double quotes
+          // not using a subcategory, just a regular field
+          const exportLabel = headers[index];
+          if (exportLabel === undefined)
+            console.error(
+              PR,
+              'could not find exportLabel for index',
+              index,
+              'in',
+              headers
+            );
+          const internalLabel = INTERNAL_FIELDS_MAP.get(exportLabel);
+          // special handling for internal fields
+          if (['id'].includes(internalLabel)) {
+            // Note that Number("") => 0
+            // We don't want empty ids to be converted to id 0
+            // so we explicitly replace it with NaN
+            node[internalLabel] = field === '' ? NaN : field; // ids are numbers
+          } else if (['created', 'updated'].includes(internalLabel)) {
+            // meta fields: date
+            node.meta[internalLabel] = new Date(field).getTime();
+          } else if (['revision'].includes(internalLabel)) {
+            // meta fields: revision
+            node.meta[internalLabel] = field;
+          } else {
+            node[internalLabel] = m_decode(field); // convert double quotes
+          }
         }
-      }
-    });
+      });
 
-    // DEPRECATED
-    // collapse 'attributes' and 'meta' into objects
-    // subcategories.forEach((val, key) => {
-    //   node[key] = val
-    // });
+      // DEPRECATED
+      // collapse 'attributes' and 'meta' into objects
+      // subcategories.forEach((val, key) => {
+      //   node[key] = val
+      // });
 
+      // Add meta data if missing
+      if (isNaN(node.meta.created)) node.meta.created = new Date().getTime();
+      if (isNaN(node.meta.revision)) node.meta.revision = 0;
 
-    // Add meta data if missing
-    if (isNaN(node.meta.created)) node.meta.created = new Date().getTime();
-    if (isNaN(node.meta.revision)) node.meta.revision = 0;
-
-    return node;
-  }).filter(n => n !== undefined);
+      return node;
+    })
+    .filter(n => n !== undefined);
   return { isValid, messageJsx, nodes };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -731,7 +740,7 @@ async function m_EdgefileCheckHeaders(data) {
   // Retrieve import file node keys defined in template
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   const EDGEKEYS = Object.values(TEMPLATE.edgeDefs)
-    .filter(k => !k.hidden) // Ignore hidden keys
+    .filter(k => !k.hidden || ENUM.BUILTIN_FIELDS_EDGE.includes(k)) // Ignore hidden keys but keep built-in fields, even if hidden
     .map(k => k.exportLabel);
 
   const { edgefile } = data;
@@ -783,72 +792,74 @@ function m_EdgefileLoadEdges(headers, lines) {
   // Load JSON
   let isValid = true;
   let messageJsx = '';
-  const edges = lines.map(l => {
-    if (l === "") return undefined; // skip blank lines
-    const edge = { meta: {} };
-    const subcategories = new Map();
-    const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
-    importFields.forEach((f, index) => {
-      const field = f.replace(/^"/, '').replace(/"$/, ''); // strip start and end quotes from strings
-      const key = headers[index];
-      const keysplit = String(key).split(':');
-      // Subcategory and subkey are DEPRECATED
-      const subcategory = keysplit[0]; // e.g. 'attributes' of 'attributes:Node_type'
-      const subkey = keysplit[1]; // e.g. 'Node_type'
-      if (subkey) {
-        isValid = false;
-        messageJsx = <div color="red">`subkey ${subkey} is deprecated!`</div>;
-        console.error(PR, `subkey ${subkey} is deprecated!`);
-        // DEPRECATED: Review if we decide to use this again.
-        // // Using a sub category?  e.g. 'attributes:Node_type'
-        // const currSubfields = subcategories.get(subcategory) || {};
-        // console.log('...currSubfields', currSubfields, field)
-        // currSubfields[subkey] = field;
-        // subcategories.set(subcategory, currSubfields);
-        // console.log('adding subfields', key, currSubfields, subcategories)
-      } else {
-        // not using a subcategory, just a regular field
-        // meta field?
-        const exportLabel = headers[index];
-        if (exportLabel === undefined)
-          console.error(
-            PR,
-            'could not find exportLabel for index',
-            index,
-            'in',
-            headers
-          );
-        const internalLabel = INTERNAL_FIELDS_MAP.get(exportLabel);
-        // special handling for internal fields
-        if (['id', 'source', 'target'].includes(internalLabel)) {
-          // Note that Number("") => 0
-          // We don't want empty ids to be converted to id 0
-          // so we explicitly replace it with NaN
-          edge[internalLabel] = field === '' ? NaN : field; // ids are numbers
-        } else if (['created', 'updated'].includes(internalLabel)) {
-          // meta fields: date
-          edge.meta[internalLabel] = new Date(field).getTime();
-        } else if (['revision'].includes(internalLabel)) {
-          // meta fields: revision
-          edge.meta[internalLabel] = field;
+  const edges = lines
+    .map(l => {
+      if (l === '') return undefined; // skip blank lines
+      const edge = { meta: {} };
+      const subcategories = new Map();
+      const importFields = l.split(REGEXMatchCommasNotInQuotes); // ?=" needed to match commas in strings
+      importFields.forEach((f, index) => {
+        const field = f.replace(/^"/, '').replace(/"$/, ''); // strip start and end quotes from strings
+        const key = headers[index];
+        const keysplit = String(key).split(':');
+        // Subcategory and subkey are DEPRECATED
+        const subcategory = keysplit[0]; // e.g. 'attributes' of 'attributes:Node_type'
+        const subkey = keysplit[1]; // e.g. 'Node_type'
+        if (subkey) {
+          isValid = false;
+          messageJsx = <div color="red">`subkey ${subkey} is deprecated!`</div>;
+          console.error(PR, `subkey ${subkey} is deprecated!`);
+          // DEPRECATED: Review if we decide to use this again.
+          // // Using a sub category?  e.g. 'attributes:Node_type'
+          // const currSubfields = subcategories.get(subcategory) || {};
+          // console.log('...currSubfields', currSubfields, field)
+          // currSubfields[subkey] = field;
+          // subcategories.set(subcategory, currSubfields);
+          // console.log('adding subfields', key, currSubfields, subcategories)
         } else {
-          edge[internalLabel] = m_decode(field); // convert double quotes
+          // not using a subcategory, just a regular field
+          // meta field?
+          const exportLabel = headers[index];
+          if (exportLabel === undefined)
+            console.error(
+              PR,
+              'could not find exportLabel for index',
+              index,
+              'in',
+              headers
+            );
+          const internalLabel = INTERNAL_FIELDS_MAP.get(exportLabel);
+          // special handling for internal fields
+          if (['id', 'source', 'target'].includes(internalLabel)) {
+            // Note that Number("") => 0
+            // We don't want empty ids to be converted to id 0
+            // so we explicitly replace it with NaN
+            edge[internalLabel] = field === '' ? NaN : field; // ids are numbers
+          } else if (['created', 'updated'].includes(internalLabel)) {
+            // meta fields: date
+            edge.meta[internalLabel] = new Date(field).getTime();
+          } else if (['revision'].includes(internalLabel)) {
+            // meta fields: revision
+            edge.meta[internalLabel] = field;
+          } else {
+            edge[internalLabel] = m_decode(field); // convert double quotes
+          }
         }
-      }
-    });
+      });
 
-    // DEPRECATED
-    // collapse 'attributes' and 'meta' into objects
-    // subcategories.forEach((val, key) => {
-    //   node[key] = val
-    // });
+      // DEPRECATED
+      // collapse 'attributes' and 'meta' into objects
+      // subcategories.forEach((val, key) => {
+      //   node[key] = val
+      // });
 
-    // Add meta data if missing
-    if (isNaN(edge.meta.created)) edge.meta.created = new Date().getTime();
-    if (isNaN(edge.meta.revision)) edge.meta.revision = 0;
+      // Add meta data if missing
+      if (isNaN(edge.meta.created)) edge.meta.created = new Date().getTime();
+      if (isNaN(edge.meta.revision)) edge.meta.revision = 0;
 
-    return edge;
-  }).filter(e => e !== undefined);;
+      return edge;
+    })
+    .filter(e => e !== undefined);
   return { isValid, messageJsx, edges };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
