@@ -386,7 +386,22 @@ MOD.UpdateCommentUIState = (uiref, openState) => {
 MOD.GetOpenComments = cref => COMMENT.GetOpenComments(cref);
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Editable Comments (comments being ddited)
+/// Editable Comments (comments being edited)
+MOD.RegisterCommentBeingEdited = cid => {
+  COMMENT.RegisterCommentBeingEdited(cid);
+};
+MOD.DeRegisterCommentBeingEdited = cid => {
+  return COMMENT.DeRegisterCommentBeingEdited(cid);
+};
+
+/// Are ANY comments being edited?
+/// Returns True if ANY comment is being edited
+/// * Used by comment status when user clicks on a comment id to view a saved comment
+///   to prevent closing the comment collection if a comment is being edited.
+/// * Also used by URCommentThread to determine whether "Click to add" is displayed
+MOD.GetCommentsAreBeingEdited = () => {
+  return COMMENT.GetCommentsAreBeingEdited();
+};
 
 MOD.OKtoClose = cref => {
   const cvobjs = MOD.GetThreadedViewObjects(cref);
