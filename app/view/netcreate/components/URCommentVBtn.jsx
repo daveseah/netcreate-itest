@@ -86,6 +86,10 @@ function URCommentVBtn({ cref }) {
     };
   }, []);
 
+  useEffect(() => {
+    c_Update();
+  }, [cref]);
+
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urstate_UpdateCollection(COMMENTCOLLECTION) {
