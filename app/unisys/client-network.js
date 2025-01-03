@@ -85,7 +85,9 @@ NETWORK.Connect = function (datalink, opt) {
 
   // create websocket
   // uses values that were embedded in index.ejs on load
-  let wsURI = `ws://${NETSOCK.uaddr}:${NETSOCK.uport}`;
+  const wsHost = `${NETSOCK.uaddr}${NETSOCK.uport ? `:${NETSOCK.uport}` : ''}`;
+  let wsURI = `${NETSOCK.wss ? 'wss' : 'ws'}://${wsHost}`;
+
   NETSOCK.ws = new WebSocket(wsURI);
   if (DBG.connect) console.log(PR, 'OPEN SOCKET TO', wsURI);
 
@@ -93,6 +95,12 @@ NETWORK.Connect = function (datalink, opt) {
   NETWORK.AddListener('open', function (event) {
     if (DBG.connect) console.log(PR, '..OPEN', event.target.url);
     m_status = M2_CONNECTED;
+
+    // If a preamble has been defined, send it upon opening the connection
+    if (NETSOCK.preamble) {
+      NETSOCK.ws.send(NETSOCK.preamble);
+    }
+
     // message handling continues in 'message' handler
     // the first message is assumed to be registration data
   });
@@ -153,7 +161,7 @@ function m_HandleRegistrationMessage(msgEvent) {
   // (4) network is initialized
   if (typeof m_options.success === 'function') m_options.success();
   // (5) initialize heartbeat timer
-  m_ResetHearbeatTimer();
+  if (NETSOCK.ws.heartbeat) m_ResetHearbeatTimer();
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** When a heartbeat ping is received, respond with a pong to let the server
