@@ -8,16 +8,24 @@
   --comment-font-size-medium: 12px;
   --comment-font-weight-light: 300;
   --comment-font-weight-medium: 400;
-  --comment-status-font-color: #d44127; /* <= evan's, orig => #d84a0088; */
+  --comment-status-font-color: #d84a0088;
   --comment-system-font-color: #0003;
   --disabled-opacity: 0.5;
+  --cmtbtn-read: #696969; /* svg symbols */
+  --cmtbtn-unread-light: #ffe143; /* svg symbols */
+  --cmtbtn-unread-dark: #d44127; /* svg symbols */
+  --clr-comment: #ffe143;
+  --clr-comment-dark: #d44127;
+  --clr-comment-light: #ffe143;
+  --clr-comment-read-dark: #696969;
+  --clr-comment-read-light: #fff;
 }
 
 /* Comment Bar ------------------------------------------------------------- */
 #comment-bar {
   display: flex;
   align-self: flex-start;
-  margin-top: 6px;
+  margin-top: 10px;
   font-size: 0.8rem;
   z-index: 2000;
 }
@@ -64,6 +72,7 @@
   max-width: 400px;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--comment-commenter-font-color);
 }
 #comment-bar button.small {
   background-color: #fff6;
@@ -77,7 +86,10 @@
   margin-left: 0.25rem;
   float: right;
 }
-/* Comment Summary */
+/* Comment Status ---------------------------------------------------------- */
+#comment-status {
+}
+/* Comment Summary --------------------------------------------------------- */
 #comment-summary {
   display: flex;
   color: var(--comment-status-font-color);
@@ -87,7 +99,8 @@
   line-height: 1.3rem;
   cursor: pointer;
   width: fit-content;
-  padding: 3px 7px;
+  padding: 1px 5px;
+  float: right;
 }
 #comment-summary.expanded {
   display: none;
@@ -101,14 +114,13 @@
   width: 20px;
   height: 20px;
 }
-#comment-summary .comment-count,
 .comments-unread .comment-count {
   font-size: 10px;
   width: 20px;
   height: 20px;
   line-height: 20px;
 }
-/* Comment Panel */
+/* Comment Panel ----------------------------------------------------------- */
 #comment-panel {
   background-color: var(--comment-bg-light);
   border-radius: 15px;
@@ -120,13 +132,16 @@
 #comment-panel.expanded {
   display: block;
   height: fit-content;
+  /* pop out so so sidebars don't move */
+  position: absolute;
+  margin-left: -300px;
 }
-/* Comment Alert */
+/* Comment Alert ----------------------------------------------------------- */
 #comment-alert {
   height: 2em;
   padding-right: 10px;
   line-height: 1.5rem;
-  overflow: hidden;
+  /* overflow: hidden; skip this?  not necessary? */
   opacity: 0.01;
   transform: translateY(-150%);
 }
@@ -145,6 +160,11 @@
   opacity: 0.01;
   transform: translateY(0);
   transition: all 5s ease-in;
+}
+#comment-alert .comment-status-body {
+  position: absolute;
+  top: 2px;
+  right: 10px; /* float to the left of the main status */
 }
 .comment-status-body {
   margin-left: 1.3rem;
@@ -198,6 +218,7 @@ svg#comment-icon {
   height: 30px;
   font-size: 12px;
   font-weight: bold;
+  letter-spacing: -0.08em;
   line-height: 30px;
   position: relative;
   text-align: center;
@@ -214,10 +235,6 @@ svg#comment-icon {
 .hasReadComments .comment-count {
   color: white;
 }
-.commentbtn {
-  display: inline-block;
-  cursor: pointer;
-}
 .comment-intable svg#comment-icon {
   width: 20px;
   height: 20px;
@@ -225,7 +242,7 @@ svg#comment-icon {
   cursor: pointer;
 }
 
-/* Comment Thread */
+/* Comment Thread ---------------------------------------------------------- */
 .commentThread {
   display: flex;
   flex-direction: column;
@@ -265,7 +282,7 @@ svg#comment-icon {
 
 .commentThread button {
   /* emulates nccomponent */
-  color: #333;
+  color: var(--comment-commenter-font-color);
   background-color: #fff6;
   border-radius: 5px;
   border-color: #0006;
@@ -279,10 +296,11 @@ svg#comment-icon {
   opacity: var(--disabled-opacity);
 }
 
-/* Comment */
+/* Comment------------------------------------------------------------------ */
 .comment {
   display: grid;
   grid-template-columns: 5em auto;
+  color: var(--comment-commenter-font-color);
   background-color: #fff5;
   margin-bottom: 5px;
   padding: 5px;
@@ -292,6 +310,9 @@ svg#comment-icon {
   background-color: #fff8;
 }
 
+.comment.unread {
+  border: 3px solid var(--comment-bg-new);
+}
 .comment.deleted {
   background-color: #0000000a;
 }
@@ -334,13 +355,16 @@ svg#comment-icon {
 .comment .label,
 .comment .help /* .help uses nccomponent */,
 .comment .commentId,
-.comment-status-body .commenter {
+.comment-status-body .commenter,
+.comment .commentTypeBar .commentTypeLabel {
   color: #0008;
   font-size: var(--comment-font-size-medium);
   font-weight: var(--comment-font-weight-medium);
+  line-height: 14px;
+  padding-bottom: 3px;
 }
 .comment .label {
-  margin-top: 10px;
+  margin-top: 2px;
 }
 .commentThread .comment .help {
   /* override nccomponent */
@@ -355,6 +379,13 @@ svg#comment-icon {
   overflow-y: auto;
 }
 
+.comment .commentTypeBar {
+  display: flex;
+  column-gap: 5px;
+}
+.comment .commentTypeBar .commentTypeLabel {
+  flex-grow: 1;
+}
 .comment .comment-item {
   margin-bottom: 5px;
 }
@@ -380,7 +411,6 @@ svg#comment-icon {
 
 .comment .commentId {
   color: #0004;
-  float: right;
 }
 
 .comment .editmenu {
@@ -411,11 +441,6 @@ svg#comment-icon {
   cursor: pointer;
 }
 
-.commentbar,
-.editbar {
-  padding-top: 5px;
-}
-
 .commentbar {
   display: flex;
   flex-direction: row-reverse;
@@ -425,6 +450,7 @@ svg#comment-icon {
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
+  padding-top: 5px;
 }
 
 .comment .commentbar button,
@@ -439,10 +465,11 @@ svg#comment-icon {
 .comment .editbar button {
   margin-left: 15px; /* emulate nccomponent */
 }
+
 .comment .commentbar button:hover,
 .comment .editbar button:hover {
   color: white;
-  background-color: rgb(255, 141, 65);
+  background-color: #b2000b;
 }
 .comment .commentbar button.secondary,
 .comment .editbar button.secondary {
@@ -466,6 +493,9 @@ svg#comment-icon {
 .comment .commentbar button {
   /* visibility: hidden; */
   display: none;
+}
+.comment:hover .commentbar {
+  padding-top: 5px;
 }
 .comment:hover .commentbar button {
   /* visibility: visible; */
@@ -537,30 +567,81 @@ svg#comment-icon {
   border: 1px solid;
   border-color: var(--comment-status-font-color);
 }
+.comment .prompt button.selected:disabled {
+  opacity: 0.9;
+}
 .comment .prompt button.notselected {
-  opacity: 0.5;
+  opacity: 0.1;
+}
+.comment .prompt button.notselected:hover {
+  opacity: 0.3;
 }
 
-/* URCommentVBtn */
-.URCommentVBtn {
+/* URCommentCollectionMgr ----------------------------------------------------------- */
+.URCommentCollectionMgr {
+  position: absolute;
+}
+
+/* SVG Comment Icons ------------------------------------------------------- */
+.commentbtn {
+  /* URCommentBtn & URCommentVBtn */
   display: inline-block;
   cursor: pointer;
-  border: none;
-  background-color: transparent;
 }
-.URCommentVBtn svg {
-  width: 24px;
-  height: 24px;
+.commentbtn.disabled {
+  /* URCommentBtn & URCommentVBtn */
+  cursor: default;
 }
-.URCommentVBtn > .count {
-  height: 24px;
-  width: 24px;
-  margin-top: -21px;
-  color: #fff;
-  font-size: 10px;
-  font-weight: bold;
+.commentbtn > .comment-count {
+  position: absolute;
+  line-height: 28px;
+  width: 32px; /* match size of URComentBtnAlias */
+  height: 32px;
   text-align: center;
+  color: var(--cmtbtn-unread-dark);
 }
-.URCommentVBtn > .count.unread {
-  color: var(--comment-status-font-color);
+.commentbtn.hasUnreadComments .comment-count {
+  color: var(--cmtbtn-unread-dark);
+}
+.commentbtn.hasUnreadComments.isOpen .comment-count,
+.commentbtn.hasReadComments.isOpen .comment-count {
+  color: white;
+}
+.commentbtn.hasReadComments .comment-count {
+  color: var(--cmtbtn-read);
+}
+
+.svgcmt-read .svg-fill {
+  fill: var(--clr-comment-read-light);
+}
+.svgcmt-read .svg-outline {
+  fill: var(--clr-comment-read-light);
+}
+
+.svgcmt-read-outlined .svg-fill {
+  fill: var(--clr-comment-read-light);
+}
+.svgcmt-read-outlined .svg-outline {
+  fill: var(--clr-comment-read-dark);
+}
+
+.svgcmt-readSelected .svg-fill {
+  fill: var(--clr-comment-read-dark);
+}
+.svgcmt-readSelected .svg-outline {
+  fill: var(--clr-comment-read-dark);
+}
+
+.svgcmt-unread .svg-fill {
+  fill: var(--clr-comment-light);
+}
+.svgcmt-unread .svg-outline {
+  fill: var(--clr-comment-dark);
+}
+
+.svgcmt-unreadSelected .svg-fill {
+  fill: var(--clr-comment-dark);
+}
+.svgcmt-unreadSelected .svg-outline {
+  fill: var(--clr-comment-dark);
 }
