@@ -124,9 +124,9 @@ class NCNodeTable extends UNISYS.Component {
 
     // Comment Message Handlers
     // Force update whenever threads are opened or closed
-    UDATA.HandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
-    UDATA.HandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CMT_COLLECTION_SHOW', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CMT_COLLECTION_HIDE', this.onUpdateCommentUI);
+    UDATA.HandleMessage('CMT_COLLECTION_HIDE_ALL', this.onUpdateCommentUI);
   } // constructor
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -156,9 +156,9 @@ class NCNodeTable extends UNISYS.Component {
     this.AppStateChangeOff('TEMPLATE', this.onStateChange_TEMPLATE);
     this.AppStateChangeOff('SELECTION', this.onStateChange_SELECTION);
     this.AppStateChangeOff('HILITE', this.onStateChange_HILITE);
-    UDATA.UnhandleMessage('CTHREADMGR_THREAD_OPENED', this.onUpdateCommentUI);
-    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED', this.onUpdateCommentUI);
-    UDATA.UnhandleMessage('CTHREADMGR_THREAD_CLOSED_ALL', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CMT_COLLECTION_SHOW', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CMT_COLLECTION_HIDE', this.onUpdateCommentUI);
+    UDATA.UnhandleMessage('CMT_COLLECTION_HIDE_ALL', this.onUpdateCommentUI);
   }
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -472,13 +472,7 @@ class NCNodeTable extends UNISYS.Component {
     function RenderCommentBtn(key, tdata, coldef) {
       const value = tdata[key];
       return (
-        <URCommentVBtn
-          uiref={u_GetButtonId(value.cref)}
-          count={value.count}
-          hasUnreadComments={value.hasUnreadComments}
-          selected={value.selected}
-          cb={e => ui_ClickCommentBtn(value.cref)}
-        />
+        <URCommentVBtn cref={value.cref} />
       );
     }
     /// CUSTOM SORTERS
