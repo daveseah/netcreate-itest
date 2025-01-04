@@ -23,6 +23,8 @@ const SETTINGS = require('settings');
 const DBG = true;
 const PR = 'comment-mgr: ';
 
+const CMTBTNOFFSET = 10;
+
 /// INITIALIZE MODULE /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 let MOD = UNISYS.NewModule(module.id);
@@ -80,6 +82,13 @@ MOD.LoadDB = data => {
   const TEMPLATE = UDATA.AppState('TEMPLATE');
   COMMENT.LoadTemplate(TEMPLATE.COMMENTTYPES);
   COMMENT.LoadDB(data);
+
+  // After loading db, derive the view objects
+  // This is needed to force update of the project comment count
+  const uid = MOD.GetCurrentUserId();
+  COMMENT.DeriveAllThreadedViewObjects(uid);
+  const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
+  UDATA.SetAppState('COMMENTCOLLECTION', COMMENTCOLLECTION);
 };
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
@@ -99,17 +108,17 @@ MOD.COMMENTICON = (
     <path fill="none" d="M0 0h24v24H0z"></path>
   </g>
 );
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SetAppStateCommentCollections() {
   const COMMENTCOLLECTION = COMMENT.GetCommentCollections();
   UDATA.SetAppState('COMMENTCOLLECTION', COMMENTCOLLECTION);
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_SetAppStateCommentVObjs() {
   const COMMENTVOBJS = COMMENT.GetCOMMENTVOBJS();
   UDATA.SetAppState('COMMENTVOBJS', COMMENTVOBJS);
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_UpdateComment(comment) {
   const cobj = {
     collection_ref: comment.collection_ref,
@@ -126,17 +135,17 @@ function m_UpdateComment(comment) {
   const uid = MOD.GetCurrentUserId();
   COMMENT.UpdateComment(cobj, uid);
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_UpdatePermissions(data) {
   UDATA.NetCall('SRV_GET_EDIT_STATUS').then(data => {
     // disable comment button if someone is editing a comment
     UDATA.LocalCall('COMMENT_UPDATE_PERMISSIONS', data);
   });
 }
+
 /// API METHODS ///////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// CONSTANTS
 MOD.VIEWMODE = NCUI.VIEWMODE;
 
@@ -154,6 +163,7 @@ MOD.DeconstructCREF = cref => {
   return { type, id };
 };
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Generate a human friendly label based on the cref (e.g. `n21`, `e4`)
  * e.g. "n32" becomes {typeLabel "Node", sourceLabel: "32"}
@@ -183,13 +193,50 @@ MOD.GetCREFSourceLabel = cref => {
         sourceLabel = `${sourceNode.label}${ARROW_RIGHT}${targetNode.label}`;
       break;
     case 'p':
-      typeLabel = 'Project';
+      typeLabel = 'Project'; // reserve for future use
       sourceLabel = id;
       break;
   }
   return { typeLabel, sourceLabel };
 };
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Returns the position for the comment button
+ * Adjusting for window position is done via GetCommentCollectionPosition
+ */
+MOD.GetCommentBtnPosition = cref => {
+  const btn = document.getElementById(cref);
+  if (!btn)
+    throw new Error(`${PR}GetCommentCollectionPosition: Button not found ${cref}`);
+  const bbox = btn.getBoundingClientRect();
+  return { x: bbox.left, y: bbox.top };
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Returns the comment window position for the comment button
+ * shifting the window to the left if it's too close to the edge of the screen.
+ * or shifting it up if it's too close to the bottom of the screen.
+ * x,y is the position of the comment button, offsets are then caclulated
+ */
+MOD.GetCommentCollectionPosition = ({ x, y }, isExpanded) => {
+  const windowWidth = Math.min(screen.width, window.innerWidth);
+  const windowHeight = Math.min(screen.height, window.innerHeight);
+  let newX;
+  if (windowWidth - x < 500) {
+    newX = x - 410;
+  } else {
+    newX = x + CMTBTNOFFSET * 2;
+  }
+  let newY = y + window.scrollY;
+  if (windowHeight - y < 250) {
+    if (isExpanded) newY = y - 250;
+    else newY = y - 150;
+  } else {
+    newY = y - CMTBTNOFFSET;
+  }
+  return { x: newX, y: newY };
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Open the object that the comment refers to
 /// e.g. in Net.Create it's a node or edge object
 MOD.OpenReferent = cref => {
@@ -205,12 +252,12 @@ MOD.OpenReferent = cref => {
         UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id });
       });
       break;
-    case 'p':
+    case 'p': // reserve for future use
       // do something?
       break;
   }
 };
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Open comment using a comment id
 MOD.OpenComment = (cref, cid) => {
   const { type, id } = MOD.DeconstructCREF(cref);
@@ -235,7 +282,7 @@ MOD.OpenComment = (cref, cid) => {
         });
       });
       break;
-    case 'p':
+    case 'p': // reserve for future use
       // do something?
       break;
   }
@@ -277,15 +324,133 @@ MOD.MarkAllRead = () => {
   m_SetAppStateCommentCollections();
 };
 
+/// COMMENT COLLECTIONS ///////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Comment Collections
 MOD.GetCommentCollection = uiref => {
   return COMMENT.GetCommentCollection(uiref);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-MOD.OpenCommentCollection = (uiref, cref, position) => {
-  MOD.UpdateCommentUIState(uiref, { cref, isOpen: true });
-  UDATA.LocalCall('CTHREADMGR_THREAD_OPENED', { uiref, cref, position });
+/*
+  OpenCommentCollection
+
+  The requests come from four sources:
+    * Node Editor
+    * Edge Editor
+    * Node Table
+    * Edge Table
+
+  URCommentVBtn is a UI component that passes clicks
+  to URCommentCollectionMgr via UR.Publish(`CMT_COLLECTION_SHOW`) calls
+
+  URCommentSVGBtn is a purely visual component that renders SVG buttons
+  as symbols and displays the comment count and selection status.
+  It pases the click events to URCommentVBtn.
+
+  MAP
+    * URCommentStatus
+      > URCommentCollectionMgr
+        > URCommentThread
+          > URCommentVBtn
+            > URCommentSVGBtn
+
+
+  HOW IT WORKS
+  When a Node Editor, Edge Editor, Node Table, or Edge Table clicks on the
+  URCommentVBtn, URCommentCollectionMgr will:
+  * Add the requested Thread to the URCommentCollectionMgr
+  * Open the URCommentThread
+  * When the URCommentThread is closed, it will be removed from the URCommentCollectionMgr
+
+*/
+MOD.OpenCommentCollection = (cref, position) => {
+  // Validate
+  if (cref === undefined)
+    throw new Error(
+      `comment-mgr.OpenCommentCollection: missing cref data ${JSON.stringify(cref)}`
+    );
+  if (position === undefined || position.x === undefined || position.y === undefined)
+    throw new Error(
+      `comment-mgr.OpenCommentCollection: missing position data ${JSON.stringify(
+        position
+      )}`
+    );
+  position.x = parseInt(position.x); // handle net call data
+  position.y = parseInt(position.y);
+  // 0. If the comment is already open, do nothing
+  const openComments = MOD.GetOpenComments(cref);
+  if (openComments) {
+    MOD.CloseCommentCollection(cref, cref, MOD.GetCurrentUserId());
+    return; // already open, close it
+  }
+  // 1. Position the window to the right of the click
+  const commentThreadWindowIsExpanded = MOD.GetCommentCollectionCount(cref);
+  const collectionPosition = MOD.GetCommentCollectionPosition(
+    position,
+    commentThreadWindowIsExpanded
+  );
+
+  // 2. Update the state
+  MOD.UpdateCommentUIState(cref, { cref, isOpen: true });
+  // 3. Open the collection in the collection manager
+  UDATA.LocalCall('CMT_COLLECTION_SHOW', { cref, position: collectionPosition });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Called by URCommentVBtn
+ * @param {string} cref
+ */
+MOD.OpenCommentCollectionByCref = cref => {
+  const cmtPosition = MOD.GetCommentBtnPosition(cref);
+  MOD.OpenCommentCollection(cref, {
+    x: cmtPosition.x + CMTBTNOFFSET,
+    y: cmtPosition.y + CMTBTNOFFSET
+  });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Open comment inside a collection using a comment id
+/// NOTE this is NOT used by SVGButtons
+MOD.OpenCommentStatusComment = (cref, cid) => {
+  const { type, id } = MOD.DeconstructCREF(cref);
+  let parms;
+
+  // if a comment is being edited...
+  // - don't close all comments
+  // - don't open a new one
+  if (MOD.GetCommentsAreBeingEdited()) {
+    UR.Publish('DIALOG_OPEN', {
+      text: `Please finish editing your comment before opening a different comment!`
+    });
+    return;
+  }
+
+  MOD.CloseAllCommentCollectionsWithoutMarkingRead();
+
+  let edge;
+  switch (type) {
+    case 'p': // project (from MEME, currently not used) reserved for future use
+      MOD.OpenCommentCollectionByCref('projectcmt');
+      break;
+    case 'n':
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
+        UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+          const commentEl = document.getElementById(cid);
+          commentEl.scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+      break;
+    case 'e':
+      edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
+      UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
+        UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
+          UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+            const commentEl = document.getElementById(cid);
+            commentEl.scrollIntoView({ behavior: 'smooth' });
+          });
+        });
+      });
+      break;
+  }
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -331,11 +496,44 @@ MOD.CloseCommentCollection = (uiref, cref, uid) => {
     return;
   }
   // OK to close
+  UDATA.LocalCall('CMT_COLLECTION_HIDE', { cref });
+  COMMENT.CloseCommentCollection(uiref, cref, uid);
+  m_SetAppStateCommentCollections();
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Marks a comment as read, and closes the component.
+ * Called by NCCommentBtn when clicking "Close"
+ * @param {Object} uiref comment button id (note kept for Net.Create compatibility)
+ * @param {Object} cref collection_ref
+ * @param {Object} uid user id
+ */
+MOD.CloseCommentCollectionAndMarkRead = (uiref, cref, uid) => {
+  if (!MOD.OKtoClose(cref)) {
+    // Comment is still being edited, prevent close
+    alert(
+      'This comment is still being edited!  Please Save or Cancel before closing the comment.'
+    );
+    return;
+  }
+  // OK to close
+  UDATA.LocalCall('CMT_COLLECTION_HIDE', { cref });
+  // Update the readby
   m_DBUpdateReadBy(cref, uid);
   COMMENT.CloseCommentCollection(uiref, cref, uid);
   m_SetAppStateCommentCollections();
-  // call to broadcast state AFTER derived state changes
-  UDATA.LocalCall('CTHREADMGR_THREAD_CLOSED', { cref });
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Closes all comment collections without marking them as read.
+ * Used by comment status when user clicks on status updates to display
+ * updated comments.
+ * @param {*} uid
+ */
+MOD.CloseAllCommentCollectionsWithoutMarkingRead = () => {
+  const uid = MOD.GetCurrentUserId();
+  UDATA.LocalCall('CMT_COLLECTION_HIDE_ALL');
+  COMMENT.CloseAllCommentCollections(uid);
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetCommentCollectionCount = cref => {
@@ -371,6 +569,7 @@ MOD.GetCommentThreadPosition = commentButtonId => {
 MOD.GetCommentUIState = uiref => {
   return COMMENT.GetCommentUIState(uiref);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Used to open/close the comment thread
  * @param {string} uiref
@@ -390,10 +589,12 @@ MOD.GetOpenComments = cref => COMMENT.GetOpenComments(cref);
 MOD.RegisterCommentBeingEdited = cid => {
   COMMENT.RegisterCommentBeingEdited(cid);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.DeRegisterCommentBeingEdited = cid => {
   return COMMENT.DeRegisterCommentBeingEdited(cid);
 };
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Are ANY comments being edited?
 /// Returns True if ANY comment is being edited
 /// * Used by comment status when user clicks on a comment id to view a saved comment
@@ -403,6 +604,7 @@ MOD.GetCommentsAreBeingEdited = () => {
   return COMMENT.GetCommentsAreBeingEdited();
 };
 
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.OKtoClose = cref => {
   const cvobjs = MOD.GetThreadedViewObjects(cref);
   let isBeingEdited = false;
@@ -429,14 +631,16 @@ MOD.GetCommentVObj = (cref, cid) => {
 MOD.GetComment = cid => {
   return COMMENT.GetComment(cid);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetUnreadRepliesToMe = uid => {
   return COMMENT.GetUnreadRepliesToMe(uid);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.GetUnreadComments = () => {
   return COMMENT.GetUnreadComments();
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
- *
  * @param {Object} cobj Comment Object
  */
 MOD.AddComment = cobj => {
@@ -447,6 +651,34 @@ MOD.AddComment = cobj => {
     m_SetAppStateCommentVObjs();
   });
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** User clicks Edit on a comment
+ *  @param {TCommentID} comment_id
+ */
+MOD.UIEditComment = comment_id => {
+  MOD.RegisterCommentBeingEdited(comment_id);
+  MOD.LockComment(comment_id);
+  UDATA.NetCall('COMMENT_UPDATE_PERMISSIONS');
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** User clicks Cancel on a comment
+ *  @param {TCommentID} comment_id
+ */
+MOD.UICancelComment = comment_id => {
+  MOD.DeRegisterCommentBeingEdited(comment_id);
+  MOD.UnlockComment(comment_id);
+  UDATA.NetCall('COMMENT_UPDATE_PERMISSIONS');
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** User clicks Save coment
+ *  @param {TComment} cobj
+ */
+MOD.UISaveComment = cobj => {
+  MOD.UnlockComment(cobj.comment_id);
+  MOD.DeRegisterCommentBeingEdited(cobj.comment_id);
+  MOD.UpdateComment(cobj);
+};
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Update the ac/dc comments, then save it to the db
  * This will also broadcast COMMENT_UPDATE so other clients on the network
@@ -458,6 +690,7 @@ MOD.UpdateComment = cobj => {
   m_DBUpdateComment(cobj);
   m_SetAppStateCommentVObjs();
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Removing a comment can affect multiple comments, so this is done
  * via a batch operation.  We queue up all of the comment changes
@@ -503,6 +736,7 @@ MOD.RemoveComment = (parms, cb) => {
   const container = document.getElementById(dialogContainerId);
   ReactDOM.render(dialog, container);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * The db call is made AFTER ac/dc handles the removal and the logic of
  * relinking comments.  The db call is dumb, all the logic is in dc-comments.
@@ -523,7 +757,7 @@ function m_CloseRemoveCommentDialog() {
   const container = document.getElementById(dialogContainerId);
   ReactDOM.unmountComponentAtNode(container);
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Requested when a node/edge is deleted
  * @param {string} cref
@@ -538,7 +772,6 @@ MOD.RemoveAllCommentsForCref = cref => {
 
 /// EVENT HANDLERS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 /**
  * Respond to network COMMENTS_UPDATE Messages
  * Usually used after a comment deletion to handle a batch of comment updates
@@ -573,6 +806,7 @@ MOD.HandleCOMMENTS_UPDATE = dataArray => {
   m_SetAppStateCommentCollections();
   m_SetAppStateCommentVObjs();
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Respond to COMMENT_UPDATE Messages from the network
  * After the server/db saves the new/updated comment, COMMENT_UPDATE is
@@ -584,12 +818,49 @@ MOD.HandleCOMMENTS_UPDATE = dataArray => {
  */
 MOD.HandleCOMMENT_UPDATE = data => {
   if (DBG) console.log('COMMENT_UPDATE======================', data);
-  const { comment } = data;
-  m_UpdateComment(comment);
-  // and broadcast a state change
-  m_SetAppStateCommentCollections();
-  m_SetAppStateCommentVObjs();
+
+  // If a new comment is sent over the network
+  // and the incoming comment conflicts with a comment being edited
+  // then re-link the editing comment to point to the incoming comment
+
+  const { comment: incomingComment } = data;
+  const editingCommentId = COMMENT.GetCommentsBeingEdited().values().next().value;
+  const editingComment = COMMENT.GetComment(editingCommentId);
+
+  if (editingComment) {
+    // conflict if both think they're the root
+    if (
+      incomingComment.comment_id_parent === '' &&
+      incomingComment.comment_id_previous === '' &&
+      editingComment.comment_id_parent === '' &&
+      editingComment.comment_id_previous === ''
+    ) {
+      if (DBG) console.error('CONFLICT! both think they are root');
+      // Re-link the comment to the incoming
+      editingComment.comment_id_previous = incomingComment.comment_id;
+    }
+    // conflict if previous of both are the same
+    if (incomingComment.comment_id_previous === editingComment.comment_id_previous) {
+      if (DBG) console.error('CONFLICT! both think they are reply to same previous');
+      // Re-link the comment to the incoming
+      editingComment.comment_id_previous = incomingComment.comment_id;
+    }
+    // conflict if parent of both are the same and previous are blank (new reply root)
+    if (
+      incomingComment.comment_id_parent === editingComment.comment_id_parent &&
+      incomingComment.comment_id_previous === '' &&
+      editingComment.comment_id_previous === ''
+    ) {
+      if (DBG) console.error('CONFLICT! both think they are reply to same parent');
+      // Re-link the comment to the incoming
+      editingComment.comment_id_previous = incomingComment.comment_id;
+    }
+  }
+
+  const updatedComments = [{ comment: incomingComment }, { comment: editingComment }];
+  MOD.HandleCOMMENTS_UPDATE(updatedComments);
 };
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.HandleREADBY_UPDATE = data => {
   if (DBG) console.log('READBY_UPDATE======================');
   // Not used currently
@@ -616,7 +887,7 @@ MOD.UnlockComment = comment_id => {
     UDATA.LocalCall('SELECTMGR_SET_MODE', { mode: 'normal' });
   });
 };
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_DBUpdateComment(cobj, cb) {
   const comment = {
     collection_ref: cobj.collection_ref,
@@ -634,6 +905,7 @@ function m_DBUpdateComment(cobj, cb) {
     if (typeof cb === 'function') cb(data);
   });
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_DBUpdateReadBy(cref, uid) {
   // Get existing readby
   const cvobjs = COMMENT.GetThreadedViewObjects(cref, uid);
@@ -652,6 +924,7 @@ function m_DBUpdateReadBy(cref, uid) {
     if (typeof cb === 'function') cb(data);
   });
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Executes multiple database operations via a batch of commands:
  * - `cobjs` will be updated
