@@ -410,7 +410,6 @@ class NCEdgeTable extends UNISYS.Component {
   onHighlightNode(nodeId) {
     UDATA.LocalCall('TABLE_HILITE_NODE', { nodeId });
   }
-  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /**
    */
   selectNode(id, event) {
@@ -460,12 +459,13 @@ class NCEdgeTable extends UNISYS.Component {
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(nodeId)] });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// DEPRECATED -- URCommentVBtn handles this now
     /// Toggle Comment Button on and off
-    function ui_ClickComment(cref) {
-      const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
-      const uiref = u_GetButtonId(cref);
-      CMTMGR.ToggleCommentCollection(uiref, cref, position);
-    }
+    // function ui_ClickComment(cref) {
+    //   const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
+    //   const uiref = u_GetButtonId(cref);
+    //   CMTMGR.ToggleCommentCollection(uiref, cref, position);
+    // }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function RenderViewOrEdit(key, tdata, coldef) {
@@ -716,6 +716,7 @@ class NCEdgeTable extends UNISYS.Component {
         }
       };
     });
+
     return (
       <div className="NCEdgeTable" style={{ height: tableHeight }}>
         <URTable isOpen={isOpen} data={TABLEDATA} columns={COLUMNDEFS} />

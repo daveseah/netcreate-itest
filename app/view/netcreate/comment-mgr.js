@@ -453,32 +453,36 @@ MOD.OpenCommentStatusComment = (cref, cid) => {
   }
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/**
- * Used by NCNodeTable and NCEdgeTable to open/close the comment thread
- * If a comment is already opened by one button (e.g. node), and the user
- * clicks on another comment button (e.g. NodeTable), the new one will open,
- * and the old one closed.
- * Called by URCommentBtn, NCNodeTable, and NCEdgeTable
- * @param {TCommentUIRef} uiref comment button id
- * @param {TCollectionRef} cref collection_ref
- * @param {Object} position x, y position of the comment button
- */
-MOD.ToggleCommentCollection = (uiref, cref, position) => {
-  const uid = MOD.GetCurrentUserId();
-  // is the comment already open?
-  const open_uiref = MOD.GetOpenComments(cref);
-  if (open_uiref === uiref) {
-    // already opened by THIS uiref, so toggle it closed.
-    MOD.CloseCommentCollection(uiref, cref, uid);
-  } else if (open_uiref !== undefined) {
-    // already opened by SOMEONE ELSE, so close it, then open the new one
-    MOD.CloseCommentCollection(open_uiref, cref, uid);
-    MOD.OpenCommentCollection(uiref, cref, position);
-  } else {
-    // no comment is open, so open the new one
-    MOD.OpenCommentCollection(uiref, cref, position);
-  }
-};
+/// DEPRECATED -- URComemntVBtn handles this currently
+///               But we might want to restore this.
+// /**
+//  * Used by NCNodeTable and NCEdgeTable to open/close the comment thread
+//  * If a comment is already opened by one button (e.g. node), and the user
+//  * clicks on another comment button (e.g. NodeTable), the new one will open,
+//  * and the old one closed.
+//  * Called by URCommentBtn, NCNodeTable, and NCEdgeTable
+//  * @param {TCommentUIRef} uiref comment button id
+//  * @param {TCollectionRef} cref collection_ref
+//  * @param {Object} position x, y position of the comment button
+//  */
+// MOD.ToggleCommentCollection = (uiref, cref, position) => {
+//   const uid = MOD.GetCurrentUserId();
+//   // is the comment already open?
+//   const open_uiref = MOD.GetOpenComments(cref);
+//   if (open_uiref === uiref) {
+//     // already opened by THIS uiref, so toggle it closed.
+//     MOD.CloseCommentCollection(uiref, cref, uid);
+//   } else if (open_uiref !== undefined) {
+//     // already opened by SOMEONE ELSE, so close it, then open the new one
+//     MOD.CloseCommentCollection(open_uiref, cref, uid);
+//     // REVIEW remove uiref?
+//     MOD.OpenCommentCollection(uiref, cref, position);
+//   } else {
+//     // no comment is open, so open the new one
+//     // REVIEW remove uiref?
+//     MOD.OpenCommentCollection(uiref, cref, position);
+//   }
+// };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  * Marks a comment as read, and closes the component.

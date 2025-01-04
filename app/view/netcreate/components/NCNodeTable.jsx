@@ -417,11 +417,13 @@ class NCNodeTable extends UNISYS.Component {
       });
     }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    function ui_ClickCommentBtn(cref) {
-      const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
-      const uiref = u_GetButtonId(cref);
-      CMTMGR.ToggleCommentCollection(uiref, cref, position);
-    }
+    /// DEPRECATED -- URCommentVBtn handles this now
+    /// Toggle Comment Button on and off
+    // function ui_ClickCommentBtn(cref) {
+    //   const position = CMTMGR.GetCommentThreadPosition(u_GetButtonId(cref));
+    //   const uiref = u_GetButtonId(cref);
+    //   CMTMGR.ToggleCommentCollection(uiref, cref, position);
+    // }
     /// RENDERERS
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function RenderViewOrEdit(key, tdata, coldef) {
@@ -476,16 +478,6 @@ class NCNodeTable extends UNISYS.Component {
       );
     }
     /// CUSTOM SORTERS
-    /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// tdata = TTblNodeObject[] = { id: String, label: String }
-    function SortNodes(key, tdata, order) {
-      const sortedData = [...tdata].sort((a, b) => {
-        if (a[key].label < b[key].label) return order;
-        if (a[key].label > b[key].label) return order * -1;
-        return 0;
-      });
-      return sortedData;
-    }
     /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     function SortCommentsByCount(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
