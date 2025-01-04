@@ -133,7 +133,8 @@ function URComment({ cref, cid, uid }) {
     // set component state from retrieved data
     setState({
       // Data
-      id: comment.id, // human readable "#xxx" id matching pmcData id
+      // REVIEW MEME uses `comment.id` and NC uses `comment.comment_id`
+      id: comment.comment_id, // human readable "#xxx" id matching db id // MEME uses comment.id, matching pmcData id
       comment_id_parent: comment.comment_id_parent,
       commenter: CMTMGR.GetUserName(comment.commenter_id),
       selected_comment_type,
@@ -410,7 +411,7 @@ function URComment({ cref, cid, uid }) {
         <div>
           <div className="commentTypeBar">
             <div className="commentTypeLabel">{TypeSelector}</div>
-            <div className="commentId">#{comment.id}</div>
+            <div className="commentId">#{comment.comment_id}</div>
           </div>
           <URCommentPrompt
             cref={cref}
@@ -449,7 +450,7 @@ function URComment({ cref, cid, uid }) {
               <span className="date">TYPE: </span>
               <span className="type">{SelectedTypeLabel}</span>
             </div>
-            <div className="commentId">#{comment.id}</div>
+            <div className="commentId">#{comment.comment_id}</div>
           </div>
           <URCommentPrompt
             cref={cref}
