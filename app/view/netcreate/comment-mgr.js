@@ -148,7 +148,7 @@ MOD.GetEdgeCREF = edgeId => `e${edgeId}`;
 MOD.GetProjectCREF = projectId => `p${projectId}`;
 
 /// deconstructs "n32" into {type: "n", id: 32}
-MOD.DeconstructCref = cref => {
+MOD.DeconstructCREF = cref => {
   const type = cref.substring(0, 1);
   const id = cref.substring(1);
   return { type, id };
@@ -161,7 +161,7 @@ MOD.DeconstructCref = cref => {
  * @returns { typeLabel, sourceLabel } sourceLabel is undefined if the source has been deleted
  */
 MOD.GetCREFSourceLabel = cref => {
-  const { type, id } = MOD.DeconstructCref(cref);
+  const { type, id } = MOD.DeconstructCREF(cref);
   let typeLabel;
   let node, edge, nodes, sourceNode, targetNode;
   let sourceLabel; // undefined if not found
@@ -193,7 +193,7 @@ MOD.GetCREFSourceLabel = cref => {
 /// Open the object that the comment refers to
 /// e.g. in Net.Create it's a node or edge object
 MOD.OpenReferent = cref => {
-  const { type, id } = MOD.DeconstructCref(cref);
+  const { type, id } = MOD.DeconstructCREF(cref);
   let edge;
   switch (type) {
     case 'n':
@@ -213,7 +213,7 @@ MOD.OpenReferent = cref => {
 
 /// Open comment using a comment id
 MOD.OpenComment = (cref, cid) => {
-  const { type, id } = MOD.DeconstructCref(cref);
+  const { type, id } = MOD.DeconstructCREF(cref);
   let edge;
   switch (type) {
     case 'n':
