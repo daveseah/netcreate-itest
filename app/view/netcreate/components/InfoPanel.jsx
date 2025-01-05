@@ -19,8 +19,8 @@ const React = require('react');
 const ReactStrap = require('reactstrap');
 const { TabContent, TabPane, Nav, NavItem, NavLink, Row, Col, Button } = ReactStrap;
 const classnames = require('classnames');
-const NCNodeTable = require('./NCNodeTable');
-const NCEdgeTable = require('./NCEdgeTable');
+import NCNodeTable from './NCNodeTable';
+import NCEdgeTable from './NCEdgeTable';
 const More = require('./More');
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
