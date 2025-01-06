@@ -80,7 +80,7 @@ MOD.Hook('APP_READY', function (info) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 MOD.LoadDB = data => {
   const TEMPLATE = UDATA.AppState('TEMPLATE');
-  COMMENT.LoadTemplate(TEMPLATE.COMMENTTYPES);
+  COMMENT.LoadTemplate(TEMPLATE.commentTypes);
   COMMENT.LoadDB(data);
 
   // After loading db, derive the view objects

@@ -94,7 +94,8 @@ export type CType =
   | 'evidence'
   | 'clarity'
   | 'steps'
-  | 'response';
+  | 'response'
+  | string; // allow other slugs
 
 type CPromptFormat =
   | 'text'
@@ -127,7 +128,7 @@ export type TComment = {
   comment_id: TCommentID;
   comment_id_parent: any;
   comment_id_previous: any;
-  comment_type: string;
+  comment_type: CType; // slug
   comment_createtime: number;
   comment_modifytime: number;
   comment_isMarkedDeleted: boolean;
@@ -218,95 +219,116 @@ export type CPromptFormatOption_RadioData = string; // selected item string, e.g
 export type CPromptFormatOption_LikertData = string; // selected item string, e.g. '💚'
 export type CPromptFormatOption_DiscreteSliderData = string; // selected item 0-based index e.g. "2"
 
+// Generic Comment Type
+// If DEFAULT_CommentTypes is not defined, fall back to using a basic comment.
+const DEFAULT_COMMENTTYPE: TCommentType = {
+  slug: 'cmt',
+  label: 'Comment', // comment type label
+  prompts: [
+    {
+      format: 'text',
+      prompt: 'Comment', // prompt label
+      help: 'Use this for any general comment.', // displayed below prompt
+      feedback: '' // displayed below input field
+    }
+  ]
+};
+// DEFAULT_CommentTypes
+// Use this to fall back to a common set of comment types for project templates without
+// comment type definitions, e.g. if you're spinining up multiple servers from a common code base.
+// This "burns in" basic DEFAULT_CommentTypes.
+// Comment types defined in the the project template will override DEFAULT_CommentTypes.
 const DEFAULT_CommentTypes: Array<TCommentType> = [
-  // Add default comment type if none are defined
+  DEFAULT_COMMENTTYPE,
   {
-    slug: 'cmt',
-    label: 'Comment', // comment type label
+    slug: 'tellmemore',
+    label: 'Tell me more', // comment type label
     prompts: [
       {
         format: 'text',
-        prompt: 'Comment', // prompt label
-        help: 'Use this for any general comment.',
-        feedback: ''
-      }
-    ]
-  },
-  {
-    slug: 'evidence',
-    label: 'Evidence Critique or Suggestion',
-    prompts: [
-      {
-        format: 'dropdown',
-        prompt: 'Is this supported by evidence?', // prompt label
-        options: ['😀 Yes', '🤔 Some', '🥲 No'],
-        help: 'Select one.'
-      },
-      {
-        format: 'text',
-        prompt: 'What would you change?', // prompt label
-        help: 'Please be specific to help your friend.'
-      }
-    ]
-  },
-  {
-    slug: 'clarity',
-    label: 'Clarity Critique or Suggestion',
-    prompts: [
-      {
-        format: 'discrete-slider',
-        prompt: 'How clear is this model to you?', // prompt label
-        options: ['★', '★', '★', '★', '★'],
-        help: 'More stars means more clear!',
-        feedback: 'We can also have help here'
-      },
-      {
-        format: 'text',
-        prompt: 'What made you pick that number?', // prompt label
-        help: 'Please be specific to help your friend.'
-      }
-    ]
-  },
-  {
-    slug: 'steps',
-    label: 'All the Steps Critique or Suggestion',
-    prompts: [
-      {
-        format: 'dropdown',
-        prompt: 'Does this include all of the useful steps?', // prompt label
-        options: ['😀 Yes', '🤔 Mostly', '🥲 No', '🥲 Too many'],
-        help: 'Select one.'
-      },
-      {
-        format: 'text',
-        prompt: 'What made you pick that number?', // prompt label
-        help: 'Please be specific to help your friend.'
-      }
-    ]
-  },
-  {
-    slug: 'response',
-    label: 'Response',
-    prompts: [
-      {
-        format: 'radio',
-        prompt: 'Do you agree with this comment, critique, or suggestion?', // prompt label
-        options: ['Yes', 'Somewhat', 'No'],
-        help: 'Select only one.'
-      },
-      {
-        format: 'radio',
-        prompt: 'Will you make any changes?', // prompt label
-        options: ['Yes', 'Some', 'No'],
-        help: 'Select only one.'
-      },
-      {
-        format: 'text',
-        prompt: 'Why or why not?', // prompt label
-        help: 'Please be specific so your friend understands.'
+        prompt: 'Please tell me more', // prompt label
+        help: 'Can you tell me more about ... ', // displayed below prompt
+        feedback: '' // displayed below input field
       }
     ]
   }
+  // OTHER EXAMPLES of different types
+  //
+  // {
+  //   slug: 'evidence',
+  //   label: 'Evidence Critique or Suggestion',
+  //   prompts: [
+  //     {
+  //       format: 'dropdown',
+  //       prompt: 'Is this supported by evidence?', // prompt label
+  //       options: ['😀 Yes', '🤔 Some', '🥲 No'],
+  //       help: 'Select one.'
+  //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'What would you change?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // }
+  // {
+  //   slug: 'clarity',
+  //   label: 'Clarity Critique or Suggestion',
+  //   prompts: [
+  //     {
+  //       format: 'discrete-slider',
+  //       prompt: 'How clear is this model to you?', // prompt label
+  //       options: ['★', '★', '★', '★', '★'],
+  //       help: 'More stars means more clear!',
+  //       feedback: 'We can also have help here'
+  //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'What made you pick that number?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // },
+  // {
+  //   slug: 'steps',
+  //   label: 'All the Steps Critique or Suggestion',
+  //   prompts: [
+  //     {
+  //       format: 'dropdown',
+  //       prompt: 'Does this include all of the useful steps?', // prompt label
+  //       options: ['😀 Yes', '🤔 Mostly', '🥲 No', '🥲 Too many'],
+  //       help: 'Select one.'
+  //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'What made you pick that number?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // },
+  // {
+  //   slug: 'response',
+  //   label: 'Response',
+  //   prompts: [
+  //     {
+  //       format: 'radio',
+  //       prompt: 'Do you agree with this comment, critique, or suggestion?', // prompt label
+  //       options: ['Yes', 'Somewhat', 'No'],
+  //       help: 'Select only one.'
+  //     },
+  //     {
+  //       format: 'radio',
+  //       prompt: 'Will you make any changes?', // prompt label
+  //       options: ['Yes', 'Some', 'No'],
+  //       help: 'Select only one.'
+  //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'Why or why not?', // prompt label
+  //       help: 'Please be specific so your friend understands.'
+  //     }
+  //   ]
+  // }
 ];
 
 /// HELPER FUNCTIONS //////////////////////////////////////////////////////////
@@ -315,6 +337,7 @@ function m_LoadUsers(dbUsers: TUserObject[]) {
   dbUsers.forEach(u => USERS.set(u.id, u.name));
 }
 function m_LoadCommentTypes(commentTypes: TCommentType[]) {
+  COMMENTTYPES.clear();
   commentTypes.forEach(t => COMMENTTYPES.set(t.slug, t));
 }
 function m_LoadComments(comments: TComment[]) {
@@ -336,7 +359,13 @@ function Init() {
 }
 
 function LoadTemplate(commentTypes: Array<TCommentType>) {
-  const types = commentTypes || DEFAULT_CommentTypes; // fall back to simple comment if it's not defined
+  // fall back order: template.toml > DEFAULT_CommentTypes > DEFAULT_COMMENTTYPE
+  // fall back to DEFAULT_CommentTypes if DEFAULT_CommentTypes is not in dc-comments
+  // or a single DEFAULT_COMMENTTYPE if it's completely missing
+  const types =
+    commentTypes || (DEFAULT_CommentTypes && DEFAULT_CommentTypes.length > 0)
+      ? DEFAULT_CommentTypes
+      : [DEFAULT_COMMENTTYPE];
   m_LoadCommentTypes(types);
 }
 
@@ -350,7 +379,7 @@ function LoadTemplate(commentTypes: Array<TCommentType>) {
 function LoadDB(data: TLokiData) {
   if (DBG) console.log(PR, 'LoadDB');
   USERS.clear();
-  COMMENTTYPES.clear();
+  // COMMENTTYPES.clear(); // MEME reads types from db, but NC reads from template, so don't clear for NC
   COMMENTS.clear();
   READBY.clear();
   ROOTS.clear();
@@ -358,8 +387,12 @@ function LoadDB(data: TLokiData) {
   NEXT.clear();
 
   // Load Data!
-  if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
-  else m_LoadCommentTypes(DEFAULT_CommentTypes); // load default comments if db has none
+
+  // MEME loads comment types in the db
+  // But NC relies on template to define comment types, so don't load commenttypes here for NC
+  //  if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
+  //  else m_LoadCommentTypes(DEFAULT_CommentTypes); // load default comments if db has none
+
   if (data.users) m_LoadUsers(data.users);
   if (data.comments) m_LoadComments(data.comments);
   if (data.readby) m_LoadReadBy(data.readby);
@@ -389,14 +422,21 @@ function GetCurrentUser(): TUserName {
 function GetCommentTypes(): TCommentTypeMap {
   return COMMENTTYPES;
 }
-function GetCommentType(typeid): TCommentType {
-  return COMMENTTYPES.get(typeid);
+function GetCommentType(slug: CType): TCommentType {
+  return COMMENTTYPES.get(slug);
 }
 function GetDefaultCommentType(): TCommentType {
   // returns the first comment type object
-  if (DEFAULT_CommentTypes.length < 1)
+  if (COMMENTTYPES.size < 1)
     throw new Error('dc-comments: No comment types defined!');
-  return GetCommentType(DEFAULT_CommentTypes[0].slug);
+  return GetCommentType(GetDefaultCommentTypeSlug());
+}
+function GetDefaultCommentTypeSlug(): CType {
+  // returns the first comment type slug
+  // fall back order: template.toml > DEFAULT_CommentTypes > DEFAULT_COMMENTTYPE
+  if (COMMENTTYPES.size < 1)
+    throw new Error('dc-comments: No comment types defined!');
+  return COMMENTTYPES.keys().next().value;
 }
 
 function GetCOMMENTS(): TCommentMap {
@@ -437,7 +477,7 @@ function AddComment(data): TComment {
     comment_id: data.comment_id, // thread
     comment_id_parent,
     comment_id_previous,
-    comment_type: 'cmt', // default type, no prompts
+    comment_type: GetDefaultCommentTypeSlug(), // default type, no prompts
     comment_createtime: new Date().getTime(),
     comment_modifytime: null,
     comment_isMarkedDeleted: data.comment_isMarkedDeleted,

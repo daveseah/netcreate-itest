@@ -28,6 +28,26 @@ sourceColor = "#FFa500"
 text = "No citation set"
 hidden = false
 
+[[commentTypes]]
+slug = "cmt"
+label = "Comment"
+
+  [[commentTypes.prompts]]
+  format = "text"
+  prompt = "Comment"
+  help = "Use this for any general comment."
+  feedback = ""
+
+[[commentTypes]]
+slug = "tellmemore"
+label = "Evidence Critique or Suggestion"
+
+  [[commentTypes.prompts]]
+  format = "text"
+  prompt = "Tell me more"
+  help = "Can you tell me more about ... "
+  feedback = ""
+
 [nodeDefs.id]
 type = "number"
 displayLabel = "Id"
