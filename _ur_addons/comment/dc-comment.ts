@@ -363,9 +363,10 @@ function LoadTemplate(commentTypes: Array<TCommentType>) {
   // fall back to DEFAULT_CommentTypes if DEFAULT_CommentTypes is not in dc-comments
   // or a single DEFAULT_COMMENTTYPE if it's completely missing
   const types =
-    commentTypes || (DEFAULT_CommentTypes && DEFAULT_CommentTypes.length > 0)
+    commentTypes ||
+    (DEFAULT_CommentTypes && DEFAULT_CommentTypes.length > 0
       ? DEFAULT_CommentTypes
-      : [DEFAULT_COMMENTTYPE];
+      : [DEFAULT_COMMENTTYPE]);
   m_LoadCommentTypes(types);
 }
 
