@@ -361,7 +361,6 @@ svg#comment-icon {
   font-size: var(--comment-font-size-medium);
   font-weight: var(--comment-font-weight-medium);
   line-height: 14px;
-  padding-bottom: 3px;
 }
 .comment .label {
   margin-top: 2px;
@@ -369,9 +368,8 @@ svg#comment-icon {
 .commentThread .comment .help {
   /* override nccomponent */
   font-style: italic; /* emulate nccomponent */
-  font-size: 12px;
+  font-size: var(--comment-font-size-small);
   line-height: 14px;
-  padding-bottom: 3px;
   opacity: 0.7;
 }
 
@@ -387,13 +385,14 @@ svg#comment-icon {
   flex-grow: 1;
 }
 .comment .comment-item {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 .comment .feedback,
 .comment .error {
   opacity: 0.7;
-  font-size: 12px;
-  line-height: 14px;
+  font-size: var(--comment-font-size-small);
+  line-height: var(--comment-font-size-medium);
+  margin: -2px 0 8px 0;
 }
 .comment .feedback {
   color: #0008; /* emulate nccomponent help */
