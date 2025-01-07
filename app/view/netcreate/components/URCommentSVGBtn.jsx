@@ -80,7 +80,6 @@ function URCommentSVGBtn({
     css += disabled ? 'disabled ' : '';
     setCss(css);
 
-    // commentCountLabel
     const commentCountLabel = count > 0 ? count : '';
     setLabel(commentCountLabel);
 

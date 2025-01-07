@@ -90,7 +90,6 @@ function NCNodeTable({ tableHeight, isOpen }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function m_updateNodeFilterState(nodes) {
     const filteredNodes = m_deriveFilteredNodes(nodes);
-    console.warn('filteredNodes', filteredNodes);
     setState(prevState => ({ ...prevState, nodes: filteredNodes }));
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

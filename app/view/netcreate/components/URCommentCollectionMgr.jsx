@@ -113,12 +113,12 @@ function URCommentCollectionMgr(props) {
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urmsg_COLLECTION_HIDE(data) {
-    if (DBG) console.log('CMT_COLLECTION_HIDE', data);
+    if (DBG) console.log(PR, 'CMT_COLLECTION_HIDE', data);
     setCmtBtns(prevBtns => prevBtns.filter(btn => btn.cref !== data.cref));
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   function urmsg_COLLECTION_HIDE_ALL(data) {
-    if (DBG) console.log('CMT_COLLECTION_HIDE_ALL', data);
+    if (DBG) console.log(PR, 'CMT_COLLECTION_HIDE_ALL', data);
     setCmtBtns([]);
   }
 
