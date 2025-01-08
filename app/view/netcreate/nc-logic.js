@@ -521,7 +521,11 @@ MOD.Hook('INITIALIZE', () => {
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
       const node = {
-        id: newNodeID, label: data.label, provenance, createdBy, updatedBy
+        id: newNodeID,
+        label: data.label,
+        provenance,
+        createdBy,
+        updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
