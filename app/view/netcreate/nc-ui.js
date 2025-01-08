@@ -189,7 +189,14 @@ function RenderAttributesTabView(state, defs) {
         items.push(RenderMarkdownValue(k, attributes[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, attributes[k], defs[k].format, defs[k].allowFormatSelection));
+        items.push(
+          RenderDateValue(
+            k,
+            attributes[k],
+            defs[k].format,
+            defs[k].allowFormatSelection
+          )
+        );
         break;
       case 'string':
       default:
@@ -221,7 +228,16 @@ function RenderAttributesTabEdit(state, defs, onchange) {
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
         break;
       case 'hdate':
-        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
+        items.push(
+          RenderDateInput(
+            k,
+            value,
+            defs[k].format,
+            defs[k].allowFormatSelection,
+            onchange,
+            helpText
+          )
+        );
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -258,7 +274,14 @@ function RenderProvenanceItemsView(state, defs) {
         items.push(RenderMarkdownValue(k, provenance[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, provenance[k], defs[k].format, defs[k].allowFormatSelection));
+        items.push(
+          RenderDateValue(
+            k,
+            provenance[k],
+            defs[k].format,
+            defs[k].allowFormatSelection
+          )
+        );
         break;
       case 'string':
       case 'number':
@@ -283,7 +306,16 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
         break;
       case 'hdate':
-        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
+        items.push(
+          RenderDateInput(
+            k,
+            value,
+            defs[k].format,
+            defs[k].allowFormatSelection,
+            onchange,
+            helpText
+          )
+        );
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
@@ -372,10 +404,15 @@ function RenderStringValue(key, value) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderDateValue(key, value, dateFormat, allowFormatSelection) {
   return (
-    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat}
+    <URDateField
+      id={key}
+      key={`${key}value`}
+      value={value}
+      dateFormat={dateFormat}
       allowFormatSelection={allowFormatSelection}
-      readOnly />
-  )
+      readOnly
+    />
+  );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -521,13 +558,16 @@ function RenderOptionsInput(key, value, defs, cb, helpText) {
  */
 function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
   return (
-    <URDateField id={key} key={`${key}value`} value={value}
+    <URDateField
+      id={key}
+      key={`${key}value`}
+      value={value}
       dateFormat={dateFormat}
       allowFormatSelection={allowFormatSelection}
       onChange={event => m_UIDateInputUpdate(event, cb)}
       helpText={helpText}
     />
-  )
+  );
 }
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////
