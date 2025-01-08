@@ -12,6 +12,7 @@
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const UTILS = require('./nc-utils');
 const MD = require('markdown-it')();
 const MDEMOJI = require('markdown-it-emoji');
 MD.use(MDEMOJI);
@@ -54,10 +55,6 @@ function Markdownify(str = '') {
   // hack it by adding to the parsed html string
   const hackedHtmlString = htmlString.replace(/<a href/g, `<a target="_blank" href`);
   return MDPARSE(hackedHtmlString);
-}
-/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function DeriveInfoOriginString(state) {
-  return `Created by ${state.createdBy} on ${state.created}`;
 }
 /// INPUT FORM CHANGE HANDLERS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -421,7 +418,7 @@ function RenderMarkdownValue(key, value = '') {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderInfoOriginValue(key, value, state) {
-  const val = value || DeriveInfoOriginString(state);
+  const val = value || UTILS.DeriveInfoOriginString(state.createdBy, state.created);
   return (
     <div id={key} key={`${key}value`} className="viewvalue">
       {val}
@@ -499,7 +496,8 @@ function RenderMarkdownInput(key, value, cb, helpText) {
  * Otherwise it's treated as a string field
  */
 function RenderInfoOriginInput(key, value, cb, helpText, state, onFocus, onBlur) {
-  const newValue = value || DeriveInfoOriginString(state);
+  const newValue =
+    value || UTILS.DeriveInfoOriginString(state.createdBy, state.created);
   return RenderStringInput(key, newValue, cb, helpText, onFocus, onBlur);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
