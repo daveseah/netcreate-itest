@@ -334,44 +334,55 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabView(state, defs) {
-  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
-  // FIXME: These will be dynamically generated with the new Provenance template
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } =
+    state;
   return (
     <div className="provenance formview">
       <div className="category">PROVENANCE</div>
       {RenderProvenanceItemsView(state, defs)}
       <div className="category">HISTORY</div>
-      {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
-      {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
-      {RenderLabel('revisionlabel', defs.revision.displayLabel)}
-      {RenderStringValue('revisionlabel', revision)}
+      {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
+      {!defs.created.hidden &&
+        RenderProvenanceByline(created, createdBy, defs.createdBy)}
+      {!defs.updated.hidden && RenderLabel('createdlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden &&
+        RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
+      {!defs.revision.hidden &&
+        RenderLabel('revisionlabel', defs.revision.displayLabel)}
+      {!defs.revision.hidden && RenderStringValue('revisionlabel', revision)}
     </div>
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabEdit(state, defs, onchange) {
-  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
-  // FIXME: These will be dynamically generated with the new Provenance template
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } =
+    state;
   return (
     <div className="provenance formview">
       <div className="category">PROVENANCE</div>
       {RenderProvenanceItemsEdit(state, defs, onchange)}
       <div className="category">HISTORY</div>
-      {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
-      {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
-      {RenderLabel('revisionlabel', defs.revision.displayLabel)}
-      {RenderStringValue('revisionlabel', revision)}
+      {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
+      {!defs.created.hidden &&
+        RenderProvenanceByline(created, createdBy, defs.createdBy)}
+      {!defs.updated.hidden && RenderLabel('createdlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden &&
+        RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
+      {!defs.revision.hidden &&
+        RenderLabel('revisionlabel', defs.revision.displayLabel)}
+      {!defs.revision.hidden && RenderStringValue('revisionlabel', revision)}
     </div>
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderProvenanceByline(author, date) {
-  const by = author ? `${author}` : `(not recorded)`;
-  return `${by}, ${date}`; // leave author blank for older templates
+function RenderProvenanceByline(date, author, defAuthor) {
+  let result = '';
+  if (defAuthor.hidden) result = date;
+  else {
+    const by = author ? `${author}` : `(not recorded)`; // leave author blank for older templates
+    result = `${by}, ${date}`;
+  }
+  return <div className="viewvalue">{result}</div>;
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
