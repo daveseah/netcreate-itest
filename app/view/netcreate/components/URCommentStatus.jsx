@@ -19,15 +19,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import UNISYS from 'unisys/client';
-import NetMessage from 'unisys/common-netmessage-class';
 import CMTMGR from '../comment-mgr';
-import URCommentThreadMgr from './URCommentThreadMgr';
+import URCommentCollectionMgr from './URCommentCollectionMgr';
+import URCommentSVGBtn from './URCommentSVGBtn';
+import URDialog from './URDialog';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Initialize UNISYS DATA LINK for functional react component
 const UDATAOwner = { name: 'URCommentStatus' };
 const UDATA = UNISYS.NewDataLink(UDATAOwner);
+
 /// Debug Flags
 const DBG = false;
 const PR = 'URCommentStatus';
@@ -43,6 +45,10 @@ let ResetTimer;
  * @returns
  */
 function URCommentStatus(props) {
+  const uid = CMTMGR.GetCurrentUserId();
+
+  const [CMTSTATUS, setCMTSTATUS] = useState({});
+
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [activeCSS, setActiveCSS] = useState('');
@@ -51,21 +57,30 @@ function URCommentStatus(props) {
 
   /** Component Effect - register listeners on mount */
   useEffect(() => {
-    UDATA.OnAppStateChange('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
-    UDATA.HandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
+    UDATA.OnAppStateChange('CMTSTATUS', state_CMTSTATUS, UDATAOwner);
+    UDATA.OnAppStateChange('COMMENTCOLLECTION', redraw, UDATAOwner); // respond to close
+    UDATA.HandleMessage('COMMENTS_UPDATE', redraw);
     UDATA.HandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
 
     return () => {
-      UDATA.AppStateChangeOff('COMMENTCOLLECTION', urmsg_DUMMY_COMMENTS_UPDATE); // respond to close
-      UDATA.UnhandleMessage('COMMENTS_UPDATE', urmsg_DUMMY_COMMENTS_UPDATE);
+      UDATA.AppStateChangeOff('CMTSTATUS', state_CMTSTATUS, UDATAOwner);
+      UDATA.AppStateChangeOff('COMMENTCOLLECTION', redraw, UDATAOwner); // respond to close
+      UDATA.UnhandleMessage('COMMENTS_UPDATE', redraw);
       UDATA.UnhandleMessage('COMMENT_UPDATE', urmsg_COMMENT_UPDATE);
+      clearTimeout(AppearTimer);
+      clearTimeout(DisappearTimer);
+      clearTimeout(ResetTimer);
     };
   }, []);
 
   /// UR HANDLERS /////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function state_CMTSTATUS(CMTSTATUS) {
+    setCMTSTATUS(CMTSTATUS);
+  }
+
   /** force re-render after COMMENTS_UPDATE from a new comment another user */
-  function urmsg_DUMMY_COMMENTS_UPDATE() {
+  function redraw() {
     // This is necessary to force a re-render of the comment summaries
     // when the comment collection changes on the net
     setDummy(dummy => dummy + 1); // Trigger re-render
@@ -78,15 +93,22 @@ function URCommentStatus(props) {
     const my_uaddr = UNISYS.SocketUADDR();
     const isNotMe = my_uaddr !== uaddr;
 
-    if (comment && comment.commenter_text.length > 0) {
+    // clone the comment object so we can modify the reply text
+    // otherwise we inadvertently change the commenter_id
+    const status_comment = Object.assign({}, comment);
+    if (
+      status_comment &&
+      status_comment.commenter_text &&
+      status_comment.commenter_text.length > 0
+    ) {
       let source;
-      if (comment.comment_id_parent) {
-        source = `${comment.commenter_id} replied: `;
+      if (status_comment.comment_id_parent) {
+        source = `${status_comment.commenter_id} replied: `;
       } else {
-        source = `${comment.commenter_id} commented: `;
+        source = `${status_comment.commenter_id} commented: `;
       }
-      comment.commenter_id = source;
-      const message = c_GetCommentItemJSX(comment);
+      status_comment.commenter_id = source;
+      const message = c_GetCommentItemJSX(status_comment);
       setMessages(prevMessages => [...prevMessages, message]);
 
       // Only show status update if it's coming from another
@@ -96,7 +118,6 @@ function URCommentStatus(props) {
         clearTimeout(ResetTimer);
         // clear it first, then appear (so that each new comment triggers the animation)
         setMessage(message);
-        setActiveCSS('');
         AppearTimer = setTimeout(() => {
           setActiveCSS('appear');
         }, 250);
@@ -141,7 +162,7 @@ function URCommentStatus(props) {
   function evt_OpenComment(event, cref, cid) {
     event.preventDefault();
     event.stopPropagation();
-    CMTMGR.OpenComment(cref, cid);
+    CMTMGR.OpenCommentStatusComment(cref, cid);
   }
 
   /// RENDER HELPERS //////////////////////////////////////////////////////////
@@ -170,18 +191,18 @@ function URCommentStatus(props) {
           href="#"
           onClick={event => evt_OpenComment(event, cref, comment.comment_id)}
         >{`#${comment.comment_id}`}</a>
-        &nbsp;&ldquo;
         <div className="comment-text">
+          &nbsp;&ldquo;
           {String(comment.commenter_text.join('|')).trim()}
+          &rdquo;
         </div>
-        &rdquo;
       </div>
     );
   }
 
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const isLoggedIn = NetMessage.GlobalGroupID();
+  if (!uid) return ''; // if not logged in, there's no comment status
 
   const { countRepliesToMe, countUnread } = CMTMGR.GetCommentStats();
   const unreadRepliesToMe = CMTMGR.GetUnreadRepliesToMe();
@@ -195,36 +216,35 @@ function URCommentStatus(props) {
 
   const UnreadRepliesToMeButtonJSX = (
     <div>
-      <div
-        className={`commentbtn ${
-          countRepliesToMe ? 'hasNewComments' : 'hasReadComments'
-        }`}
+      <URCommentSVGBtn
+        uiref="unreadRepliesToMe"
+        count={countRepliesToMe}
+        hasUnreadComments={countRepliesToMe > 0}
+        hasReadComments={countRepliesToMe === 0}
+        selected={false}
         onClick={evt_ExpandPanel}
-      >
-        {CMTMGR.COMMENTICON}
-        <div className="comment-count">{countRepliesToMe}</div>
-      </div>
+      />
       <h3>&nbsp;unread replies to me</h3>
     </div>
   );
   const UnreadButtonJSX = (
     <div>
-      <div
-        className={`commentbtn ${
-          countUnread ? 'hasUnreadComments' : 'hasReadComments'
-        }`}
+      <URCommentSVGBtn
+        uiref="unread"
+        count={countUnread}
+        hasUnreadComments={countUnread > 0}
+        hasReadComments={countUnread === 0}
+        selected={false}
         onClick={evt_ExpandPanel}
-      >
-        {CMTMGR.COMMENTICON}
-        <div className="comment-count">{countUnread}</div>
-      </div>
+      />
       <h3>&nbsp;unread</h3>
     </div>
   );
 
   return (
     <div>
-      <URCommentThreadMgr />
+      <URCommentCollectionMgr />
+      <URDialog info={CMTSTATUS.dialog} />
       <div id="comment-bar">
         <div
           id="comment-alert"
@@ -238,7 +258,7 @@ function URCommentStatus(props) {
             className={`${uiIsExpanded ? ' expanded' : ''}`}
             onClick={evt_ExpandPanel}
           >
-            {UnreadRepliesToMeButtonJSX}&nbsp;&nbsp;{UnreadButtonJSX}
+            {UnreadRepliesToMeButtonJSX}&nbsp;{UnreadButtonJSX}
           </div>
           <div
             id="comment-panel"

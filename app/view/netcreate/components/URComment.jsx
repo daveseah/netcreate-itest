@@ -12,6 +12,15 @@
       key={cvobj.comment_id} // part of thread array
     />
 
+  1. UI input cycle
+      URComment handles updates from by the URCommentPrompt component.
+      The data is stored locally until evt_SaveBtn is clicked, which then
+      calls comment-mgr.UpdateComment.
+  2. Data State management
+      comment-mgr saves the data to the database
+      and updates COMMENTVOJBS state, which triggers a re-render of the
+      URCommentThread component.
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -41,6 +50,7 @@ const PR = 'URComment';
 function URComment({ cref, cid, uid }) {
   const [element, setElement] = useState(null);
   const [state, setState] = useState({
+    id: undefined,
     commenter: '',
     createtime_string: '',
     modifytime_string: '',
@@ -70,10 +80,9 @@ function URComment({ cref, cid, uid }) {
   useEffect(() => {
     // declare helpers
     const urmsg_UpdatePermissions = data => {
-      const isLoggedIn = NetMessage.GlobalGroupID();
       setState(prevState => ({
         ...prevState,
-        uIsDisabled: data.commentBeingEditedByMe || !isLoggedIn
+        uIsDisabled: data.commentBeingEditedByMe
       }));
     };
     const urstate_UpdateCommentVObjs = () => c_LoadCommentVObj();
@@ -95,13 +104,24 @@ function URComment({ cref, cid, uid }) {
   /** Declare helper method to load viewdata from comment manager into the
    *  component state */
   function c_LoadCommentVObj() {
+    // If the comment is being edited, skip the update, else we'd lose the edit
+    if (state.uIsBeingEdited) {
+      if (DBG)
+        console.log(
+          `COMMENTVOBJS Update!  ${cid} is being edited skipping update!!!`
+        );
+      return;
+    }
+
     const cvobj = CMTMGR.GetCommentVObj(cref, cid);
     const comment = CMTMGR.GetComment(cid);
 
     // When deleting, COMMENTVOBJS state change will trigger a load and render
     // before the component is unmounted.  So catch it and skip the state update.
     if (!cvobj || !comment) {
-      console.error('c_LoadCommentVObj: comment or cvobj not found!');
+      console.log(
+        'c_LoadCommentVObj: comment or cvobj not found!  Usually because it has been deleted.'
+      );
       return;
     }
 
@@ -113,6 +133,8 @@ function URComment({ cref, cid, uid }) {
     // set component state from retrieved data
     setState({
       // Data
+      // REVIEW MEME uses `comment.id` and NC uses `comment.comment_id`
+      id: comment.comment_id, // human readable "#xxx" id matching db id // MEME uses comment.id, matching pmcData id
       comment_id_parent: comment.comment_id_parent,
       commenter: CMTMGR.GetUserName(comment.commenter_id),
       selected_comment_type,
@@ -126,7 +148,8 @@ function URComment({ cref, cid, uid }) {
       uIsSelected: cvobj.isSelected,
       uIsBeingEdited: cvobj.isBeingEdited,
       uIsEditable: cvobj.isEditable,
-      uAllowReply: cvobj.allowReply
+      uAllowReply: cvobj.allowReply,
+      uIsDisabled: CMTMGR.GetCommentsAreBeingEdited() // if I'm not editing, but someone else is, disable edit
     });
 
     // Lock edit upon creation of a new comment or a new reply
@@ -159,8 +182,7 @@ function URComment({ cref, cid, uid }) {
       ...prevState,
       uViewMode
     }));
-
-    CMTMGR.LockComment(cid);
+    CMTMGR.UIEditComment(cid);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle save button, which saves the state to comment manager.
@@ -171,8 +193,7 @@ function URComment({ cref, cid, uid }) {
     comment.comment_type = selected_comment_type;
     comment.commenter_text = [...commenter_text]; // clone, not byref
     comment.commenter_id = uid;
-    CMTMGR.UpdateComment(comment);
-    CMTMGR.UnlockComment(cid);
+    CMTMGR.UISaveComment(comment);
     setState(prevState => ({
       ...prevState,
       uViewMode: CMTMGR.VIEWMODE.VIEW
@@ -205,49 +226,55 @@ function URComment({ cref, cid, uid }) {
   /** handle delete button, which removes the comment associated with this
    *  commment from the comment manager */
   function evt_DeleteBtn() {
+    const { id } = state;
     CMTMGR.RemoveComment({
       collection_ref: cref,
+      id,
       comment_id: cid,
       uid
     });
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle cancel button, which reverts the comment to its previous state,
-   *  doing additional housekeeping to keep comment manager consistent */
+   *  doing additional housekeeping to keep comment manager consistent
+   *  If the comment is empty and it's a new comment, just remove it
+   * */
   function evt_CancelBtn() {
-    const { commenter_text } = state;
-    let savedCommentIsEmpty = true;
-    commenter_text.forEach(t => {
-      if (t !== '') savedCommentIsEmpty = false;
+    const { commenter_text, id } = state;
+
+    let previouslyHadText = false;
+    CMTMGR.GetComment(cid).commenter_text.forEach(t => {
+      if (t !== '') previouslyHadText = true;
     });
 
-    const cb = () => CMTMGR.UnlockComment(cid);
-
-    if (savedCommentIsEmpty) {
-      // "Cancel" will always remove the comment if the comment is empty
-      // - usually because it's a newly created comment
-      // - but also if the user clears all the text fields
-      // We don't care if the user entered any text
-      CMTMGR.RemoveComment(
-        {
-          collection_ref: cref,
-          comment_id: cid,
-          uid,
-          showCancelDialog: true
-        },
-        cb
-      );
-    } else {
-      // revert to previous text if current text is empty
+    if (previouslyHadText) {
+      // revert to previous text
+      CMTMGR.UICancelComment(cid);
       const comment = CMTMGR.GetComment(cid);
       setState(prevState => ({
         ...prevState,
+        modifytime_string: comment.modifytime_string,
+        selected_comment_type: comment.comment_type,
         commenter_text: [...comment.commenter_text], // restore previous text clone, not by ref
+        comment_error: '',
         uViewMode: CMTMGR.VIEWMODE.VIEW
       }));
-
-      cb();
+    } else {
+      // Remove the temporary comment and unlock
+      CMTMGR.RemoveComment({
+        collection_ref: cref,
+        id,
+        comment_id: cid,
+        uid,
+        skipDialog: true
+      });
+      setState({
+        commenter_text: [],
+        uViewMode: CMTMGR.VIEWMODE.VIEW
+      });
     }
+
+    return;
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handle select button, which updates the comment type associated with this
@@ -342,7 +369,7 @@ function URComment({ cref, cid, uid }) {
       ))}
     </select>
   );
-  const SelectedType = commentTypes.get(selected_comment_type); //(type => type[0] === selected_comment_type);
+  const SelectedType = commentTypes.get(selected_comment_type);
   const SelectedTypeLabel = SelectedType ? SelectedType.label : 'Type not found';
   // Alternative three-dot menu approach to hide "Edit" and "Delete"
   // const UIOnEditMenuSelect = event => {
@@ -382,8 +409,10 @@ function URComment({ cref, cid, uid }) {
           <div className="date">{modifytime_string || createtime_string}</div>
         </div>
         <div>
-          <div className="commentId">#{cid}</div>
-          <div>{TypeSelector}</div>
+          <div className="commentTypeBar">
+            <div className="commentTypeLabel">{TypeSelector}</div>
+            <div className="commentId">#{comment.comment_id}</div>
+          </div>
           <URCommentPrompt
             cref={cref}
             commentType={selected_comment_type}
@@ -407,17 +436,21 @@ function URComment({ cref, cid, uid }) {
       <div
         id={cid}
         ref={setElement}
-        className={`comment ${comment.comment_isMarkedDeleted ? 'deleted' : ''}`}
+        className={`comment ${comment.comment_isMarkedDeleted ? 'deleted' : ''} ${
+          cvobj.isMarkedRead ? '' : 'unread'
+        }`}
       >
         <div>
           <div className="commenter">{commenter}</div>
           <div className="date">{modifytime_string || createtime_string}</div>
         </div>
         <div>
-          <div className="commentId">#{cid}</div>
-          <div>
-            <span className="date">TYPE: </span>
-            <span className="type">{SelectedTypeLabel}</span>
+          <div className="commentTypeBar">
+            <div className="commentTypeLabel">
+              <span className="date">TYPE: </span>
+              <span className="type">{SelectedTypeLabel}</span>
+            </div>
+            <div className="commentId">#{comment.comment_id}</div>
           </div>
           <URCommentPrompt
             cref={cref}
@@ -426,19 +459,15 @@ function URComment({ cref, cid, uid }) {
             isMarkedDeleted={comment.comment_isMarkedDeleted}
             isMarkedRead={cvobj.isMarkedRead}
             viewMode={CMTMGR.VIEWMODE.VIEW}
-            onChange={evt_CommentText}
             errorMessage={comment_error}
           />
-          {uid && (
+          {uid && !uIsDisabled && (
             <div className="commentbar">
-              {!uIsDisabled && !comment.comment_isMarkedDeleted && ReplyBtn}
-              {(!uIsDisabled &&
-                isAllowedToEditOwnComment &&
+              {!comment.comment_isMarkedDeleted && ReplyBtn}
+              {(isAllowedToEditOwnComment &&
                 !comment.comment_isMarkedDeleted &&
                 EditBtn) || <div></div>}
-              {(((!uIsDisabled &&
-                isAllowedToEditOwnComment &&
-                !comment.comment_isMarkedDeleted) ||
+              {(((isAllowedToEditOwnComment && !comment.comment_isMarkedDeleted) ||
                 isAdmin) &&
                 DeleteBtn) || <div></div>}
             </div>

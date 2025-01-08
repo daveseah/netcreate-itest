@@ -937,15 +937,19 @@ function m_UpdateColorMap() {
   // someone ever chooses to use the same label twice, but ...
   try {
     const nodeColorMap = {};
-    TEMPLATE.nodeDefs.type.options.forEach(o => {
-      nodeColorMap[o.label] = o.color;
-    });
+    if (TEMPLATE.nodeDefs.type && TEMPLATE.nodeDefs.type.options) {
+      TEMPLATE.nodeDefs.type.options.forEach(o => {
+        nodeColorMap[o.label] = o.color;
+      });
+    }
 
     const edgeColorMap = {};
     let defaultEdgeColor = TEMPLATE.edgeDefs.color || '#999'; //for backwards compatability
-    TEMPLATE.edgeDefs.type.options.forEach(o => {
-      edgeColorMap[o.label] = o.color || defaultEdgeColor;
-    });
+    if (TEMPLATE.edgeDefs.type && TEMPLATE.edgeDefs.type.options) {
+      TEMPLATE.edgeDefs.type.options.forEach(o => {
+        edgeColorMap[o.label] = o.color || defaultEdgeColor;
+      });
+    }
 
     UDATA.SetAppState('COLORMAP', { nodeColorMap, edgeColorMap });
   } catch (error) {

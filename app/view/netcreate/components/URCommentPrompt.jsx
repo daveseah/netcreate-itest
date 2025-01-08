@@ -189,6 +189,18 @@ function URCommentPrompt({
           );
           break;
         case 'dropdown':
+          if (!prompt.options.includes(commenterText[promptIndex])) {
+            // currently selected value does not match an item in the dropdown
+            // fall back to the first item in the dropdown
+            if (prompt.options.length > 0)
+              commenterText[promptIndex] = prompt.options[0];
+            else {
+              console.warn(
+                `Dropdown for ${commentType} has no options!  Check definition!`
+              );
+              commenterText[promptIndex] = ''; // fall back to an empty string
+            }
+          }
           inputJSX = (
             <select
               value={commenterText[promptIndex] || ''}
@@ -291,7 +303,6 @@ function URCommentPrompt({
           {inputJSX}
           <div className="feedback">{prompt.feedback}</div>
           <div className="error">{errorMessage}</div>
-          <hr />
         </div>
       );
     });
@@ -300,7 +311,7 @@ function URCommentPrompt({
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const RenderViewMode = () => {
     const NOTHING_SELECTED = <span className="help">(nothing selected)</span>;
-
+    if (isMarkedDeleted) return <div className="commenttext">DELETED</div>;
     return commentTypes.get(commentType).prompts.map((prompt, promptIndex) => {
       let displayJSX;
       switch (prompt.format) {
@@ -382,17 +393,11 @@ function URCommentPrompt({
 
       return (
         <div key={promptIndex} className="comment-item">
-          <div className="label">
-            <div className="comment-icon-inline">
-              {!isMarkedRead && !isMarkedDeleted && CMTMGR.COMMENTICON}
-            </div>
-            {prompt.prompt}
-          </div>
+          <div className="label">{prompt.prompt}</div>
           {/* <div className="help">{prompt.help}</div> */}
           {displayJSX}
           {/* <div className="feedback">{prompt.feedback}</div> */}
           <div className="error">{errorMessage}</div>
-          <hr />
         </div>
       );
     });

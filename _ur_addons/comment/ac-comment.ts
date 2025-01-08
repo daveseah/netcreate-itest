@@ -8,34 +8,35 @@
   
     COMMENTCOLLECTION ccol
     -----------------
-    A COMMENTCOLLECTION is the main data source for the CommentBtn.
+    A COMENTCOLLECTION is the main data source for the CommentBtn.
     It primarily shows summary information for the three states of the button:
     * has no comments
     * has unread comments
     * has read comments
+    * number of non-deleted comments in the collection
     It passes on the collection_ref to the CommentThread components.
     
       interface CommentCollection {
         cref: any; // collection_ref
         hasUnreadComments: boolean;
         hasReadComments: boolean;
+        commentCount: number; 
       }
 
       
     COMMENTUISTATE cui
     --------------
-    COMMENTUISTATE keeps track of the `isOpen` state of currently selected/open 
-    comment ui buttons.
-    Comments can be opened and closed from multiple UI elements.
+    A COMMENTUISTATE object can be opened and closed from multiple UI elements.
+    COMMENTUI keeps track of the `isOpen` status based on the UI element.
     e.g. a comment button in a node can open a comment but the same comment can
-    be opened from the node table view.
+    be opeend from the node table view.
     
       COMMENTUISTATE Map<uiref, {cref, isOpen}>
     
     
     OPENCOMMENTS
-    ---------------
-    OPENCOMMENTS keeps track of currently open comments.  This is 
+    ------------
+    OPENCOMMENTS keeps track of currently open comment buttons.  This is 
     used prevent two comment buttons from opening the same comment collection,
     e.g. if the user opens a node and a node table comment at the same time.
     
@@ -68,8 +69,6 @@
         isMarkedRead: boolean;
         isReplyToMe: boolean;
         allowReply: boolean;
-        
-        markedRead: boolean;
       }
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
@@ -96,6 +95,7 @@ type TCommentCollection = {
   collection_ref: TCollectionRef;
   hasUnreadComments?: boolean;
   hasReadComments?: boolean;
+  commentCount?: number;
 };
 
 type TCommentUIRef = string; // comment button id, e.g. `n32-isTable`, not just TCollectionRef
@@ -113,9 +113,8 @@ type TCommentVisualObject = {
   isBeingEdited: boolean;
   isEditable: boolean;
   isMarkedRead: boolean;
-  isReplyToMe: boolean;
-  allowReply: boolean;
-  markedRead: boolean;
+  isReplyToMe?: boolean;
+  allowReply?: boolean;
 };
 
 type TCommentCollectionMap = Map<TCollectionRef, TCommentCollection>;
@@ -154,6 +153,12 @@ function LoadTemplate(commentTypes: Array<TCommentType>) {
  * @param {any} data JSON data
  */
 function LoadDB(data) {
+  COMMENTCOLLECTION.clear();
+  COMMENTUISTATE.clear();
+  OPENCOMMENTS.clear();
+  COMMENTS_BEING_EDITED.clear();
+  COMMENTVOBJS.clear();
+
   if (DBG) console.log(PR, 'LoadDB', data);
   DCCOMMENTS.LoadDB(data);
   if (DBG) console.log('COMMENTCOLLECTION', COMMENTCOLLECTION);
@@ -203,6 +208,23 @@ function CloseCommentCollection(
   DeriveThreadedViewObjects(cref, uid);
 }
 
+/**
+ * Close comment collections WITHOUT marking them read
+ * Used by comment status when user is quickly opening
+ * comments for review
+ */
+function CloseAllCommentCollections(uid: TUserID) {
+  COMMENTUISTATE.forEach((state, uiref) => {
+    if (state.isOpen) {
+      // Set isOpen status
+      COMMENTUISTATE.set(uiref, { cref: state.cref, isOpen: false });
+      OPENCOMMENTS.set(state.cref, undefined);
+      // Update Derived Lists to update Marked status
+      DeriveThreadedViewObjects(state.cref, uid);
+    }
+  });
+}
+
 function MarkRead(cref: TCollectionRef, uid: TUserID) {
   // Mark Read
   const commentVObjs = COMMENTVOBJS.get(cref);
@@ -232,14 +254,16 @@ function GetCommentStats(uid: TUserID): {
   COMMENTVOBJS.forEach(cvobjs => {
     cvobjs.forEach(cvobj => {
       if (!cvobj.isMarkedRead) {
-        // count unread
-        countUnread++;
-        // count repliesToMe
         const comment = DCCOMMENTS.GetComment(cvobj.comment_id);
-        if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
-          // HACK: Update cvobj by reference!
-          cvobj.isReplyToMe = true;
-          countRepliesToMe++;
+        if (!comment.comment_isMarkedDeleted) {
+          // count unread
+          countUnread++;
+          // count repliesToMe
+          if (rootCidsWithRepliesToMe.includes(comment.comment_id_parent)) {
+            // HACK: Update cvobj by reference!
+            cvobj.isReplyToMe = true;
+            countRepliesToMe++;
+          }
         }
       }
     });
@@ -265,15 +289,22 @@ function GetOpenComments(cref: TCollectionRef): TCommentUIRef {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// EDITABLE COMMENTS
 
-function m_RegisterCommentBeingEdited(cid: TCommentID) {
+function RegisterCommentBeingEdited(cid: TCommentID) {
   COMMENTS_BEING_EDITED.set(cid, cid);
 }
-function m_DeRegisterCommentBeingEdited(cid: TCommentID) {
+function DeRegisterCommentBeingEdited(cid: TCommentID) {
   COMMENTS_BEING_EDITED.delete(cid);
 }
-
 function GetCommentBeingEdited(cid: TCommentID): TCommentID {
   return COMMENTS_BEING_EDITED.get(cid);
+}
+/// ANY comment is being edited
+function GetCommentsAreBeingEdited(): boolean {
+  return COMMENTS_BEING_EDITED.size > 0;
+}
+
+function GetCommentsBeingEdited(): TCommentsBeingEditedMap {
+  return COMMENTS_BEING_EDITED;
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -302,6 +333,8 @@ function GetUnreadComments(): TComment[] {
 /// COMMENT THREAD VIEW OBJECTS
 
 function DeriveAllThreadedViewObjects(uid: TUserID) {
+  COMMENTCOLLECTION.clear();
+  COMMENTVOBJS.clear();
   const crefs = DCCOMMENTS.GetCrefs();
   crefs.forEach(cref => DeriveThreadedViewObjects(cref, uid));
 }
@@ -317,12 +350,14 @@ function DeriveThreadedViewObjects(
 ): TCommentVisualObject[] {
   if (cref === undefined)
     throw new Error(`m_DeriveThreadedViewObjects cref: "${cref}" must be defined!`);
-  const commentVObjs = [];
+  const commentVObjs: TCommentVisualObject[] = [];
+  let commentCount = 0;
   const threadIds = DCCOMMENTS.GetThreadedCommentIds(cref);
   threadIds.forEach(cid => {
     const comment = DCCOMMENTS.GetComment(cid);
     if (comment === undefined)
       console.error('GetThreadedViewObjects for cid not found', cid, 'in', threadIds);
+    if (!comment.comment_isMarkedDeleted) commentCount++;
     const level = comment.comment_id_parent === '' ? 0 : 1;
     commentVObjs.push({
       comment_id: cid,
@@ -367,6 +402,7 @@ function DeriveThreadedViewObjects(
   });
   ccol.hasUnreadComments = hasUnreadComments;
   ccol.hasReadComments = hasReadComments;
+  ccol.commentCount = commentCount;
   COMMENTCOLLECTION.set(cref, ccol);
   return commentReplyVObjs;
 }
@@ -385,21 +421,15 @@ function GetThreadedViewObjects(
     : commentVObjs;
 }
 
-/**
- * @param {string} cref
- * @param {string} uid -- User ID is used to determine read/unread status
- * @returns {number} Returns the number of comments in a collection
- */
-function GetThreadedViewObjectsCount(cref: TCollectionRef, uid: TUserID): number {
-  return GetThreadedViewObjects(cref, uid).length;
-}
-
 function GetCOMMENTVOBJS(): TCommentVisualObjectsMap {
   return COMMENTVOBJS;
 }
 
 function GetCommentVObj(cref: TCollectionRef, cid: TCommentID): TCommentVisualObject {
   const thread = COMMENTVOBJS.get(cref);
+  if (thread === undefined)
+    // fail gracefully if thread not found -- this can happen if the comment has been deleted
+    return;
   const cvobj = thread.find(c => c.comment_id === cid);
   return cvobj;
 }
@@ -428,7 +458,7 @@ function AddComment(data: {
       COMMENTVOBJS
     );
   cvobj.isBeingEdited = true;
-  m_RegisterCommentBeingEdited(comment.comment_id);
+  RegisterCommentBeingEdited(comment.comment_id);
 
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
@@ -454,7 +484,7 @@ function UpdateComment(cobj: TComment, uid: TUserID) {
   const cvobj = GetCommentVObj(cobj.collection_ref, cobj.comment_id);
   if (cvobj === undefined)
     throw new Error(
-      `ac-comment.UpdateComment could not find cobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
+      `ac-comment.UpdateComment could not find cvobj ${cobj.comment_id}.  Maybe it hasn't been created yet? ${COMMENTVOBJS}`
     );
 
   // mark it unread
@@ -462,7 +492,7 @@ function UpdateComment(cobj: TComment, uid: TUserID) {
   DCCOMMENTS.MarkCommentUnread(cvobj.comment_id, uid);
 
   cvobj.isBeingEdited = false;
-  m_DeRegisterCommentBeingEdited(cobj.comment_id);
+  DeRegisterCommentBeingEdited(cobj.comment_id);
   cvobj.modifytime_string = GetDateString(cobj.comment_modifytime);
   commentVObjs = commentVObjs.map(c =>
     c.comment_id === cvobj.comment_id ? cvobj : c
@@ -523,8 +553,9 @@ function RemoveAllCommentsForCref(parms: {
  * Does NOT trigger a database update
  * (Contrast this with RemoveComment above)
  */
-function HandleRemovedComments(comment_ids: TCommentID[]) {
+function HandleRemovedComments(comment_ids: TCommentID[], uid: TUserID) {
   DCCOMMENTS.HandleRemovedComments(comment_ids);
+  DeriveAllThreadedViewObjects(uid);
 }
 
 /// PASS-THROUGH METHODS //////////////////////////////////////////////////////
@@ -567,6 +598,7 @@ export {
   GetCommentCollection,
   UpdateCommentUIState,
   CloseCommentCollection,
+  CloseAllCommentCollections,
   MarkRead,
   GetCommentStats,
   // Comment UI State
@@ -574,7 +606,11 @@ export {
   // Open Comments
   GetOpenComments,
   // Editable Comments
+  RegisterCommentBeingEdited,
+  DeRegisterCommentBeingEdited,
   GetCommentBeingEdited,
+  GetCommentsAreBeingEdited,
+  GetCommentsBeingEdited,
   // Unread Comments
   GetUnreadRepliesToMe,
   GetUnreadComments,
@@ -582,7 +618,6 @@ export {
   DeriveAllThreadedViewObjects,
   DeriveThreadedViewObjects,
   GetThreadedViewObjects,
-  GetThreadedViewObjectsCount,
   GetCOMMENTVOBJS,
   GetCommentVObj,
   // Comment Objects

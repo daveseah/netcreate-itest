@@ -48,7 +48,7 @@ const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
-import URCommentBtn from './URCommentBtn';
+import URCommentVBtn from './URCommentVBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -774,7 +774,7 @@ class NCNode extends UNISYS.Component {
           <div className="titlebar">
             <div className="nodenumber">NODE {id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <URCommentBtn cref={collection_ref} />
+            <URCommentVBtn cref={collection_ref} />
             {/* using key resets with a new URComment <URCommentBtn cref={collection_ref} key={collection_ref} /> */}
           </div>
           {/* Special handling for `type` field */}

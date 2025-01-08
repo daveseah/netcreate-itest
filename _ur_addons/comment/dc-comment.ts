@@ -3,7 +3,8 @@
   dc-comments
   
   Data Care Comments
-      
+  Ported from Net.Create a5a947d5007bfef213bb107c521c59547fa72714
+
   DATA
   
     COMMENTS
@@ -24,6 +25,8 @@
 
         commenter_id: any;
         commenter_text: string[];
+        
+        id: number;
       };
 
       
@@ -62,6 +65,10 @@
              r2    "r3 Third Comment"                    r4
              r4    "r4 Fourth Comment"                   
 
+      "thread" -- a sequence starting with the first
+                  e.g. [r1, r2, r3, r4]
+                  e.g. [r2.1, r2.2, r2.3]
+      
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * /////////////////////////////////////*/
 
 const DBG = false;
@@ -80,7 +87,16 @@ type TUserObject = {
 // REVIEW CType needs to be defined after we figure out how to handle templates
 //        Eventually we will dynamically define them.
 // Comment Template Type Slug
-export type CType = 'cmt' | 'tellmemore' | 'source' | 'demo';
+export type CType =
+  | 'cmt'
+  | 'tellmemore'
+  | 'source'
+  | 'evidence'
+  | 'clarity'
+  | 'steps'
+  | 'response'
+  | string; // allow other slugs
+
 type CPromptFormat =
   | 'text'
   | 'dropdown'
@@ -88,6 +104,8 @@ type CPromptFormat =
   | 'radio'
   | 'likert'
   | 'discrete-slider';
+
+export type TDBRecordId = number;
 export type TCommentID = string;
 export type TCommentType = {
   slug: CType;
@@ -99,16 +117,18 @@ type TCommentPrompt = {
   prompt: string;
   options?: string[];
   help: string;
-  feedback: string;
+  feedback?: string;
 };
 
 export type TCollectionRef = any;
 export type TComment = {
+  id?: TDBRecordId; // gets added by pmcData after it's added to the db
+
   collection_ref: TCollectionRef; // aka 'cref'
   comment_id: TCommentID;
   comment_id_parent: any;
   comment_id_previous: any;
-  comment_type: string;
+  comment_type: CType; // slug
   comment_createtime: number;
   comment_modifytime: number;
   comment_isMarkedDeleted: boolean;
@@ -132,9 +152,13 @@ type TLokiData = {
 };
 
 export type TCommentQueueActions =
+  | TCommentQueueAction_ID
   | TCommentQueueAction_RemoveCommentID
   | TCommentQueueAction_RemoveCollectionRef
   | TCommentQueueAction_Update;
+type TCommentQueueAction_ID = {
+  id: number;
+};
 type TCommentQueueAction_RemoveCommentID = {
   commentID: TCommentID;
 };
@@ -195,126 +219,113 @@ export type CPromptFormatOption_RadioData = string; // selected item string, e.g
 export type CPromptFormatOption_LikertData = string; // selected item string, e.g. '💚'
 export type CPromptFormatOption_DiscreteSliderData = string; // selected item 0-based index e.g. "2"
 
+// Generic Comment Type
+// If DEFAULT_CommentTypes is not defined, fall back to using a basic comment.
+const DEFAULT_COMMENTTYPE: TCommentType = {
+  slug: 'cmt',
+  label: 'Comment', // comment type label
+  prompts: [
+    {
+      format: 'text',
+      prompt: 'Comment', // prompt label
+      help: 'Use this for any general comment.', // displayed below prompt
+      feedback: '' // displayed below input field
+    }
+  ]
+};
+// DEFAULT_CommentTypes
+// Use this to fall back to a common set of comment types for project templates without
+// comment type definitions, e.g. if you're spinining up multiple servers from a common code base.
+// This "burns in" basic DEFAULT_CommentTypes.
+// Comment types defined in the the project template will override DEFAULT_CommentTypes.
 const DEFAULT_CommentTypes: Array<TCommentType> = [
-  // Add default comment type if none are defined
+  DEFAULT_COMMENTTYPE,
   {
-    slug: 'cmt',
-    label: 'Comment', // comment type label
+    slug: 'tellmemore',
+    label: 'Tell me more', // comment type label
     prompts: [
       {
         format: 'text',
-        prompt: 'Comment', // prompt label
-        help: 'Use this for any general comment.',
-        feedback: ''
+        prompt: 'Please tell me more', // prompt label
+        help: 'Can you tell me more about ... ', // displayed below prompt
+        feedback: '' // displayed below input field
       }
     ]
   }
-  // Temporarily moved into template 2024-07-30
-  // Move eventually to new templating system
+  // OTHER EXAMPLES of different types
   //
   // {
-  //   slug: 'demo',
-  //   label: 'Demo',
+  //   slug: 'evidence',
+  //   label: 'Evidence Critique or Suggestion',
   //   prompts: [
   //     {
-  //       format: 'text',
-  //       prompt: 'Comment', // prompt label
-  //       help: 'Use this for any general comment.',
-  //       feedback: 'Just enter text'
+  //       format: 'dropdown',
+  //       prompt: 'Is this supported by evidence?', // prompt label
+  //       options: ['😀 Yes', '🤔 Some', '🥲 No'],
+  //       help: 'Select one.'
   //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'What would you change?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // }
+  // {
+  //   slug: 'clarity',
+  //   label: 'Clarity Critique or Suggestion',
+  //   prompts: [
+  //     {
+  //       format: 'discrete-slider',
+  //       prompt: 'How clear is this model to you?', // prompt label
+  //       options: ['★', '★', '★', '★', '★'],
+  //       help: 'More stars means more clear!',
+  //       feedback: 'We can also have help here'
+  //     },
+  //     {
+  //       format: 'text',
+  //       prompt: 'What made you pick that number?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // },
+  // {
+  //   slug: 'steps',
+  //   label: 'All the Steps Critique or Suggestion',
+  //   prompts: [
   //     {
   //       format: 'dropdown',
-  //       prompt: 'How often did you use "Dropdown"', // prompt label
-  //       options: ['🥲 No', '🤔 A little', '😀 A lot'],
-  //       help: 'Select one.',
-  //       feedback: 'Single selection via dropdown menu'
+  //       prompt: 'Does this include all of the useful steps?', // prompt label
+  //       options: ['😀 Yes', '🤔 Mostly', '🥲 No', '🥲 Too many'],
+  //       help: 'Select one.'
   //     },
   //     {
-  //       format: 'checkbox',
-  //       prompt: 'What types of fruit did you "Checkbox"?', // prompt label
-  //       options: ['Apple Pie', 'Orange, Lime', 'Banana'],
-  //       help: 'Select as many as you want.',
-  //       feedback: 'Supports multiple selections'
+  //       format: 'text',
+  //       prompt: 'What made you pick that number?', // prompt label
+  //       help: 'Please be specific to help your friend.'
+  //     }
+  //   ]
+  // },
+  // {
+  //   slug: 'response',
+  //   label: 'Response',
+  //   prompts: [
+  //     {
+  //       format: 'radio',
+  //       prompt: 'Do you agree with this comment, critique, or suggestion?', // prompt label
+  //       options: ['Yes', 'Somewhat', 'No'],
+  //       help: 'Select only one.'
   //     },
   //     {
   //       format: 'radio',
-  //       prompt: 'What do you think "Radio"?', // prompt label
-  //       options: [
-  //         'It makes sense',
-  //         'I disagree',
-  //         "I don't know",
-  //         'Handle, comma, please'
-  //       ],
-  //       help: 'Select only one.',
-  //       feedback: 'Mutually exclusive single selections'
-  //     },
-  //     {
-  //       format: 'likert',
-  //       prompt: 'How did you like it "likert"?', // prompt label
-  //       options: ['💙', '💚', '💛', '🧡', '🩷'],
-  //       help: 'Select one of a series listed horizontally',
-  //       feedback: 'Select with a single click.  Supports emojis.'
-  //     },
-  //     {
-  //       format: 'discrete-slider',
-  //       prompt: 'Star Rating "discrete-slider"?', // prompt label
-  //       options: ['★', '★', '★', '★', '★'],
-  //       help: 'Select one of a series stacked horizontally',
-  //       feedback: 'Select with a single click.  Supports emojis.'
+  //       prompt: 'Will you make any changes?', // prompt label
+  //       options: ['Yes', 'Some', 'No'],
+  //       help: 'Select only one.'
   //     },
   //     {
   //       format: 'text',
-  //       prompt: 'Comment 2', // prompt label
-  //       help: 'Use this for any general comment.',
-  //       feedback: 'Just enter text'
-  //     },
-  //     {
-  //       format: 'text',
-  //       prompt: 'Comment 3', // prompt label
-  //       help: 'Use this for any general comment.',
-  //       feedback: 'Just enter text'
-  //     }
-  //   ]
-  // },
-  // {
-  //   slug: 'cmt',
-  //   label: 'Comment', // comment type label
-  //   prompts: [
-  //     {
-  //       format: 'text',
-  //       prompt: 'Comment', // prompt label
-  //       help: 'Use this for any general comment.',
-  //       feedback: ''
-  //     }
-  //   ]
-  // },
-  // {
-  //   slug: 'tellmemore',
-  //   label: 'Tell me more', // comment type label
-  //   prompts: [
-  //     {
-  //       format: 'text',
-  //       prompt: 'Please tell me more', // prompt label
-  //       help: 'Can you tell me more about ... ',
-  //       feedback: ''
-  //     }
-  //   ]
-  // },
-  // {
-  //   slug: 'source',
-  //   label: 'Source', // comment type label
-  //   prompts: [
-  //     {
-  //       format: 'text',
-  //       prompt: 'Is this well sourced?', // prompt label
-  //       help: 'Yes/No',
-  //       feedback: ''
-  //     },
-  //     {
-  //       format: 'text',
-  //       prompt: 'Changes', // prompt label
-  //       help: 'What about the sourcing could be improved?',
-  //       feedback: ''
+  //       prompt: 'Why or why not?', // prompt label
+  //       help: 'Please be specific so your friend understands.'
   //     }
   //   ]
   // }
@@ -326,6 +337,7 @@ function m_LoadUsers(dbUsers: TUserObject[]) {
   dbUsers.forEach(u => USERS.set(u.id, u.name));
 }
 function m_LoadCommentTypes(commentTypes: TCommentType[]) {
+  COMMENTTYPES.clear();
   commentTypes.forEach(t => COMMENTTYPES.set(t.slug, t));
 }
 function m_LoadComments(comments: TComment[]) {
@@ -347,7 +359,14 @@ function Init() {
 }
 
 function LoadTemplate(commentTypes: Array<TCommentType>) {
-  const types = commentTypes || DEFAULT_CommentTypes; // fall back to simple comment if it's not defined
+  // fall back order: template.toml > DEFAULT_CommentTypes > DEFAULT_COMMENTTYPE
+  // fall back to DEFAULT_CommentTypes if DEFAULT_CommentTypes is not in dc-comments
+  // or a single DEFAULT_COMMENTTYPE if it's completely missing
+  const types =
+    commentTypes ||
+    (DEFAULT_CommentTypes && DEFAULT_CommentTypes.length > 0
+      ? DEFAULT_CommentTypes
+      : [DEFAULT_COMMENTTYPE]);
   m_LoadCommentTypes(types);
 }
 
@@ -360,9 +379,21 @@ function LoadTemplate(commentTypes: Array<TCommentType>) {
  */
 function LoadDB(data: TLokiData) {
   if (DBG) console.log(PR, 'LoadDB');
+  USERS.clear();
+  // COMMENTTYPES.clear(); // MEME reads types from db, but NC reads from template, so don't clear for NC
+  COMMENTS.clear();
+  READBY.clear();
+  ROOTS.clear();
+  REPLY_ROOTS.clear();
+  NEXT.clear();
+
   // Load Data!
-  if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
-  else m_LoadCommentTypes(DEFAULT_CommentTypes); // load default comments if db has none
+
+  // MEME loads comment types in the db
+  // But NC relies on template to define comment types, so don't load commenttypes here for NC
+  //  if (data.commenttypes) m_LoadCommentTypes(data.commenttypes);
+  //  else m_LoadCommentTypes(DEFAULT_CommentTypes); // load default comments if db has none
+
   if (data.users) m_LoadUsers(data.users);
   if (data.comments) m_LoadComments(data.comments);
   if (data.readby) m_LoadReadBy(data.readby);
@@ -392,20 +423,27 @@ function GetCurrentUser(): TUserName {
 function GetCommentTypes(): TCommentTypeMap {
   return COMMENTTYPES;
 }
-function GetCommentType(typeid): TCommentType {
-  return COMMENTTYPES.get(typeid);
+function GetCommentType(slug: CType): TCommentType {
+  return COMMENTTYPES.get(slug);
 }
 function GetDefaultCommentType(): TCommentType {
   // returns the first comment type object
-  if (DEFAULT_CommentTypes.length < 1)
+  if (COMMENTTYPES.size < 1)
     throw new Error('dc-comments: No comment types defined!');
-  return GetCommentType(DEFAULT_CommentTypes[0].slug);
+  return GetCommentType(GetDefaultCommentTypeSlug());
+}
+function GetDefaultCommentTypeSlug(): CType {
+  // returns the first comment type slug
+  // fall back order: template.toml > DEFAULT_CommentTypes > DEFAULT_COMMENTTYPE
+  if (COMMENTTYPES.size < 1)
+    throw new Error('dc-comments: No comment types defined!');
+  return COMMENTTYPES.keys().next().value;
 }
 
 function GetCOMMENTS(): TCommentMap {
   return COMMENTS;
 }
-function GetComment(cid): TComment {
+function GetComment(cid: TCommentID): TComment {
   return COMMENTS.get(cid);
 }
 
@@ -440,7 +478,7 @@ function AddComment(data): TComment {
     comment_id: data.comment_id, // thread
     comment_id_parent,
     comment_id_previous,
-    comment_type: 'cmt', // default type, no prompts
+    comment_type: GetDefaultCommentTypeSlug(), // default type, no prompts
     comment_createtime: new Date().getTime(),
     comment_modifytime: null,
     comment_isMarkedDeleted: data.comment_isMarkedDeleted,
@@ -470,10 +508,11 @@ function UpdateComment(cobj: TComment) {
 function m_UpdateComment(cobj: TComment) {
   // Fake modify date until we get DB roundtrip
   cobj.comment_modifytime = new Date().getTime();
-  console.log(
-    'REVIEW: UpdateComment...modify time should use loki time???',
-    cobj.comment_modifytime
-  );
+  // console.log(
+  //   'REVIEW: UpdateComment...modify time should use loki time???',
+  //   cobj.comment_id,
+  //   cobj.comment_modifytime
+  // );
   COMMENTS.set(cobj.comment_id, cobj);
 }
 /**
@@ -486,6 +525,21 @@ function HandleUpdatedComments(cobjs: TComment[]) {
 }
 
 /**
+ * Safely delete a comment and queue it for deletion
+ * This is necessary to also return the `id`
+ * @param {string} cid comment_id
+ * @returns {Object} TCommentQueueActions
+ */
+function m_safeDeleteAndQueue(cid): TCommentQueueActions {
+  if (COMMENTS.has(cid)) {
+    const cmt = COMMENTS.get(cid);
+    const id = cmt ? cmt.id : undefined; // this should not happen
+    COMMENTS.delete(cid);
+    return { id, commentID: cid };
+  }
+  throw new Error(`Comment ${cid} not found.  This should not happen!`);
+}
+/**
  * @param {Object} parms
  * @param {Object} parms.collection_ref
  * @param {Object} parms.comment_id
@@ -496,7 +550,7 @@ function HandleUpdatedComments(cobjs: TComment[]) {
  */
 function RemoveComment(parms): TCommentQueueActions[] {
   const { collection_ref, comment_id, uid, isAdmin } = parms;
-  const queuedActions = [];
+  const queuedActions: TCommentQueueActions[] = [];
 
   // MAIN PROCESS: `xxxToDelete`
   // A. Determine the comment to remove
@@ -564,8 +618,7 @@ function RemoveComment(parms): TCommentQueueActions[] {
         childThreadIds.push(cobj.comment_id);
     });
     childThreadIds.forEach(cid => {
-      COMMENTS.delete(cid);
-      queuedActions.push({ commentID: cid });
+      queuedActions.push(m_safeDeleteAndQueue(cid));
     });
   }
 
@@ -574,8 +627,7 @@ function RemoveComment(parms): TCommentQueueActions[] {
     if (DBG) console.log(`deleteTargetAndNext`);
     const nextIds = m_GetNexts(cidToDelete);
     nextIds.forEach(cid => {
-      COMMENTS.delete(cid);
-      queuedActions.push({ commentID: cid });
+      queuedActions.push(m_safeDeleteAndQueue(cid));
     });
   }
 
@@ -601,8 +653,7 @@ function RemoveComment(parms): TCommentQueueActions[] {
   if (deleteTarget || deleteTargetAndNext || deleteRootAndChildren) {
     // DELETE TARGET
     if (DBG) console.log('deleteTarget or Root', cidToDelete);
-    COMMENTS.delete(cidToDelete);
-    queuedActions.push({ commentID: cidToDelete });
+    queuedActions.push(m_safeDeleteAndQueue(cidToDelete));
   } else if (markDeleted) {
     // MARK TARGET DELETED
     if (DBG) console.log('markDeleted', cidToDelete);
@@ -643,15 +694,13 @@ function RemoveComment(parms): TCommentQueueActions[] {
     const replyIds = m_GetReplies(rootId);
     replyIds.forEach(cid => {
       if (COMMENTS.has(cid)) {
-        COMMENTS.delete(cid);
-        queuedActions.push({ commentID: cid });
+        queuedActions.push(m_safeDeleteAndQueue(cid));
       }
     });
 
     // also delete the root
     if (COMMENTS.has(rootId)) {
-      COMMENTS.delete(rootId);
-      queuedActions.push({ commentID: rootId });
+      queuedActions.push(m_safeDeleteAndQueue(rootId));
     }
   }
 
@@ -666,8 +715,7 @@ function RemoveComment(parms): TCommentQueueActions[] {
       const cobj = COMMENTS.get(cid);
       if (cobj && cobj.comment_isMarkedDeleted) {
         // is already marked deleted so remove it
-        COMMENTS.delete(cid);
-        queuedActions.push({ commentID: cid });
+        queuedActions.push(m_safeDeleteAndQueue(cid));
       } else if (cobj && !cobj.comment_isMarkedDeleted) {
         // found an undeleted item, stop!
         break;
@@ -892,7 +940,7 @@ export default {
   IsMarkedDeleted,
   GetThreadedCommentIds,
   GetThreadedCommentData,
-  // GetThreadedCommentDataForRoot,
+  // GetThreadedCommentDataForRoot, // NOT USED?
   // READBY
   GetReadby,
   // ROOTS
