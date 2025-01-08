@@ -42,7 +42,7 @@ function DateFormatted() {
   var dateTime = time + ' on ' + date;
   return dateTime;
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Converts a markdown string to HTML
  *  And does extra HACK processing as needed:
  *  -- Supports emojis
@@ -55,7 +55,10 @@ function Markdownify(str = '') {
   const hackedHtmlString = htmlString.replace(/<a href/g, `<a target="_blank" href`);
   return MDPARSE(hackedHtmlString);
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function DeriveInfoOriginString(state) {
+  return `Created by ${state.createdBy} on ${state.created}`;
+}
 /// INPUT FORM CHANGE HANDLERS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** This processes the form data before passing it on to the parent handler.
@@ -198,6 +201,9 @@ function RenderAttributesTabView(state, defs) {
           )
         );
         break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginValue(k, attributes[k], state, defs));
+        break;
       case 'string':
       default:
         items.push(RenderStringValue(k, attributes[k]));
@@ -242,6 +248,9 @@ function RenderAttributesTabEdit(state, defs, onchange) {
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
         break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginInput(k, value, onchange, helpText, state));
+        break;
       case 'number':
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
         break;
@@ -283,6 +292,9 @@ function RenderProvenanceItemsView(state, defs) {
           )
         );
         break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginValue(k, provenance[k], state, defs));
+        break;
       case 'string':
       case 'number':
       default:
@@ -319,6 +331,9 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
+        break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginInput(k, value, onchange, helpText, state));
         break;
       case 'number':
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
@@ -405,6 +420,15 @@ function RenderMarkdownValue(key, value = '') {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderInfoOriginValue(key, value, state) {
+  const val = value || DeriveInfoOriginString(state);
+  return (
+    <div id={key} key={`${key}value`} className="viewvalue">
+      {val}
+    </div>
+  );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderStringValue(key, value) {
   return (
     <div id={key} key={`${key}value`} className="viewvalue">
@@ -467,6 +491,16 @@ function RenderMarkdownInput(key, value, cb, helpText) {
       />
     </div>
   );
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Injects `Created by <createdBy> on <created>` if nothing is defined
+ * Otherwise it's treated as a string field
+ */
+function RenderInfoOriginInput(key, value, cb, helpText, state, onFocus, onBlur) {
+  const newValue = value || DeriveInfoOriginString(state);
+  return RenderStringInput(key, newValue, cb, helpText, onFocus, onBlur);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**

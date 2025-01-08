@@ -98,7 +98,7 @@ isProvenance = false
 hidden = false
 
 [nodeDefs.infoSource]
-type = "string"
+type = "infoOrigin"
 displayLabel = "Info Source"
 exportLabel = "InfoSource"
 help = "Who created this?  (aka Source)"
