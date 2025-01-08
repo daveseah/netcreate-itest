@@ -433,17 +433,29 @@ MOD.OpenCommentStatusComment = (cref, cid) => {
       break;
     case 'n':
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [parseInt(id)] }).then(() => {
-        UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+        MOD.OpenCommentCollectionByCref(cref);
+        // wait for the comment to open before scrolling to the current comment
+        // REVIEW: Do this as a callback?
+        //         Problem is that this is a long chain for the callback
+        //         - OpenCommentCollectionByCref
+        //         - OpenCommentCollection
+        //         - UpdateCommentUIState
+        //         - m_SetAppStateCommentCollections
+        //         - UDATA.SetAppState('COMMENTCOLLECTION)
+        setTimeout(() => {
           const commentEl = document.getElementById(cid);
           commentEl.scrollIntoView({ behavior: 'smooth' });
-        });
+        }, 100);
       });
       break;
     case 'e':
       edge = UDATA.AppState('NCDATA').edges.find(e => e.id === Number(id));
       UDATA.LocalCall('SOURCE_SELECT', { nodeIDs: [edge.source] }).then(() => {
         UDATA.LocalCall('EDGE_SELECT', { edgeId: edge.id }).then(() => {
-          UDATA.LocalCall('COMMENT_SELECT', { cref }).then(() => {
+          MOD.OpenCommentCollectionByCref(cref);
+          // wait for the comment to open before scrolling to the current comment
+          // REVIEW: Do this as a callback?
+          setTimeout(() => {
             const commentEl = document.getElementById(cid);
             commentEl.scrollIntoView({ behavior: 'smooth' });
           });
@@ -453,8 +465,8 @@ MOD.OpenCommentStatusComment = (cref, cid) => {
   }
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// DEPRECATED -- URComemntVBtn handles this currently
-///               But we might want to restore this.
+/// DEPRECATED -- URCommentVBtn handles this currently
+///               But we might want to restore the ability to toggle in place.
 // /**
 //  * Used by NCNodeTable and NCEdgeTable to open/close the comment thread
 //  * If a comment is already opened by one button (e.g. node), and the user
