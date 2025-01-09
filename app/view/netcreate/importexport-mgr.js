@@ -146,6 +146,8 @@ function m_flattenKeys(keys, prefix) {
  *  @returns - array of node values, e.g. [1,'Tacitus','Person',...]
  */
 function m_renderNodeValues(node, keys) {
+  const TEMPLATE = UDATA.AppState('TEMPLATE');
+
   const RESULT = [];
   keys.forEach(key => {
     // If the key is an object, recurse
@@ -173,6 +175,16 @@ function m_renderNodeValues(node, keys) {
     // -- DATE
     if (['created', 'updated'].includes(key)) {
       RESULT.push(m_formatDate(node.meta[key]));
+      return;
+    }
+    // -- Special processing for custom fields
+    const nodeDef = TEMPLATE.nodeDefs[key];
+    if (nodeDef.type === 'infoOrigin') {
+      if (node[key]) RESULT.push(`"${m_encode(node[key])}"`);
+      else
+        RESULT.push(
+          `"${UTILS.DeriveInfoOriginString(node.createdBy, node.meta.created)}"`
+        );
       return;
     }
     // -- Normal processing -- wrap in quotes
@@ -210,6 +222,8 @@ function m_GenerateNodesArray(nodes, nodekeys) {
  *  @returns - array of edge values, e.g. [1,'is enemy of',2,...]
  */
 function m_renderEdgeValues(edge, keys) {
+  const TEMPLATE = UDATA.AppState('TEMPLATE');
+
   const RESULT = [];
   keys.forEach(key => {
     // If the key is an object, recurse
@@ -218,7 +232,7 @@ function m_renderEdgeValues(edge, keys) {
       // DEPRECATED -- 'attribute' handler.
       const subKeys = Object.keys(key); // can have multiple subKeys
       subKeys.forEach(k => {
-        RESULT.push(m_renderNodeValues(edge[k], key[k]));
+        RESULT.push(m_renderEdgeValues(edge[k], key[k]));
       });
     }
     // Special Data Handling
@@ -243,6 +257,16 @@ function m_renderEdgeValues(edge, keys) {
     // -- DATE
     if (['created', 'updated'].includes(key)) {
       RESULT.push(m_formatDate(edge.meta[key]));
+      return;
+    }
+    // -- Special processing for custom fields
+    const edgeDefs = TEMPLATE.edgeDefs[key];
+    if (edgeDefs.type === 'infoOrigin') {
+      if (edge[key]) RESULT.push(`"${m_encode(edge[key])}"`);
+      else
+        RESULT.push(
+          `"${UTILS.DeriveInfoOriginString(edge.createdBy, edge.meta.created)}"`
+        );
       return;
     }
     // -- normal processing -- wrap in quotes

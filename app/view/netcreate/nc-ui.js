@@ -8,6 +8,35 @@
   * NCNode
   * NCEdge
 
+  Supported Field Types
+  - number
+  - string
+  - markdown
+  - hdate
+  - select
+  - infoOrigin
+
+
+  Custom Fields Handling
+
+    The `infoOrigin` field requires special handling.
+
+    Ideally, when a node is created, we would process any special fields and
+    derive and save any derived info.  But
+    a) we don't want to have server-database handle any custom fields -- that
+       it should just blindly save data.
+    b) when nc-logic creates a new field via `NODE_CREATE`, again, only built-in
+       fields are created and stored.  Custom fields are created by the UI as
+       needed when they are rendered.
+    This means that the `infoOrigin` field remains blank until the user
+    decides to change the data.
+
+    To handle this, then we need to make sure `infoOrigin` appears to have data
+    whenever it is viewed.  This requires:
+    - nc-ui renders a non-built-in field, e.g. an `attribute` field
+    - nc-ui renders a `provenance` field
+    - importexport-mgr exports node or edge data
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
