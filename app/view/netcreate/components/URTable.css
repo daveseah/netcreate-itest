@@ -5,6 +5,7 @@
   --bg-hover-clr: #ddf;
   /* layout */
   --padding-horizontal: 10px;
+  --row-height: 1em;
 }
 .URTable table {
   border-collapse: collapse;
@@ -74,3 +75,9 @@
   padding: 0 2px;
   text-align: left;
 }
+
+.URTable img {
+  max-width: 225px;
+  max-height: var(--row-height);
+}
+
