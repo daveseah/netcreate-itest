@@ -59,7 +59,7 @@ hidden = false
 
 [nodeDefs.label]
 type = "string"
-displayLabel = "label"
+displayLabel = "Label"
 exportLabel = "Label"
 help = "Display name of the node"
 includeInGraphTooltip = true
@@ -190,14 +190,6 @@ type = "string"
 displayLabel = "Notes"
 exportLabel = "Notes"
 help = "Significance of the connection"
-isProvenance = false
-hidden = false
-
-[edgeDefs.info]
-type = "number"
-displayLabel = "Date"
-exportLabel = "Date"
-help = '"YYYY-MM-DD" format"'
 isProvenance = false
 hidden = false
 
