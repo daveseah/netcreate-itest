@@ -418,7 +418,7 @@ function RenderProvenanceTabEdit(state, defs, onchange) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceByline(date, author, defAuthor) {
   let result = '';
-  if (defAuthor.hidden) result = date;
+  if (defAuthor && defAuthor.hidden) result = date;
   else {
     const by = author ? `${author}` : `(not recorded)`; // leave author blank for older templates
     result = `${by}, ${date}`;
