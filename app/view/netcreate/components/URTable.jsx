@@ -385,6 +385,12 @@ function URTable({ isOpen, data, columns }) {
           return value;
       }
     }
+    return (
+      <div className="tabletip">
+        {result}
+        <span className="tabletiptext">{result}</span>
+      </div>
+    );
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /// Sorts then sets the table data

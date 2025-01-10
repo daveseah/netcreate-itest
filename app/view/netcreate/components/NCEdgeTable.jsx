@@ -142,8 +142,13 @@ function NCEdgeTable({ tableHeight, isOpen }) {
 
     // Only include built in fields
     // Only include non-hidden fields
+    // Only include non-provenance fields
     const attributeDefs = Object.keys(defs).filter(
-      k => !BUILTIN_FIELDS_EDGE.includes(k) && !defs[k].hidden
+      k =>
+        !BUILTIN_FIELDS_EDGE.includes(k) && !defs[k].isProvenance && !defs[k].hidden
+    );
+    const provenanceDefs = Object.keys(defs).filter(
+      k => !BUILTIN_FIELDS_EDGE.includes(k) && defs[k].isProvenance && !defs[k].hidden
     );
 
     /// CLICK HANDLERS
@@ -215,7 +220,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
           className="outline"
           onClick={event => ui_ClickViewNode(event, value.id)}
         >
-          <span style={{ color: 'blue' }}>{value.label}</span>
+          <span>{value.label}</span>
         </button>
       );
     }
@@ -249,11 +254,16 @@ function NCEdgeTable({ tableHeight, isOpen }) {
     // column definitions for custom attributes
     // (built in columns are: view, degrees, label)
     const ATTRIBUTE_COLUMNDEFS = attributeDefs.map(key => {
-      const title = defs[key].displayLabel;
-      const type = defs[key].type;
       return {
-        title,
-        type,
+        title: defs[key].displayLabel,
+        type: defs[key].type,
+        data: key
+      };
+    });
+    const PROVENANCE_COLUMNDEFS = provenanceDefs.map(key => {
+      return {
+        title: defs[key].displayLabel,
+        type: defs[key].type,
         data: key
       };
     });
@@ -291,15 +301,45 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         sorter: col_SortNodes
       },
       ...ATTRIBUTE_COLUMNDEFS,
-      {
-        title: 'Comments',
-        data: 'commentVBtnDef',
-        type: 'text',
-        width: 50, // in px
-        renderer: col_RenderCommentBtn,
-        sorter: col_SortCommentsByCount
-      }
+      ...PROVENANCE_COLUMNDEFS
     );
+    // History
+    if (defs['createdBy'] && !defs['createdBy'].hidden)
+      COLUMNDEFS.push({
+        title: 'Created By',
+        type: 'text-case-insensitive',
+        width: 60, // in px
+        data: 'createdBy'
+      });
+    if (defs['created'] && !defs['created'].hidden)
+      COLUMNDEFS.push({
+        title: 'Created On',
+        type: 'timestamp-short',
+        width: 60, // in px
+        data: 'created'
+      });
+    if (defs['updatedBy'] && !defs['updatedBy'].hidden)
+      COLUMNDEFS.push({
+        title: 'Updated By',
+        type: 'text-case-insensitive',
+        width: 60, // in px
+        data: 'updatedBy'
+      });
+    if (defs['updated'] && !defs['updated'].hidden)
+      COLUMNDEFS.push({
+        title: 'Updated On',
+        type: 'timestamp-short',
+        width: 60, // in px
+        data: 'updated'
+      }); // Comment is last
+    COLUMNDEFS.push({
+      title: 'Comments',
+      data: 'commentVBtnDef',
+      type: 'text',
+      width: 50, // in px
+      renderer: col_RenderCommentBtn,
+      sorter: col_SortCommentsByCount
+    });
     return COLUMNDEFS;
   }
 
@@ -308,8 +348,15 @@ function NCEdgeTable({ tableHeight, isOpen }) {
   function DeriveTableData({ edgeDefs, edges }) {
     // Only include built in fields
     // Only include non-hidden fields
+    // Only include non-provenance fields
     let attributeDefs = Object.keys(edgeDefs).filter(
-      k => !BUILTIN_FIELDS_EDGE.includes(k) && !edgeDefs[k].hidden
+      k =>
+        !BUILTIN_FIELDS_EDGE.includes(k) &&
+        !edgeDefs[k].hidden &&
+        !edgeDefs[k].isProvenance
+    );
+    const provenanceDefs = Object.keys(edgeDefs).filter(
+      k => edgeDefs[k].isProvenance
     );
 
     return edges.map((edge, i) => {
@@ -346,6 +393,30 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         selected
       };
 
+      // provenance
+      const provenance = {};
+      provenanceDefs.forEach((key, i) => {
+        let data = {};
+        if (edgeDefs[key].type === 'markdown') {
+          // for markdown:
+          // a. provide the raw markdown string
+          // b. provide the HTML string
+          data.html = NCUI.Markdownify(edge[key]);
+          data.raw = edge[key];
+        } else if (edgeDefs[key].type === 'hdate')
+          data = edge[key] && edge[key].formattedDateString;
+        else data = edge[key] || '';
+        provenance[key] = data;
+      });
+
+      // history
+      const history = {
+        createdBy: edge.createdBy,
+        created: edge.meta ? edge.meta.created : '', // meta may not be defined when a new node is creatd
+        updatedBy: edge.updatedBy,
+        updated: edge.meta ? edge.meta.updated : '' // meta may not be defined when a new node is creatd
+      };
+
       return {
         id: { edgeId: id, sourceId: source }, // { edgeId, sourceId} for click handler
         sourceDef, // { id: String, label: String }
@@ -353,6 +424,8 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         type,
         ...attributes,
         commentVBtnDef,
+        ...provenance,
+        ...history,
         meta: {
           filteredTransparency: edge.filteredTransparency
         }
