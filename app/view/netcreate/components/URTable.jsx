@@ -302,6 +302,8 @@ function URTable({ isOpen, data, columns }) {
       // NC's markdown format from NCNodeTable will pass:
       // { html, raw}
       // We will sort by the raw text
+      if (!a[key].raw) return 1; // Move undefined or '' to the bottom regardless of sort order
+      if (!b[key].raw) return -1; // Move undefined or '' the bottom regardless of sort order
       if (a[key].raw < b[key].raw) return order;
       if (a[key].raw > b[key].raw) return order * -1;
       return 0;
