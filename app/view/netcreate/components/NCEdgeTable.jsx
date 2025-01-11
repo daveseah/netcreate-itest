@@ -273,7 +273,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         title: '', // View/Edit
         data: 'id',
         type: 'number',
-        width: 50, // in px
+        width: 45, // in px
         renderer: col_RenderViewOrEdit,
         sortDisabled: true,
         tipDisabled: true
@@ -338,7 +338,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
       title: ' ',
       data: 'commentVBtnDef',
       type: 'text',
-      width: 50, // in px
+      width: 40, // in px
       renderer: col_RenderCommentBtn,
       sorter: col_SortCommentsByCount,
       tipDisabled: true
@@ -454,7 +454,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
   const COLUMNDEFS = DeriveColumnDefs();
   const TABLEDATA = DeriveTableData({ edgeDefs: state.edgeDefs, edges: state.edges });
   return (
-    <div className="NCNodeTable" style={{ height: tableHeight }}>
+    <div className="NCEdgeTable" style={{ height: tableHeight }}>
       <URTable isOpen={isOpen} data={TABLEDATA} columns={COLUMNDEFS} />
     </div>
   );

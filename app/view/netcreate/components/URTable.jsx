@@ -418,8 +418,8 @@ function URTable({ isOpen, data, columns }) {
     if (coldef.tipDisabled) return result;
     return (
       <div className="tabletip">
-        {result}
-        <span className="tabletiptext">{result}</span>
+        <div className="tabletip-source">{result}</div>
+        <div className="tabletip-text">{result}</div>
       </div>
     );
   }

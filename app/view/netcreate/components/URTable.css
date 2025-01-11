@@ -3,6 +3,7 @@
   --bg-thead-clr: #fdfdff;
   --bg-selected-clr: #eef;
   --bg-hover-clr: #ddf;
+  --tabletip-hover-clr: #ccf;
   /* layout */
   --padding-horizontal: 5px;
   --row-height: 1em;
@@ -12,13 +13,18 @@
   width: 100%;
   table-layout: fixed; /* enforce column widths */
 }
+.URTable thead {
+  /* position: sticky; */
+  /* top: 0; */
+  /* z-index: 1; for some reason EdgeTable can't set z to 1 or thead will cover tabletip */
+}
 .URTable th {
   padding: 0 var(--padding-horizontal);
   border-right: 1px solid #999;
-  top: 0;
   background-color: var(--bg-thead-clr);
+  top: 0;
   position: -webkit-sticky;
-  position: sticky;
+  position: sticky; /* needed for resizing columns */
   z-index: 1; /* for some reason EdgeTable requires this or body cells will cover td */
 }
 .URTable th.selected {
@@ -93,7 +99,8 @@
   display: inline-block;
   cursor: pointer;
 }
-.URTable .tabletiptext {
+
+.URTable .tabletip-text {
   visibility: visible;
   width: max-content;
   max-width: 400px;
@@ -104,7 +111,8 @@
   border-radius: 4px;
   padding: 5px;
   position: absolute;
-  bottom: 125%; /* Position above the element */
+  top: 0; /* position directly on top of the element */
+  /* bottom: 125%; /* Position above the element */
   left: 0%;
   opacity: 0;
   transition: opacity 0.3s;
@@ -113,12 +121,24 @@
 .URTable .tabletip p {
   margin: 0; /* override markdown text spacing */
 }
-.URTable .tabletip:hover .tabletiptext {
-  visibility: visible;
-  opacity: 1;
-}
 .URTable td:hover {
   overflow: visible;
-  background-color: var(--bg-hover-clr);
-  z-index: 101;
+  background-color: var(--tabletip-hover-clr);
+  position: relative;
+  z-index: 200;
+}
+.URTable td:hover .tabletip .tabletip-text {
+  visibility: visible;
+  opacity: 1;
+  z-index: 200;
+}
+.URTable td:hover .tabletip-source {
+  position: relative;
+  padding-top: var(--padding-horizontal);
+  padding-right: var(--padding-horizontal); /* gap next column */
+  padding-bottom: var(--padding-horizontal);
+  background-color: var(--tabletip-hover-clr);
+}
+.URTable td:hover .tabletip-source p {
+  background-color: var(--tabletip-hover-clr); /* override markdown p */
 }
