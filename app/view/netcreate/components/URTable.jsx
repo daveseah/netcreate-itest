@@ -46,6 +46,10 @@ Used also on https://github.com/netcreateorg/netcreate-itest/
     so re-selecting the column will restore the previous sort order
   * A column can be designated unsortable by setting `sortDisabled` to `true`
 
+## Tooltips
+  * Tooltips are displayed when hovering over a cell
+  * The tooltip text is the same as the cell text
+  * Tooltips can be disabled by setting `tipDisabled` to `true`
 
 # PROPS - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   `tableData`: array
@@ -72,6 +76,7 @@ Used also on https://github.com/netcreateorg/netcreate-itest/
         renderer: (value: any) => JSX.Element
         sorter: (key: string, tdata: any[], order: number) => any[]
         sortDisabled: boolean
+        tipDisabled: boolean
 
   Example usage:
 
@@ -410,6 +415,7 @@ function URTable({ isOpen, data, columns }) {
           result = value;
       }
     }
+    if (coldef.tipDisabled) return result;
     return (
       <div className="tabletip">
         {result}

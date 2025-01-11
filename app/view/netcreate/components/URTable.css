@@ -110,9 +110,6 @@
   transition: opacity 0.3s;
   z-index: 101;
 }
-.URTable .tabletiptext a {
-  color: #ddf;
-}
 .URTable .tabletip p {
   margin: 0; /* override markdown text spacing */
 }

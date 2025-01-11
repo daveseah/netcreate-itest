@@ -275,7 +275,8 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         type: 'number',
         width: 50, // in px
         renderer: col_RenderViewOrEdit,
-        sortDisabled: true
+        sortDisabled: true,
+        tipDisabled: true
       },
       {
         title: defs['source'].displayLabel,
@@ -334,12 +335,13 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         data: 'updated'
       }); // Comment is last
     COLUMNDEFS.push({
-      title: '',
+      title: ' ',
       data: 'commentVBtnDef',
       type: 'text',
       width: 50, // in px
       renderer: col_RenderCommentBtn,
-      sorter: col_SortCommentsByCount
+      sorter: col_SortCommentsByCount,
+      tipDisabled: true
     });
     return COLUMNDEFS;
   }

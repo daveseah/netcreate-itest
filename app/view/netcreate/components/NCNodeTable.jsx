@@ -258,7 +258,8 @@ function NCNodeTable({ tableHeight, isOpen }) {
         type: 'number',
         width: 45, // in px
         renderer: col_RenderViewOrEdit,
-        sortDisabled: true
+        sortDisabled: true,
+        tipDisabled: true
       },
       {
         title: defs['degrees'].displayLabel,
@@ -318,7 +319,8 @@ function NCNodeTable({ tableHeight, isOpen }) {
       data: 'commentVBtnDef',
       width: 40, // in px
       renderer: col_RenderCommentBtn,
-      sorter: col_SortCommentsByCount
+      sorter: col_SortCommentsByCount,
+      tipDisabled: true
     });
     return COLUMNDEFS;
   }
