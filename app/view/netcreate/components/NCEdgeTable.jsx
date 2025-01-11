@@ -334,7 +334,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         data: 'updated'
       }); // Comment is last
     COLUMNDEFS.push({
-      title: 'Comments',
+      title: '',
       data: 'commentVBtnDef',
       type: 'text',
       width: 50, // in px

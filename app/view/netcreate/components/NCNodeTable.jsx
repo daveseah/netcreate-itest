@@ -314,7 +314,7 @@ function NCNodeTable({ tableHeight, isOpen }) {
       });
     // Comment is last
     COLUMNDEFS.push({
-      title: 'Cmt',
+      title: ' ',
       data: 'commentVBtnDef',
       width: 40, // in px
       renderer: col_RenderCommentBtn,
