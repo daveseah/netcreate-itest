@@ -41,6 +41,8 @@ function FilterGroup({ group, label, filters, filterAction, transparency }) {
           case FILTER.TYPES.MARKDOWN:
           case FILTER.TYPES.NODE:
           case FILTER.TYPES.DATE: // generic dates (not hdate) are treated like strings
+          case FILTER.TYPES.INFOORIGIN:
+          case FILTER.TYPES.TIMESTAMP: // treat it like a string for now
           case FILTER.TYPES.STRING:
             return (
               <StringFilter

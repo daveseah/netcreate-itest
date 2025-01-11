@@ -249,25 +249,17 @@ function m_ImportPrompts(prompts) {
     switch (prompt.type) {
       case FILTER.TYPES.MARKDOWN:
       case FILTER.TYPES.STRING:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.NUMBER:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.SELECT:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.NODE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.DATE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.HDATE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
+      case FILTER.TYPES.TIMESTAMP:
+      case FILTER.TYPES.INFOORIGIN:
+        operator = FILTER.OPERATORS.NO_OP.key;
         break;
       case FILTER.TYPES.HIDDEN:
-        break;
+        break; // hidden filters are not added
       default:
         // edge template item "edgeIsLockedMessage" will trigger this message
         // filters will not be created for entries with no `type` defined.

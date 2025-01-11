@@ -39,6 +39,7 @@ FILTER.ACTION.FILTER = 'FILTERING'; // FIX: Remove this after we decide to remov
 FILTER.ACTION.REDUCE = 'REMOVE';
 FILTER.ACTION.FOCUS = 'FOCUS';
 // Types of filters definable in template files.
+// See also `nc-ui.js` for field types
 FILTER.TYPES = {};
 FILTER.TYPES.STRING = 'string';
 FILTER.TYPES.NUMBER = 'number';
@@ -47,6 +48,8 @@ FILTER.TYPES.NODE = 'node'; // edge source / target
 FILTER.TYPES.DATE = 'date';
 FILTER.TYPES.HDATE = 'hdate'; // custom historical date
 FILTER.TYPES.MARKDOWN = 'markdown';
+FILTER.TYPES.TIMESTAMP = 'timestamp';
+FILTER.TYPES.INFOORIGIN = 'infoOrigin';
 FILTER.TYPES.HIDDEN = 'hidden';
 // Special Edge Keys mapped to node objects
 // Used by m_IsEdgeMatchedByFilter to find node labels
