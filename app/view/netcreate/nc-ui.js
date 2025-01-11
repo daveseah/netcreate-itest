@@ -447,10 +447,13 @@ function RenderMarkdownValue(key, value = '') {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderInfoOriginValue(key, value, state) {
-  const val = value || UTILS.DeriveInfoOriginString(state.createdBy, state.created);
+  const newValue =
+    value === undefined || value === ''
+      ? UTILS.DeriveInfoOriginString(state.createdBy, state.created)
+      : value;
   return (
     <div id={key} key={`${key}value`} className="viewvalue">
-      {val}
+      {newValue}
     </div>
   );
 }
@@ -526,7 +529,9 @@ function RenderMarkdownInput(key, value, cb, helpText) {
  */
 function RenderInfoOriginInput(key, value, cb, helpText, state, onFocus, onBlur) {
   const newValue =
-    value || UTILS.DeriveInfoOriginString(state.createdBy, state.created);
+    value === undefined || value === ''
+      ? UTILS.DeriveInfoOriginString(state.createdBy, state.created)
+      : value;
   return RenderStringInput(key, newValue, cb, helpText, onFocus, onBlur);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

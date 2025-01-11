@@ -24,6 +24,7 @@
 import React, { useState, useEffect } from 'react';
 import UNISYS from 'unisys/client';
 import NCUI from '../nc-ui';
+import UTILS from '../nc-utils';
 import FILTER from './filter/FilterEnums';
 import CMTMGR from '../comment-mgr';
 
@@ -374,9 +375,14 @@ function NCEdgeTable({ tableHeight, isOpen }) {
           // b. provide the HTML string
           data.html = NCUI.Markdownify(edge[key]);
           data.raw = edge[key];
-        } else if (edgeDefs[key].type === 'hdate')
+        } else if (edgeDefs[key].type === 'hdate') {
           data = edge[key] && edge[key].formattedDateString;
-        else data = edge[key];
+        } else if (edgeDefs[key].type === 'infoOrigin') {
+          data =
+            edge[key] === undefined || edge[key] === ''
+              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.created)
+              : edge[key];
+        } else data = edge[key];
         attributes[key] = data;
       });
 
@@ -403,9 +409,14 @@ function NCEdgeTable({ tableHeight, isOpen }) {
           // b. provide the HTML string
           data.html = NCUI.Markdownify(edge[key]);
           data.raw = edge[key];
-        } else if (edgeDefs[key].type === 'hdate')
+        } else if (edgeDefs[key].type === 'hdate') {
           data = edge[key] && edge[key].formattedDateString;
-        else data = edge[key] || '';
+        } else if (edgeDefs[key].type === 'infoOrigin') {
+          data =
+            edge[key] === undefined || edge[key] === ''
+              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.created)
+              : edge[key];
+        } else data = edge[key] || '';
         provenance[key] = data;
       });
 

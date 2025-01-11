@@ -25,6 +25,7 @@
 import React, { useState, useEffect } from 'react';
 import UNISYS from 'unisys/client';
 import NCUI from '../nc-ui';
+import UTILS from '../nc-utils';
 import FILTER from './filter/FilterEnums';
 import CMTMGR from '../comment-mgr';
 
@@ -351,9 +352,14 @@ function NCNodeTable({ tableHeight, isOpen }) {
           // b. provide the HTML string
           data.html = NCUI.Markdownify(node[key]);
           data.raw = node[key];
-        } else if (nodeDefs[key].type === 'hdate')
+        } else if (nodeDefs[key].type === 'hdate') {
           data = node[key] && node[key].formattedDateString;
-        else data = node[key];
+        } else if (nodeDefs[key].type === 'infoOrigin') {
+          data =
+            node[key] === undefined || node[key] === ''
+              ? UTILS.DeriveInfoOriginString(node.createdBy, node.created)
+              : node[key];
+        } else data = node[key];
         attributes[key] = data;
       });
 
@@ -380,11 +386,17 @@ function NCNodeTable({ tableHeight, isOpen }) {
           // b. provide the HTML string
           data.html = NCUI.Markdownify(node[key]);
           data.raw = node[key];
-        } else if (nodeDefs[key].type === 'hdate')
+        } else if (nodeDefs[key].type === 'hdate') {
           data = node[key] && node[key].formattedDateString;
-        else data = node[key] || '';
+        } else if (nodeDefs[key].type === 'infoOrigin') {
+          data =
+            node[key] === undefined || node[key] === ''
+              ? UTILS.DeriveInfoOriginString(node.createdBy, node.created)
+              : node[key];
+        } else data = node[key] || '';
         provenance[key] = data;
       });
+
       // history
       const history = {
         createdBy: node.createdBy,
