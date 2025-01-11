@@ -127,7 +127,7 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('FILTER_CLEAR', () => {
     m_ClearFilters();
-    UNISYS.Log('clear filters')
+    UNISYS.Log('clear filters');
   });
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -393,7 +393,11 @@ function m_FiltersApply() {
   UTILS.RecalculateAllNodeDegrees(FILTEREDNCDATA);
 
   // Calculate Stats and Send with FILTEREDNCDATA
-  FILTEREDNCDATA.stats = m_UpdateFilterStats(NCDATA, FILTEREDNCDATA, FILTERDEFS.filterAction);
+  FILTEREDNCDATA.stats = m_UpdateFilterStats(
+    NCDATA,
+    FILTEREDNCDATA,
+    FILTERDEFS.filterAction
+  );
 
   // Update FILTEREDNCDATA
   UDATA.SetAppState('FILTEREDNCDATA', FILTEREDNCDATA);
@@ -417,15 +421,21 @@ function m_UpdateFilterStats(NCDATA, FILTEREDNCDATA, filterAction) {
   const edgeCount = NCDATA.edges.length;
   let filteredNodeCount, filteredEdgeCount;
   if (filterAction === FILTER.ACTION.FADE) {
-    filteredNodeCount = nodeCount - FILTEREDNCDATA.nodes.filter(n => n.filteredTransparency <= transparencyNode).length
-    filteredEdgeCount = edgeCount - FILTEREDNCDATA.edges.filter(e => e.filteredTransparency <= transparencyEdge).length
+    filteredNodeCount =
+      nodeCount -
+      FILTEREDNCDATA.nodes.filter(n => n.filteredTransparency <= transparencyNode)
+        .length;
+    filteredEdgeCount =
+      edgeCount -
+      FILTEREDNCDATA.edges.filter(e => e.filteredTransparency <= transparencyEdge)
+        .length;
   } else {
     filteredNodeCount = FILTEREDNCDATA.nodes.length;
     filteredEdgeCount = FILTEREDNCDATA.edges.length;
   }
-  const statsSummary = `Showing ${filteredNodeCount}/${nodeCount} nodes, ${filteredEdgeCount}/${edgeCount} edges`
+  const statsSummary = `Showing ${filteredNodeCount}/${nodeCount} nodes, ${filteredEdgeCount}/${edgeCount} edges`;
 
-  return { nodeCount, edgeCount, filteredNodeCount, filteredEdgeCount, statsSummary }
+  return { nodeCount, edgeCount, filteredNodeCount, filteredEdgeCount, statsSummary };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_UpdateFilterSummary(statsSummary) {
@@ -442,8 +452,9 @@ function m_UpdateFilterSummary(statsSummary) {
   const edgeSummary = m_FiltersToString(FILTERDEFS.edges.filters);
   let summary = '';
   if (nodeSummary || edgeSummary)
-    summary = `${typeSummary} ${nodeSummary ? 'NODES: ' : ''}${nodeSummary} ${edgeSummary ? 'EDGES: ' : ''
-      }${edgeSummary}`;
+    summary = `${typeSummary} ${nodeSummary ? 'NODES: ' : ''}${nodeSummary} ${
+      edgeSummary ? 'EDGES: ' : ''
+    }${edgeSummary}`;
   if (summary) summary += ' ' + statsSummary;
 
   UDATA.LocalCall('FILTER_SUMMARY_UPDATE', { filtersSummary: summary });
@@ -476,7 +487,9 @@ function m_OperatorToString(operator) {
 
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function clean(str) { return NCLOGIC.EscapeRegexChars(String(str).trim()); };
+function clean(str) {
+  return NCLOGIC.EscapeRegexChars(String(str).trim());
+}
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  *  Match strings, allowing use of `&&` and `||`
@@ -491,9 +504,15 @@ function clean(str) { return NCLOGIC.EscapeRegexChars(String(str).trim()); };
  */
 function m_MatchString(needle, haystack, contains = true) {
   const ANDNeedles = String(needle).split('&&');
-  const ORNeedleArrs = ANDNeedles.map(ands => String(ands).split(/\|\|/).map(str => String(str).trim()));
+  const ORNeedleArrs = ANDNeedles.map(ands =>
+    String(ands)
+      .split(/\|\|/)
+      .map(str => String(str).trim())
+  );
   // For each set of OR Array matches, evaluate the pair
-  const ResultsOR = ORNeedleArrs.map(pair => pair.reduce((a, b) => a || m_MatchStringSnippet(clean(b), haystack, true), false));
+  const ResultsOR = ORNeedleArrs.map(pair =>
+    pair.reduce((a, b) => a || m_MatchStringSnippet(clean(b), haystack, true), false)
+  );
   const ResultsAND = ResultsOR.reduce((a, b) => a && b, true);
   return contains ? ResultsAND : !ResultsAND;
 }

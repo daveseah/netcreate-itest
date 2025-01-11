@@ -3,7 +3,7 @@
   Historical Date Utilities
 
   Used by the URDateField component to parse and format historical dates.
-  Also used in NodeTablea nd EdgeTable for sorting and filtering.
+  Also used in NodeTablea and EdgeTable for sorting and filtering.
 
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 import * as chrono from 'chrono-node';
@@ -17,19 +17,19 @@ const HDATE = {};
 HDATE.erasChrono = chrono.casual.clone();
 HDATE.erasChrono.parsers.push(
   {
-  pattern: () => {
+    pattern: () => {
       // match year if "BC/AD/BCE/CE" (case insensitive)
       //   "10bc"  -- without space
       //   "10 bc" -- with space
       return /(\d+)\s*(BCE|CE|BC|AD)?/i;
-  },
-  extract: (context, match) => {
-    const year = parseInt(match[1], 10);
+    },
+    extract: (context, match) => {
+      const year = parseInt(match[1], 10);
       const era = match[2] ? match[2].toUpperCase() : 'CE'; // default to CE
-    // Adjust the year based on the era
-    const adjustedYear = era === 'BCE' || era === 'BC' ? -year : year;
-    return { year: adjustedYear };
-  }
+      // Adjust the year based on the era
+      const adjustedYear = era === 'BCE' || era === 'BC' ? -year : year;
+      return { year: adjustedYear };
+    }
   }
 
   // ALTERNATIVE APPROACH: Any 3 digits is a year
@@ -52,14 +52,12 @@ HDATE.erasChrono.parsers.push(
   //   }
   // },
 );
-HDATE.erasChrono.refiners.push(
-  {
-    refine: (context, results) => {
-      // placeholder if we decide we want to add a refiner
-      return results;
-    }
+HDATE.erasChrono.refiners.push({
+  refine: (context, results) => {
+    // placeholder if we decide we want to add a refiner
+    return results;
   }
-);
+});
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -141,28 +139,28 @@ HDATE.DATEFORMAT = {
 HDATE.u_pad = num => {
   if (!num) return '';
   return num.toString().padStart(2, '0');
-}
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 HDATE.u_monthAbbr = num => {
   const date = new Date(2000, num - 1, 1);
   return date.toLocaleDateString('default', { month: 'short' });
-}
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 HDATE.u_monthName = num => {
   const date = new Date(2000, num - 1, 1);
   return date.toLocaleDateString('default', { month: 'long' });
-}
+};
 
 /// HDATE METHODS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 HDATE.Parse = dateInputStr => {
   return HDATE.erasChrono.parse(dateInputStr);
-}
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Show how the raw input string is parsed into date information by breaking
-  *  down the known values (e.g. `day`, and `month`) into a human-readable string.
-  *  @param {Array} ParsedResult - a chrono array of parsed date objects
-  */
+ *  down the known values (e.g. `day`, and `month`) into a human-readable string.
+ *  @param {Array} ParsedResult - a chrono array of parsed date objects
+ */
 HDATE.ShowValidationResults = ParsedResult => {
   // Show interpreted values
   if (ParsedResult.length > 0) {
@@ -174,7 +172,7 @@ HDATE.ShowValidationResults = ParsedResult => {
     return dateValidationStr;
   }
   return undefined;
-}
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Show the list of available format types with previews based on the values
  *  parsed from the input string. e.g. `April 1, 2024` will show formats
@@ -186,9 +184,7 @@ HDATE.ShowMatchingFormats = (ParsedResult, dateFormat, allowFormatSelection) => 
   let options = [{ value: 'AS_ENTERED', preview: 'as entered' }];
   if (ParsedResult.length < 1) {
     if (allowFormatSelection) return options;
-    else return [
-      { value: dateFormat, preview: HDATE.DATEFORMAT[dateFormat] }
-    ];
+    else return [{ value: dateFormat, preview: HDATE.DATEFORMAT[dateFormat] }];
   }
 
   let matchingTypes = [];
@@ -200,7 +196,10 @@ HDATE.ShowMatchingFormats = (ParsedResult, dateFormat, allowFormatSelection) => 
   if (!allowFormatSelection) {
     // force the format to use the defined format
     const options = [
-      { value: dateFormat, preview: HDATE.GetPreviewStr(dateInputStr, knownValues, dateFormat) }
+      {
+        value: dateFormat,
+        preview: HDATE.GetPreviewStr(dateInputStr, knownValues, dateFormat)
+      }
     ];
     return options;
   }
@@ -267,11 +266,14 @@ HDATE.ShowMatchingFormats = (ParsedResult, dateFormat, allowFormatSelection) => 
   }
 
   additionalOptions = matchingTypes.map(type => {
-    return { value: type, preview: HDATE.GetPreviewStr(dateInputStr, knownValues, type) };
+    return {
+      value: type,
+      preview: HDATE.GetPreviewStr(dateInputStr, knownValues, type)
+    };
   });
   options = [...additionalOptions, ...options];
   return options;
-}
+};
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Show the formatted date string using the parsed result information
  *  @param {String} dateInputStr - the raw input string
@@ -330,7 +332,9 @@ HDATE.GetPreviewStr = (dateInputStr, knownValues, format) => {
         : `${month}/${day}/${year} ${HDATE.ERAS.post}`;
     case 'HISTORICAL_MONTHDAYYEAR_PAD':
       return year < 1
-        ? `${HDATE.u_pad(month)}/${HDATE.u_pad(day)}/${Math.abs(year)} ${HDATE.ERAS.pre}`
+        ? `${HDATE.u_pad(month)}/${HDATE.u_pad(day)}/${Math.abs(year)} ${
+            HDATE.ERAS.pre
+          }`
         : `${HDATE.u_pad(month)}/${HDATE.u_pad(day)}/${year} ${HDATE.ERAS.post}`;
     case 'HISTORICAL_YEARMONTHDAY_ABBR':
       return year < 1
@@ -346,7 +350,9 @@ HDATE.GetPreviewStr = (dateInputStr, knownValues, format) => {
         : `${year}/${month}/${day} ${HDATE.ERAS.post}`;
     case 'HISTORICAL_YEARMONTHDAY_PAD':
       return year < 1
-        ? `${Math.abs(year)}/${HDATE.u_pad(month)}/${HDATE.u_pad(day)} ${HDATE.ERAS.pre}`
+        ? `${Math.abs(year)}/${HDATE.u_pad(month)}/${HDATE.u_pad(day)} ${
+            HDATE.ERAS.pre
+          }`
         : `${year}/${HDATE.u_pad(month)}/${HDATE.u_pad(day)} ${HDATE.ERAS.post}`;
     case 'MONTHYEAR_ABBR':
       return `${HDATE.u_monthAbbr(month)} ${year}`;
@@ -399,13 +405,15 @@ HDATE.GetPreviewStr = (dateInputStr, knownValues, format) => {
     case 'YEAR':
       return `${year}`;
     case 'HISTORICALYEAR':
-      return year < 1 ? `${Math.abs(year)} ${HDATE.ERAS.pre}` : `${year} ${HDATE.ERAS.post}`;
+      return year < 1
+        ? `${Math.abs(year)} ${HDATE.ERAS.pre}`
+        : `${year} ${HDATE.ERAS.post}`;
     case 'AS_ENTERED':
     default:
       // console.log('showprevieow...showing as entered', dateInputStr);
       return `${dateInputStr}` || '...';
   }
-}
+};
 
 /// MODULE EXPORTS ////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
