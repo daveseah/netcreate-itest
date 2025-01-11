@@ -287,28 +287,28 @@ function NCNodeTable({ tableHeight, isOpen }) {
     // History
     if (defs['createdBy'] && !defs['createdBy'].hidden)
       COLUMNDEFS.push({
-        title: 'Created By',
+        title: defs['createdBy'].displayLabel,
         type: 'text-case-insensitive',
         width: 60, // in px
         data: 'createdBy'
       });
     if (defs['created'] && !defs['created'].hidden)
       COLUMNDEFS.push({
-        title: 'Created On',
+        title: defs['created'].displayLabel,
         type: 'timestamp-short',
         width: 60, // in px
         data: 'created'
       });
     if (defs['updatedBy'] && !defs['updatedBy'].hidden)
       COLUMNDEFS.push({
-        title: 'Updated By',
+        title: defs['updatedBy'].displayLabel,
         type: 'text-case-insensitive',
         width: 60, // in px
         data: 'updatedBy'
       });
     if (defs['updated'] && !defs['updated'].hidden)
       COLUMNDEFS.push({
-        title: 'Updated On',
+        title: defs['updated'].displayLabel,
         type: 'timestamp-short',
         width: 60, // in px
         data: 'updated'
