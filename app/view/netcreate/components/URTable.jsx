@@ -401,6 +401,8 @@ function URTable({ isOpen, data, columns }) {
           result = value.html;
           break;
         case 'hdate': // Net.Create
+          result = value; // display the raw user-entered string
+          break;
         case 'timestamp':
           result = u_HumanDate(value);
           break;
