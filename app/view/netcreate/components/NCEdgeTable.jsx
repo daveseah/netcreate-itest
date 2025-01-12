@@ -382,7 +382,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         } else if (edgeDefs[key].type === 'infoOrigin') {
           data =
             edge[key] === undefined || edge[key] === ''
-              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.created)
+              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.meta.created)
               : edge[key];
         } else data = edge[key];
         attributes[key] = data;
@@ -416,7 +416,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
         } else if (edgeDefs[key].type === 'infoOrigin') {
           data =
             edge[key] === undefined || edge[key] === ''
-              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.created)
+              ? UTILS.DeriveInfoOriginString(edge.createdBy, edge.meta.created)
               : edge[key];
         } else data = edge[key] || '';
         provenance[key] = data;
