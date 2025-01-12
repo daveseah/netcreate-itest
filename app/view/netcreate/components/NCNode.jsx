@@ -264,6 +264,7 @@ class NCNode extends UNISYS.Component {
       ) {
         return;
       }
+      this.setState(newState, () => this.UpdatePermissions());
     });
   }
   UpdatePermissions() {
