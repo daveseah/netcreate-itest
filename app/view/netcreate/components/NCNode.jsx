@@ -248,15 +248,22 @@ class NCNode extends UNISYS.Component {
       // someone else might be editing a template or importing or editing node or edge
       const { id } = this.state;
       const nodeIsLocked = data.lockedNodes.includes(id);
-      this.setState(
-        {
-          uIsLockedByDB: nodeIsLocked,
-          uIsLockedByTemplate: data.templateBeingEdited,
-          uIsLockedByImport: data.importActive,
-          uIsLockedByComment: data.commentBeingEditedByMe
-        },
-        () => this.UpdatePermissions()
-      );
+
+      // skip updates if there are no changes in values to optimize renders
+      const newState = {
+        uIsLockedByDB: nodeIsLocked,
+        uIsLockedByTemplate: data.templateBeingEdited,
+        uIsLockedByImport: data.importActive,
+        uIsLockedByComment: data.commentBeingEditedByMe
+      };
+      if (
+        newState.uIsLockedByDB === this.state.uIsLockedByDB &&
+        newState.uIsLockedByTemplate === this.state.uIsLockedByTemplate &&
+        newState.uIsLockedByImport === this.state.uIsLockedByImport &&
+        newState.uIsLockedByComment === this.state.uIsLockedByComment
+      ) {
+        return;
+      }
     });
   }
   UpdatePermissions() {
@@ -680,8 +687,7 @@ class NCNode extends UNISYS.Component {
   UIDisableEditMode() {
     this.UnlockNode(() => {
       this.setState({
-        uViewMode: NCUI.VIEWMODE.VIEW,
-        uIsLockedByDB: false
+        uViewMode: NCUI.VIEWMODE.VIEW
       });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
     });
