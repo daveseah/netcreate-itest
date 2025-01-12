@@ -716,41 +716,55 @@ MOD.UpdateComment = cobj => {
  *
  * Removing is a two step process:
  * 1. Show confirmation dialog
- * 2. Execute the remova
+ * 2. Execute the removal
+ *
+ * Also used by "Cancel" button to remove a comment being edited
  * @param {Object} parms
  * @param {string} parms.collection_ref
  * @param {string} parms.comment_id
+ * @param {string} parms.id
  * @param {string} parms.uid
+ * @param {boolean} parms.isAdmin
  * @param {boolean} parms.showCancelDialog
- * @param {function} cb CallBack
+ * @param {boolean} parms.skipDialog
  */
-MOD.RemoveComment = (parms, cb) => {
+MOD.RemoveComment = parms => {
   let confirmMessage, okmessage, cancelmessage;
   if (parms.showCancelDialog) {
     // Are you sure you want to cancel?
-    confirmMessage = `Are you sure you want to cancel editing this comment #${parms.comment_id}?`;
+    confirmMessage = `Are you sure you want to cancel editing this comment #${parms.id}?`;
     okmessage = 'Cancel Editing and Delete';
     cancelmessage = 'Go Back to Editing';
   } else {
+    // show delete confirmaiton dialog
     // Are you sure you want to delete?
     parms.isAdmin = SETTINGS.IsAdmin();
     confirmMessage = parms.isAdmin
-      ? `Are you sure you want to delete this comment #${parms.comment_id} and ALL related replies (admin only)?`
-      : `Are you sure you want to delete this comment #${parms.comment_id}?`;
+      ? `Are you sure you want to delete this comment #${parms.id} and ALL related replies (admin only)?`
+      : `Are you sure you want to delete this comment #${parms.id}?`;
     okmessage = 'Delete';
     cancelmessage = "Don't Delete";
   }
-  const dialog = (
-    <NCDialog
-      message={confirmMessage}
-      okmessage={okmessage}
-      onOK={event => m_ExecuteRemoveComment(event, parms, cb)}
-      cancelmessage={cancelmessage}
-      onCancel={m_CloseRemoveCommentDialog}
-    />
-  );
-  const container = document.getElementById(dialogContainerId);
-  ReactDOM.render(dialog, container);
+
+  const CMTSTATUS = UDATA.AppState('CMTSTATUS');
+  if (parms.skipDialog) {
+    m_ExecuteRemoveComment(event, parms);
+  } else {
+    CMTSTATUS.dialog = {
+      isOpen: true,
+      message: confirmMessage,
+      okmessage,
+      onOK: event => m_ExecuteRemoveComment(event, parms),
+      cancelmessage,
+      onCancel: m_CloseRemoveCommentDialog
+    };
+  }
+  UDATA.SetAppState('CMTSTATUS', CMTSTATUS);
+
+  MOD.DeRegisterCommentBeingEdited(parms.comment_id);
+  MOD.UnlockComment(parms.comment_id);
+
+  UDATA.LocalCall('COMMENT_UPDATE_PERMISSIONS');
 };
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -769,9 +783,11 @@ function m_ExecuteRemoveComment(event, parms, cb) {
   m_CloseRemoveCommentDialog();
   if (typeof cb === 'function') cb();
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_CloseRemoveCommentDialog() {
-  const container = document.getElementById(dialogContainerId);
-  ReactDOM.unmountComponentAtNode(container);
+  const CMTSTATUS = UDATA.AppState('CMTSTATUS');
+  CMTSTATUS.dialog = { isOpen: false };
+  UDATA.SetAppState('CMTSTATUS', CMTSTATUS);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
