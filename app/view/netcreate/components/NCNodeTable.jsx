@@ -359,7 +359,10 @@ function NCNodeTable({ tableHeight, isOpen }) {
         } else if (nodeDefs[key].type === 'infoOrigin') {
           data =
             node[key] === undefined || node[key] === ''
-              ? UTILS.DeriveInfoOriginString(node.createdBy, node.meta.created)
+              ? UTILS.DeriveInfoOriginString(
+                  node.createdBy,
+                  node.meta ? node.meta.created : ''
+                )
               : node[key];
         } else data = node[key];
         attributes[key] = data;
@@ -393,7 +396,10 @@ function NCNodeTable({ tableHeight, isOpen }) {
         } else if (nodeDefs[key].type === 'infoOrigin') {
           data =
             node[key] === undefined || node[key] === ''
-              ? UTILS.DeriveInfoOriginString(node.createdBy, node.meta.created)
+              ? UTILS.DeriveInfoOriginString(
+                  node.createdBy,
+                  node.meta ? node.meta.created : ''
+                )
               : node[key];
         } else data = node[key] || '';
         provenance[key] = data;
