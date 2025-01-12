@@ -179,7 +179,7 @@ function URDateField({
 
   /// RENDER /////////////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  const READONLY = <div>{hdate.formattedDateString}</div>;
+  const READONLY = <div className="viewvalue">{hdate.formattedDateString}</div>;
 
   const FILTER = (
     <div className="urdate">
