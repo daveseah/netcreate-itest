@@ -621,6 +621,48 @@ function m_MatchHDate(operator, filterVal, objVal) {
   }
   return matches;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * This uses the HDate Filter UI to construct a search string
+ * But then converts the HDate filter definition to a timestamp
+ * And then does a simple numeric comparison
+ * @param {number} operator filter operator
+ * @param {hdate} filterVal hdate
+ * @param {number} objVal timestamp
+ * @returns
+ */
+function m_MatchTimestamp(operator, filterVal, objVal) {
+  const hdateValue = HDATE.Parse(filterVal); // deconstruct the HDate filter into a timestamp
+  if (hdateValue.length < 1) return false;
+
+  const knownValues = hdateValue[0].start.knownValues;
+
+  // When filtering, use only as much precision as the HDate filter requests
+  // if a value is missing, assume it is 0
+  const filterTimestamp = new Date(
+    knownValues.year !== undefined ? knownValues.year : 0,
+    knownValues.month !== undefined ? knownValues.month - 1 : 0,
+    knownValues.day !== undefined ? knownValues.day : 1,
+    knownValues.hour !== undefined ? knownValues.hour : 0,
+    knownValues.minute !== undefined ? knownValues.minute : 0,
+    knownValues.second !== undefined ? knownValues.second : 0
+  );
+  const objValDate = new Date(objVal);
+  const objValTimestamp = new Date(
+    knownValues.year !== undefined ? objValDate.getFullYear() : 0,
+    knownValues.month !== undefined ? objValDate.getMonth() : 0,
+    knownValues.day !== undefined ? objValDate.getDate() : 1,
+    knownValues.hour !== undefined ? objValDate.getHours() : 0,
+    knownValues.minute !== undefined ? objValDate.getMinutes() : 0,
+    knownValues.second !== undefined ? objValDate.getSeconds() : 0
+  );
+
+  return m_MatchNumber(
+    operator,
+    filterTimestamp.getTime(),
+    objValTimestamp.getTime()
+  );
+}
 
 /// NODE FILTERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -706,7 +748,9 @@ function m_IsNodeMatchedByFilter(node, filter) {
     return false; // nothing to filter
   }
 
-  const nodeValue = node[filter.key];
+  const nodeValue = ['created', 'updated'].includes(filter.key)
+    ? node.meta[filter.key] // timestamps are stored in loki meta object
+    : node[filter.key];
 
   switch (filter.operator) {
     case FILTER.OPERATORS.CONTAINS.key:
@@ -719,6 +763,8 @@ function m_IsNodeMatchedByFilter(node, filter) {
       return nodeValue !== undefined && nodeValue !== '';
     default:
       if (nodeValue === undefined) return false; // no value to match
+      if (filter.type === FILTER.TYPES.TIMESTAMP)
+        return m_MatchTimestamp(filter.operator, filter.value, nodeValue);
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, nodeValue);
       // else assume it's a number
@@ -842,12 +888,14 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
 
   let edgeValue;
   if (filter.type === FILTER.TYPES.NODE) {
-    // edges fields that poitn to nodes require special handling because `source` and `target`
+    // edges fields that point to nodes require special handling because `source` and `target`
     // point to node objects, not simple strings.
     if (filter.key === 'source') edgeValue = edge.sourceLabel;
     if (filter.key === 'target') edgeValue = edge.targetLabel;
   } else {
-    edgeValue = edge[filter.key];
+    edgeValue = ['created', 'updated'].includes(filter.key)
+      ? edge.meta[filter.key] // timestamps are stored in loki meta object
+      : edge[filter.key];
   }
 
   switch (filter.operator) {
@@ -861,6 +909,8 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
       return edgeValue !== undefined && edgeValue !== '';
     default:
       if (edgeValue === undefined) return false; // no value to match
+      if (filter.type === FILTER.TYPES.TIMESTAMP)
+        return m_MatchTimestamp(filter.operator, filter.value, edgeValue);
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, edgeValue);
       // else assume it's a number

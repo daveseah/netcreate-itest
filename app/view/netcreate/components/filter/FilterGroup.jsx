@@ -42,7 +42,6 @@ function FilterGroup({ group, label, filters, filterAction, transparency }) {
           case FILTER.TYPES.NODE:
           case FILTER.TYPES.DATE: // generic dates (not hdate) are treated like strings
           case FILTER.TYPES.INFOORIGIN:
-          case FILTER.TYPES.TIMESTAMP: // treat it like a string for now
           case FILTER.TYPES.STRING:
             return (
               <StringFilter
@@ -70,6 +69,7 @@ function FilterGroup({ group, label, filters, filterAction, transparency }) {
                 filterAction={filterAction}
               />
             );
+          case FILTER.TYPES.TIMESTAMP: // UI uses HDate to set date, but parser uses custom timestamp
           case FILTER.TYPES.HDATE:
             return (
               <HDateFilter
