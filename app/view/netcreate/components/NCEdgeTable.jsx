@@ -235,8 +235,10 @@ function NCEdgeTable({ tableHeight, isOpen }) {
     /// tdata = TTblNodeObject[] = { id: String, label: String }
     function col_SortNodes(key, tdata, order) {
       const sortedData = [...tdata].sort((a, b) => {
-        if (a[key].label < b[key].label) return order;
-        if (a[key].label > b[key].label) return order * -1;
+        if (String(a[key].label).toLowerCase() < String(b[key].label).toLowerCase())
+          return order;
+        if (String(a[key].label).toLowerCase() > String(b[key].label).toLowerCase())
+          return order * -1;
         return 0;
       });
       return sortedData;
@@ -272,7 +274,7 @@ function NCEdgeTable({ tableHeight, isOpen }) {
       {
         title: '', // View/Edit
         data: 'id',
-        type: 'number',
+        type: defs['id'].type,
         width: 45, // in px
         renderer: col_RenderViewOrEdit,
         sortDisabled: true,

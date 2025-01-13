@@ -23,6 +23,10 @@ Used also on https://github.com/netcreateorg/netcreate-itest/
   * Column widths can be set in the column definition
   * Columns without a width will be evenly distributed
 
+## Column Types
+  Note that `type` determines both the default renderer and sorter
+  but they can be separately overriden.
+
 
 # User Interaction - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

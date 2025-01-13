@@ -255,7 +255,7 @@ function NCNodeTable({ tableHeight, isOpen }) {
       {
         title: '', // View/Edit
         data: 'id',
-        type: 'number',
+        type: defs['id'].type,
         width: 45, // in px
         renderer: col_RenderViewOrEdit,
         sortDisabled: true,
@@ -263,12 +263,13 @@ function NCNodeTable({ tableHeight, isOpen }) {
       },
       {
         title: defs['degrees'].displayLabel,
-        type: 'number',
+        type: defs['degrees'].type,
         width: 50, // in px
         data: 'degrees'
       },
       {
         title: defs['label'].displayLabel,
+        type: 'text-case-insensitive',
         data: 'label',
         width: 200, // in px
         renderer: col_RenderNode
