@@ -46,20 +46,26 @@ const PR = 'URCommentThread';
  *  when the thread is closed.
  */
 function URCommentThread({ uiref, cref, uid, x, y }) {
-  const [isDisabled, setIsDisabled] = useState(false);
+  const [forceRender, setForceRender] = useState(0); // Dummy state variable to force update
 
   /** Component Effect - set up listeners on mount */
   useEffect(() => {
-    function urmsg_UpdatePermissions(data) {
-      setIsDisabled(data.commentBeingEditedByMe);
-    }
-
-    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
+    UDATA.HandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_ForceRender);
 
     return () => {
-      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_UpdatePermissions);
+      UDATA.UnhandleMessage('COMMENT_UPDATE_PERMISSIONS', urmsg_ForceRender);
     };
   }, []);
+
+  /// UR HANDLERS /////////////////////////////////////////////////////////////
+  /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  function urmsg_ForceRender() {
+    // This is necessary to force a re-render of "Click to add a Comment"
+    // text area if the comment edit is cancelled and placeholder
+    // comment is removed
+    // Current disabled state is refreshed with each render
+    setForceRender(forceRender => forceRender + 1); // Trigger re-render
+  }
 
   /// COMPONENT UI HANDLERS ///////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -91,7 +97,7 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles the "X" or "Close" button click, marks all comments "read" */
   function evt_OnClose() {
-    CMTMGR.CloseCommentCollection(uiref, cref, uid);
+    CMTMGR.CloseCommentCollectionAndMarkRead(uiref, cref, uid);
   }
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   /** handles clicking on the name of the object being commented on
@@ -107,6 +113,7 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
   /// COMPONENT RENDER ////////////////////////////////////////////////////////
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   const commentVObjs = CMTMGR.GetThreadedViewObjects(cref, uid);
+  const isDisabled = CMTMGR.GetCommentsAreBeingEdited();
 
   /// SUB COMPONENTS
   const CloseBtn = (
@@ -117,9 +124,14 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
 
   // HACK: To keep the comment from going off screen:
   const windowHeight = Math.min(screen.height, window.innerHeight);
-  const commentMaxHeight = `${windowHeight - y - 100}px`;
+  // max 350 ensures that comments near the bottom of the screen
+  const commentMaxHeight = `${Math.max(350, windowHeight - y - 100)}px`;
 
   const { typeLabel, sourceLabel } = CMTMGR.GetCREFSourceLabel(cref);
+
+  // This is the text area that the user clicks to add a comment
+  // emulates Google Doc comments
+  const showAddCommentClickTarget = !CMTMGR.GetCommentsAreBeingEdited();
 
   return (
     <Draggable>
@@ -150,7 +162,7 @@ function URCommentThread({ uiref, cref, uid, x, y }) {
               key={cvobj.comment_id}
             />
           ))}
-          {!isDisabled && uid && (
+          {showAddCommentClickTarget && !isDisabled && uid && (
             <textarea
               className="add"
               placeholder="Click to add a Comment..."

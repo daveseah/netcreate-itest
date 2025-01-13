@@ -206,7 +206,7 @@ function URCommentBtn({ cref, uuiid }) {
    *  - the "read" status of all comments: unread (gold) or read (gray)
    *  - isOpen - click on the button to display threads in a new window
    */
-  const count = CMTMGR.GetThreadedViewObjectsCount(cref, uid);
+  const count = CMTMGR.GetCommentCollectionCount(cref);
   const ccol = CMTMGR.GetCommentCollection(cref) || {};
 
   let css = 'commentbtn ';

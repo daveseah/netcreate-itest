@@ -79,11 +79,22 @@ function RecalculateAllEdgeSizes(data) {
     e.size = size.get(key) || 1;
   });
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** API METHOD
+ *  Generates the "InfoOrigin" string:
+ *     "Created by <createdBy> on <creeated>"
+ *  @param {string} author
+ *  @param {date} ms
+ */
+function DeriveInfoOriginString(author, ms) {
+  return `Created by ${author} on ${new Date(ms).toLocaleString()}`;
+}
 
 /// MODULE EXPORTS ///////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 module.exports = {
   GenerateUUID,
   RecalculateAllNodeDegrees,
-  RecalculateAllEdgeSizes
+  RecalculateAllEdgeSizes,
+  DeriveInfoOriginString
 };

@@ -521,7 +521,11 @@ MOD.Hook('INITIALIZE', () => {
 
     return DATASTORE.PromiseNewNodeID().then(newNodeID => {
       const node = {
-        id: newNodeID, label: data.label, provenance, createdBy, updatedBy
+        id: newNodeID,
+        label: data.label,
+        provenance,
+        createdBy,
+        updatedBy
       };
       return UDATA.LocalCall('DB_UPDATE', { node }).then(() => {
         NCDATA.nodes.push(node);
@@ -937,15 +941,19 @@ function m_UpdateColorMap() {
   // someone ever chooses to use the same label twice, but ...
   try {
     const nodeColorMap = {};
-    TEMPLATE.nodeDefs.type.options.forEach(o => {
-      nodeColorMap[o.label] = o.color;
-    });
+    if (TEMPLATE.nodeDefs.type && TEMPLATE.nodeDefs.type.options) {
+      TEMPLATE.nodeDefs.type.options.forEach(o => {
+        nodeColorMap[o.label] = o.color;
+      });
+    }
 
     const edgeColorMap = {};
     let defaultEdgeColor = TEMPLATE.edgeDefs.color || '#999'; //for backwards compatability
-    TEMPLATE.edgeDefs.type.options.forEach(o => {
-      edgeColorMap[o.label] = o.color || defaultEdgeColor;
-    });
+    if (TEMPLATE.edgeDefs.type && TEMPLATE.edgeDefs.type.options) {
+      TEMPLATE.edgeDefs.type.options.forEach(o => {
+        edgeColorMap[o.label] = o.color || defaultEdgeColor;
+      });
+    }
 
     UDATA.SetAppState('COLORMAP', { nodeColorMap, edgeColorMap });
   } catch (error) {
@@ -1092,6 +1100,7 @@ MOD.EscapeRegexChars = u_EscapeRegexChars; // Expose for filter-mgr.js
  *        attributes.Citations = citation
  *        attributes.Notes => notes
  *  3. Remove the old `attributes` key
+ *  4. Clean built-in fields
  */
 function m_MigrateData(data) {
   data.nodes.forEach(node => {
@@ -1104,6 +1113,10 @@ function m_MigrateData(data) {
       // clear it
       Reflect.deleteProperty(node, 'attributes');
     }
+    // clean built-in fields
+    // NOTE: This just cleans up the data, but does not SAVE the fix!
+    node.meta = node.meta || {};
+    node.meta.revision = parseInt(node.meta.revision) || 1;
   });
   data.edges.forEach(edge => {
     edge.id = parseInt(edge.id);
@@ -1120,6 +1133,10 @@ function m_MigrateData(data) {
       // clear it
       Reflect.deleteProperty(edge, 'attributes');
     }
+    // clean built-in fields
+    // NOTE: This just cleans up the data, but does not SAVE the fix!
+    edge.meta = edge.meta || {};
+    edge.meta.revision = parseInt(edge.meta.revision) || 1;
   });
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

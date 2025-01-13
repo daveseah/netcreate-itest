@@ -28,6 +28,26 @@ sourceColor = "#FFa500"
 text = "No citation set"
 hidden = false
 
+[[commentTypes]]
+slug = "cmt"
+label = "Comment"
+
+  [[commentTypes.prompts]]
+  format = "text"
+  prompt = "Comment"
+  help = "Use this for any general comment."
+  feedback = ""
+
+[[commentTypes]]
+slug = "tellmemore"
+label = "Evidence Critique or Suggestion"
+
+  [[commentTypes.prompts]]
+  format = "text"
+  prompt = "Tell me more"
+  help = "Can you tell me more about ... "
+  feedback = ""
+
 [nodeDefs.id]
 type = "number"
 displayLabel = "Id"
@@ -39,7 +59,7 @@ hidden = false
 
 [nodeDefs.label]
 type = "string"
-displayLabel = "label"
+displayLabel = "Label"
 exportLabel = "Label"
 help = "Display name of the node"
 includeInGraphTooltip = true
@@ -78,7 +98,7 @@ isProvenance = false
 hidden = false
 
 [nodeDefs.infoSource]
-type = "string"
+type = "infoOrigin"
 displayLabel = "Info Source"
 exportLabel = "InfoSource"
 help = "Who created this?  (aka Source)"
@@ -100,7 +120,6 @@ displayLabel = "Created"
 exportLabel = "Created"
 help = "Date and time node was created"
 includeInGraphTooltip = true
-isProvenance = true
 hidden = false
 
 [nodeDefs.createdBy]
@@ -108,7 +127,6 @@ displayLabel = "Created By"
 help = "Author who created the node"
 exportLabel = "Created By"
 includeInGraphTooltip = true
-isProvenance = true
 hidden = false
 
 [nodeDefs.updated]
@@ -116,7 +134,6 @@ displayLabel = "Updated"
 exportLabel = "Updated"
 help = "Date and time node was last modified"
 includeInGraphTooltip = true
-isProvenance = true
 hidden = false
 
 [nodeDefs.updatedBy]
@@ -124,7 +141,6 @@ displayLabel = "Updated By"
 exportLabel = "Updated By"
 help = "Author who updated the node"
 includeInGraphTooltip = true
-isProvenance = true
 hidden = false
 
 [nodeDefs.revision]
@@ -132,7 +148,6 @@ displayLabel = "Revision"
 exportLabel = "Revision"
 help = "Number of times this node has been revised"
 includeInGraphTooltip = true
-isProvenance = true
 hidden = true
 
 [edgeDefs.id]
@@ -178,14 +193,6 @@ help = "Significance of the connection"
 isProvenance = false
 hidden = false
 
-[edgeDefs.info]
-type = "number"
-displayLabel = "Date"
-exportLabel = "Date"
-help = '"YYYY-MM-DD" format"'
-isProvenance = false
-hidden = false
-
 [edgeDefs.weight]
 type = "number"
 defaultValue = 1
@@ -227,7 +234,6 @@ displayLabel = "Created"
 exportLabel = "Created"
 includeInGraphTooltip = true
 help = "Date and time edge was created"
-isProvenance = true
 hidden = false
 
 [edgeDefs.createdBy]
@@ -235,7 +241,6 @@ displayLabel = "Created By"
 exportLabel = "Created By"
 includeInGraphTooltip = true
 help = "Author who created the edge"
-isProvenance = true
 hidden = false
 
 [edgeDefs.updated]
@@ -243,7 +248,6 @@ displayLabel = "Updated"
 exportLabel = "Updated"
 includeInGraphTooltip = true
 help = "Date and time edge was last modified"
-isProvenance = true
 hidden = false
 
 [edgeDefs.updatedBy]
@@ -251,7 +255,6 @@ displayLabel = "Updated By"
 exportLabel = "Updated By"
 includeInGraphTooltip = true
 help = "Author who updated the nodedgee"
-isProvenance = true
 hidden = false
 
 [edgeDefs.revision]
@@ -259,5 +262,4 @@ displayLabel = "Revision"
 exportLabel = "Revision"
 includeInGraphTooltip = true
 help = "Number of times this edge has been revised"
-isProvenance = true
 hidden = true

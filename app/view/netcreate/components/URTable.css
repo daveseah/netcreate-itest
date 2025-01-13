@@ -1,28 +1,74 @@
 .URTable {
+  /* override styles here */
+  --bg-thead-clr: #fdfdff;
+  --bg-selected-clr: #eef;
+  --bg-hover-clr: #ddf;
+  --tabletip-hover-clr: #ccf;
+  /* layout */
+  --padding-horizontal: 5px;
+  --row-height: 1em;
 }
 .URTable table {
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed; /* enforce column widths */
+}
+.URTable thead {
+  /* position: sticky; */
+  /* top: 0; */
+  /* z-index: 1; for some reason EdgeTable can't set z to 1 or thead will cover tabletip */
 }
 .URTable th {
-  padding: 0 5px;
+  padding: 0 var(--padding-horizontal);
   border-right: 1px solid #999;
+  background-color: var(--bg-thead-clr);
   top: 0;
-  background-color: #daebef;
   position: -webkit-sticky;
-  position: sticky;
+  position: sticky; /* needed for resizing columns */
   z-index: 1; /* for some reason EdgeTable requires this or body cells will cover td */
 }
 .URTable th.selected {
-  background-color: #c6d5d6;
+  background-color: var(--bg-selected-clr);
 }
 .URTable thead,
 .URTable thead > tr,
 .URTable thead > tr > th {
   user-select: none;
 }
+.URTable th span.sortDisabled {
+  display: none;
+}
+.URTable th span.sortEnabled {
+  display: none;
+}
+.URTable th:hover {
+  background-color: var(--bg-hover-clr);
+  cursor: default;
+}
+.URTable th:hover span {
+  opacity: 0.5;
+}
+.URTable th:hover span.sortEnabled {
+  display: inline;
+  cursor: pointer;
+}
+.URTable th.selected span {
+  display: inline;
+}
+.URTable th.selected:hover span {
+  opacity: 1;
+}
+
 .URTable tr:hover {
-  background-color: #0002;
+  background-color: var(--bg-hover-clr);
+}
+.URTable td {
+  padding: 0 var(--padding-horizontal);
+  height: var(--row-height);
+  max-height: var(--row-height);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .URTable .resize-handle {
   position: absolute;
@@ -40,4 +86,63 @@
 .URTable button {
   padding: 0 2px;
   text-align: left;
+}
+
+.URTable img {
+  max-width: 225px;
+  max-height: var(--row-height);
+}
+
+/* tooltip */
+.URTable .tabletip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.URTable .tabletip-text {
+  visibility: visible;
+  width: max-content;
+  max-width: 400px;
+  white-space: normal;
+  text-overflow: unset;
+  background-color: black;
+  color: #fff;
+  border-radius: 4px;
+  padding: 5px;
+  position: absolute;
+  top: 0; /* position directly on top of the element */
+  /* bottom: 125%; /* Position above the element */
+  left: 0%;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 101;
+}
+.URTable .tabletip p {
+  margin: 0; /* override markdown text spacing */
+}
+.URTable td:hover {
+  overflow: visible;
+  background-color: var(--tabletip-hover-clr);
+  position: relative;
+  z-index: 200;
+}
+.URTable td:hover .tabletip .tabletip-text {
+  visibility: visible;
+  opacity: 1;
+  z-index: 200;
+}
+.URTable td:hover .tabletip .tabletip-text img {
+  max-width: 300px;
+  max-height: 300px;
+}
+.URTable td:hover .tabletip-source {
+  position: relative;
+  padding-top: var(--padding-horizontal);
+  padding-right: var(--padding-horizontal); /* gap next column */
+  padding-bottom: var(--padding-horizontal);
+  background-color: var(--tabletip-hover-clr);
+}
+.URTable td:hover .tabletip-source p {
+  background-color: var(--tabletip-hover-clr); /* override markdown p */
 }

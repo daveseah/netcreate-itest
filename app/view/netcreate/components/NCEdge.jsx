@@ -38,7 +38,7 @@ const NCAutoSuggest = require('./NCAutoSuggest');
 const NCDialog = require('./NCDialog');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
-import URCommentBtn from './URCommentBtn';
+import URCommentVBtn from './URCommentVBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -176,8 +176,8 @@ class NCEdge extends UNISYS.Component {
       sourceId: null,
       targetId: null,
       type: '',
-      attributes: [],
-      provenance: [],
+      attributes: {},
+      provenance: {},
       created: undefined,
       updated: undefined,
       revision: 0,
@@ -262,14 +262,22 @@ class NCEdge extends UNISYS.Component {
   SetPermissions(data) {
     const { id } = this.state;
     const edgeIsLocked = data.lockedEdges.includes(id);
-    this.setState(
-      {
-        uIsLockedByDB: edgeIsLocked,
-        uIsLockedByTemplate: data.templateBeingEdited,
-        uIsLockedByImport: data.importActive
-      },
-      () => this.UpdatePermissions()
-    );
+
+    // skip updates if there are no changes in values to optimize renders
+    const newState = {
+      uIsLockedByDB: edgeIsLocked,
+      uIsLockedByTemplate: data.templateBeingEdited,
+      uIsLockedByImport: data.importActive
+    };
+    if (
+      newState.uIsLockedByDB === this.state.uIsLockedByDB &&
+      newState.uIsLockedByTemplate === this.state.uIsLockedByTemplate &&
+      newState.uIsLockedByImport === this.state.uIsLockedByImport
+    ) {
+      return;
+    }
+
+    this.setState(newState, () => this.UpdatePermissions());
   }
   UpdatePermissions() {
     const { uIsLockedByDB, uIsLockedByTemplate, uIsLockedByImport } = this.state;
@@ -817,8 +825,7 @@ class NCEdge extends UNISYS.Component {
   UIDisableEditMode() {
     this.UnlockEdge(() => {
       this.setState({
-        uViewMode: NCUI.VIEWMODE.VIEW,
-        uIsLockedByDB: false
+        uViewMode: NCUI.VIEWMODE.VIEW
       });
 
       // Clear the secondary selection
@@ -940,7 +947,7 @@ class NCEdge extends UNISYS.Component {
           <div className="titlebar" style={{ marginBottom: '3px' }}>
             <div className="nodenumber">EDGE {id} </div>
             <div></div>
-            <URCommentBtn cref={collection_ref} />
+            <URCommentVBtn cref={collection_ref} />
           </div>
           <div className="formview">
             {NCUI.RenderLabel('source', defs['source'].displayLabel)}

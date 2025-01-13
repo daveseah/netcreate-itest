@@ -8,10 +8,40 @@
   * NCNode
   * NCEdge
 
+  Supported Field Types
+  - number
+  - string
+  - markdown
+  - hdate
+  - select
+  - infoOrigin
+
+
+  Custom Fields Handling
+
+    The `infoOrigin` field requires special handling.
+
+    Ideally, when a node is created, we would process any special fields and
+    derive and save any derived info.  But
+    a) we don't want to have server-database handle any custom fields -- that
+       it should just blindly save data.
+    b) when nc-logic creates a new field via `NODE_CREATE`, again, only built-in
+       fields are created and stored.  Custom fields are created by the UI as
+       needed when they are rendered.
+    This means that the `infoOrigin` field remains blank until the user
+    decides to change the data.
+
+    To handle this, then we need to make sure `infoOrigin` appears to have data
+    whenever it is viewed.  This requires:
+    - nc-ui renders a non-built-in field, e.g. an `attribute` field
+    - nc-ui renders a `provenance` field
+    - importexport-mgr exports node or edge data
+
 \*\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ * //////////////////////////////////////*/
 
 const React = require('react');
 const UNISYS = require('unisys/client');
+const UTILS = require('./nc-utils');
 const MD = require('markdown-it')();
 const MDEMOJI = require('markdown-it-emoji');
 MD.use(MDEMOJI);
@@ -42,7 +72,7 @@ function DateFormatted() {
   var dateTime = time + ' on ' + date;
   return dateTime;
 }
-
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** Converts a markdown string to HTML
  *  And does extra HACK processing as needed:
  *  -- Supports emojis
@@ -55,7 +85,6 @@ function Markdownify(str = '') {
   const hackedHtmlString = htmlString.replace(/<a href/g, `<a target="_blank" href`);
   return MDPARSE(hackedHtmlString);
 }
-
 /// INPUT FORM CHANGE HANDLERS ////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** This processes the form data before passing it on to the parent handler.
@@ -189,7 +218,17 @@ function RenderAttributesTabView(state, defs) {
         items.push(RenderMarkdownValue(k, attributes[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, attributes[k], defs[k].format, defs[k].allowFormatSelection));
+        items.push(
+          RenderDateValue(
+            k,
+            attributes[k],
+            defs[k].format,
+            defs[k].allowFormatSelection
+          )
+        );
+        break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginValue(k, attributes[k], state, defs));
         break;
       case 'string':
       default:
@@ -221,10 +260,22 @@ function RenderAttributesTabEdit(state, defs, onchange) {
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
         break;
       case 'hdate':
-        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
+        items.push(
+          RenderDateInput(
+            k,
+            value,
+            defs[k].format,
+            defs[k].allowFormatSelection,
+            onchange,
+            helpText
+          )
+        );
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
+        break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginInput(k, value, onchange, helpText, state));
         break;
       case 'number':
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
@@ -258,7 +309,17 @@ function RenderProvenanceItemsView(state, defs) {
         items.push(RenderMarkdownValue(k, provenance[k]));
         break;
       case 'hdate':
-        items.push(RenderDateValue(k, provenance[k], defs[k].format, defs[k].allowFormatSelection));
+        items.push(
+          RenderDateValue(
+            k,
+            provenance[k],
+            defs[k].format,
+            defs[k].allowFormatSelection
+          )
+        );
+        break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginValue(k, provenance[k], state, defs));
         break;
       case 'string':
       case 'number':
@@ -283,10 +344,22 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
         items.push(RenderMarkdownInput(k, value, onchange, helpText));
         break;
       case 'hdate':
-        items.push(RenderDateInput(k, value, defs[k].format, defs[k].allowFormatSelection, onchange, helpText));
+        items.push(
+          RenderDateInput(
+            k,
+            value,
+            defs[k].format,
+            defs[k].allowFormatSelection,
+            onchange,
+            helpText
+          )
+        );
         break;
       case 'string':
         items.push(RenderStringInput(k, value, onchange, helpText));
+        break;
+      case 'infoOrigin':
+        items.push(RenderInfoOriginInput(k, value, onchange, helpText, state));
         break;
       case 'number':
         items.push(m_RenderNumberInput(k, value, onchange, helpText));
@@ -302,44 +375,55 @@ function RenderProvenanceItemsEdit(state, defs, onchange) {
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabView(state, defs) {
-  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
-  // FIXME: These will be dynamically generated with the new Provenance template
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } =
+    state;
   return (
     <div className="provenance formview">
       <div className="category">PROVENANCE</div>
       {RenderProvenanceItemsView(state, defs)}
       <div className="category">HISTORY</div>
-      {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
-      {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
-      {RenderLabel('revisionlabel', defs.revision.displayLabel)}
-      {RenderStringValue('revisionlabel', revision)}
+      {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
+      {!defs.created.hidden &&
+        RenderProvenanceByline(created, createdBy, defs.createdBy)}
+      {!defs.updated.hidden && RenderLabel('updatedlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden &&
+        RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
+      {!defs.revision.hidden &&
+        RenderLabel('revisionlabel', defs.revision.displayLabel)}
+      {!defs.revision.hidden && RenderStringValue('revisionlabel', revision)}
     </div>
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderProvenanceTabEdit(state, defs, onchange) {
-  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } = state;
-  // FIXME: These will be dynamically generated with the new Provenance template
+  const { provenance, degrees, created, createdBy, updated, updatedBy, revision } =
+    state;
   return (
     <div className="provenance formview">
       <div className="category">PROVENANCE</div>
       {RenderProvenanceItemsEdit(state, defs, onchange)}
       <div className="category">HISTORY</div>
-      {RenderLabel('createdlabel', defs.created.displayLabel)}
-      {RenderStringValue('createdlabel', RenderProvenanceByline(createdBy, created))}
-      {RenderLabel('updatedlabel', defs.updated.displayLabel)}
-      {RenderStringValue('updatedlabel', RenderProvenanceByline(updatedBy, updated))}
-      {RenderLabel('revisionlabel', defs.revision.displayLabel)}
-      {RenderStringValue('revisionlabel', revision)}
+      {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
+      {!defs.created.hidden &&
+        RenderProvenanceByline(created, createdBy, defs.createdBy)}
+      {!defs.updated.hidden && RenderLabel('updatedlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden &&
+        RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
+      {!defs.revision.hidden &&
+        RenderLabel('revisionlabel', defs.revision.displayLabel)}
+      {!defs.revision.hidden && RenderStringValue('revisionlabel', revision)}
     </div>
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function RenderProvenanceByline(author, date) {
-  const by = author ? `${author}` : `(not recorded)`;
-  return `${by}, ${date}`; // leave author blank for older templates
+function RenderProvenanceByline(date, author, defAuthor) {
+  let result = '';
+  if (defAuthor && defAuthor.hidden) result = date;
+  else {
+    const by = author ? `${author}` : `(not recorded)`; // leave author blank for older templates
+    result = `${by}, ${date}`;
+  }
+  return <div className="viewvalue">{result}</div>;
 }
 
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -362,6 +446,18 @@ function RenderMarkdownValue(key, value = '') {
   );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function RenderInfoOriginValue(key, value, state) {
+  const newValue =
+    value === undefined || value === ''
+      ? UTILS.DeriveInfoOriginString(state.createdBy, state.created)
+      : value;
+  return (
+    <div id={key} key={`${key}value`} className="viewvalue">
+      {newValue}
+    </div>
+  );
+}
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderStringValue(key, value) {
   return (
     <div id={key} key={`${key}value`} className="viewvalue">
@@ -372,10 +468,15 @@ function RenderStringValue(key, value) {
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RenderDateValue(key, value, dateFormat, allowFormatSelection) {
   return (
-    <URDateField id={key} key={`${key}value`} value={value} dateFormat={dateFormat}
+    <URDateField
+      id={key}
+      key={`${key}value`}
+      value={value}
+      dateFormat={dateFormat}
       allowFormatSelection={allowFormatSelection}
-      readOnly />
-  )
+      readOnly
+    />
+  );
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -419,6 +520,19 @@ function RenderMarkdownInput(key, value, cb, helpText) {
       />
     </div>
   );
+}
+
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Injects `Created by <createdBy> on <created>` if nothing is defined
+ * Otherwise it's treated as a string field
+ */
+function RenderInfoOriginInput(key, value, cb, helpText, state, onFocus, onBlur) {
+  const newValue =
+    value === undefined || value === ''
+      ? UTILS.DeriveInfoOriginString(state.createdBy, state.created)
+      : value;
+  return RenderStringInput(key, newValue, cb, helpText, onFocus, onBlur);
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
@@ -521,13 +635,16 @@ function RenderOptionsInput(key, value, defs, cb, helpText) {
  */
 function RenderDateInput(key, value, dateFormat, allowFormatSelection, cb, helpText) {
   return (
-    <URDateField id={key} key={`${key}value`} value={value}
+    <URDateField
+      id={key}
+      key={`${key}value`}
+      value={value}
       dateFormat={dateFormat}
       allowFormatSelection={allowFormatSelection}
       onChange={event => m_UIDateInputUpdate(event, cb)}
       helpText={helpText}
     />
-  )
+  );
 }
 
 /// EXPORT REACT COMPONENT ////////////////////////////////////////////////////

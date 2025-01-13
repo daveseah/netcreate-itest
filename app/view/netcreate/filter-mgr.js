@@ -127,7 +127,7 @@ MOD.Hook('INITIALIZE', () => {
    */
   UDATA.HandleMessage('FILTER_CLEAR', () => {
     m_ClearFilters();
-    UNISYS.Log('clear filters')
+    UNISYS.Log('clear filters');
   });
 
   /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -249,25 +249,17 @@ function m_ImportPrompts(prompts) {
     switch (prompt.type) {
       case FILTER.TYPES.MARKDOWN:
       case FILTER.TYPES.STRING:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.NUMBER:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.SELECT:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.NODE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.DATE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
-        break;
       case FILTER.TYPES.HDATE:
-        operator = FILTER.OPERATORS.NO_OP.key; // default to no_op
+      case FILTER.TYPES.TIMESTAMP:
+      case FILTER.TYPES.INFOORIGIN:
+        operator = FILTER.OPERATORS.NO_OP.key;
         break;
       case FILTER.TYPES.HIDDEN:
-        break;
+        break; // hidden filters are not added
       default:
         // edge template item "edgeIsLockedMessage" will trigger this message
         // filters will not be created for entries with no `type` defined.
@@ -393,7 +385,11 @@ function m_FiltersApply() {
   UTILS.RecalculateAllNodeDegrees(FILTEREDNCDATA);
 
   // Calculate Stats and Send with FILTEREDNCDATA
-  FILTEREDNCDATA.stats = m_UpdateFilterStats(NCDATA, FILTEREDNCDATA, FILTERDEFS.filterAction);
+  FILTEREDNCDATA.stats = m_UpdateFilterStats(
+    NCDATA,
+    FILTEREDNCDATA,
+    FILTERDEFS.filterAction
+  );
 
   // Update FILTEREDNCDATA
   UDATA.SetAppState('FILTEREDNCDATA', FILTEREDNCDATA);
@@ -417,15 +413,21 @@ function m_UpdateFilterStats(NCDATA, FILTEREDNCDATA, filterAction) {
   const edgeCount = NCDATA.edges.length;
   let filteredNodeCount, filteredEdgeCount;
   if (filterAction === FILTER.ACTION.FADE) {
-    filteredNodeCount = nodeCount - FILTEREDNCDATA.nodes.filter(n => n.filteredTransparency <= transparencyNode).length
-    filteredEdgeCount = edgeCount - FILTEREDNCDATA.edges.filter(e => e.filteredTransparency <= transparencyEdge).length
+    filteredNodeCount =
+      nodeCount -
+      FILTEREDNCDATA.nodes.filter(n => n.filteredTransparency <= transparencyNode)
+        .length;
+    filteredEdgeCount =
+      edgeCount -
+      FILTEREDNCDATA.edges.filter(e => e.filteredTransparency <= transparencyEdge)
+        .length;
   } else {
     filteredNodeCount = FILTEREDNCDATA.nodes.length;
     filteredEdgeCount = FILTEREDNCDATA.edges.length;
   }
-  const statsSummary = `Showing ${filteredNodeCount}/${nodeCount} nodes, ${filteredEdgeCount}/${edgeCount} edges`
+  const statsSummary = `Showing ${filteredNodeCount}/${nodeCount} nodes, ${filteredEdgeCount}/${edgeCount} edges`;
 
-  return { nodeCount, edgeCount, filteredNodeCount, filteredEdgeCount, statsSummary }
+  return { nodeCount, edgeCount, filteredNodeCount, filteredEdgeCount, statsSummary };
 }
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function m_UpdateFilterSummary(statsSummary) {
@@ -442,8 +444,9 @@ function m_UpdateFilterSummary(statsSummary) {
   const edgeSummary = m_FiltersToString(FILTERDEFS.edges.filters);
   let summary = '';
   if (nodeSummary || edgeSummary)
-    summary = `${typeSummary} ${nodeSummary ? 'NODES: ' : ''}${nodeSummary} ${edgeSummary ? 'EDGES: ' : ''
-      }${edgeSummary}`;
+    summary = `${typeSummary} ${nodeSummary ? 'NODES: ' : ''}${nodeSummary} ${
+      edgeSummary ? 'EDGES: ' : ''
+    }${edgeSummary}`;
   if (summary) summary += ' ' + statsSummary;
 
   UDATA.LocalCall('FILTER_SUMMARY_UPDATE', { filtersSummary: summary });
@@ -476,7 +479,9 @@ function m_OperatorToString(operator) {
 
 /// UTILITY FUNCTIONS /////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function clean(str) { return NCLOGIC.EscapeRegexChars(String(str).trim()); };
+function clean(str) {
+  return NCLOGIC.EscapeRegexChars(String(str).trim());
+}
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /**
  *  Match strings, allowing use of `&&` and `||`
@@ -491,9 +496,15 @@ function clean(str) { return NCLOGIC.EscapeRegexChars(String(str).trim()); };
  */
 function m_MatchString(needle, haystack, contains = true) {
   const ANDNeedles = String(needle).split('&&');
-  const ORNeedleArrs = ANDNeedles.map(ands => String(ands).split(/\|\|/).map(str => String(str).trim()));
+  const ORNeedleArrs = ANDNeedles.map(ands =>
+    String(ands)
+      .split(/\|\|/)
+      .map(str => String(str).trim())
+  );
   // For each set of OR Array matches, evaluate the pair
-  const ResultsOR = ORNeedleArrs.map(pair => pair.reduce((a, b) => a || m_MatchStringSnippet(clean(b), haystack, true), false));
+  const ResultsOR = ORNeedleArrs.map(pair =>
+    pair.reduce((a, b) => a || m_MatchStringSnippet(clean(b), haystack, true), false)
+  );
   const ResultsAND = ResultsOR.reduce((a, b) => a && b, true);
   return contains ? ResultsAND : !ResultsAND;
 }
@@ -610,6 +621,48 @@ function m_MatchHDate(operator, filterVal, objVal) {
   }
   return matches;
 }
+/// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * This uses the HDate Filter UI to construct a search string
+ * But then converts the HDate filter definition to a timestamp
+ * And then does a simple numeric comparison
+ * @param {number} operator filter operator
+ * @param {hdate} filterVal hdate
+ * @param {number} objVal timestamp
+ * @returns
+ */
+function m_MatchTimestamp(operator, filterVal, objVal) {
+  const hdateValue = HDATE.Parse(filterVal); // deconstruct the HDate filter into a timestamp
+  if (hdateValue.length < 1) return false;
+
+  const knownValues = hdateValue[0].start.knownValues;
+
+  // When filtering, use only as much precision as the HDate filter requests
+  // if a value is missing, assume it is 0
+  const filterTimestamp = new Date(
+    knownValues.year !== undefined ? knownValues.year : 0,
+    knownValues.month !== undefined ? knownValues.month - 1 : 0,
+    knownValues.day !== undefined ? knownValues.day : 1,
+    knownValues.hour !== undefined ? knownValues.hour : 0,
+    knownValues.minute !== undefined ? knownValues.minute : 0,
+    knownValues.second !== undefined ? knownValues.second : 0
+  );
+  const objValDate = new Date(objVal);
+  const objValTimestamp = new Date(
+    knownValues.year !== undefined ? objValDate.getFullYear() : 0,
+    knownValues.month !== undefined ? objValDate.getMonth() : 0,
+    knownValues.day !== undefined ? objValDate.getDate() : 1,
+    knownValues.hour !== undefined ? objValDate.getHours() : 0,
+    knownValues.minute !== undefined ? objValDate.getMinutes() : 0,
+    knownValues.second !== undefined ? objValDate.getSeconds() : 0
+  );
+
+  return m_MatchNumber(
+    operator,
+    filterTimestamp.getTime(),
+    objValTimestamp.getTime()
+  );
+}
 
 /// NODE FILTERS //////////////////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -695,7 +748,9 @@ function m_IsNodeMatchedByFilter(node, filter) {
     return false; // nothing to filter
   }
 
-  const nodeValue = node[filter.key];
+  const nodeValue = ['created', 'updated'].includes(filter.key)
+    ? node.meta[filter.key] // timestamps are stored in loki meta object
+    : node[filter.key];
 
   switch (filter.operator) {
     case FILTER.OPERATORS.CONTAINS.key:
@@ -708,6 +763,8 @@ function m_IsNodeMatchedByFilter(node, filter) {
       return nodeValue !== undefined && nodeValue !== '';
     default:
       if (nodeValue === undefined) return false; // no value to match
+      if (filter.type === FILTER.TYPES.TIMESTAMP)
+        return m_MatchTimestamp(filter.operator, filter.value, nodeValue);
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, nodeValue);
       // else assume it's a number
@@ -831,12 +888,14 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
 
   let edgeValue;
   if (filter.type === FILTER.TYPES.NODE) {
-    // edges fields that poitn to nodes require special handling because `source` and `target`
+    // edges fields that point to nodes require special handling because `source` and `target`
     // point to node objects, not simple strings.
     if (filter.key === 'source') edgeValue = edge.sourceLabel;
     if (filter.key === 'target') edgeValue = edge.targetLabel;
   } else {
-    edgeValue = edge[filter.key];
+    edgeValue = ['created', 'updated'].includes(filter.key)
+      ? edge.meta[filter.key] // timestamps are stored in loki meta object
+      : edge[filter.key];
   }
 
   switch (filter.operator) {
@@ -850,6 +909,8 @@ function m_IsEdgeMatchedByFilter(edge, filter) {
       return edgeValue !== undefined && edgeValue !== '';
     default:
       if (edgeValue === undefined) return false; // no value to match
+      if (filter.type === FILTER.TYPES.TIMESTAMP)
+        return m_MatchTimestamp(filter.operator, filter.value, edgeValue);
       if (filter.type === FILTER.TYPES.HDATE)
         return m_MatchHDate(filter.operator, filter.value, edgeValue);
       // else assume it's a number

@@ -48,7 +48,7 @@ const NCUI = require('../nc-ui');
 const NCEdge = require('./NCEdge');
 const NCDialogCitation = require('./NCDialogCitation');
 const SETTINGS = require('settings');
-import URCommentBtn from './URCommentBtn';
+import URCommentVBtn from './URCommentVBtn';
 
 /// CONSTANTS & DECLARATIONS //////////////////////////////////////////////////
 /// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -170,8 +170,8 @@ class NCNode extends UNISYS.Component {
       label: '',
       type: '',
       degrees: null,
-      attributes: [],
-      provenance: [],
+      attributes: {},
+      provenance: {},
       created: undefined,
       createdBy: undefined,
       updated: undefined,
@@ -248,15 +248,23 @@ class NCNode extends UNISYS.Component {
       // someone else might be editing a template or importing or editing node or edge
       const { id } = this.state;
       const nodeIsLocked = data.lockedNodes.includes(id);
-      this.setState(
-        {
-          uIsLockedByDB: nodeIsLocked,
-          uIsLockedByTemplate: data.templateBeingEdited,
-          uIsLockedByImport: data.importActive,
-          uIsLockedByComment: data.commentBeingEditedByMe
-        },
-        () => this.UpdatePermissions()
-      );
+
+      // skip updates if there are no changes in values to optimize renders
+      const newState = {
+        uIsLockedByDB: nodeIsLocked,
+        uIsLockedByTemplate: data.templateBeingEdited,
+        uIsLockedByImport: data.importActive,
+        uIsLockedByComment: data.commentBeingEditedByMe
+      };
+      if (
+        newState.uIsLockedByDB === this.state.uIsLockedByDB &&
+        newState.uIsLockedByTemplate === this.state.uIsLockedByTemplate &&
+        newState.uIsLockedByImport === this.state.uIsLockedByImport &&
+        newState.uIsLockedByComment === this.state.uIsLockedByComment
+      ) {
+        return;
+      }
+      this.setState(newState, () => this.UpdatePermissions());
     });
   }
   UpdatePermissions() {
@@ -680,8 +688,7 @@ class NCNode extends UNISYS.Component {
   UIDisableEditMode() {
     this.UnlockNode(() => {
       this.setState({
-        uViewMode: NCUI.VIEWMODE.VIEW,
-        uIsLockedByDB: false
+        uViewMode: NCUI.VIEWMODE.VIEW
       });
       UDATA.NetCall('SRV_RELEASE_EDIT_LOCK', { editor: EDITORTYPE.NODE });
     });
@@ -774,7 +781,7 @@ class NCNode extends UNISYS.Component {
           <div className="titlebar">
             <div className="nodenumber">NODE {id}</div>
             <div className="nodelabel">{NCUI.RenderLabel('label', label)}</div>
-            <URCommentBtn cref={collection_ref} />
+            <URCommentVBtn cref={collection_ref} />
             {/* using key resets with a new URComment <URCommentBtn cref={collection_ref} key={collection_ref} /> */}
           </div>
           {/* Special handling for `type` field */}
