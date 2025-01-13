@@ -385,7 +385,7 @@ function RenderProvenanceTabView(state, defs) {
       {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
       {!defs.created.hidden &&
         RenderProvenanceByline(created, createdBy, defs.createdBy)}
-      {!defs.updated.hidden && RenderLabel('createdlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden && RenderLabel('updatedlabel', defs.updated.displayLabel)}
       {!defs.updated.hidden &&
         RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
       {!defs.revision.hidden &&
@@ -406,7 +406,7 @@ function RenderProvenanceTabEdit(state, defs, onchange) {
       {!defs.created.hidden && RenderLabel('createdlabel', defs.created.displayLabel)}
       {!defs.created.hidden &&
         RenderProvenanceByline(created, createdBy, defs.createdBy)}
-      {!defs.updated.hidden && RenderLabel('createdlabel', defs.updated.displayLabel)}
+      {!defs.updated.hidden && RenderLabel('updatedlabel', defs.updated.displayLabel)}
       {!defs.updated.hidden &&
         RenderProvenanceByline(updated, updatedBy, defs.updatedBy)}
       {!defs.revision.hidden &&
